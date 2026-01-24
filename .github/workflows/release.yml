@@ -15,10 +15,13 @@ jobs:
         include:
           - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
+            tauri_platform: 'darwin'
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
+            tauri_platform: 'darwin'
           - platform: 'windows-latest'
             args: ''
+            tauri_platform: 'windows'
 
     runs-on: ${{ matrix.platform }}
 
@@ -44,10 +47,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Build frontend with Tauri flag
+        run: npm run build
+        env:
+          TAURI_ENV_PLATFORM: ${{ matrix.tauri_platform }}
+
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_ENV_PLATFORM: ${{ matrix.tauri_platform }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '3DCoster ${{ github.ref_name }}'
