@@ -86,17 +86,15 @@ export function DownloadPage() {
                   </div>
                 </div>
                 <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert('Download link coming soon! The app is still in development.');
-                  }}
+                  href="https://github.com/Waarangel/3dcoster/releases/latest"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
                 >
                   Download for Windows
                 </a>
                 <p className="text-slate-500 text-xs text-center mt-2">
-                  .msi installer - 15 MB
+                  .msi installer
                 </p>
               </div>
             </div>
@@ -126,17 +124,15 @@ export function DownloadPage() {
                   </div>
                 </div>
                 <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert('Download link coming soon! The app is still in development.');
-                  }}
+                  href="https://github.com/Waarangel/3dcoster/releases/latest"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
                 >
                   Download for Mac
                 </a>
                 <p className="text-slate-500 text-xs text-center mt-2">
-                  .dmg installer - 18 MB
+                  .dmg installer
                 </p>
               </div>
             </div>
@@ -212,7 +208,7 @@ export function DownloadPage() {
               </svg>
               Buy me a coffee
             </a>
-            <a
+<a
               href="https://ashlaindustries.ca"
               target="_blank"
               rel="noopener noreferrer"

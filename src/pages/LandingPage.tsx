@@ -56,7 +56,7 @@ export function LandingPage() {
                 to="/app"
                 className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold text-lg shadow-lg shadow-blue-500/25"
               >
-                Try It Free
+                Use for Free
               </Link>
               <Link
                 to="/download"

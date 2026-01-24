@@ -132,7 +132,7 @@ function App() {
             <img src="/pwa-192x192.png" alt="3DCoster" className="w-12 h-12 rounded-xl" />
             <div>
               <h1 className="text-2xl font-bold text-white">3D Print Cost Calculator</h1>
-              <p className="text-slate-400 text-sm mt-1">Calculate your true cost per print for Facebook Marketplace</p>
+              <p className="text-slate-400 text-sm mt-1">Calculate your true cost per print</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -147,7 +147,7 @@ function App() {
                 <span>Back to site</span>
               </Link>
             )}
-            <button
+<button
               onClick={() => setShowProfileModal(true)}
               className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
               title="User Settings"

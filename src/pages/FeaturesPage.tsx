@@ -290,7 +290,7 @@ export function FeaturesPage() {
                 to="/app"
                 className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold shadow-lg shadow-blue-500/25"
               >
-                Try It Free
+                Use for Free
               </Link>
               <Link
                 to="/download"
@@ -317,7 +317,7 @@ export function FeaturesPage() {
             </svg>
             Buy me a coffee
           </a>
-          <a
+<a
             href="https://ashlaindustries.ca"
             target="_blank"
             rel="noopener noreferrer"
