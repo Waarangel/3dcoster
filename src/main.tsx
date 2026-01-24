@@ -9,7 +9,10 @@ import { FeaturesPage } from './pages/FeaturesPage.tsx'
 import { FeedbackPage } from './pages/FeedbackPage.tsx'
 
 // Detect if running in Tauri desktop app
-const isTauri = '__TAURI__' in window
+// In Tauri v2 with withGlobalTauri enabled, __TAURI__ is available
+// Also check __TAURI_INTERNALS__ as a fallback
+const isTauri = typeof window !== 'undefined' &&
+  ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
