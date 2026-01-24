@@ -12,10 +12,16 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              to="/features"
+              className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
+            >
+              Features
+            </Link>
+            <Link
               to="/download"
               className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
             >
-              Download App
+              Download
             </Link>
             <Link
               to="/app"

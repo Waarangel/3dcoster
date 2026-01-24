@@ -1,76 +1,21 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
-type Platform = 'windows' | 'mac' | 'ios' | 'android' | 'unknown';
-type Browser = 'chrome' | 'edge' | 'safari' | 'firefox' | 'other';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+type Platform = 'windows' | 'mac' | 'unknown';
 
 function detectPlatform(): Platform {
   const userAgent = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
-  if (/android/.test(userAgent)) return 'android';
   if (userAgent.includes('win')) return 'windows';
   if (userAgent.includes('mac')) return 'mac';
   return 'unknown';
 }
 
-function detectBrowser(): Browser {
-  const userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.includes('edg/')) return 'edge';
-  if (userAgent.includes('chrome')) return 'chrome';
-  if (userAgent.includes('safari') && !userAgent.includes('chrome')) return 'safari';
-  if (userAgent.includes('firefox')) return 'firefox';
-  return 'other';
-}
-
 export function DownloadPage() {
   const [platform, setPlatform] = useState<Platform>('unknown');
-  const [browser, setBrowser] = useState<Browser>('other');
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     setPlatform(detectPlatform());
-    setBrowser(detectBrowser());
-
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-    }
-
-    // Capture the install prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
   }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      setIsInstalled(true);
-    }
-    setDeferredPrompt(null);
-  };
-
-  const isIOS = platform === 'ios';
-  const showInstallButton = deferredPrompt && !isInstalled;
-  const showIOSInstructions = isIOS && browser === 'safari' && !isInstalled;
-  const showChromeInstructions = (browser === 'chrome' || browser === 'edge') && !deferredPrompt && !isInstalled && !isIOS;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
@@ -83,10 +28,16 @@ export function DownloadPage() {
           </Link>
           <div className="flex items-center gap-4">
             <Link
+              to="/features"
+              className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
+            >
+              Features
+            </Link>
+            <Link
               to="/download"
               className="px-4 py-2 text-white transition-colors text-sm font-medium"
             >
-              Download App
+              Download
             </Link>
             <Link
               to="/app"
@@ -108,8 +59,8 @@ export function DownloadPage() {
             </p>
           </div>
 
-          {/* Download Cards - now 3 columns */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {/* Download Cards */}
+          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {/* Windows */}
             <div className="flex flex-col items-center">
               {/* Badge outside card */}
@@ -189,119 +140,16 @@ export function DownloadPage() {
                 </p>
               </div>
             </div>
-
-            {/* Web App / PWA */}
-            <div className="flex flex-col items-center">
-              {/* Badge outside card */}
-              <div className="h-6 mb-2">
-                {(isIOS || platform === 'android') && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-xs">
-                    Recommended for you
-                  </span>
-                )}
-              </div>
-              <div className={`bg-slate-800 rounded-2xl p-6 border transition-colors w-full ${
-                (isIOS || platform === 'android') ? 'border-green-500' : 'border-slate-700 hover:border-slate-600'
-              }`}>
-                <div className="flex items-center gap-4 mb-5">
-                  <div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center">
-                    <svg className="w-7 h-7 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">Web App</h2>
-                    <p className="text-slate-500 text-sm">Any device, any browser</p>
-                  </div>
-                </div>
-
-                {isInstalled ? (
-                  <div className="w-full py-2.5 bg-green-600/20 text-green-400 rounded-lg font-medium text-center text-sm border border-green-500/30">
-                    Already Installed
-                  </div>
-                ) : showInstallButton ? (
-                  <button
-                    onClick={handleInstallClick}
-                    className="block w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
-                  >
-                    Install Web App
-                  </button>
-                ) : (
-                  <Link
-                    to="/app"
-                    className="block w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
-                  >
-                    Open Web App
-                  </Link>
-                )}
-                <p className="text-slate-500 text-xs text-center mt-2">
-                  No download required
-                </p>
-              </div>
-            </div>
           </div>
 
-          {/* PWA Install Instructions */}
-          {(showIOSInstructions || showChromeInstructions) && (
-            <div className="mt-8 max-w-md mx-auto">
-              <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20 relative">
-                {/* Animated Arrow pointing up */}
-                <div className="absolute -top-12 right-8 flex flex-col items-center animate-bounce">
-                  <svg className="w-8 h-8 text-green-400 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 5v14M19 12l-7 7-7-7" />
-                  </svg>
-                  <span className="text-green-400 text-xs font-medium mt-1 whitespace-nowrap">
-                    {showIOSInstructions ? 'Tap Share' : 'Click Install'}
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Install as App
-                </h3>
-
-                {showIOSInstructions ? (
-                  <div className="space-y-3 text-sm text-slate-300">
-                    <p className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold">1</span>
-                      <span>Tap the <strong className="text-white">Share</strong> button in Safari's toolbar</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold">2</span>
-                      <span>Scroll down and tap <strong className="text-white">"Add to Home Screen"</strong></span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold">3</span>
-                      <span>Tap <strong className="text-white">Add</strong> to install</span>
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 text-sm text-slate-300">
-                    <p className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold">1</span>
-                      <span>Look for the <strong className="text-white">install icon</strong> in your browser's address bar</span>
-                    </p>
-                    <p className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold">2</span>
-                      <span>Click it and select <strong className="text-white">"Install"</strong></span>
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Alternative - Updated text */}
+          {/* Alternative */}
           <div className="text-center mt-12">
-            <p className="text-slate-500 mb-4">Just want to try it out first?</p>
+            <p className="text-slate-500 mb-4">Don't want to install anything?</p>
             <Link
               to="/app"
               className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
             >
-              <span>Use in Browser</span>
+              <span>Use the Web App</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>

@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { LandingPage } from './pages/LandingPage.tsx'
 import { DownloadPage } from './pages/DownloadPage.tsx'
+import { FeaturesPage } from './pages/FeaturesPage.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,6 +14,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<LandingPage />} />
         <Route path="/app" element={<App />} />
         <Route path="/download" element={<DownloadPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
