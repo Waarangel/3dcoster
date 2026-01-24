@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "3D Print Cost Calculator",
+  "productName": "3DCoster",
   "version": "1.0.0",
   "identifier": "com.3dcoster.calculator",
   "build": {
