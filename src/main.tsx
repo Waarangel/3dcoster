@@ -9,29 +9,14 @@ import { DownloadPage } from './pages/DownloadPage.tsx'
 import { FeaturesPage } from './pages/FeaturesPage.tsx'
 import { FeedbackPage } from './pages/FeedbackPage.tsx'
 
-// Debug: Log at module load time
-console.log('[DEBUG main.tsx] Module loading...')
-console.log('[DEBUG main.tsx] window.isTauri:', (window as unknown as { isTauri?: boolean }).isTauri)
-console.log('[DEBUG main.tsx] globalThis.isTauri:', (globalThis as unknown as { isTauri?: boolean }).isTauri)
-console.log('[DEBUG main.tsx] isTauri() result:', isTauri())
-
 // Root component that handles Tauri detection at render time
 // Detection must happen AFTER Tauri's initialization script sets window.isTauri
 function Root() {
   const [isDesktopApp, setIsDesktopApp] = useState<boolean | null>(null)
 
   useEffect(() => {
-    // Debug: Log at useEffect time
-    console.log('[DEBUG Root useEffect] Running...')
-    console.log('[DEBUG Root useEffect] window.isTauri:', (window as unknown as { isTauri?: boolean }).isTauri)
-    console.log('[DEBUG Root useEffect] isTauri() result:', isTauri())
-
-    const result = isTauri()
-    console.log('[DEBUG Root useEffect] Setting isDesktopApp to:', result)
-    setIsDesktopApp(result)
+    setIsDesktopApp(isTauri())
   }, [])
-
-  console.log('[DEBUG Root render] isDesktopApp:', isDesktopApp)
 
   // Show nothing while detecting environment (prevents flash)
   if (isDesktopApp === null) {
