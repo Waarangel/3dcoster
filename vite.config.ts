@@ -5,6 +5,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Build-time constant: true when built via `tauri build`, false for web builds
+  // TAURI_ENV_PLATFORM is set by Tauri CLI during beforeBuildCommand
+  define: {
+    __IS_TAURI__: JSON.stringify(!!process.env.TAURI_ENV_PLATFORM),
+  },
   plugins: [
     react(),
     tailwindcss(),

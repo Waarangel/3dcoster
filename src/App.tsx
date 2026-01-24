@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig } from './hooks/useDatabase';
 import type { PrintJob } from './types';
@@ -10,54 +10,21 @@ import { UserProfileModal } from './components/UserProfileModal';
 
 type Tab = 'calculator' | 'jobs' | 'materials' | 'settings';
 
-// Robust Tauri detection using __TAURI_INTERNALS__ with polling
-// This handles timing issues where the bundle loads before Tauri's init script
-function detectTauri(): Promise<boolean> {
-  return new Promise((resolve) => {
-    // Check immediately - __TAURI_INTERNALS__ is the IPC backbone, always present in Tauri
-    if ('__TAURI_INTERNALS__' in window) {
-      resolve(true)
-      return
-    }
-
-    // Poll for up to 100ms (10 checks at 10ms intervals) to handle race conditions
-    let attempts = 0
-    const maxAttempts = 10
-    const interval = setInterval(() => {
-      attempts++
-      if ('__TAURI_INTERNALS__' in window) {
-        clearInterval(interval)
-        resolve(true)
-      } else if (attempts >= maxAttempts) {
-        clearInterval(interval)
-        resolve(false) // Not Tauri after 100ms - definitely web browser
-      }
-    }, 10)
-  })
-}
-
 // Detect if running in standalone mode (PWA installed or Tauri desktop app)
 function useIsStandalone(): boolean {
-  const [isStandalone, setIsStandalone] = useState(false);
+  // For Tauri builds, this is determined at build time
+  if (__IS_TAURI__) {
+    return true;
+  }
 
-  useEffect(() => {
-    const checkStandalone = async () => {
-      // Check for Tauri using robust detection
-      const isTauriApp = await detectTauri();
+  // For web, check PWA standalone mode (this is safe to check synchronously on first render)
+  if (typeof window !== 'undefined') {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+    const isIOSStandalone = (navigator as { standalone?: boolean }).standalone === true;
+    return isPWA || isIOSStandalone;
+  }
 
-      // Check for PWA standalone mode
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches;
-
-      // Check for iOS Safari standalone mode
-      const isIOSStandalone = (navigator as { standalone?: boolean }).standalone === true;
-
-      setIsStandalone(isTauriApp || isPWA || isIOSStandalone);
-    };
-
-    checkStandalone();
-  }, []);
-
-  return isStandalone;
+  return false;
 }
 
 function App() {
