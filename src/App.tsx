@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { isTauri } from '@tauri-apps/api/core';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig } from './hooks/useDatabase';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
@@ -15,8 +16,8 @@ function useIsStandalone(): boolean {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Check for Tauri
-    const isTauri = '__TAURI__' in window;
+    // Check for Tauri using official API
+    const isTauriApp = isTauri();
 
     // Check for PWA standalone mode
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
@@ -24,7 +25,7 @@ function useIsStandalone(): boolean {
     // Check for iOS Safari standalone mode
     const isIOSStandalone = (navigator as { standalone?: boolean }).standalone === true;
 
-    setIsStandalone(isTauri || isPWA || isIOSStandalone);
+    setIsStandalone(isTauriApp || isPWA || isIOSStandalone);
   }, []);
 
   return isStandalone;

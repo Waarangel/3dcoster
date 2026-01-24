@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { isTauri } from '@tauri-apps/api/core'
 import './index.css'
 import App from './App.tsx'
 import { LandingPage } from './pages/LandingPage.tsx'
@@ -8,17 +9,18 @@ import { DownloadPage } from './pages/DownloadPage.tsx'
 import { FeaturesPage } from './pages/FeaturesPage.tsx'
 import { FeedbackPage } from './pages/FeedbackPage.tsx'
 
-// Detect if running in Tauri desktop app
-// In Tauri v2 with withGlobalTauri enabled, __TAURI__ is available
-// Also check __TAURI_INTERNALS__ as a fallback
-const isTauri = typeof window !== 'undefined' &&
-  ('__TAURI__' in window || '__TAURI_INTERNALS__' in window)
+// Use official Tauri API to detect if running in desktop app
+// This is the recommended approach per Tauri v2 documentation
+// Sources:
+// - https://github.com/tauri-apps/tauri/discussions/6119
+// - https://github.com/tauri-apps/tauri/discussions/6941
+const isDesktopApp = isTauri()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        {isTauri ? (
+        {isDesktopApp ? (
           <>
             {/* Desktop app: only show the calculator */}
             <Route path="/" element={<App />} />
