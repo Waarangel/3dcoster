@@ -86,15 +86,15 @@ export function DownloadPage() {
                   </div>
                 </div>
                 <a
-                  href="https://github.com/Waarangel/3dcoster/releases/latest"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="https://github.com/Waarangel/3dcoster/releases/latest/download/3DCoster_1.0.0_x64-setup.exe"
                   className="block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
                 >
                   Download for Windows
                 </a>
+                {/* Spacer to match Mac card height */}
+                <div className="h-[34px] mt-2"></div>
                 <p className="text-slate-500 text-xs text-center mt-2">
-                  .msi installer
+                  .exe installer
                 </p>
               </div>
             </div>
@@ -124,15 +124,19 @@ export function DownloadPage() {
                   </div>
                 </div>
                 <a
-                  href="https://github.com/Waarangel/3dcoster/releases/latest"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="https://github.com/Waarangel/3dcoster/releases/latest/download/3DCoster_1.0.0_aarch64.dmg"
                   className="block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
                 >
-                  Download for Mac
+                  Download for Mac Silicon
+                </a>
+                <a
+                  href="https://github.com/Waarangel/3dcoster/releases/latest/download/3DCoster_1.0.0_x64.dmg"
+                  className="block w-full py-2 mt-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors font-medium text-center text-xs"
+                >
+                  Download for Mac Intel
                 </a>
                 <p className="text-slate-500 text-xs text-center mt-2">
-                  .dmg installer
+                  M1/M2/M3/M4 • Intel (pre-2020)
                 </p>
               </div>
             </div>
