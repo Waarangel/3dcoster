@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#1e293b" rx="64"/>
+  <text x="256" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="200" font-weight="bold" fill="#3b82f6" text-anchor="middle">3D</text>
+  <text x="256" y="400" font-family="system-ui, -apple-system, sans-serif" font-size="72" fill="#94a3b8" text-anchor="middle">COST</text>
+</svg>
