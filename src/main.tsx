@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { isTauri } from '@tauri-apps/api/core'
@@ -9,15 +9,22 @@ import { DownloadPage } from './pages/DownloadPage.tsx'
 import { FeaturesPage } from './pages/FeaturesPage.tsx'
 import { FeedbackPage } from './pages/FeedbackPage.tsx'
 
-// Use official Tauri API to detect if running in desktop app
-// This is the recommended approach per Tauri v2 documentation
-// Sources:
-// - https://github.com/tauri-apps/tauri/discussions/6119
-// - https://github.com/tauri-apps/tauri/discussions/6941
-const isDesktopApp = isTauri()
+// Root component that handles Tauri detection at render time
+// Detection must happen AFTER Tauri's initialization script sets window.isTauri
+function Root() {
+  const [isDesktopApp, setIsDesktopApp] = useState<boolean | null>(null)
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  useEffect(() => {
+    // Check at render time when Tauri has initialized
+    setIsDesktopApp(isTauri())
+  }, [])
+
+  // Show nothing while detecting environment (prevents flash)
+  if (isDesktopApp === null) {
+    return null
+  }
+
+  return (
     <BrowserRouter>
       <Routes>
         {isDesktopApp ? (
@@ -40,5 +47,11 @@ createRoot(document.getElementById('root')!).render(
         )}
       </Routes>
     </BrowserRouter>
+  )
+}
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <Root />
   </StrictMode>,
 )
