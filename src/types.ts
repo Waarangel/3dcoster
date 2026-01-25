@@ -30,7 +30,7 @@ export type Currency =
   | 'ZAR'; // South African Rand
 
 // Built-in asset categories
-export type BuiltInCategory = 'filament' | 'consumable' | 'finishing' | 'tool' | 'printer';
+export type BuiltInCategory = 'filament' | 'consumable' | 'finishing' | 'tool' | 'packaging' | 'printer';
 
 // Asset category - can be built-in or custom string
 export type AssetCategory = BuiltInCategory | string;

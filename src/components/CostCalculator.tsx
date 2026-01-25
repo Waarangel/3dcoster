@@ -174,7 +174,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const selectedPrinter = printers.find(p => p.id === selectedInstance?.printerConfigId) || printers[0] || null;
 
   const nonFilaments = materials.filter(m => m.category !== 'filament');
-  const consumables = materials.filter(m => m.category === 'consumable');
+  const consumables = materials.filter(m => m.category === 'consumable' || m.category === 'packaging');
 
   // Calculate shipping cost based on method
   const shippingCost = useMemo(() => {
@@ -868,7 +868,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <div className="mt-4 pt-4 border-t border-slate-700">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="text-sm font-medium text-white">Packaging Materials</h3>
+              <h3 className="flex items-center gap-2 text-sm font-medium text-white">
+                <span>Packaging Materials</span>
+                <NewBadge feature="packaging-materials" />
+              </h3>
               <p className="text-xs text-slate-500">Boxes, bubble wrap, tape, etc.</p>
             </div>
             <button
