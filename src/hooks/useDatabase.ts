@@ -30,6 +30,15 @@ export function useAssets() {
           if (printerCount === 0) {
             await db.materials.bulkPut(defaultPrinterAssets); // Use bulkPut to handle duplicates
           }
+
+          // Check if we need to add packaging assets (migration for existing users)
+          const packagingCount = await db.materials.where('category').equals('packaging').count();
+          if (cancelled) return;
+
+          if (packagingCount === 0) {
+            const packagingDefaults = defaultMaterials.filter(m => m.category === 'packaging');
+            await db.materials.bulkPut(packagingDefaults); // Use bulkPut to handle duplicates
+          }
         }
       } catch (error) {
         console.error('Error initializing assets:', error);

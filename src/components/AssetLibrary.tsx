@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
+import { NewBadge } from './NewBadge';
 
 interface AssetLibraryProps {
   assets: Asset[];
@@ -284,13 +285,14 @@ export function AssetLibrary({
           <button
             key={cat}
             onClick={() => handleFilterChange(cat)}
-            className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+            className={`px-3 py-1 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
               filterCategory === cat
                 ? 'bg-slate-600 text-white'
                 : 'bg-slate-700 text-slate-400 hover:text-white'
             }`}
           >
             {getCategoryLabel(cat)}
+            {cat === 'packaging' && <NewBadge feature="packaging-materials" />}
           </button>
         ))}
       </div>

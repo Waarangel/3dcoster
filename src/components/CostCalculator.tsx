@@ -174,7 +174,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const selectedPrinter = printers.find(p => p.id === selectedInstance?.printerConfigId) || printers[0] || null;
 
   const nonFilaments = materials.filter(m => m.category !== 'filament');
-  const consumables = materials.filter(m => m.category === 'consumable' || m.category === 'packaging');
+  // Filter for packaging dropdown - prioritize packaging items first, then consumables
+  const packagingItems = materials.filter(m => m.category === 'packaging');
+  const consumableItems = materials.filter(m => m.category === 'consumable');
+  const consumables = [...packagingItems, ...consumableItems];
 
   // Calculate shipping cost based on method
   const shippingCost = useMemo(() => {
