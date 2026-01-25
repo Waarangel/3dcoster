@@ -8,7 +8,26 @@ export type FilamentType =
   | 'PVA'
   | 'Other';
 
-export type Currency = 'CAD' | 'USD';
+// Major currencies for 3D printing markets worldwide
+export type Currency =
+  | 'CAD'  // Canadian Dollar
+  | 'USD'  // US Dollar
+  | 'EUR'  // Euro (EU)
+  | 'GBP'  // British Pound
+  | 'AUD'  // Australian Dollar
+  | 'NZD'  // New Zealand Dollar
+  | 'CHF'  // Swiss Franc
+  | 'SEK'  // Swedish Krona
+  | 'NOK'  // Norwegian Krone
+  | 'DKK'  // Danish Krone
+  | 'PLN'  // Polish Złoty
+  | 'CZK'  // Czech Koruna
+  | 'JPY'  // Japanese Yen
+  | 'CNY'  // Chinese Yuan
+  | 'INR'  // Indian Rupee
+  | 'BRL'  // Brazilian Real
+  | 'MXN'  // Mexican Peso
+  | 'ZAR'; // South African Rand
 
 // Built-in asset categories
 export type BuiltInCategory = 'filament' | 'consumable' | 'finishing' | 'tool' | 'printer';
@@ -175,35 +194,46 @@ export interface UserProfile {
   address?: {
     street?: string;
     city?: string;
-    province?: string;  // Province (CAD) or State (USD)
+    province?: string;  // Province/State/Region
     postalCode?: string;
-    country: 'CA' | 'US';
+    country?: string;   // ISO 3166-1 alpha-2 country code
   };
   // UI preferences
   assetLibraryItemsPerPage?: number;
 }
 
-// Shipping method types
-export type ShippingMethodType =
-  | 'local_pickup'  // CAD only - free, within radius
-  | 'dropoff'       // CAD only - gas cost based on distance, within radius
-  | 'ups'           // Both currencies
-  | 'fedex'         // Both currencies
-  | 'purolator'     // CAD only
-  | 'usps';         // USD only
+// Built-in shipping carriers
+export type BuiltInCarrier = 'local_pickup' | 'dropoff' | 'ups' | 'fedex' | 'purolator' | 'usps' | 'dhl' | 'royal_mail' | 'australia_post' | 'canada_post';
+
+// Shipping method can be built-in or custom carrier ID
+export type ShippingMethodType = BuiltInCarrier | string;
+
+// Custom carrier defined by user
+export interface CustomCarrier {
+  id: string;
+  name: string;
+  defaultCost: number;
+}
 
 // Shipping configuration
 export interface ShippingConfig {
   // Local delivery settings
   maxDeliveryRadiusKm: number;  // Maximum km for pickup/dropoff
-  gasPricePerLiter: number;     // Current gas price (CAD)
+  gasPricePerLiter: number;     // Current fuel price
   vehicleFuelEfficiency: number; // L/100km
 
-  // Carrier flat rates (user can override per job)
+  // Built-in carrier flat rates (user can override per job)
   upsBaseCost: number;
   fedexBaseCost: number;
-  purolatorBaseCost: number;  // CAD only
-  uspsBaseCost: number;       // USD only
+  purolatorBaseCost: number;
+  uspsBaseCost: number;
+  dhlBaseCost: number;
+  royalMailBaseCost: number;
+  australiaPostBaseCost: number;
+  canadaPostBaseCost: number;
+
+  // User-defined custom carriers
+  customCarriers: CustomCarrier[];
 }
 
 // Shipping selection for a specific job/sale
@@ -214,14 +244,28 @@ export interface ShippingSelection {
   calculatedCost: number;      // Final calculated cost
 }
 
-// Marketplace types for fee calculation
-export type MarketplaceType =
+// Built-in marketplace types
+export type BuiltInMarketplace =
   | 'none'                // Direct sale, no marketplace
   | 'facebook_local'      // Facebook Marketplace - local pickup (0% fee)
   | 'facebook_shipped'    // Facebook Marketplace - shipped (10% + processing)
   | 'etsy'                // Etsy (6.5% transaction + 3% + $0.25 payment + $0.20 listing)
   | 'etsy_offsite_ad'     // Etsy with offsite ad (adds 12-15%)
-  | 'kijiji';             // Kijiji (CAD) - free for most listings
+  | 'kijiji'              // Kijiji (CAD) - free for most listings
+  | 'ebay'                // eBay
+  | 'amazon_handmade';    // Amazon Handmade
+
+// Marketplace can be built-in or custom marketplace ID
+export type MarketplaceType = BuiltInMarketplace | string;
+
+// Custom marketplace defined by user
+export interface CustomMarketplace {
+  id: string;
+  name: string;
+  feePercent: number;       // Percentage fee (e.g., 10 for 10%)
+  fixedFee: number;         // Fixed fee per transaction
+  notes?: string;           // User notes about the marketplace
+}
 
 // Marketplace fee configuration
 export interface MarketplaceFees {
@@ -239,4 +283,25 @@ export interface MarketplaceFees {
 
   // Kijiji - generally free for basic listings
   kijijiFeaturedFee: number;            // Optional featured listing
+
+  // eBay fees
+  ebayFinalValuePercent: number;        // 12.9% for most categories
+  ebayFixedFee: number;                 // $0.30 per order
+
+  // Amazon Handmade
+  amazonHandmadePercent: number;        // 15% referral fee
+
+  // User-defined custom marketplaces
+  customMarketplaces: CustomMarketplace[];
+}
+
+// App-wide settings (separate from user profile)
+export interface AppSettings {
+  // Future: API keys for shipping integrations
+  // canadaPostApiKey?: string;
+  // uspsApiKey?: string;
+  // etc.
+
+  // Theme preferences (future)
+  // theme?: 'dark' | 'light' | 'system';
 }

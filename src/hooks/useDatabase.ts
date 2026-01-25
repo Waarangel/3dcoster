@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig } from '../db/database';
-import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig } from '../types';
+import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
+import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig } from '../data/defaultMaterials';
 
 // Hook for all assets (materials + printers) with CRUD operations
@@ -299,6 +299,11 @@ export function useShippingConfig() {
     fedexBaseCost: 15,
     purolatorBaseCost: 12,
     uspsBaseCost: 10,
+    dhlBaseCost: 20,
+    royalMailBaseCost: 8,
+    australiaPostBaseCost: 12,
+    canadaPostBaseCost: 15,
+    customCarriers: [],
   };
   const [shipping, setShippingState] = useState<ShippingConfig>(defaultShipping);
   const [isLoading, setIsLoading] = useState(true);
@@ -316,6 +321,60 @@ export function useShippingConfig() {
   }, []);
 
   return { shipping, updateShipping, isLoading };
+}
+
+// Default marketplace fees based on current platform rates (as of 2024)
+// Users can adjust these in Settings if platforms change their fees
+export const defaultMarketplaceFees: MarketplaceFees = {
+  // Facebook Marketplace
+  facebookShippedPercent: 10,          // 10% selling fee
+  facebookMinFee: 0.80,                // Minimum $0.80 fee
+  facebookProcessingPercent: 2.9,      // 2.9% payment processing
+
+  // Etsy
+  etsyTransactionPercent: 6.5,         // 6.5% transaction fee
+  etsyPaymentPercent: 3,               // 3% payment processing
+  etsyPaymentFixed: 0.25,              // $0.25 per transaction
+  etsyListingFee: 0.20,                // $0.20 listing fee
+  etsyOffsiteAdPercent: 15,            // 15% offsite ad fee (when applicable)
+
+  // Kijiji
+  kijijiFeaturedFee: 0,                // Free for basic listings
+
+  // eBay
+  ebayFinalValuePercent: 12.9,         // 12.9% final value fee
+  ebayFixedFee: 0.30,                  // $0.30 per order
+
+  // Amazon Handmade
+  amazonHandmadePercent: 15,           // 15% referral fee
+
+  // Custom marketplaces (user-defined)
+  customMarketplaces: [],
+};
+
+// Hook for marketplace fees configuration
+export function useMarketplaceFees() {
+  const [fees, setFeesState] = useState<MarketplaceFees>(defaultMarketplaceFees);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getMarketplaceFees(defaultMarketplaceFees).then(value => {
+      setFeesState(value);
+      setIsLoading(false);
+    });
+  }, []);
+
+  const updateFees = useCallback(async (value: MarketplaceFees) => {
+    setFeesState(value);
+    await setMarketplaceFees(value);
+  }, []);
+
+  const resetToDefaults = useCallback(async () => {
+    setFeesState(defaultMarketplaceFees);
+    await setMarketplaceFees(defaultMarketplaceFees);
+  }, []);
+
+  return { fees, updateFees, resetToDefaults, isLoading };
 }
 
 // Combined hook for all settings

@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees } from '../types';
 
 // Settings stored as key-value pairs
 interface Setting {
@@ -70,6 +70,7 @@ export const settingsKeys = {
   labor: 'labor',
   userProfile: 'userProfile',
   shipping: 'shipping',
+  marketplaceFees: 'marketplaceFees',
 } as const;
 
 export async function getPrinter(defaultValue: PrinterConfig): Promise<PrinterConfig> {
@@ -110,4 +111,12 @@ export async function getShippingConfig(defaultValue: ShippingConfig): Promise<S
 
 export async function setShippingConfig(value: ShippingConfig): Promise<void> {
   return setSetting(settingsKeys.shipping, value);
+}
+
+export async function getMarketplaceFees(defaultValue: MarketplaceFees): Promise<MarketplaceFees> {
+  return getSetting(settingsKeys.marketplaceFees, defaultValue);
+}
+
+export async function setMarketplaceFees(value: MarketplaceFees): Promise<void> {
+  return setSetting(settingsKeys.marketplaceFees, value);
 }

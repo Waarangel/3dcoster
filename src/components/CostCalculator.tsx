@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { NewBadge } from './NewBadge';
+import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -42,6 +43,11 @@ function getStoredValue<T>(key: string, defaultValue: T): T {
 }
 
 export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, userCurrency, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
+  // Get currency symbol for display - changes based on user's selected currency
+  const currencySymbol = getCurrencySymbol(userCurrency);
+  // Get distance unit based on region (mi for US, km for most others)
+  const distanceUnit = getDistanceUnit(userCurrency);
+
   // Print job inputs - restore from sessionStorage if available
   const [printName, setPrintName] = useState(() => getStoredValue('printName', ''));
   const [filamentGrams, setFilamentGrams] = useState(() => getStoredValue('filamentGrams', 0));
@@ -178,7 +184,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       case 'local_pickup':
         return 0;
       case 'dropoff':
-        // Round trip distance * fuel consumption * gas price
+        // Round trip distance * fuel consumption * fuel price
         const roundTripKm = shippingDistanceKm * 2;
         const litersUsed = (roundTripKm / 100) * shippingConfig.vehicleFuelEfficiency;
         return litersUsed * shippingConfig.gasPricePerLiter;
@@ -186,11 +192,24 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         return shippingConfig.upsBaseCost;
       case 'fedex':
         return shippingConfig.fedexBaseCost;
+      case 'dhl':
+        return shippingConfig.dhlBaseCost;
       case 'purolator':
         return shippingConfig.purolatorBaseCost;
       case 'usps':
         return shippingConfig.uspsBaseCost;
+      case 'royal_mail':
+        return shippingConfig.royalMailBaseCost;
+      case 'australia_post':
+        return shippingConfig.australiaPostBaseCost;
+      case 'canada_post':
+        return shippingConfig.canadaPostBaseCost;
       default:
+        // Check if it's a custom carrier
+        const customCarrier = shippingConfig.customCarriers?.find(c => c.id === shippingMethod);
+        if (customCarrier) {
+          return customCarrier.defaultCost;
+        }
         return 0;
     }
   }, [shippingMethod, shippingDistanceKm, shippingOverrideCost, shippingConfig]);
@@ -222,7 +241,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       options.push({ value: 'facebook_shipped', label: 'FB Marketplace (Shipped)', description: '10% + 2.9% processing' });
     }
 
-    options.push({ value: 'etsy', label: 'Etsy', description: '6.5% + 3% + $0.45 fees' });
+    options.push({ value: 'etsy', label: 'Etsy', description: '6.5% + 3% + 0.45 fees' });
     options.push({ value: 'etsy_offsite_ad', label: 'Etsy (Offsite Ad)', description: '+ 15% offsite ad fee' });
 
     return options;
@@ -266,21 +285,39 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const availableShippingMethods = useMemo(() => {
     const methods: { value: ShippingMethodType; label: string }[] = [];
 
+    // Universal options - available for all currencies
+    methods.push({ value: 'local_pickup', label: 'Local Pickup (Free)' });
+    methods.push({ value: 'dropoff', label: 'Dropoff (Fuel Cost)' });
+
+    // International carriers - available everywhere
+    methods.push({ value: 'ups', label: 'UPS' });
+    methods.push({ value: 'fedex', label: 'FedEx' });
+    methods.push({ value: 'dhl', label: 'DHL' });
+
+    // Region-specific carriers
     if (userCurrency === 'CAD') {
-      methods.push({ value: 'local_pickup', label: 'Local Pickup (Free)' });
-      methods.push({ value: 'dropoff', label: 'Dropoff (Gas Cost)' });
-      methods.push({ value: 'ups', label: 'UPS' });
-      methods.push({ value: 'fedex', label: 'FedEx' });
+      methods.push({ value: 'canada_post', label: 'Canada Post' });
       methods.push({ value: 'purolator', label: 'Purolator' });
-    } else {
-      // USD
-      methods.push({ value: 'ups', label: 'UPS' });
-      methods.push({ value: 'fedex', label: 'FedEx' });
+    }
+    if (userCurrency === 'USD') {
       methods.push({ value: 'usps', label: 'USPS' });
+    }
+    if (userCurrency === 'GBP') {
+      methods.push({ value: 'royal_mail', label: 'Royal Mail' });
+    }
+    if (userCurrency === 'AUD' || userCurrency === 'NZD') {
+      methods.push({ value: 'australia_post', label: 'Australia Post' });
+    }
+
+    // Add custom carriers from shipping config
+    if (shippingConfig.customCarriers && shippingConfig.customCarriers.length > 0) {
+      shippingConfig.customCarriers.forEach(carrier => {
+        methods.push({ value: carrier.id, label: carrier.name });
+      });
     }
 
     return methods;
-  }, [userCurrency]);
+  }, [userCurrency, shippingConfig.customCarriers]);
 
   // Handle filament selection from the nested dropdown
   const handleFilamentSelect = (filament: Material) => {
@@ -632,7 +669,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Model/STL Cost ($)</label>
+            <label className="block text-xs text-slate-400 mb-1">Model/STL Cost ({currencySymbol})</label>
             <input
               type="number"
               step="0.01"
@@ -658,7 +695,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           {modelCost > 0 && (
             <div>
               <label className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-                <span>Author Min Price ($)</span>
+                <span>Author Min Price ({currencySymbol})</span>
                 <NewBadge feature="author-min-price" />
               </label>
               <input
@@ -749,7 +786,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     <span className="text-slate-400 text-sm w-12">{material?.unit || ''}</span>
                   </div>
                   <span className="text-slate-300 text-sm font-mono w-16 text-right">
-                    ${material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
+                    {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
                   </span>
                   <button
                     onClick={() => removeMaterialUsage(index)}
@@ -787,13 +824,17 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           {shippingMethod === 'dropoff' && (
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Distance (km)</label>
+              <label className="block text-xs text-slate-400 mb-1">Distance ({distanceUnit})</label>
               <input
                 type="number"
-                value={shippingDistanceKm || ''}
-                onChange={e => setShippingDistanceKm(parseFloat(e.target.value) || 0)}
-                max={shippingConfig.maxDeliveryRadiusKm}
-                placeholder={`Max ${shippingConfig.maxDeliveryRadiusKm}km`}
+                value={distanceUnit === 'mi' ? (shippingDistanceKm > 0 ? kmToMiles(shippingDistanceKm).toFixed(1) : '') : (shippingDistanceKm || '')}
+                onChange={e => {
+                  const inputVal = parseFloat(e.target.value) || 0;
+                  // Convert miles to km for internal storage if using miles
+                  setShippingDistanceKm(distanceUnit === 'mi' ? milesToKm(inputVal) : inputVal);
+                }}
+                max={distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm) : shippingConfig.maxDeliveryRadiusKm}
+                placeholder={`Max ${distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm).toFixed(0) : shippingConfig.maxDeliveryRadiusKm}${distanceUnit}`}
                 className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
               />
               {shippingDistanceKm > shippingConfig.maxDeliveryRadiusKm && (
@@ -803,7 +844,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           )}
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Carrier Cost ($)</label>
+            <label className="block text-xs text-slate-400 mb-1">Carrier Cost ({currencySymbol})</label>
             <input
               type="number"
               step="0.01"
@@ -879,7 +920,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                       <span className="text-slate-400 text-xs w-8">{material?.unit || ''}</span>
                     </div>
                     <span className="text-slate-300 text-sm font-mono w-14 text-right">
-                      ${material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
+                      {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
                     </span>
                     <button
                       onClick={() => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
@@ -898,17 +939,17 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             <div className="mt-3 p-3 bg-slate-700/30 rounded-lg">
               <div className="flex justify-between text-xs text-slate-400">
                 <span>Carrier/Delivery:</span>
-                <span>${shippingCost.toFixed(2)}</span>
+                <span>{currencySymbol}{shippingCost.toFixed(2)}</span>
               </div>
               {packagingCost > 0 && (
                 <div className="flex justify-between text-xs text-slate-400">
                   <span>Packaging:</span>
-                  <span>${packagingCost.toFixed(2)}</span>
+                  <span>{currencySymbol}{packagingCost.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-medium text-white mt-1 pt-1 border-t border-slate-600">
                 <span>Total Shipping:</span>
-                <span>${totalShippingCost.toFixed(2)}</span>
+                <span>{currencySymbol}{totalShippingCost.toFixed(2)}</span>
               </div>
             </div>
           )}
@@ -944,8 +985,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               <div className="flex items-center">
                 <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg w-full">
                   <div className="text-xs text-orange-400">Marketplace Fee</div>
-                  <div className="text-lg font-semibold text-orange-400">${marketplaceFee.toFixed(2)}</div>
-                  <div className="text-xs text-slate-500">Deducted from ${sellingPrice.toFixed(2)} sale</div>
+                  <div className="text-lg font-semibold text-orange-400">{currencySymbol}{marketplaceFee.toFixed(2)}</div>
+                  <div className="text-xs text-slate-500">Deducted from {currencySymbol}{sellingPrice.toFixed(2)} sale</div>
                 </div>
               </div>
             )}
@@ -978,7 +1019,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div>
             <label className="block text-sm font-medium text-white mb-1">Target Profit</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{currencySymbol}</span>
               <input
                 type="number"
                 step="0.01"
@@ -995,7 +1036,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div>
             <label className="block text-sm font-medium text-white mb-1">Selling Price</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{currencySymbol}</span>
               <input
                 type="number"
                 step="0.01"
@@ -1014,22 +1055,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div className="mt-6 p-4 bg-slate-700/50 rounded-lg">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-white">${trueCost.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-white">{currencySymbol}{trueCost.toFixed(2)}</div>
                 <div className="text-xs text-slate-400">True Cost</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-purple-400">${sellingPrice.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-purple-400">{currencySymbol}{sellingPrice.toFixed(2)}</div>
                 <div className="text-xs text-slate-400">Sell Price</div>
               </div>
               {marketplaceFee > 0 && (
                 <div>
-                  <div className="text-2xl font-bold text-orange-400">-${marketplaceFee.toFixed(2)}</div>
+                  <div className="text-2xl font-bold text-orange-400">-{currencySymbol}{marketplaceFee.toFixed(2)}</div>
                   <div className="text-xs text-slate-400">Platform Fee</div>
                 </div>
               )}
               <div>
                 <div className={`text-2xl font-bold ${(targetProfit - marketplaceFee) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  ${(targetProfit - marketplaceFee).toFixed(2)}
+                  {currencySymbol}{(targetProfit - marketplaceFee).toFixed(2)}
                 </div>
                 <div className="text-xs text-slate-400">Net Profit</div>
               </div>
@@ -1042,13 +1083,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
             {marketplaceFee > 0 && (targetProfit - marketplaceFee) < targetProfit && (
               <p className="text-xs text-orange-400 text-center mt-3">
-                Marketplace fees reduce your profit by ${marketplaceFee.toFixed(2)} ({((marketplaceFee / sellingPrice) * 100).toFixed(1)}% of sale)
+                Marketplace fees reduce your profit by {currencySymbol}{marketplaceFee.toFixed(2)} ({((marketplaceFee / sellingPrice) * 100).toFixed(1)}% of sale)
               </p>
             )}
             {authorMinPrice > 0 && sellingPrice < authorMinPrice && (
               <div className="mt-3 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
                 <p className="text-sm text-red-400 text-center font-medium">
-                  Warning: Your selling price (${sellingPrice.toFixed(2)}) is below the author's minimum price (${authorMinPrice.toFixed(2)})
+                  Warning: Your selling price ({currencySymbol}{sellingPrice.toFixed(2)}) is below the author's minimum price ({currencySymbol}{authorMinPrice.toFixed(2)})
                 </p>
               </div>
             )}
@@ -1065,58 +1106,58 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Per-Unit Costs (Consumables)</div>
           <div className="flex justify-between text-slate-300">
             <span>Filament</span>
-            <span className="font-mono">${costs.filament.toFixed(2)}</span>
+            <span className="font-mono">{currencySymbol}{costs.filament.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-slate-300">
             <span>Electricity</span>
-            <span className="font-mono">${costs.electricity.toFixed(2)}</span>
+            <span className="font-mono">{currencySymbol}{costs.electricity.toFixed(2)}</span>
           </div>
           {costs.materials > 0 && (
             <div className="flex justify-between text-slate-300">
               <span>Post-Processing Materials</span>
-              <span className="font-mono">${costs.materials.toFixed(2)}</span>
+              <span className="font-mono">{currencySymbol}{costs.materials.toFixed(2)}</span>
             </div>
           )}
           {costs.labor > 0 && (
             <div className="flex justify-between text-slate-300">
-              <span>Labor ({prepTimeMinutes + postProcessingMinutes} min @ ${laborHourlyRate}/hr)</span>
-              <span className="font-mono">${costs.labor.toFixed(2)}</span>
+              <span>Labor ({prepTimeMinutes + postProcessingMinutes} min @ {currencySymbol}{laborHourlyRate}/hr)</span>
+              <span className="font-mono">{currencySymbol}{costs.labor.toFixed(2)}</span>
             </div>
           )}
           {shippingCost > 0 && (
             <div className="flex justify-between text-slate-300">
               <span>Shipping ({shippingMethod.replace('_', ' ')})</span>
-              <span className="font-mono">${shippingCost.toFixed(2)}</span>
+              <span className="font-mono">{currencySymbol}{shippingCost.toFixed(2)}</span>
             </div>
           )}
           {packagingCost > 0 && (
             <div className="flex justify-between text-slate-300">
               <span>Packaging Materials</span>
-              <span className="font-mono">${packagingCost.toFixed(2)}</span>
+              <span className="font-mono">{currencySymbol}{packagingCost.toFixed(2)}</span>
             </div>
           )}
           {modelCostPerUnit && modelCost > 0 && (
             <div className="flex justify-between text-purple-400">
               <span>Model License (per unit)</span>
-              <span className="font-mono">${modelCost.toFixed(2)}</span>
+              <span className="font-mono">{currencySymbol}{modelCost.toFixed(2)}</span>
             </div>
           )}
 
           <div className="border-t border-slate-700 pt-2 mt-2">
             <div className="flex justify-between text-slate-300">
               <span>Subtotal</span>
-              <span className="font-mono">${(costs.subtotal + totalShippingCost).toFixed(2)}</span>
+              <span className="font-mono">{currencySymbol}{(costs.subtotal + totalShippingCost).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-yellow-400">
               <span>+ Failure Adjustment ({failureRate}%)</span>
-              <span className="font-mono">+${(costs.failureAdjusted - costs.subtotal).toFixed(2)}</span>
+              <span className="font-mono">+{currencySymbol}{(costs.failureAdjusted - costs.subtotal).toFixed(2)}</span>
             </div>
           </div>
 
           <div className="border-t border-slate-600 pt-3 mt-3">
             <div className="flex justify-between text-white text-lg font-semibold">
               <span>Cost Per Unit</span>
-              <span className="font-mono">${trueCost.toFixed(2)}</span>
+              <span className="font-mono">{currencySymbol}{trueCost.toFixed(2)}</span>
             </div>
             <div className="text-xs text-slate-500 mt-1">
               This is what you spend each time you print this item
@@ -1131,10 +1172,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   <div className="text-sm text-orange-400">Marketplace Fee ({marketplace.replace('_', ' ')})</div>
                   <div className="text-xs text-slate-500">Deducted from your sale revenue, not added to cost</div>
                 </div>
-                <div className="text-lg font-semibold text-orange-400">-${marketplaceFee.toFixed(2)}</div>
+                <div className="text-lg font-semibold text-orange-400">-{currencySymbol}{marketplaceFee.toFixed(2)}</div>
               </div>
               <div className="text-xs text-slate-400 mt-2">
-                You receive: ${(sellingPrice - marketplaceFee).toFixed(2)} | Net profit: ${(sellingPrice - marketplaceFee - trueCost).toFixed(2)}
+                You receive: {currencySymbol}{(sellingPrice - marketplaceFee).toFixed(2)} | Net profit: {currencySymbol}{(sellingPrice - marketplaceFee - trueCost).toFixed(2)}
               </div>
             </div>
           )}
@@ -1147,25 +1188,25 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               {fixedCosts.depreciation > 0 && (
                 <div className="flex justify-between text-slate-300 mb-2">
                   <span>Printer Depreciation ({printTimeHours}h print)</span>
-                  <span className="font-mono">${fixedCosts.depreciation.toFixed(2)}</span>
+                  <span className="font-mono">{currencySymbol}{fixedCosts.depreciation.toFixed(2)}</span>
                 </div>
               )}
               {fixedCosts.nozzleWear > 0 && (
                 <div className="flex justify-between text-slate-300 mb-2">
                   <span>Nozzle Wear</span>
-                  <span className="font-mono">${fixedCosts.nozzleWear.toFixed(2)}</span>
+                  <span className="font-mono">{currencySymbol}{fixedCosts.nozzleWear.toFixed(2)}</span>
                 </div>
               )}
               {modelCost > 0 && !modelCostPerUnit && (
                 <div className="flex justify-between text-slate-300 mb-2">
                   <span>Model/STL Cost (one-time)</span>
-                  <span className="font-mono">${modelCost.toFixed(2)}</span>
+                  <span className="font-mono">{currencySymbol}{modelCost.toFixed(2)}</span>
                 </div>
               )}
 
               <div className="flex justify-between text-white font-semibold pt-2 border-t border-slate-600">
                 <span>Total Fixed Costs</span>
-                <span className="font-mono">${fixedCosts.total.toFixed(2)}</span>
+                <span className="font-mono">{currencySymbol}{fixedCosts.total.toFixed(2)}</span>
               </div>
               <div className="text-xs text-slate-500 mt-2">
                 These costs are spread across all units sold. The more you sell, the less each unit carries.
@@ -1180,7 +1221,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 <div>
                   <div className="text-sm text-blue-300 font-medium">Break-even Units</div>
                   <div className="text-xs text-slate-400 mt-0.5">
-                    Sell this many to recover ${fixedCosts.total.toFixed(2)} in fixed costs
+                    Sell this many to recover {currencySymbol}{fixedCosts.total.toFixed(2)} in fixed costs
                   </div>
                 </div>
                 <div className="text-4xl font-bold text-blue-400">
@@ -1189,12 +1230,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               </div>
               {breakEvenInfo.profitPerUnit > 0 && (
                 <div className="text-xs text-slate-400 mt-2">
-                  ${breakEvenInfo.profitPerUnit.toFixed(2)} profit per unit at ${sellingPrice.toFixed(2)} selling price
+                  {currencySymbol}{breakEvenInfo.profitPerUnit.toFixed(2)} profit per unit at {currencySymbol}{sellingPrice.toFixed(2)} selling price
                 </div>
               )}
               {breakEvenInfo.profitPerUnit <= 0 && (
                 <div className="text-xs text-red-400 mt-2">
-                  Warning: Selling price is below cost. You lose ${Math.abs(breakEvenInfo.profitPerUnit).toFixed(2)} per unit.
+                  Warning: Selling price is below cost. You lose {currencySymbol}{Math.abs(breakEvenInfo.profitPerUnit).toFixed(2)} per unit.
                 </div>
               )}
             </div>

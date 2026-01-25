@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig } from './hooks/useDatabase';
+import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees } from './hooks/useDatabase';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
 import { CostCalculator } from './components/CostCalculator';
 import { JobsManager } from './components/JobsManager';
 import { UserProfileModal } from './components/UserProfileModal';
+import { SettingsModal } from './components/SettingsModal';
+import { NewBadge } from './components/NewBadge';
 
 type Tab = 'calculator' | 'jobs' | 'materials' | 'settings';
 
@@ -30,6 +32,7 @@ function useIsStandalone(): boolean {
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('calculator');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingJob, setEditingJob] = useState<PrintJob | null>(null);
   const isStandalone = useIsStandalone();
 
@@ -87,7 +90,14 @@ function App() {
     isLoading: shippingLoading,
   } = useShippingConfig();
 
-  const isLoading = assetsLoading || settingsLoading || jobsLoading || printersLoading || instancesLoading || profileLoading || shippingLoading;
+  const {
+    fees: marketplaceFees,
+    updateFees: updateMarketplaceFees,
+    resetToDefaults: resetMarketplaceFees,
+    isLoading: feesLoading,
+  } = useMarketplaceFees();
+
+  const isLoading = assetsLoading || settingsLoading || jobsLoading || printersLoading || instancesLoading || profileLoading || shippingLoading || feesLoading;
 
   // Handle saving a job and updating printer hours
   const handleSaveJob = async (job: PrintJob, printHours: number) => {
@@ -144,7 +154,18 @@ function App() {
                 <span>Back to site</span>
               </Link>
             )}
-<button
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="relative p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
+              title="Settings"
+            >
+              <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <NewBadge feature="settings-modal" className="absolute -top-1 -right-1" />
+            </button>
+            <button
               onClick={() => setShowProfileModal(true)}
               className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
               title="User Settings"
@@ -162,9 +183,19 @@ function App() {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         userProfile={userProfile}
-        shippingConfig={shippingConfig}
         onProfileChange={updateUserProfile}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        shippingConfig={shippingConfig}
+        marketplaceFees={marketplaceFees}
+        userCurrency={userProfile.currency}
         onShippingChange={updateShippingConfig}
+        onMarketplaceFeesChange={updateMarketplaceFees}
+        onResetMarketplaceFees={resetMarketplaceFees}
       />
 
       {/* Tabs */}

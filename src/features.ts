@@ -5,6 +5,12 @@ export const featureReleases: Record<string, Date> = {
   'author-min-price': new Date('2026-01-24'),
   'marketplace-fees': new Date('2026-01-20'),
   'shipping-calculator': new Date('2026-01-15'),
+  'settings-modal': new Date('2026-01-25'),
+  'configurable-marketplace-fees': new Date('2026-01-25'),
+  'custom-carriers': new Date('2026-01-25'),
+  'custom-marketplaces': new Date('2026-01-25'),
+  'multi-currency': new Date('2026-01-25'),
+  'distance-units': new Date('2026-01-25'),
   // Add new features here with their release date
 };
 
