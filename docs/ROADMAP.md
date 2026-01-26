@@ -231,3 +231,174 @@ VitePWA({
 - [ ] Add E2E tests for critical flows
 - [ ] Performance optimization for large job lists
 - [ ] Database migration strategy for schema changes
+
+---
+
+## User Feedback (v1.1)
+
+### Positive
+- Users love the printer cost recovery feature
+
+### Issues Reported
+- [ ] **Mobile view is horrible** - entire site needs mobile-first redesign
+- [ ] **Inconsistent styling** - elements vary across the app, needs styling pass
+- [ ] **Performance optimization needed** - app needs optimization pass
+
+---
+
+## UI/UX Improvement Plan
+
+### Research Summary (2025-2026 Best Practices)
+
+Based on research from [UXPin](https://www.uxpin.com/studio/blog/responsive-design-best-practices/), [UIDesignz](https://uidesignz.com/blogs/mobile-ui-design-best-practices), [SPDLoad](https://spdload.com/blog/mobile-app-ui-ux-design-trends/), and [F9 Finance](https://www.f9finance.com/dashboard-design-best-practices/):
+
+#### Mobile-First Principles
+1. **Start at 320px** - Design for smallest viewport first, scale up
+2. **Touch targets minimum 44-48px** - Apple recommends 44x44, Google 48x48
+3. **Thumb-friendly zones** - Critical actions within easy thumb reach
+4. **Bottom navigation** - Move key actions to bottom bar on mobile
+5. **Progressive disclosure** - Show only what's necessary, reveal on demand
+
+#### Layout & Visual Hierarchy
+1. **Card-based layouts** - Consistent treatment for all data modules
+2. **KPIs top-left** - Eye naturally starts there
+3. **3-5 color palette max** - 1 primary, 1-2 secondary, 1 accent, neutrals
+4. **Consistent spacing system** - Don't mix p-4 and p-6 randomly
+5. **Clear visual hierarchy** - Font sizes/weights guide attention
+
+#### Financial/Calculator Dashboard Patterns
+1. **Summary cards as entry points** - Click to expand/drill down
+2. **Filters for dimensions** - Date range, category, printer, etc.
+3. **Line charts for trends** - Keep simple, label axes, no 3D
+4. **Color-coded status** - At-a-glance understanding
+5. **Skeleton screens** - Show structure while loading
+
+#### Component Consistency
+1. **Input fields** - Same height, padding, border radius everywhere
+2. **Buttons** - Primary, secondary, ghost variants defined once
+3. **Cards** - Consistent title position, padding, shadows
+4. **Spacing scale** - Use Tailwind's scale consistently (4, 6, 8, not random)
+
+### Implementation Priorities
+
+#### Phase 1: Site Structure & Navigation
+- [ ] **Add site footer** with links to:
+  - FAQs
+  - Roadmap / What's New
+  - Knowledge Base / Help
+  - Privacy Policy / Terms
+  - Version number
+  - Social links (GitHub, Discord?)
+- [ ] Create placeholder pages for footer links
+- [ ] Consider help/support modal or page
+
+#### Phase 2: Design System Consistency
+- [ ] Define color palette tokens (primary, secondary, accent, semantic)
+- [ ] Create consistent input component styles
+- [ ] Standardize button variants (primary, secondary, ghost, danger)
+- [ ] Define card component with consistent padding/shadows
+- [ ] Create consistent section headers
+
+#### Phase 3: Dashboard Improvements
+- [ ] Add skeleton loading states
+- [ ] Implement collapsible sections for mobile
+- [ ] Add summary cards with drill-down capability
+- [ ] Improve data visualization (charts for trends)
+
+#### Phase 4: Performance Optimization
+- [ ] Lazy load heavy components
+- [ ] Implement virtualization for long lists (jobs, assets)
+- [ ] Code-split by route/tab
+- [ ] Optimize bundle size (currently 514KB, target <300KB)
+- [ ] Add loading states and skeleton screens
+
+#### Phase 5: Mobile Responsiveness
+- [ ] Audit all components for mobile breakpoints
+- [ ] Add `flex-col sm:flex-row` patterns for stacked layouts
+- [ ] Implement bottom navigation for mobile
+- [ ] Ensure touch targets are 44px minimum
+- [ ] Test on actual devices (iPhone SE, iPhone 14, iPad)
+
+### Recommended Component Libraries
+
+For consistent, accessible Tailwind components:
+- **[Flowbite](https://flowbite.com/)** - Free, MIT licensed, good mobile patterns
+- **[Tailwind Plus](https://tailwindcss.com/plus)** - Official Tailwind components (paid)
+- **[Uiverse](https://uiverse.io/cards)** - Open-source card gallery
+- **[TW Elements](https://tw-elements.com/)** - Free Bootstrap-like components
+
+### Key Breakpoints (Tailwind)
+```
+sm: 640px   // Landscape phones, small tablets
+md: 768px   // Tablets
+lg: 1024px  // Small laptops
+xl: 1280px  // Desktops
+2xl: 1536px // Large screens
+```
+
+### Mobile-First Class Pattern
+```tsx
+// Stack on mobile, row on tablet+
+className="flex flex-col sm:flex-row"
+
+// Full width on mobile, half on tablet+
+className="w-full md:w-1/2"
+
+// Hide on mobile, show on desktop
+className="hidden lg:block"
+
+// Padding that scales
+className="p-4 md:p-6 lg:p-8"
+```
+
+---
+
+## Future Monetization: ERP/Business Management Tier (Paid)
+
+### Context
+User feedback (Ken Pauley, Jan 2026) suggested integrating full order management functionality similar to his "MTNEARZ Business Manager" tool. This would transform 3DCoster from a cost calculator into a full 3D print business ERP system.
+
+### Core Features (Priced Tier)
+- **Order Management**
+  - Sync with Square, Shopify, Etsy APIs
+  - Order status tracking (Open, Completed, Canceled, Draft)
+  - Customer information management
+  - Order search and filtering
+
+- **Financials Per Order**
+  - Auto-populate COGS from 3DCoster calculations
+  - Gross Sales, Tax, Platform Fees, Net Sales
+  - Shipping Cost, Fully Landed Cost
+  - Gross Profit, Net Profit, Margins per order
+
+- **Line Item Tracking**
+  - Products per order with materials/colors
+  - Link to 3DCoster job calculations
+  - Inventory deduction
+
+- **Fulfillment**
+  - Print packing slip generation
+  - Carrier integration
+  - Tracking number management
+
+- **Dashboard & Reporting**
+  - Total orders, YTD, quarterly, last 30 days
+  - Revenue reports
+  - Profit margin analysis
+  - Best-selling products
+
+### Why Paid Tier
+- Significantly more complex (API integrations, order state management)
+- Ongoing maintenance for third-party API changes
+- Server costs for syncing (if cloud-based)
+- Target audience: high-volume sellers (100+ orders/month)
+
+### Pricing Considerations
+- Free tier: 3DCoster core (cost calculator) - unlimited
+- Pro tier: ERP features - $X/month or $X/year
+- Consider usage-based (orders/month) vs flat rate
+
+### Implementation Notes
+- Would require backend for API auth and order syncing
+- Consider Supabase or similar for quick MVP
+- Mobile app would become more valuable at this scale

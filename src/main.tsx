@@ -7,6 +7,8 @@ import { LandingPage } from './pages/LandingPage.tsx'
 import { DownloadPage } from './pages/DownloadPage.tsx'
 import { FeaturesPage } from './pages/FeaturesPage.tsx'
 import { FeedbackPage } from './pages/FeedbackPage.tsx'
+import { FAQPage } from './pages/FAQPage.tsx'
+import { ChangelogPage } from './pages/ChangelogPage.tsx'
 
 function Root() {
   return (
@@ -28,6 +30,8 @@ function Root() {
             <Route path="/download" element={<DownloadPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/changelog" element={<ChangelogPage />} />
           </>
         )}
       </Routes>

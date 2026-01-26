@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Footer } from '../components/Footer';
 
 export function LandingPage() {
   return (
@@ -282,27 +283,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-slate-800">
-        <div className="max-w-6xl mx-auto flex items-center justify-center gap-6">
-            <a
-              href="https://ashlaindustries.ca"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-slate-500 hover:text-slate-300 text-sm transition-colors"
-            >
-              ashlaindustries.ca
-            </a>
-            <a
-              href="https://github.com/Waarangel/3dcoster"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-slate-500 hover:text-slate-300 text-sm transition-colors"
-            >
-              GitHub
-            </a>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
