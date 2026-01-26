@@ -402,3 +402,157 @@ User feedback (Ken Pauley, Jan 2026) suggested integrating full order management
 - Would require backend for API auth and order syncing
 - Consider Supabase or similar for quick MVP
 - Mobile app would become more valuable at this scale
+
+---
+
+## Desktop App Release Process
+
+### Version Files to Update
+When releasing a new version, update these files:
+
+1. **`src/components/UpdateBanner.tsx`** - `APP_VERSION` constant
+   ```ts
+   export const APP_VERSION = '1.1.0';
+   ```
+
+2. **`src-tauri/tauri.conf.json`** - `version` field
+   ```json
+   {
+     "version": "1.1.0"
+   }
+   ```
+
+3. **`src-tauri/Cargo.toml`** - `version` field
+   ```toml
+   [package]
+   version = "1.1.0"
+   ```
+
+### Release Steps
+
+1. **Update version numbers** in all three files above
+2. **Commit changes**:
+   ```bash
+   git add .
+   git commit -m "chore: Bump version to 1.1.0"
+   git push origin main
+   ```
+3. **Create and push a tag**:
+   ```bash
+   git tag v1.1.0
+   git push origin v1.1.0
+   ```
+4. **GitHub Actions builds automatically**:
+   - Windows: NSIS `.exe` installer
+   - macOS Apple Silicon: `_aarch64.dmg`
+   - macOS Intel: `_x64.dmg`
+5. **Release published** with all artifacts attached
+
+### How Users Get Updates
+
+**Web App (Vercel)**:
+- Updates deploy automatically when pushing to `main`
+- Users get new version on next page load (PWA service worker)
+
+**Desktop App (Tauri)**:
+- `UpdateBanner` component checks GitHub releases API on startup
+- If newer version exists, shows dismissable banner with download link
+- User clicks to download page, installs new version manually
+- Dismissed version stored in localStorage (won't nag again for same version)
+
+### GitHub Actions Workflow
+
+Located at `.github/workflows/release.yml`:
+- **Trigger**: Push tags matching `v*` (e.g., `v1.0.0`, `v1.1.0`)
+- **Platforms**: Windows, macOS (Intel + Apple Silicon)
+- **Output**: GitHub Release with download assets
+
+### Download Page
+
+`src/pages/DownloadPage.tsx` dynamically fetches latest release:
+- Queries GitHub releases API for download URLs
+- Shows current version number
+- Falls back to hardcoded v1.0.0 URLs if API fails
+- Detects user's platform (Windows/Mac) and highlights recommended download
+
+---
+
+## Analytics & Tracking
+
+### Vercel Analytics
+Added `@vercel/analytics/react` to track:
+- Page views across marketing site and app
+- User engagement metrics
+- Geographic distribution
+
+Implementation in `src/main.tsx`:
+```tsx
+import { Analytics } from '@vercel/analytics/react'
+// ...
+<StrictMode>
+  <Root />
+  <Analytics />
+</StrictMode>
+```
+
+**Note**: No login system means no user-level tracking. Analytics is aggregate only.
+
+---
+
+## Shared UI Components
+
+Located in `src/components/ui/`:
+
+| Component | Props | Usage |
+|-----------|-------|-------|
+| `Button` | `variant`, `btnSize`, `fullWidth` | Primary actions |
+| `ButtonLink` | Same as Button | Link styled as button |
+| `Input` | `inputSize` | Form text inputs |
+| `Select` | `selectSize` | Dropdown selects |
+| `Textarea` | `textareaSize` | Multi-line inputs |
+| `Card` | `padding` | Content containers |
+
+### Variants
+- **Button variants**: `primary`, `secondary`, `success`, `danger`, `ghost`
+- **Sizes**: `sm`, `md`, `lg`
+
+### Note on Size Props
+TypeScript conflicts with HTML `size` attribute, so custom props use:
+- `btnSize` (not `size`) for Button
+- `inputSize` for Input
+- `selectSize` for Select
+- `textareaSize` for Textarea
+
+---
+
+## Global Header Component
+
+`src/components/Header.tsx` provides consistent navigation across all marketing pages:
+- Logo with home link
+- Features link
+- Download link
+- "Go to App" button
+
+Applied to: LandingPage, FeaturesPage, DownloadPage, FAQPage, ChangelogPage, FeedbackPage
+
+---
+
+## macOS Gatekeeper Issue
+
+### Problem
+Users on macOS see "3DCoster is damaged and can't be opened" message because the app isn't signed with an Apple Developer certificate ($99/year).
+
+### Solution (Documented)
+1. **FAQ entry** in `src/pages/FAQPage.tsx` explains the fix
+2. **Download page note** warns Mac users before download
+
+### User Fix
+Right-click the app → Select "Open" → Click "Open" in dialog
+
+Or run in Terminal:
+```bash
+xattr -cr /Applications/3DCoster.app
+```
+
+### Future
+Consider Apple Developer Program enrollment if user base grows significantly
