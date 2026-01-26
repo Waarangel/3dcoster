@@ -13,6 +13,7 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.6.1",
     "dexie": "^4.2.1",
     "dexie-react-hooks": "^4.2.0",
     "react": "^19.2.0",

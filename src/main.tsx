@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.tsx'
 import { LandingPage } from './pages/LandingPage.tsx'
@@ -42,5 +43,6 @@ function Root() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Root />
+    <Analytics />
   </StrictMode>,
 )
