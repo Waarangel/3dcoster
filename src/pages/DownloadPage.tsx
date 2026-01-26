@@ -5,6 +5,18 @@ import { Footer } from '../components/Footer';
 
 type Platform = 'windows' | 'mac' | 'unknown';
 
+interface ReleaseAsset {
+  name: string;
+  browser_download_url: string;
+}
+
+interface ReleaseInfo {
+  version: string;
+  windowsUrl: string | null;
+  macSiliconUrl: string | null;
+  macIntelUrl: string | null;
+}
+
 function detectPlatform(): Platform {
   const userAgent = navigator.userAgent.toLowerCase();
   if (userAgent.includes('win')) return 'windows';
@@ -14,10 +26,62 @@ function detectPlatform(): Platform {
 
 export function DownloadPage() {
   const [platform, setPlatform] = useState<Platform>('unknown');
+  const [release, setRelease] = useState<ReleaseInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setPlatform(detectPlatform());
+
+    async function fetchLatestRelease() {
+      try {
+        const response = await fetch(
+          'https://api.github.com/repos/Waarangel/3dcoster/releases/latest'
+        );
+        if (!response.ok) {
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        const assets: ReleaseAsset[] = data.assets || [];
+        const version = data.tag_name?.replace('v', '') || '1.0.0';
+
+        // Find download URLs by file extension patterns
+        const windowsAsset = assets.find(a => a.name.endsWith('.exe') || a.name.endsWith('-setup.exe'));
+        const macSiliconAsset = assets.find(a => a.name.includes('aarch64') && a.name.endsWith('.dmg'));
+        const macIntelAsset = assets.find(a => a.name.includes('x64') && a.name.endsWith('.dmg'));
+
+        setRelease({
+          version,
+          windowsUrl: windowsAsset?.browser_download_url || null,
+          macSiliconUrl: macSiliconAsset?.browser_download_url || null,
+          macIntelUrl: macIntelAsset?.browser_download_url || null,
+        });
+      } catch {
+        // Silently fail - fallback links will be used
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLatestRelease();
   }, []);
+
+  // Fallback URLs if API fails (update these when releasing)
+  const fallbackVersion = '1.0.0';
+  const fallbackUrls = {
+    windows: `https://github.com/Waarangel/3dcoster/releases/download/v${fallbackVersion}/3DCoster_${fallbackVersion}_x64-setup.exe`,
+    macSilicon: `https://github.com/Waarangel/3dcoster/releases/download/v${fallbackVersion}/3DCoster_${fallbackVersion}_aarch64.dmg`,
+    macIntel: `https://github.com/Waarangel/3dcoster/releases/download/v${fallbackVersion}/3DCoster_${fallbackVersion}_x64.dmg`,
+  };
+
+  const downloadUrls = {
+    windows: release?.windowsUrl || fallbackUrls.windows,
+    macSilicon: release?.macSiliconUrl || fallbackUrls.macSilicon,
+    macIntel: release?.macIntelUrl || fallbackUrls.macIntel,
+  };
+
+  const displayVersion = release?.version || fallbackVersion;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
@@ -31,6 +95,11 @@ export function DownloadPage() {
             <p className="text-slate-400 text-lg">
               Get the desktop app for the best experience. Works offline, keeps your data safe.
             </p>
+            {!loading && release && (
+              <p className="text-slate-500 text-sm mt-2">
+                Latest version: v{displayVersion}
+              </p>
+            )}
           </div>
 
           {/* Download Cards */}
@@ -60,7 +129,7 @@ export function DownloadPage() {
                   </div>
                 </div>
                 <a
-                  href="https://github.com/Waarangel/3dcoster/releases/latest/download/3DCoster_1.0.0_x64-setup.exe"
+                  href={downloadUrls.windows}
                   className="block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
                 >
                   Download for Windows
@@ -98,13 +167,13 @@ export function DownloadPage() {
                   </div>
                 </div>
                 <a
-                  href="https://github.com/Waarangel/3dcoster/releases/latest/download/3DCoster_1.0.0_aarch64.dmg"
+                  href={downloadUrls.macSilicon}
                   className="block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-center text-sm"
                 >
                   Download for Mac Silicon
                 </a>
                 <a
-                  href="https://github.com/Waarangel/3dcoster/releases/latest/download/3DCoster_1.0.0_x64.dmg"
+                  href={downloadUrls.macIntel}
                   className="block w-full py-2 mt-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors font-medium text-center text-xs"
                 >
                   Download for Mac Intel

@@ -20,7 +20,7 @@ jobs:
             args: '--target x86_64-apple-darwin'
             tauri_platform: 'darwin'
           - platform: 'windows-latest'
-            args: ''
+            args: '--bundles nsis'
             tauri_platform: 'windows'
 
     runs-on: ${{ matrix.platform }}
