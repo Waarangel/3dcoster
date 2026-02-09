@@ -239,9 +239,9 @@ export function ChangelogPage() {
                         if (line.startsWith('- ') || line.startsWith('* ')) {
                           const text = line.replace(/^[-*]\s*/, '');
                           return (
-                            <div key={lineIndex} className="flex items-start gap-2 text-slate-300 ml-2">
-                              <span className="text-slate-500 mt-1.5">•</span>
-                              <span>{renderInlineMarkdown(text)}</span>
+                            <div key={lineIndex} className="flex items-baseline gap-3 text-slate-300 ml-4">
+                              <span className="text-blue-400 text-sm shrink-0">▸</span>
+                              <span className="text-sm">{renderInlineMarkdown(text)}</span>
                             </div>
                           );
                         }
