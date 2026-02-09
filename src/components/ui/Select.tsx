@@ -9,9 +9,9 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'siz
 }
 
 const sizeStyles: Record<SelectSize, string> = {
-  sm: 'px-2 py-1.5 text-sm',
-  md: 'px-3 py-2 text-sm',
-  lg: 'px-4 py-3 text-base',
+  sm: 'px-2 py-1.5 text-base md:text-sm min-h-[44px]',
+  md: 'px-3 py-2 text-base md:text-sm min-h-[44px]',
+  lg: 'px-4 py-3 text-base min-h-[44px]',
 };
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(

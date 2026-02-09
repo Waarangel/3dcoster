@@ -117,11 +117,11 @@ function App() {
     setEditingJob(null);
   };
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'calculator', label: 'Cost Calculator' },
-    { id: 'jobs', label: 'My Jobs' },
-    { id: 'materials', label: 'Asset Library' },
-    { id: 'settings', label: 'Printer Settings' },
+  const tabs: { id: Tab; label: string; shortLabel: string }[] = [
+    { id: 'calculator', label: 'Cost Calculator', shortLabel: 'Calculator' },
+    { id: 'jobs', label: 'My Jobs', shortLabel: 'Jobs' },
+    { id: 'materials', label: 'Asset Library', shortLabel: 'Assets' },
+    { id: 'settings', label: 'Printer Settings', shortLabel: 'Printers' },
   ];
 
   if (isLoading) {
@@ -140,28 +140,28 @@ function App() {
       {/* Header */}
       <header className="bg-slate-800 border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src="/pwa-192x192.png" alt="3DCoster" className="w-12 h-12 rounded-xl" />
+          <div className="flex items-center gap-2 sm:gap-4">
+            <img src="/pwa-192x192.png" alt="3DCoster" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl" />
             <div>
-              <h1 className="text-2xl font-bold text-white">3D Print Cost Calculator</h1>
-              <p className="text-slate-400 text-sm mt-1">Calculate your true cost per print</p>
+              <h1 className="text-lg md:text-2xl font-bold text-white">3D Print Cost Calculator</h1>
+              <p className="hidden sm:block text-slate-400 text-sm mt-1">Calculate your true cost per print</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {!isStandalone && (
               <Link
                 to="/"
-                className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 transition-colors text-sm"
+                className="flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200 transition-colors text-sm min-w-[44px] min-h-[44px]"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span>Back to site</span>
+                <span className="hidden sm:inline">Back to site</span>
               </Link>
             )}
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="relative p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
+              className="relative p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="Settings"
             >
               <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,7 +172,7 @@ function App() {
             </button>
             <button
               onClick={() => setShowProfileModal(true)}
-              className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
+              className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="User Settings"
             >
               <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,18 +206,19 @@ function App() {
       {/* Tabs */}
       <div className="bg-slate-800/50 border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-nowrap">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap min-h-[44px] flex items-center ${
                   activeTab === tab.id
                     ? 'text-blue-400'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                {tab.label}
+                <span className="sm:hidden">{tab.shortLabel}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
                 {activeTab === tab.id && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
                 )}

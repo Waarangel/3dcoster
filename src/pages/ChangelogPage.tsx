@@ -39,6 +39,38 @@ function parseMarkdownBody(body: string): string[] {
     .filter(line => line.length > 0);
 }
 
+// Parse inline markdown: **bold**, `code`, [link](url)
+function renderInlineMarkdown(text: string): (string | JSX.Element)[] {
+  const parts: (string | JSX.Element)[] = [];
+  // Match **bold**, `code`, and [text](url)
+  const regex = /(\*\*(.+?)\*\*)|(`(.+?)`)|(\[(.+?)\]\((.+?)\))/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    if (match[1]) {
+      // **bold**
+      parts.push(<strong key={match.index} className="text-white font-semibold">{match[2]}</strong>);
+    } else if (match[3]) {
+      // `code`
+      parts.push(<code key={match.index} className="bg-slate-700 px-1.5 py-0.5 rounded text-blue-300 text-xs">{match[4]}</code>);
+    } else if (match[5]) {
+      // [text](url)
+      parts.push(<a key={match.index} href={match[7]} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">{match[6]}</a>);
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : [text];
+}
+
 export function ChangelogPage() {
   const [releases, setReleases] = useState<ParsedRelease[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,12 +219,20 @@ export function ChangelogPage() {
                   {release.body && (
                     <div className="prose prose-invert prose-sm max-w-none">
                       {parseMarkdownBody(release.body).map((line, lineIndex) => {
-                        // Handle headers
-                        if (line.startsWith('## ')) {
+                        // Handle h2 headers
+                        if (line.startsWith('## ') && !line.startsWith('### ')) {
                           return (
                             <h4 key={lineIndex} className="text-white font-medium mt-4 mb-2">
-                              {line.replace('## ', '')}
+                              {renderInlineMarkdown(line.replace('## ', ''))}
                             </h4>
+                          );
+                        }
+                        // Handle h3 headers
+                        if (line.startsWith('### ')) {
+                          return (
+                            <h5 key={lineIndex} className="text-slate-200 font-medium mt-3 mb-1.5 text-sm">
+                              {renderInlineMarkdown(line.replace('### ', ''))}
+                            </h5>
                           );
                         }
                         // Handle list items
@@ -201,14 +241,14 @@ export function ChangelogPage() {
                           return (
                             <div key={lineIndex} className="flex items-start gap-2 text-slate-300 ml-2">
                               <span className="text-slate-500 mt-1.5">•</span>
-                              <span>{text}</span>
+                              <span>{renderInlineMarkdown(text)}</span>
                             </div>
                           );
                         }
                         // Regular text
                         return (
                           <p key={lineIndex} className="text-slate-400 mb-2">
-                            {line}
+                            {renderInlineMarkdown(line)}
                           </p>
                         );
                       })}

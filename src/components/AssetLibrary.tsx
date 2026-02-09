@@ -247,20 +247,20 @@ export function AssetLibrary({
 
   return (
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <h2 className="text-lg font-semibold text-white">Asset Library</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           {!isAdding && (
             <>
               <button
                 onClick={handleReset}
-                className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
+                className="flex-1 sm:flex-none px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
               >
                 Reset {filterCategory === 'all' ? 'All' : getCategoryLabel(filterCategory)}
               </button>
               <button
                 onClick={startAdding}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                className="flex-1 sm:flex-none px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
                 + Add {filterCategory === 'all' ? 'Asset' : getCategoryLabel(filterCategory).replace(/s$/, '')}
               </button>
@@ -273,7 +273,7 @@ export function AssetLibrary({
       <div className="flex gap-2 mb-4 flex-wrap">
         <button
           onClick={() => handleFilterChange('all')}
-          className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+          className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors ${
             filterCategory === 'all'
               ? 'bg-slate-600 text-white'
               : 'bg-slate-700 text-slate-400 hover:text-white'
@@ -285,7 +285,7 @@ export function AssetLibrary({
           <button
             key={cat}
             onClick={() => handleFilterChange(cat)}
-            className={`px-3 py-1 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
+            className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
               filterCategory === cat
                 ? 'bg-slate-600 text-white'
                 : 'bg-slate-700 text-slate-400 hover:text-white'
@@ -542,8 +542,132 @@ export function AssetLibrary({
         </form>
       )}
 
-      {/* Assets Table */}
-      <div className="overflow-x-auto">
+      {/* Mobile Card View */}
+      <div className="md:hidden">
+        {paginatedAssets.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {paginatedAssets.map(asset => (
+              <div
+                key={asset.id}
+                className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"
+              >
+                {/* Header: Name + Type badge */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="text-base font-medium text-white truncate">
+                      {asset.name}
+                    </span>
+                    {asset.category === 'printer' ? (
+                      <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
+                        {getCategoryLabel(asset.category)}
+                      </span>
+                    ) : asset.category === 'filament' && asset.filamentType ? (
+                      <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">
+                        {asset.filamentType}
+                      </span>
+                    ) : (
+                      <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
+                        {getCategoryLabel(asset.category)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Brand */}
+                {asset.brand && (
+                  <div className="text-sm text-slate-400 mb-1">{asset.brand}</div>
+                )}
+
+                {/* Notes */}
+                {asset.notes && (
+                  <div className="text-sm text-slate-400 mb-2">{asset.notes}</div>
+                )}
+
+                {/* Tags */}
+                {asset.tags && asset.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {asset.tags.map(tag => (
+                      <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Cost details - differs by asset type */}
+                {asset.category === 'printer' ? (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3 pt-2 border-t border-slate-700/50">
+                    <div className="text-slate-400">Price</div>
+                    <div className="text-right font-mono text-white">
+                      ${asset.purchasePrice?.toFixed(2) || '0.00'}
+                    </div>
+                    <div className="text-slate-400">Wattage</div>
+                    <div className="text-right font-mono text-white">
+                      {asset.wattage || 0}W
+                    </div>
+                    <div className="text-slate-400">Nozzle Cost</div>
+                    <div className="text-right font-mono text-slate-400">
+                      ${asset.nozzleCost?.toFixed(2) || '0.00'}
+                    </div>
+                    {asset.expectedLifespanHours && (
+                      <>
+                        <div className="text-slate-400">Lifespan</div>
+                        <div className="text-right font-mono text-slate-400">
+                          {asset.expectedLifespanHours.toLocaleString()}h
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="pt-2 border-t border-slate-700/50 mb-3">
+                    <div className="flex items-baseline justify-between mb-1">
+                      <span className="text-sm text-slate-400">Cost/Unit</span>
+                      <span className="text-base font-mono font-medium text-white">
+                        {asset.currency || '$'}{(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm text-slate-400">Package</span>
+                      <span className="text-sm font-mono text-slate-400">
+                        {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)} {asset.currency && asset.currency !== '$' ? asset.currency : ''}
+                      </span>
+                    </div>
+                    {asset.lifespanUnits && (
+                      <div className="flex items-baseline justify-between mt-1">
+                        <span className="text-sm text-slate-400">Lifespan</span>
+                        <span className="text-sm font-mono text-slate-400">
+                          {asset.lifespanUnits.toLocaleString()} uses
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex gap-2 pt-2 border-t border-slate-700/50">
+                  <button
+                    onClick={() => startEdit(asset)}
+                    className="flex-1 min-h-[44px] px-4 py-2 bg-slate-700 hover:bg-slate-600 text-blue-400 text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => onDeleteAsset(asset.id)}
+                    className="flex-1 min-h-[44px] px-4 py-2 bg-slate-700 hover:bg-slate-600 text-red-400 text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredAssets.length === 0 ? (
+          <p className="text-center text-slate-500 py-4">No {filterCategory === 'printer' ? 'printers' : 'materials'} found</p>
+        ) : null}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
         {filterCategory === 'printer' ? (
           /* Printer Table */
           <table className="w-full text-sm">

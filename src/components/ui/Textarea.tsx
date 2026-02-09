@@ -9,8 +9,8 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 const sizeStyles: Record<TextareaSize, string> = {
-  sm: 'px-2 py-1.5 text-sm',
-  md: 'px-3 py-2 text-sm',
+  sm: 'px-2 py-1.5 text-base md:text-sm',
+  md: 'px-3 py-2 text-base md:text-sm',
   lg: 'px-4 py-3 text-base',
 };
 

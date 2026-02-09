@@ -600,7 +600,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <h2 className="text-lg font-semibold text-white mb-4">Print Job Details</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-4">
           <div className="lg:col-span-2">
             <label className="block text-xs text-slate-400 mb-1">Print Name *</label>
             <input
@@ -608,7 +608,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={printName}
               onChange={e => setPrintName(e.target.value)}
               placeholder="e.g., Dragon Figurine"
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
@@ -620,7 +620,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               <select
                 value={selectedInstanceId}
                 onChange={e => setSelectedInstanceId(e.target.value)}
-                className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               >
                 {printerInstances.map(instance => {
                   const config = printers.find(p => p.id === instance.printerConfigId);
@@ -655,7 +655,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={filamentGrams || ''}
               onChange={e => setFilamentGrams(parseFloat(e.target.value) || 0)}
               placeholder="From slicer"
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
@@ -667,7 +667,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={printTimeHours || ''}
               onChange={e => setPrintTimeHours(parseFloat(e.target.value) || 0)}
               placeholder="From slicer"
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
@@ -679,7 +679,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={modelCost || ''}
               onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
               placeholder="0 if free/own design"
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
             {modelCost > 0 && (
               <label className="flex items-center gap-2 mt-2 cursor-pointer">
@@ -707,7 +707,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 value={authorMinPrice || ''}
                 onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
                 placeholder="Optional"
-                className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
               <p className="text-xs text-slate-500 mt-1">Warn if selling below this</p>
             </div>
@@ -720,7 +720,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={failureRate || ''}
               onChange={e => setFailureRate(parseFloat(e.target.value) || 0)}
               placeholder="5"
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
@@ -731,7 +731,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={prepTimeMinutes || ''}
               onChange={e => setPrepTimeMinutes(parseInt(e.target.value) || 0)}
               placeholder="Slicing, bed prep, etc."
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
@@ -742,7 +742,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={postProcessingMinutes || ''}
               onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
               placeholder="Support removal, sanding, etc."
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
         </div>
@@ -772,7 +772,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   <select
                     value={usage.materialId}
                     onChange={e => updateMaterialUsage(index, 'materialId', e.target.value)}
-                    className="flex-1 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0"
+                    className="flex-1 bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 min-h-[44px]"
                   >
                     {nonFilaments.map(m => (
                       <option key={m.id} value={m.id}>{m.name}</option>
@@ -784,7 +784,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                       step="0.1"
                       value={usage.quantity}
                       onChange={e => updateMaterialUsage(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="w-20 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 text-right"
+                      className="w-20 bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 text-right min-h-[44px]"
                     />
                     <span className="text-slate-400 text-sm w-12">{material?.unit || ''}</span>
                   </div>
@@ -808,7 +808,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <h2 className="text-lg font-semibold text-white mb-4">Shipping</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
           <div>
             <label className="block text-xs text-slate-400 mb-1">Shipping Method</label>
             <select
@@ -817,7 +817,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 setShippingMethod(e.target.value as ShippingMethodType);
                 setShippingOverrideCost(null); // Reset override when method changes
               }}
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             >
               {availableShippingMethods.map(method => (
                 <option key={method.value} value={method.value}>{method.label}</option>
@@ -838,7 +838,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 }}
                 max={distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm) : shippingConfig.maxDeliveryRadiusKm}
                 placeholder={`Max ${distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm).toFixed(0) : shippingConfig.maxDeliveryRadiusKm}${distanceUnit}`}
-                className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
               {shippingDistanceKm > shippingConfig.maxDeliveryRadiusKm && (
                 <p className="text-xs text-red-400 mt-1">Exceeds max delivery radius!</p>
@@ -854,7 +854,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               value={shippingOverrideCost !== null ? shippingOverrideCost : shippingCost}
               onChange={e => setShippingOverrideCost(parseFloat(e.target.value) || 0)}
               placeholder={shippingCost.toFixed(2)}
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
             {shippingOverrideCost !== null && (
               <button
@@ -905,7 +905,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                         updated[index] = { ...updated[index], materialId: e.target.value };
                         setPackagingMaterials(updated);
                       }}
-                      className="flex-1 bg-slate-700 text-white text-sm px-3 py-1.5 rounded-lg border-0"
+                      className="flex-1 bg-slate-700 text-white text-base md:text-sm px-3 py-1.5 rounded-lg border-0 min-h-[44px]"
                     >
                       {consumables.map(m => (
                         <option key={m.id} value={m.id}>{m.name}</option>
@@ -921,7 +921,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                           updated[index] = { ...updated[index], quantity: parseFloat(e.target.value) || 0 };
                           setPackagingMaterials(updated);
                         }}
-                        className="w-16 bg-slate-700 text-white text-sm px-2 py-1.5 rounded-lg border-0 text-right"
+                        className="w-16 bg-slate-700 text-white text-base md:text-sm px-2 py-1.5 rounded-lg border-0 text-right min-h-[44px]"
                       />
                       <span className="text-slate-400 text-xs w-8">{material?.unit || ''}</span>
                     </div>
@@ -968,13 +968,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             <p className="text-xs text-slate-500">Platform fees deducted from your revenue</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Selling Platform</label>
               <select
                 value={marketplace}
                 onChange={e => setMarketplace(e.target.value as MarketplaceType)}
-                className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               >
                 {availableMarketplaces.map(opt => (
                   <option key={opt.value} value={opt.value}>
@@ -1005,7 +1005,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <h2 className="text-lg font-semibold text-white mb-4">Set Financial Targets</h2>
         <p className="text-slate-400 text-sm mb-4">Set targets and keep track of profitability throughout your project</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
           <div>
             <label className="block text-sm font-medium text-white mb-1">Profit Margin</label>
             <div className="relative">
@@ -1017,7 +1017,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   setProfitMarginPercent(parseFloat(e.target.value) || 0);
                   setLastEdited('margin');
                 }}
-                className="w-full bg-slate-700 text-white text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white text-base md:text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
             </div>
           </div>
@@ -1034,7 +1034,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   setTargetProfit(parseFloat(e.target.value) || 0);
                   setLastEdited('profit');
                 }}
-                className="w-full bg-slate-700 text-white text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white text-base md:text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
             </div>
           </div>
@@ -1051,7 +1051,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   setSellingPrice(parseFloat(e.target.value) || 0);
                   setLastEdited('price');
                 }}
-                className="w-full bg-slate-700 text-white text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white text-base md:text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
             </div>
           </div>
@@ -1059,7 +1059,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
         {trueCost > 0 && sellingPrice > 0 && (
           <div className="mt-6 p-4 bg-slate-700/50 rounded-lg">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-white">{currencySymbol}{trueCost.toFixed(2)}</div>
                 <div className="text-xs text-slate-400">True Cost</div>
@@ -1250,7 +1250,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       </div>
 
       {/* Save Job Button */}
-      <div className="flex justify-end gap-4">
+      <div className="flex flex-col md:flex-row md:justify-end gap-4">
         {justSaved && (
           <span className="text-green-400 text-sm self-center">
             {editingJob ? 'Job updated!' : 'Job saved! View it in "My Jobs" tab.'}
@@ -1262,7 +1262,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               clearForm();
               onCancelEdit();
             }}
-            className="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-medium rounded-lg transition-colors"
+            className="w-full md:w-auto px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-medium rounded-lg transition-colors min-h-[44px]"
           >
             Cancel Edit
           </button>
@@ -1270,7 +1270,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <button
           onClick={handleSaveJob}
           disabled={!printName.trim() || !filamentId || trueCost <= 0}
-          className={`px-6 py-3 ${editingJob ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors`}
+          className={`w-full md:w-auto px-6 py-3 ${editingJob ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors min-h-[44px]`}
         >
           {editingJob ? 'Update Job' : 'Save Job for Tracking'}
         </button>
