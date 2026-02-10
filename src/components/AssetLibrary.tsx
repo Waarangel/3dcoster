@@ -629,7 +629,7 @@ export function AssetLibrary({
                     <div className="flex items-baseline justify-between">
                       <span className="text-sm text-slate-400">Package</span>
                       <span className="text-sm font-mono text-slate-400">
-                        {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)} {asset.currency && asset.currency !== '$' ? asset.currency : ''}
+                        {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)}
                       </span>
                     </div>
                     {asset.lifespanUnits && (

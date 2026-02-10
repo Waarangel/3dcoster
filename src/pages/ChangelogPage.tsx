@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
@@ -40,8 +40,8 @@ function parseMarkdownBody(body: string): string[] {
 }
 
 // Parse inline markdown: **bold**, `code`, [link](url)
-function renderInlineMarkdown(text: string): (string | JSX.Element)[] {
-  const parts: (string | JSX.Element)[] = [];
+function renderInlineMarkdown(text: string): (string | React.ReactElement)[] {
+  const parts: (string | React.ReactElement)[] = [];
   // Match **bold**, `code`, and [text](url)
   const regex = /(\*\*(.+?)\*\*)|(`(.+?)`)|(\[(.+?)\]\((.+?)\))/g;
   let lastIndex = 0;
