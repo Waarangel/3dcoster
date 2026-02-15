@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { ImageCarousel } from '../components/ImageCarousel';
 
 export function LandingPage() {
   return (
@@ -46,66 +47,7 @@ export function LandingPage() {
       {/* App Preview */}
       <section className="py-16 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 border-b border-slate-700">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="ml-4 text-slate-500 text-sm">3DCoster</span>
-            </div>
-            <div className="p-8 bg-gradient-to-br from-slate-800 to-slate-900">
-              {/* Mock app screenshot */}
-              <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 space-y-4">
-                  <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
-                    <div className="h-4 w-32 bg-slate-600 rounded mb-3"></div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="h-10 bg-slate-600/50 rounded-lg"></div>
-                      <div className="h-10 bg-slate-600/50 rounded-lg"></div>
-                      <div className="h-10 bg-slate-600/50 rounded-lg"></div>
-                    </div>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
-                    <div className="h-4 w-40 bg-slate-600 rounded mb-3"></div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <div className="h-3 w-24 bg-slate-600/50 rounded"></div>
-                        <div className="h-3 w-16 bg-slate-600/50 rounded"></div>
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="h-3 w-20 bg-slate-600/50 rounded"></div>
-                        <div className="h-3 w-16 bg-slate-600/50 rounded"></div>
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="h-3 w-28 bg-slate-600/50 rounded"></div>
-                        <div className="h-3 w-16 bg-slate-600/50 rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-xl p-4 border border-blue-500/30">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-white mb-1">$12.47</div>
-                      <div className="text-xs text-slate-400">Cost Per Unit</div>
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-600/20 to-emerald-600/20 rounded-xl p-4 border border-green-500/30">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-green-400 mb-1">$7.53</div>
-                      <div className="text-xs text-slate-400">Profit Per Sale</div>
-                    </div>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-400 mb-1">3</div>
-                      <div className="text-xs text-slate-400">Break-even Units</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ImageCarousel />
         </div>
       </section>
 
