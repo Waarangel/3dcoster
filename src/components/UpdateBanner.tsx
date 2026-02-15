@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Current app version - update this when releasing new versions
-export const APP_VERSION = '1.2.2';
+export const APP_VERSION = '1.2.3';
+
+const DOWNLOAD_URL = 'https://3dcoster.vercel.app/download';
 
 interface UpdateInfo {
   version: string;
@@ -64,6 +66,21 @@ export function UpdateBanner() {
     setDismissed(true);
   };
 
+  const handleDownload = useCallback(async () => {
+    if (__IS_TAURI__) {
+      // In Tauri, use the shell plugin to open URL in system browser
+      try {
+        const { open } = await import('@tauri-apps/plugin-shell');
+        await open(DOWNLOAD_URL);
+      } catch {
+        // Fallback: try window.open
+        window.open(DOWNLOAD_URL, '_blank');
+      }
+    } else {
+      window.open(DOWNLOAD_URL, '_blank');
+    }
+  }, []);
+
   if (!updateInfo || dismissed) return null;
 
   return (
@@ -71,14 +88,12 @@ export function UpdateBanner() {
       <span>
         A new version ({updateInfo.version}) is available!
       </span>
-      <a
-        href="https://3dcoster.vercel.app/download"
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        onClick={handleDownload}
         className="px-3 py-1 bg-white text-blue-600 rounded font-medium hover:bg-blue-50 transition-colors"
       >
         Download
-      </a>
+      </button>
       <button
         onClick={handleDismiss}
         className="text-white/80 hover:text-white transition-colors"

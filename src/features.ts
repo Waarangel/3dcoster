@@ -1,5 +1,7 @@
 // Feature release dates for "New" badges
-// Features will show a "New" badge for 14 days after release
+// Features will show a "New" badge based on two conditions:
+// 1. The feature must have been released within NEW_FEATURE_MAX_AGE_DAYS
+// 2. The user must have first seen it within NEW_FEATURE_SEEN_HOURS
 export const featureReleases: Record<string, Date> = {
   'per-unit-licensing': new Date('2026-01-24'),
   'author-min-price': new Date('2026-01-24'),
@@ -17,5 +19,9 @@ export const featureReleases: Record<string, Date> = {
   // Add new features here with their release date
 };
 
-// How long features are considered "new" (in days)
-export const NEW_FEATURE_DAYS = 14;
+// Maximum age of a feature release to be eligible for "New" badge (in days)
+// Features older than this will NEVER show as new, even on a fresh install
+export const NEW_FEATURE_MAX_AGE_DAYS = 14;
+
+// How long to show the badge after the user first sees the feature (in hours)
+export const NEW_FEATURE_SEEN_HOURS = 36;

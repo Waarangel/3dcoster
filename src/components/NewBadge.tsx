@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { featureReleases, NEW_FEATURE_DAYS } from '../features';
+import { featureReleases, NEW_FEATURE_MAX_AGE_DAYS, NEW_FEATURE_SEEN_HOURS } from '../features';
 
 const STORAGE_KEY = '3dcoster-feature-first-seen';
 
@@ -38,9 +38,17 @@ export function NewBadge({ feature, className = '' }: NewBadgeProps) {
     const releaseDate = featureReleases[feature];
     if (!releaseDate) return;
 
-    // Don't show badge for features released in the future
-    if (releaseDate.getTime() > Date.now()) return;
+    const now = Date.now();
 
+    // Gate 1: Don't show badge for features released in the future
+    if (releaseDate.getTime() > now) return;
+
+    // Gate 2: Don't show badge if the feature is older than MAX_AGE_DAYS
+    // This prevents stale features from showing as "new" on fresh installs
+    const daysSinceRelease = (now - releaseDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceRelease > NEW_FEATURE_MAX_AGE_DAYS) return;
+
+    // Gate 3: Track when user first saw the feature, show for SEEN_HOURS
     const firstSeenMap = getFirstSeenMap();
     const firstSeen = firstSeenMap[feature];
 
@@ -49,9 +57,9 @@ export function NewBadge({ feature, className = '' }: NewBadgeProps) {
       markFeatureSeen(feature);
       setIsNew(true);
     } else {
-      // Check if within NEW_FEATURE_DAYS of first seeing it
-      const daysSinceFirstSeen = (Date.now() - firstSeen) / (1000 * 60 * 60 * 24);
-      setIsNew(daysSinceFirstSeen < NEW_FEATURE_DAYS);
+      // Check if within SEEN_HOURS of first seeing it
+      const hoursSinceFirstSeen = (now - firstSeen) / (1000 * 60 * 60);
+      setIsNew(hoursSinceFirstSeen < NEW_FEATURE_SEEN_HOURS);
     }
   }, [feature]);
 
