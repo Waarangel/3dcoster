@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "3DCoster",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "identifier": "com.3dcoster.calculator",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -14,10 +14,10 @@
     "windows": [
       {
         "title": "3D Print Cost Calculator",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600,
+        "width": 1400,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 680,
         "resizable": true,
         "fullscreen": false
       }
