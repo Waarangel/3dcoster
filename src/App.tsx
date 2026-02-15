@@ -45,6 +45,7 @@ function App() {
     addAsset,
     updateAsset,
     deleteAsset,
+    bulkImportAssets,
     resetMaterialsOnly,
     resetPrintersOnly,
   } = useAssets();
@@ -265,6 +266,7 @@ function App() {
             onAddAsset={addAsset}
             onUpdateAsset={updateAsset}
             onDeleteAsset={deleteAsset}
+            onBulkImportAssets={bulkImportAssets}
             onResetMaterials={resetMaterialsOnly}
             onResetPrinters={resetPrintersOnly}
             itemsPerPage={userProfile.assetLibraryItemsPerPage ?? 10}

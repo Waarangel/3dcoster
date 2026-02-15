@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees } from '../types';
-import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig } from '../data/defaultMaterials';
+import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -38,6 +38,16 @@ export function useAssets() {
           if (packagingCount === 0) {
             const packagingDefaults = defaultMaterials.filter(m => m.category === 'packaging');
             await db.materials.bulkPut(packagingDefaults); // Use bulkPut to handle duplicates
+          }
+
+          // Migration: Add Bambu filament catalog for existing users who don't have it yet
+          // Check for a known Bambu catalog entry that wouldn't exist from old hand-maintained defaults
+          const hasBambuCatalog = await db.materials.get('bambu-pla-sparkle');
+          if (cancelled) return;
+
+          if (!hasBambuCatalog) {
+            // Add all Bambu catalog entries, using bulkPut to update any existing entries
+            await db.materials.bulkPut(bambuFilamentAssets);
           }
         }
       } catch (error) {
@@ -83,12 +93,17 @@ export function useAssets() {
     await db.materials.bulkAdd(defaultPrinterAssets);
   }, []);
 
+  const bulkImportAssets = useCallback(async (importAssets: Asset[]) => {
+    await db.materials.bulkPut(importAssets); // upsert — handles both new + overwrite
+  }, []);
+
   return {
     assets: assets ?? [],
     isLoading,
     addAsset,
     updateAsset,
     deleteAsset,
+    bulkImportAssets,
     resetToDefaults,
     resetMaterialsOnly,
     resetPrintersOnly,
@@ -173,7 +188,11 @@ export function usePrinterInstances() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    db.printerInstances.count().then(() => setIsLoading(false));
+    let cancelled = false;
+    db.printerInstances.count().then(() => {
+      if (!cancelled) setIsLoading(false);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   const addInstance = useCallback(async (instance: PrinterInstance) => {

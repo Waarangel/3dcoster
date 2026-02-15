@@ -25,7 +25,7 @@ export const CURRENCY_CONFIG: Record<Currency, {
   DKK: { name: 'Danish Krone', symbol: 'kr', country: 'DK', countryName: 'Denmark', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
   PLN: { name: 'Polish Złoty', symbol: 'zł', country: 'PL', countryName: 'Poland', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
   CZK: { name: 'Czech Koruna', symbol: 'Kč', country: 'CZ', countryName: 'Czech Republic', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
-  JPY: { name: 'Japanese Yen', symbol: '¥', country: 'JP', countryName: 'Japan', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
+  JPY: { name: 'Japanese Yen', symbol: '¥', country: 'JP', countryName: 'Japan', decimalPlaces: 0, distanceUnit: 'km', fuelUnit: 'L' },
   CNY: { name: 'Chinese Yuan', symbol: '¥', country: 'CN', countryName: 'China', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
   INR: { name: 'Indian Rupee', symbol: '₹', country: 'IN', countryName: 'India', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
   BRL: { name: 'Brazilian Real', symbol: 'R$', country: 'BR', countryName: 'Brazil', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
@@ -36,6 +36,7 @@ export const CURRENCY_CONFIG: Record<Currency, {
 // Format a number as currency
 export function formatCurrency(amount: number, currency: Currency): string {
   const config = CURRENCY_CONFIG[currency];
+  if (!config) return `$${amount.toFixed(2)}`; // Fallback for unknown currency
   const formatted = amount.toFixed(config.decimalPlaces);
   return `${config.symbol}${formatted}`;
 }

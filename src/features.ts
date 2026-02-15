@@ -12,6 +12,8 @@ export const featureReleases: Record<string, Date> = {
   'multi-currency': new Date('2026-01-25'),
   'distance-units': new Date('2026-01-25'),
   'packaging-materials': new Date('2026-01-25'),
+  'csv-import': new Date('2026-02-14'),
+  'gcode-import': new Date('2026-02-14'),
   // Add new features here with their release date
 };
 

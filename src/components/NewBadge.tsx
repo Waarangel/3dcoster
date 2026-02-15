@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { featureReleases } from '../features';
+import { featureReleases, NEW_FEATURE_DAYS } from '../features';
 
 const STORAGE_KEY = '3dcoster-feature-first-seen';
-const DAYS_TO_SHOW = 3;
 
 // Get the map of when features were first seen
 function getFirstSeenMap(): Record<string, number> {
@@ -16,10 +15,14 @@ function getFirstSeenMap(): Record<string, number> {
 
 // Save when a feature was first seen
 function markFeatureSeen(feature: string): void {
-  const map = getFirstSeenMap();
-  if (!map[feature]) {
-    map[feature] = Date.now();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  try {
+    const map = getFirstSeenMap();
+    if (!map[feature]) {
+      map[feature] = Date.now();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    }
+  } catch {
+    // localStorage may be full or unavailable
   }
 }
 
@@ -46,9 +49,9 @@ export function NewBadge({ feature, className = '' }: NewBadgeProps) {
       markFeatureSeen(feature);
       setIsNew(true);
     } else {
-      // Check if within 3 days of first seeing it
+      // Check if within NEW_FEATURE_DAYS of first seeing it
       const daysSinceFirstSeen = (Date.now() - firstSeen) / (1000 * 60 * 60 * 24);
-      setIsNew(daysSinceFirstSeen < DAYS_TO_SHOW);
+      setIsNew(daysSinceFirstSeen < NEW_FEATURE_DAYS);
     }
   }, [feature]);
 

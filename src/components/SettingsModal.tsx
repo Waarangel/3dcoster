@@ -43,6 +43,12 @@ export function SettingsModal({
   const [newMarketplaceFixed, setNewMarketplaceFixed] = useState('');
   const [editingMarketplaceId, setEditingMarketplaceId] = useState<string | null>(null);
 
+  // Reset edit state when switching tabs
+  useEffect(() => {
+    setEditingCarrierId(null);
+    setEditingMarketplaceId(null);
+  }, [activeTab]);
+
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -63,10 +69,11 @@ export function SettingsModal({
   const handleAddCarrier = () => {
     if (!newCarrierName.trim() || !newCarrierCost) return;
 
+    const parsedCost = parseFloat(newCarrierCost) || 0;
     const newCarrier: CustomCarrier = {
       id: `carrier-${Date.now()}`,
       name: newCarrierName.trim(),
-      defaultCost: parseFloat(newCarrierCost) || 0,
+      defaultCost: Math.max(0, parsedCost),
     };
 
     onShippingChange({
@@ -99,8 +106,8 @@ export function SettingsModal({
     const newMarketplace: CustomMarketplace = {
       id: `marketplace-${Date.now()}`,
       name: newMarketplaceName.trim(),
-      feePercent: parseFloat(newMarketplacePercent) || 0,
-      fixedFee: parseFloat(newMarketplaceFixed) || 0,
+      feePercent: Math.max(0, parseFloat(newMarketplacePercent) || 0),
+      fixedFee: Math.max(0, parseFloat(newMarketplaceFixed) || 0),
     };
 
     onMarketplaceFeesChange({
@@ -359,8 +366,9 @@ export function SettingsModal({
                             <input
                               type="number"
                               step="0.01"
+                              min="0"
                               value={carrier.defaultCost}
-                              onChange={e => handleUpdateCarrier(carrier.id, 'defaultCost', parseFloat(e.target.value) || 0)}
+                              onChange={e => handleUpdateCarrier(carrier.id, 'defaultCost', Math.max(0, parseFloat(e.target.value) || 0))}
                               className="w-20 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0 text-right"
                             />
                             <button
@@ -411,6 +419,7 @@ export function SettingsModal({
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     placeholder={`Cost (${currencySymbol})`}
                     value={newCarrierCost}
                     onChange={e => setNewCarrierCost(e.target.value)}
@@ -596,16 +605,18 @@ export function SettingsModal({
                             <input
                               type="number"
                               step="0.1"
+                              min="0"
                               value={mp.feePercent}
-                              onChange={e => handleUpdateMarketplace(mp.id, 'feePercent', parseFloat(e.target.value) || 0)}
+                              onChange={e => handleUpdateMarketplace(mp.id, 'feePercent', Math.max(0, parseFloat(e.target.value) || 0))}
                               className="w-16 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0 text-right"
                               placeholder="%"
                             />
                             <input
                               type="number"
                               step="0.01"
+                              min="0"
                               value={mp.fixedFee}
-                              onChange={e => handleUpdateMarketplace(mp.id, 'fixedFee', parseFloat(e.target.value) || 0)}
+                              onChange={e => handleUpdateMarketplace(mp.id, 'fixedFee', Math.max(0, parseFloat(e.target.value) || 0))}
                               className="w-16 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0 text-right"
                               placeholder="Fixed"
                             />
@@ -657,6 +668,7 @@ export function SettingsModal({
                   <input
                     type="number"
                     step="0.1"
+                    min="0"
                     placeholder="Fee %"
                     value={newMarketplacePercent}
                     onChange={e => setNewMarketplacePercent(e.target.value)}
@@ -665,6 +677,7 @@ export function SettingsModal({
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     placeholder={`Fixed (${currencySymbol})`}
                     value={newMarketplaceFixed}
                     onChange={e => setNewMarketplaceFixed(e.target.value)}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType } from '../types';
 import { FilamentSelector } from './FilamentSelector';
+import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 
@@ -88,6 +89,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   // Job saved feedback
   const [justSaved, setJustSaved] = useState(false);
+
+  // Validation error toast
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Persist form state to sessionStorage whenever values change
   useEffect(() => {
@@ -375,8 +379,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     // When modelCostPerUnit is true, model cost is included here instead of fixed costs
     const perUnitSubtotal = filamentCost + electricityCost + materialsCost + laborCost + perUnitModelCost;
 
-    // Failure-adjusted per-unit cost
-    const failureMultiplier = 1 / (1 - failureRate / 100);
+    // Failure-adjusted per-unit cost (clamp to 0-99 to prevent division by zero)
+    const clampedFailureRate = Math.min(Math.max(failureRate, 0), 99);
+    const failureMultiplier = 1 / (1 - clampedFailureRate / 100);
     const failureAdjusted = perUnitSubtotal * failureMultiplier;
 
     return {
@@ -465,18 +470,25 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     sessionStorage.removeItem(FORM_STORAGE_KEY);
   };
 
+  // Auto-dismiss validation error
+  useEffect(() => {
+    if (!validationError) return;
+    const timer = setTimeout(() => setValidationError(null), 5000);
+    return () => clearTimeout(timer);
+  }, [validationError]);
+
   // Save job handler (create new or update existing)
   const handleSaveJob = () => {
     if (!printName.trim()) {
-      alert('Please enter a name for this print job');
+      setValidationError('Please enter a name for this print job');
       return;
     }
     if (!filamentId) {
-      alert('Please select a filament');
+      setValidationError('Please select a filament');
       return;
     }
     if (!selectedInstanceId || !printerInstances.some(p => p.id === selectedInstanceId)) {
-      alert('Please select a printer');
+      setValidationError('Please select a printer');
       return;
     }
 
@@ -540,7 +552,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     if (trueCost <= 0) return;
 
     if (lastEdited === 'margin') {
-      const newPrice = trueCost / (1 - profitMarginPercent / 100);
+      // Guard: clamp margin below 100% to prevent division by zero
+      const clampedMargin = Math.min(profitMarginPercent, 99.9);
+      const newPrice = trueCost / (1 - clampedMargin / 100);
       const newProfit = newPrice - trueCost;
       setSellingPrice(parseFloat(newPrice.toFixed(2)));
       setTargetProfit(parseFloat(newProfit.toFixed(2)));
@@ -575,6 +589,26 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   return (
     <div className="space-y-6">
+      {/* Validation error toast */}
+      {validationError && (
+        <div className="fixed top-4 right-4 z-50 bg-slate-800 border border-red-500/40 rounded-lg p-3 shadow-lg shadow-black/30 flex items-center justify-between max-w-sm animate-in">
+          <div className="flex items-center gap-3 text-sm">
+            <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="text-red-300">{validationError}</span>
+          </div>
+          <button
+            onClick={() => setValidationError(null)}
+            className="text-slate-500 hover:text-slate-300 ml-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Editing Banner */}
       {editingJob && (
         <div className="bg-blue-600/20 border border-blue-500/50 rounded-xl p-4 flex items-center justify-between">
@@ -599,6 +633,24 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       {/* Print Job Details */}
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <h2 className="text-lg font-semibold text-white mb-4">Print Job Details</h2>
+
+        {/* G-code Import */}
+        <GcodeImport
+          assets={materials}
+          onImport={({ filamentGrams: grams, printTimeHours: time, filamentId: fId, printName: name }) => {
+            if (grams > 0) setFilamentGrams(grams);
+            if (time > 0) setPrintTimeHours(time);
+            if (name && !printName) setPrintName(name);
+            if (fId) {
+              const matched = materials.find(m => m.id === fId);
+              if (matched) {
+                setFilamentId(fId);
+                setEditedFilamentPrice(matched.costPerUnit ?? 0);
+                setEditedFilamentCurrency(matched.currency || 'USD');
+              }
+            }
+          }}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-4">
           <div className="lg:col-span-2">
@@ -714,11 +766,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           )}
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
+            <label className="block text-xs text-slate-400 mb-1">Failure Rate (%, max 99)</label>
             <input
               type="number"
+              min="0"
+              max="99"
               value={failureRate || ''}
-              onChange={e => setFailureRate(parseFloat(e.target.value) || 0)}
+              onChange={e => setFailureRate(Math.min(parseFloat(e.target.value) || 0, 99))}
               placeholder="5"
               className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />

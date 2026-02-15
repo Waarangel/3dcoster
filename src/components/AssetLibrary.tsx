@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
 import { NewBadge } from './NewBadge';
+import { CsvImportModal } from './CsvImportModal';
 
 interface AssetLibraryProps {
   assets: Asset[];
   onAddAsset: (asset: Asset) => void;
   onUpdateAsset: (asset: Asset) => void;
   onDeleteAsset: (id: string) => void;
+  onBulkImportAssets: (assets: Asset[]) => Promise<void>;
   onResetMaterials: () => void;
   onResetPrinters: () => void;
   itemsPerPage: number;
@@ -59,6 +61,7 @@ export function AssetLibrary({
   onAddAsset,
   onUpdateAsset,
   onDeleteAsset,
+  onBulkImportAssets,
   onResetMaterials,
   onResetPrinters,
   itemsPerPage,
@@ -67,6 +70,7 @@ export function AssetLibrary({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<AssetCategory | 'all'>('all');
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const [formData, setFormData] = useState<Partial<Asset>>({
     category: 'consumable',
   });
@@ -74,6 +78,7 @@ export function AssetLibrary({
   const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Get all unique categories from assets (built-in + custom)
   const allCategories = useMemo(() => {
@@ -132,7 +137,11 @@ export function AssetLibrary({
 
     if (isPrinterForm) {
       // Printer validation
-      if (!formData.name || !formData.purchasePrice || !formData.wattage) return;
+      if (!formData.name || !formData.purchasePrice || !formData.wattage) {
+        setFormError('Name, purchase price, and wattage are required');
+        return;
+      }
+      setFormError(null);
 
       const printer: Asset = {
         id: editingId || `printer-${Date.now()}`,
@@ -156,7 +165,15 @@ export function AssetLibrary({
       }
     } else {
       // Material validation
-      if (!formData.name || !formData.unit || !formData.packageCost || !formData.unitsPerPackage) return;
+      if (!formData.name || !formData.unit || !formData.packageCost || !formData.unitsPerPackage) {
+        setFormError('Name, unit, package cost, and units per package are required');
+        return;
+      }
+      if (formData.unitsPerPackage <= 0) {
+        setFormError('Units per package must be greater than zero');
+        return;
+      }
+      setFormError(null);
 
       const material: Asset = {
         id: editingId || `material-${Date.now()}`,
@@ -231,6 +248,7 @@ export function AssetLibrary({
     setShowCustomCategory(false);
     setCustomCategoryInput('');
     setTagInput('');
+    setFormError(null);
   };
 
   const handleReset = () => {
@@ -249,9 +267,20 @@ export function AssetLibrary({
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <h2 className="text-lg font-semibold text-white">Asset Library</h2>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           {!isAdding && (
             <>
+              <button
+                onClick={() => setShowCsvImport(true)}
+                className="relative flex-1 sm:flex-none px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                title="Import assets from CSV"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span className="hidden sm:inline">Import CSV</span>
+                <NewBadge feature="csv-import" className="absolute -top-3 -right-3" />
+              </button>
               <button
                 onClick={handleReset}
                 className="flex-1 sm:flex-none px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
@@ -300,6 +329,11 @@ export function AssetLibrary({
       {/* Add/Edit Form */}
       {isAdding && (
         <form onSubmit={handleSubmit} className="bg-slate-700/50 rounded-lg p-4 mb-4 space-y-3">
+          {formError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-sm text-red-400">
+              {formError}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Name</label>
@@ -882,6 +916,14 @@ export function AssetLibrary({
           </div>
         )}
       </div>
+
+      {/* CSV Import Modal */}
+      <CsvImportModal
+        isOpen={showCsvImport}
+        onClose={() => setShowCsvImport(false)}
+        existingAssets={assets}
+        onImportAssets={onBulkImportAssets}
+      />
     </div>
   );
 }
