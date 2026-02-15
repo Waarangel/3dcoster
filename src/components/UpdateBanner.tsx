@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // Current app version - update this when releasing new versions
-export const APP_VERSION = '1.2.1';
+export const APP_VERSION = '1.2.2';
 
 interface UpdateInfo {
   version: string;
