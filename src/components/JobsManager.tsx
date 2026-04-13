@@ -218,7 +218,7 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-white">${job.sellingPrice.toFixed(2)}</div>
+                    <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
                     <div className="text-xs text-slate-500">
                       {job.copiesSold} sold
                     </div>
@@ -238,8 +238,8 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
                         <div className="font-mono text-green-400">${info.profitPerUnit.toFixed(2)}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-slate-500">Revenue Earned</div>
-                        <div className="font-mono text-slate-300">${info.revenueEarned.toFixed(2)}</div>
+                        <div className="text-xs text-slate-500">Unit Sell Price</div>
+                        <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
                       </div>
                     </div>
 

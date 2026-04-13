@@ -77,8 +77,11 @@ export function AssetLibrary({
   const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [formError, setFormError] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Get all unique categories from assets (built-in + custom)
   const allCategories = useMemo(() => {
@@ -96,12 +99,85 @@ export function AssetLibrary({
     ? filteredAssets.filter(a => a.category !== 'printer')  // Materials only for "all" view
     : filteredAssets;
 
+  // Search filtering
+  const searchedAssets = useMemo(() => {
+    if (!searchQuery.trim()) return displayAssets;
+    const q = searchQuery.toLowerCase();
+    return displayAssets.filter(a =>
+      a.name.toLowerCase().includes(q) ||
+      (a.brand || '').toLowerCase().includes(q) ||
+      (a.notes || '').toLowerCase().includes(q) ||
+      (a.filamentType || '').toLowerCase().includes(q) ||
+      (a.tags || []).some(t => t.toLowerCase().includes(q)) ||
+      getCategoryLabel(a.category).toLowerCase().includes(q)
+    );
+  }, [displayAssets, searchQuery]);
+
+  // Sorting
+  const toggleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const sortedAssets = useMemo(() => {
+    const sorted = [...searchedAssets];
+    sorted.sort((a, b) => {
+      let aVal: string | number = '';
+      let bVal: string | number = '';
+
+      switch (sortField) {
+        case 'name':
+          aVal = (a.name || '').toLowerCase();
+          bVal = (b.name || '').toLowerCase();
+          break;
+        case 'brand':
+          aVal = (a.brand || '').toLowerCase();
+          bVal = (b.brand || '').toLowerCase();
+          break;
+        case 'category':
+          aVal = getCategoryLabel(a.category).toLowerCase();
+          bVal = getCategoryLabel(b.category).toLowerCase();
+          break;
+        case 'costPerUnit':
+          aVal = a.costPerUnit ?? 0;
+          bVal = b.costPerUnit ?? 0;
+          break;
+        case 'packageCost':
+          aVal = a.packageCost ?? 0;
+          bVal = b.packageCost ?? 0;
+          break;
+        case 'purchasePrice':
+          aVal = a.purchasePrice ?? 0;
+          bVal = b.purchasePrice ?? 0;
+          break;
+        case 'wattage':
+          aVal = a.wattage ?? 0;
+          bVal = b.wattage ?? 0;
+          break;
+        case 'nozzleCost':
+          aVal = a.nozzleCost ?? 0;
+          bVal = b.nozzleCost ?? 0;
+          break;
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [searchedAssets, sortField, sortDirection]);
+
   // Pagination - itemsPerPage of 0 means show all
-  const effectiveItemsPerPage = itemsPerPage === 0 ? displayAssets.length : itemsPerPage;
-  const totalPages = effectiveItemsPerPage > 0 ? Math.ceil(displayAssets.length / effectiveItemsPerPage) : 1;
+  const effectiveItemsPerPage = itemsPerPage === 0 ? sortedAssets.length : itemsPerPage;
+  const totalPages = effectiveItemsPerPage > 0 ? Math.ceil(sortedAssets.length / effectiveItemsPerPage) : 1;
   const paginatedAssets = itemsPerPage === 0
-    ? displayAssets
-    : displayAssets.slice(
+    ? sortedAssets
+    : sortedAssets.slice(
         (currentPage - 1) * effectiveItemsPerPage,
         currentPage * effectiveItemsPerPage
       );
@@ -109,6 +185,7 @@ export function AssetLibrary({
   // Reset to page 1 when filter or items per page changes, and cancel any in-progress add/edit
   const handleFilterChange = (category: AssetCategory | 'all') => {
     setFilterCategory(category);
+    setSearchQuery('');
     setCurrentPage(1);
     // Auto-cancel any in-progress add/edit when switching filters
     if (isAdding) {
@@ -263,6 +340,13 @@ export function AssetLibrary({
     }
   };
 
+  const SortIndicator = ({ field }: { field: string }) => {
+    if (sortField !== field) return null;
+    return <span className="ml-1 text-[0.6em] align-middle">{sortDirection === 'asc' ? '▲' : '▼'}</span>;
+  };
+
+  const sortHeaderClass = 'pb-2 font-medium cursor-pointer hover:text-slate-200 transition-colors select-none';
+
   return (
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
@@ -298,8 +382,8 @@ export function AssetLibrary({
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-4 flex-wrap">
+      {/* Filter tabs + Search */}
+      <div className="flex gap-2 mb-4 flex-wrap items-center">
         <button
           onClick={() => handleFilterChange('all')}
           className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors ${
@@ -324,6 +408,26 @@ export function AssetLibrary({
             {cat === 'packaging' && <NewBadge feature="packaging-materials" />}
           </button>
         ))}
+        <div className="relative ml-auto w-full sm:w-56">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            placeholder="Search..."
+            className="w-full bg-slate-700 text-white text-sm pl-9 pr-8 py-2 min-h-[40px] rounded-lg border-0 focus:ring-2 focus:ring-blue-500 placeholder-slate-500"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-lg leading-none"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Add/Edit Form */}
@@ -576,6 +680,39 @@ export function AssetLibrary({
         </form>
       )}
 
+      {/* Mobile Sort */}
+      <div className="md:hidden flex items-center gap-2 mb-3">
+        <span className="text-sm text-slate-400">Sort:</span>
+        <select
+          value={sortField}
+          onChange={e => { setSortField(e.target.value); setCurrentPage(1); }}
+          className="bg-slate-700 text-white text-sm px-2 py-1.5 min-h-[40px] rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="name">Name</option>
+          <option value="brand">Brand</option>
+          <option value="category">Type</option>
+          {filterCategory === 'printer' ? (
+            <>
+              <option value="purchasePrice">Price</option>
+              <option value="wattage">Wattage</option>
+              <option value="nozzleCost">Nozzle Cost</option>
+            </>
+          ) : (
+            <>
+              <option value="costPerUnit">Cost/Unit</option>
+              <option value="packageCost">Package Cost</option>
+            </>
+          )}
+        </select>
+        <button
+          onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
+          className="px-2 py-1.5 min-h-[40px] bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
+          title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+        >
+          {sortDirection === 'asc' ? '\u2191 A-Z' : '\u2193 Z-A'}
+        </button>
+      </div>
+
       {/* Mobile Card View */}
       <div className="md:hidden">
         {paginatedAssets.length > 0 ? (
@@ -707,12 +844,12 @@ export function AssetLibrary({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-400 text-left border-b border-slate-700">
-                <th className="pb-2 font-medium">Printer</th>
-                <th className="pb-2 font-medium">Brand</th>
-                <th className="pb-2 font-medium">Type</th>
-                <th className="pb-2 font-medium text-right">Price</th>
-                <th className="pb-2 font-medium text-right">Wattage</th>
-                <th className="pb-2 font-medium text-right">Nozzle</th>
+                <th className={sortHeaderClass} onClick={() => toggleSort('name')}>Printer<SortIndicator field="name" /></th>
+                <th className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></th>
+                <th className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></th>
+                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('purchasePrice')}>Price<SortIndicator field="purchasePrice" /></th>
+                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('wattage')}>Wattage<SortIndicator field="wattage" /></th>
+                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('nozzleCost')}>Nozzle<SortIndicator field="nozzleCost" /></th>
                 <th className="pb-2 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -774,11 +911,11 @@ export function AssetLibrary({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-400 text-left border-b border-slate-700">
-                <th className="pb-2 font-medium">Material</th>
-                <th className="pb-2 font-medium">Brand</th>
-                <th className="pb-2 font-medium">Type</th>
-                <th className="pb-2 font-medium text-right">Cost/Unit</th>
-                <th className="pb-2 font-medium text-right">Package</th>
+                <th className={sortHeaderClass} onClick={() => toggleSort('name')}>Material<SortIndicator field="name" /></th>
+                <th className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></th>
+                <th className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></th>
+                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('costPerUnit')}>Cost/Unit<SortIndicator field="costPerUnit" /></th>
+                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('packageCost')}>Package<SortIndicator field="packageCost" /></th>
                 <th className="pb-2 font-medium text-right">Actions</th>
               </tr>
             </thead>
