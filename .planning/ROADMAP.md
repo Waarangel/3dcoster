@@ -22,7 +22,10 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
   2. Opening the app after migration does not throw errors and existing jobs are visible with their filament data intact
   3. Jobs that previously had no filament selected migrate to an empty filaments array without crashing
   4. Jobs that previously had a filament selected migrate to a single-element filaments array with correct grams preserved
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 01-01-PLAN.md — Add FilamentUsage type, update PrintJob, write Dexie v4->v5 migration
 
 ### Phase 2: G-code Parser
 **Goal**: The parser extracts all filaments from multi-material G-code instead of silently discarding extras
