@@ -128,6 +128,13 @@ export interface CostBreakdown {
   sellingPrice: number;
 }
 
+export interface FilamentUsage {
+  filamentId: string;       // References Asset with category === 'filament'
+  grams: number;
+  pricePerGram?: number;    // User-editable override; undefined = fall back to asset costPerUnit
+  currency?: Currency;      // Currency for the price override
+}
+
 // A saved print job with break-even tracking
 export interface PrintJob {
   id: string;
@@ -136,8 +143,7 @@ export interface PrintJob {
   updatedAt: Date;
 
   // Print parameters
-  filamentId: string;
-  filamentGrams: number;
+  filaments: FilamentUsage[];
   printTimeHours: number;
   printerInstanceId: string; // References a PrinterInstance
 
