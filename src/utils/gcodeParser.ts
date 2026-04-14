@@ -10,6 +10,11 @@ export interface GcodeParseResult {
   // Raw parsed values for display
   rawFilamentLength?: number | null; // mm
   rawPrintTimeString?: string | null;
+  // --- new array fields (multi-material) ---
+  filamentTypes: string[];
+  filamentVendors: string[];
+  filamentSettingsIds: string[];
+  filamentGramsPerExtruder: number[];
 }
 
 // Detect which slicer generated the G-code
@@ -56,7 +61,7 @@ function filamentLengthToGrams(
 }
 
 // Material density lookup (g/cm³) for length-to-weight conversion
-function getMaterialDensity(filamentType: string | null): number {
+export function getMaterialDensity(filamentType: string | null): number {
   if (!filamentType) return 1.24; // PLA default
   const type = filamentType.toUpperCase();
   if (type.includes('PLA')) return 1.24;
@@ -72,15 +77,24 @@ function getMaterialDensity(filamentType: string | null): number {
   return 1.24; // Default to PLA density
 }
 
+// Split a semicolon-delimited value string, trim whitespace, strip surrounding quotes, filter empty strings
+function parseSemicolonArray(value: string): string[] {
+  return value.split(';').map(s => s.replace(/^"|"$/g, '').trim()).filter(s => s.length > 0);
+}
+
 // Parse PrusaSlicer / SuperSlicer / OrcaSlicer format
 // These all use the same PrusaSlicer-derived comment format
 function parsePrusaStyle(text: string): Partial<GcodeParseResult> {
   const result: Partial<GcodeParseResult> = {};
 
-  // Filament used in grams: "; filament used [g] = 24.06"
-  const gramsMatch = text.match(/;\s*filament used \[g\]\s*=\s*([\d.]+)/);
+  // Filament used in grams: "; filament used [g] = 24.06" or multi: "; filament used [g] = 12.3;8.5;3.3"
+  const gramsMatch = text.match(/;\s*filament used \[g\]\s*=\s*([\d.;]+)/);
   if (gramsMatch) {
-    result.filamentGrams = parseFloat(gramsMatch[1]);
+    const values = parseSemicolonArray(gramsMatch[1]).map(Number).filter(n => !isNaN(n));
+    if (values.length > 0) {
+      result.filamentGramsPerExtruder = values;
+      result.filamentGrams = values[0];
+    }
   }
 
   // Filament used in mm (fallback if grams not available): "; filament used [mm] = 52880.9"
@@ -99,15 +113,33 @@ function parsePrusaStyle(text: string): Partial<GcodeParseResult> {
   }
 
   // Filament type: "; filament_type = PLA" or "; filament_type = PLA;PETG" (multi-material)
-  const typeMatch = text.match(/;\s*filament_type\s*=\s*([^\n;]+)/);
+  const typeMatch = text.match(/;\s*filament_type\s*=\s*([^\n]+)/);
   if (typeMatch) {
-    result.filamentType = typeMatch[1].trim();
+    const types = parseSemicolonArray(typeMatch[1]);
+    if (types.length > 0) {
+      result.filamentTypes = types;
+      result.filamentType = types[0];
+    }
   }
 
   // Filament vendor: "; filament_vendor = Bambu Lab" or '; filament_vendor = "Bambu Lab";"Bambu Lab"'
-  const vendorMatch = text.match(/;\s*filament_vendor\s*=\s*"?([^";\n]+)"?/);
+  const vendorMatch = text.match(/;\s*filament_vendor\s*=\s*([^\n]+)/);
   if (vendorMatch) {
-    result.filamentVendor = vendorMatch[1].trim();
+    const vendors = parseSemicolonArray(vendorMatch[1]);
+    if (vendors.length > 0) {
+      result.filamentVendors = vendors;
+      result.filamentVendor = vendors[0];
+    }
+  }
+
+  // Filament settings id: "; filament_settings_id = "Bambu PETG HF @BBL H2S";"Bambu PLA Matte @BBL H2S""
+  const settingsMatch = text.match(/;\s*filament_settings_id\s*=\s*([^\n]+)/);
+  if (settingsMatch) {
+    const ids = parseSemicolonArray(settingsMatch[1]);
+    if (ids.length > 0) {
+      result.filamentSettingsIds = ids;
+      result.filamentSettingsId = ids[0];
+    }
   }
 
   return result;
@@ -180,12 +212,15 @@ function parseBambuStyle(text: string): Partial<GcodeParseResult> {
     }
   }
 
-  // Config block: "; filament_type = PETG;PLA;PLA" (first type is primary)
-  if (!result.filamentType) {
+  // Config block: "; filament_type = PETG;PLA;PLA" — fallback if parsePrusaStyle didn't find it
+  if (!result.filamentTypes || result.filamentTypes.length === 0) {
     const typeMatch = text.match(/;\s*filament_type\s*=\s*([^\n]+)/);
     if (typeMatch) {
-      // Multi-material: take first filament type (before semicolon)
-      result.filamentType = typeMatch[1].trim().split(';')[0].trim();
+      const types = parseSemicolonArray(typeMatch[1]);
+      if (types.length > 0) {
+        result.filamentTypes = types;
+        result.filamentType = types[0];
+      }
     }
   }
 
@@ -194,23 +229,32 @@ function parseBambuStyle(text: string): Partial<GcodeParseResult> {
     const typeMatch = text.match(/;\s*filament_type\s+(\S+)/);
     if (typeMatch) {
       result.filamentType = typeMatch[1].trim();
+      result.filamentTypes = [result.filamentType];
     }
   }
 
-  // Config block: '; filament_vendor = "Bambu Lab";"Bambu Lab"'
-  if (!result.filamentVendor) {
-    const vendorMatch = text.match(/;\s*filament_vendor\s*=\s*"?([^";,\n]+)"?/);
+  // Config block: '; filament_vendor = "Bambu Lab";"Bambu Lab"' — fallback if parsePrusaStyle didn't find it
+  if (!result.filamentVendors || result.filamentVendors.length === 0) {
+    const vendorMatch = text.match(/;\s*filament_vendor\s*=\s*([^\n]+)/);
     if (vendorMatch) {
-      result.filamentVendor = vendorMatch[1].trim();
+      const vendors = parseSemicolonArray(vendorMatch[1]);
+      if (vendors.length > 0) {
+        result.filamentVendors = vendors;
+        result.filamentVendor = vendors[0];
+      }
     }
   }
 
   // Config block: '; filament_settings_id = "Bambu PETG HF @BBL H2S";"Bambu PLA Matte @BBL H2S"'
   // More specific than filament_type — contains variant info like "HF", "Matte", etc.
-  if (!result.filamentSettingsId) {
-    const settingsMatch = text.match(/;\s*filament_settings_id\s*=\s*"?([^";]+)"?/);
+  if (!result.filamentSettingsIds || result.filamentSettingsIds.length === 0) {
+    const settingsMatch = text.match(/;\s*filament_settings_id\s*=\s*([^\n]+)/);
     if (settingsMatch) {
-      result.filamentSettingsId = settingsMatch[1].trim();
+      const ids = parseSemicolonArray(settingsMatch[1]);
+      if (ids.length > 0) {
+        result.filamentSettingsIds = ids;
+        result.filamentSettingsId = ids[0];
+      }
     }
   }
 
@@ -244,6 +288,7 @@ function parseCuraStyle(text: string): Partial<GcodeParseResult> {
   const materialMatch = text.match(/;MATERIAL:(\S+)/);
   if (materialMatch) {
     result.filamentType = materialMatch[1].trim();
+    result.filamentTypes = [result.filamentType];
   }
 
   // Alternative material from Cura settings comment block
@@ -251,6 +296,7 @@ function parseCuraStyle(text: string): Partial<GcodeParseResult> {
     const matMatch = text.match(/;material_type\s*=\s*(\S+)/);
     if (matMatch) {
       result.filamentType = matMatch[1].trim();
+      result.filamentTypes = [result.filamentType];
     }
   }
 
@@ -271,6 +317,7 @@ function parseIdeaMakerStyle(text: string): Partial<GcodeParseResult> {
   const weightMatch = text.match(/;Filament weight:\s*([\d.]+)\s*g/i);
   if (weightMatch) {
     result.filamentGrams = parseFloat(weightMatch[1]);
+    result.filamentGramsPerExtruder = [result.filamentGrams];
   }
 
   // IdeaMaker: ";Print time: 1 hours 23 minutes"
@@ -289,6 +336,7 @@ function parseIdeaMakerStyle(text: string): Partial<GcodeParseResult> {
   const typeMatch = text.match(/;Filament Type:\s*(\S+)/i);
   if (typeMatch) {
     result.filamentType = typeMatch[1].trim();
+    result.filamentTypes = [result.filamentType];
   }
 
   return result;
@@ -342,6 +390,12 @@ export function parseGcode(content: string): GcodeParseResult {
       break;
   }
 
+  // Initialize array defaults from parsed data
+  const filamentTypes = parsed.filamentTypes ?? [];
+  const filamentVendors = parsed.filamentVendors ?? [];
+  const filamentSettingsIds = parsed.filamentSettingsIds ?? [];
+  let filamentGramsPerExtruder = parsed.filamentGramsPerExtruder ?? [];
+
   // Convert length to grams if we have length but no grams
   let filamentGrams = parsed.filamentGrams ?? null;
   if (!filamentGrams && parsed.rawFilamentLength) {
@@ -349,15 +403,44 @@ export function parseGcode(content: string): GcodeParseResult {
     filamentGrams = filamentLengthToGrams(parsed.rawFilamentLength, 1.75, density);
   }
 
+  // If per-extruder array is empty but we converted from length, populate it as single element
+  if (filamentGramsPerExtruder.length === 0 && filamentGrams !== null && parsed.rawFilamentLength) {
+    filamentGramsPerExtruder = [filamentGrams];
+  }
+
+  // GCODE-04: total-only weight distribution
+  // If filamentGramsPerExtruder is still empty but we have a total, put total on first extruder, zeros for rest
+  if (filamentGramsPerExtruder.length === 0 && filamentGrams !== null) {
+    const zeroCount = Math.max(0, filamentTypes.length - 1);
+    filamentGramsPerExtruder = [filamentGrams, ...Array(zeroCount).fill(0)];
+  }
+
+  // Pad grams array if shorter than types array
+  if (filamentGramsPerExtruder.length < filamentTypes.length) {
+    const padding = Array(filamentTypes.length - filamentGramsPerExtruder.length).fill(0);
+    filamentGramsPerExtruder = [...filamentGramsPerExtruder, ...padding];
+  }
+
+  // Compute scalar aliases (GCODE-05) — first-element lookups for backward compat
+  const resolvedFilamentGrams = filamentGramsPerExtruder[0] ?? filamentGrams;
+  const resolvedFilamentType = filamentTypes[0] ?? parsed.filamentType ?? null;
+  const resolvedFilamentVendor = filamentVendors[0] ?? parsed.filamentVendor ?? null;
+  const resolvedFilamentSettingsId = filamentSettingsIds[0] ?? parsed.filamentSettingsId ?? null;
+
   return {
-    filamentGrams,
+    filamentGrams: resolvedFilamentGrams ?? null,
     printTimeHours: parsed.printTimeHours ?? null,
-    filamentType: parsed.filamentType ?? null,
-    filamentVendor: parsed.filamentVendor ?? null,
-    filamentSettingsId: parsed.filamentSettingsId ?? null,
+    filamentType: resolvedFilamentType,
+    filamentVendor: resolvedFilamentVendor,
+    filamentSettingsId: resolvedFilamentSettingsId,
     slicer,
     rawFilamentLength: parsed.rawFilamentLength,
     rawPrintTimeString: parsed.rawPrintTimeString,
+    // Array fields
+    filamentTypes,
+    filamentVendors,
+    filamentSettingsIds,
+    filamentGramsPerExtruder,
   };
 }
 
