@@ -76,36 +76,36 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| DATA-04 | — | Pending |
-| GCODE-01 | — | Pending |
-| GCODE-02 | — | Pending |
-| GCODE-03 | — | Pending |
-| GCODE-04 | — | Pending |
-| GCODE-05 | — | Pending |
-| IMPORT-01 | — | Pending |
-| IMPORT-02 | — | Pending |
-| IMPORT-03 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
-| UI-05 | — | Pending |
-| COST-01 | — | Pending |
-| COST-02 | — | Pending |
-| COST-03 | — | Pending |
-| JOBS-01 | — | Pending |
-| JOBS-02 | — | Pending |
-| PERSIST-01 | — | Pending |
-| PERSIST-02 | — | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| GCODE-01 | Phase 2 | Pending |
+| GCODE-02 | Phase 2 | Pending |
+| GCODE-03 | Phase 2 | Pending |
+| GCODE-04 | Phase 2 | Pending |
+| GCODE-05 | Phase 2 | Pending |
+| IMPORT-01 | Phase 3 | Pending |
+| IMPORT-02 | Phase 3 | Pending |
+| IMPORT-03 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Pending |
+| UI-04 | Phase 3 | Pending |
+| UI-05 | Phase 3 | Pending |
+| COST-01 | Phase 3 | Pending |
+| COST-02 | Phase 3 | Pending |
+| COST-03 | Phase 3 | Pending |
+| JOBS-01 | Phase 4 | Pending |
+| JOBS-02 | Phase 4 | Pending |
+| PERSIST-01 | Phase 3 | Pending |
+| PERSIST-02 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after initialization*
+*Last updated: 2026-04-14 after roadmap creation*
