@@ -7,10 +7,10 @@
 
 ### Data Model
 
-- [ ] **DATA-01**: PrintJob stores multiple filaments as `filaments: FilamentUsage[]` replacing single `filamentId`/`filamentGrams`
-- [ ] **DATA-02**: Each FilamentUsage tracks filamentId, grams, optional pricePerGram override, and currency
-- [ ] **DATA-03**: Database migration (v4→v5) converts existing single-filament jobs to filaments array
-- [ ] **DATA-04**: Migration handles edge cases: empty filamentId, missing filamentGrams, undefined values
+- [x] **DATA-01**: PrintJob stores multiple filaments as `filaments: FilamentUsage[]` replacing single `filamentId`/`filamentGrams`
+- [x] **DATA-02**: Each FilamentUsage tracks filamentId, grams, optional pricePerGram override, and currency
+- [x] **DATA-03**: Database migration (v4→v5) converts existing single-filament jobs to filaments array
+- [x] **DATA-04**: Migration handles edge cases: empty filamentId, missing filamentGrams, undefined values
 
 ### G-code Parser
 
@@ -76,10 +76,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
+| DATA-04 | Phase 1 | Complete |
 | GCODE-01 | Phase 2 | Pending |
 | GCODE-02 | Phase 2 | Pending |
 | GCODE-03 | Phase 2 | Pending |
