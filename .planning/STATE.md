@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-01-PLAN.md (Tasks 1-2); checkpoint Task 3 awaiting human verify
-last_updated: "2026-04-14T22:59:40.427Z"
+stopped_at: Completed 02-01 Task 1; checkpoint Task 2 awaiting human-verify
+last_updated: "2026-04-14T23:44:41.206Z"
 last_activity: 2026-04-14 — Roadmap created, requirements mapped, ready for plan-phase 1
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
   percent: 100
 ---
 
@@ -66,6 +66,7 @@ Recent decisions affecting current work:
 - Nozzle wear: Export getMaterialDensity from gcodeParser.ts to fix pre-existing PLA-only density bug
 - [Phase 01-data-foundation]: Clean removal of filamentId/filamentGrams — no deprecated optional stubs (locked decision)
 - [Phase 01-data-foundation]: Dexie v5 migration returns modify() promise to ensure complete record conversion
+- [Phase 02-gcode-parser]: Export getMaterialDensity from gcodeParser.ts — fixes pre-existing PLA-only density bug for nozzle wear and enables Phase 3 reuse
 
 ### Pending Todos
 
@@ -77,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T22:47:45.860Z
-Stopped at: Completed 01-01-PLAN.md (Tasks 1-2); checkpoint Task 3 awaiting human verify
+Last session: 2026-04-14T23:44:36.720Z
+Stopped at: Completed 02-01 Task 1; checkpoint Task 2 awaiting human-verify
 Resume file: None
