@@ -25,7 +25,7 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — Add FilamentUsage type, update PrintJob, write Dexie v4->v5 migration
+- [x] 01-01-PLAN.md — Add FilamentUsage type, update PrintJob, write Dexie v4->v5 migration
 
 ### Phase 2: G-code Parser
 **Goal**: The parser extracts all filaments from multi-material G-code instead of silently discarding extras
@@ -36,7 +36,10 @@ Plans:
   2. Importing a single-material G-code file produces single-element arrays; existing single-field aliases (filamentType, filamentGrams) are unchanged
   3. When only total filament weight is present (Bambu header only), the first extruder receives the total and remaining extruders receive zero
   4. getMaterialDensity is exported from gcodeParser.ts and usable by other modules
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 02-01-PLAN.md — Extend GcodeParseResult with array fields, update all slicer parsers, export getMaterialDensity
 
 ### Phase 3: Calculator UI + Import
 **Goal**: Users can enter, import, and save multi-material jobs with accurate per-filament cost and nozzle wear calculations
@@ -64,6 +67,6 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 1/1 | Complete   | 2026-04-14 |
-| 2. G-code Parser | 0/? | Not started | - |
+| 2. G-code Parser | 0/1 | Not started | - |
 | 3. Calculator UI + Import | 0/? | Not started | - |
 | 4. Jobs Display | 0/? | Not started | - |
