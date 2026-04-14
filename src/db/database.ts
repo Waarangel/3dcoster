@@ -46,6 +46,30 @@ db.version(4).stores({
   settings: 'key',
 });
 
+db.version(5).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+}).upgrade(tx => {
+  return tx.table('jobs').toCollection().modify(job => {
+    const hasFilament = job.filamentId && job.filamentId.trim() !== '';
+    if (hasFilament) {
+      job.filaments = [{
+        filamentId: job.filamentId,
+        grams: job.filamentGrams || 0,
+        // pricePerGram intentionally omitted — form falls back to asset library price
+      }];
+    } else {
+      job.filaments = [];
+    }
+    delete job.filamentId;
+    delete job.filamentGrams;
+  });
+});
+
 export { db };
 
 // Helper functions for settings
