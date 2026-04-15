@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
+import { getMaterialDensity } from '../utils/gcodeParser';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -22,9 +23,6 @@ interface CostCalculatorProps {
   editingJob: PrintJob | null;
   onCancelEdit: () => void;
 }
-
-// PLA density: ~1.24 g/cm³
-const FILAMENT_DENSITY = 1.24;
 
 // Session storage key for form persistence
 const FORM_STORAGE_KEY = 'costCalculatorForm';
@@ -70,12 +68,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [filamentRows, setFilamentRows] = useState<FilamentRow[]>(() =>
     getStoredValue('filamentRows', [makeDefaultRow(userCurrency)])
   );
-
-  // TEMPORARY shims — removed in Plan 03 when cost calc and save are refactored
-  const filamentId = filamentRows[0]?.filamentId ?? '';
-  const filamentGrams = filamentRows[0]?.grams ?? 0;
-  const editedFilamentPrice = filamentRows[0]?.editedPrice ?? 0;
-  const editedFilamentCurrency = filamentRows[0]?.editedCurrency ?? userCurrency;
 
   // Helper functions for filament row management
   const addFilamentRow = () => {
@@ -364,8 +356,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   // Calculate costs - separating per-unit consumables from fixed costs
   const costs = useMemo((): CostBreakdown => {
-    // Filament cost (uses edited price which may differ from database price)
-    const filamentCost = filamentId && editedFilamentPrice > 0 ? filamentGrams * editedFilamentPrice : 0;
+    // Filament cost: sum across all rows (uses edited price which may differ from database price)
+    const filamentCost = filamentRows.reduce((sum, row) => {
+      if (!row.filamentId || row.editedPrice <= 0) return sum;
+      return sum + row.grams * row.editedPrice;
+    }, 0);
 
     // Electricity cost (needs printer to be selected)
     const electricityCost = selectedPrinter
@@ -382,9 +377,15 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     const depreciation = depreciationPerHour * printTimeHours;
 
     // Nozzle wear (based on volume) - FIXED COST for this print job
-    const volumeCm3 = filamentGrams / FILAMENT_DENSITY;
+    // Uses per-material density via getMaterialDensity (not hardcoded 1.24)
+    const totalVolumeCm3 = filamentRows.reduce((sum, row) => {
+      if (row.grams <= 0) return sum;
+      const asset = materials.find(m => m.id === row.filamentId);
+      const density = getMaterialDensity(asset?.filamentType ?? null);
+      return sum + row.grams / density;
+    }, 0);
     const nozzleWear = selectedPrinter
-      ? (volumeCm3 / selectedPrinter.nozzleLifespanCm3) * selectedPrinter.nozzleCost
+      ? (totalVolumeCm3 / selectedPrinter.nozzleLifespanCm3) * selectedPrinter.nozzleCost
       : 0;
 
     // Model amortization - handled separately as fixed cost
@@ -428,7 +429,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       sellingPrice: sellingPrice,
     };
   }, [
-    materials, filamentId, editedFilamentPrice, filamentGrams, printTimeHours, selectedPrinter, electricity,
+    materials, filamentRows, printTimeHours, selectedPrinter, electricity,
     selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
     postProcessingMinutes, failureRate, profitMarginPercent, targetProfit, sellingPrice,
     modelCost, modelCostPerUnit
@@ -510,8 +511,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setValidationError('Please enter a name for this print job');
       return;
     }
-    if (!filamentId) {
-      setValidationError('Please select a filament');
+    if (filamentRows.every(r => !r.filamentId)) {
+      setValidationError('Please select at least one filament');
       return;
     }
     if (!selectedInstanceId || !printerInstances.some(p => p.id === selectedInstanceId)) {
@@ -519,14 +520,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       return;
     }
 
+    const filaments: FilamentUsage[] = filamentRows
+      .filter(r => r.filamentId && r.grams > 0)
+      .map(r => ({
+        filamentId: r.filamentId,
+        grams: r.grams,
+        pricePerGram: r.editedPrice > 0 ? r.editedPrice : undefined,
+        currency: r.editedPrice > 0 ? r.editedCurrency : undefined,
+      }));
+
     if (editingJob) {
       // Update existing job
-      // TEMPORARY shim — Plan 03 replaces this with full filamentRows mapping
       const updatedJob: PrintJob = {
         ...editingJob,
         name: printName.trim(),
         updatedAt: new Date(),
-        filaments: [{ filamentId, grams: filamentGrams, pricePerGram: editedFilamentPrice, currency: editedFilamentCurrency }],
+        filaments,
         printTimeHours,
         printerInstanceId: selectedInstanceId,
         modelCost,
@@ -547,13 +556,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setTimeout(() => setJustSaved(false), 3000);
     } else {
       // Create new job
-      // TEMPORARY shim — Plan 03 replaces this with full filamentRows mapping
       const job: PrintJob = {
         id: `job-${Date.now()}`,
         name: printName.trim(),
         createdAt: new Date(),
         updatedAt: new Date(),
-        filaments: [{ filamentId, grams: filamentGrams, pricePerGram: editedFilamentPrice, currency: editedFilamentCurrency }],
+        filaments,
         printTimeHours,
         printerInstanceId: selectedInstanceId,
         modelCost,
@@ -662,24 +670,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <h2 className="text-lg font-semibold text-white mb-4">Print Job Details</h2>
 
         {/* G-code Import */}
-        {/* TEMPORARY shim — Plan 03 replaces this with full multi-filament import handling (maps all filaments[]) */}
         <GcodeImport
           assets={materials}
           onImport={({ filaments, printTimeHours: time, printName: name }) => {
             if (time > 0) setPrintTimeHours(time);
             if (name && !printName) setPrintName(name);
-            // Update first filament row with first imported filament's data
-            const first = filaments[0];
-            if (first) {
-              const matched = first.filamentId ? materials.find(m => m.id === first.filamentId) : undefined;
-              updateFilamentRow(0, {
-                ...(first.grams > 0 ? { grams: first.grams } : {}),
-                ...(matched ? {
-                  filamentId: matched.id,
-                  editedPrice: matched.costPerUnit ?? 0,
-                  editedCurrency: matched.currency || userCurrency,
-                } : {}),
+            if (filaments.length > 0) {
+              const newRows: FilamentRow[] = filaments.map(f => {
+                const asset = f.filamentId ? materials.find(m => m.id === f.filamentId) : null;
+                return {
+                  filamentId: f.filamentId ?? '',
+                  grams: f.grams,
+                  editedPrice: asset?.costPerUnit ?? 0,
+                  editedCurrency: asset?.currency ?? userCurrency,
+                };
               });
+              setFilamentRows(newRows.length > 0 ? newRows : [makeDefaultRow(userCurrency)]);
             }
           }}
         />
@@ -1388,7 +1394,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         )}
         <button
           onClick={handleSaveJob}
-          disabled={!printName.trim() || !filamentId || trueCost <= 0}
+          disabled={!printName.trim() || filamentRows.every(r => !r.filamentId) || trueCost <= 0}
           className={`w-full md:w-auto px-6 py-3 ${editingJob ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors min-h-[44px]`}
         >
           {editingJob ? 'Update Job' : 'Save Job for Tracking'}
