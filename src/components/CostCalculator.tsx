@@ -43,18 +43,54 @@ function getStoredValue<T>(key: string, defaultValue: T): T {
   return defaultValue;
 }
 
+// Internal form state for multi-filament rows (NOT the DB FilamentUsage type)
+interface FilamentRow {
+  filamentId: string;
+  grams: number;
+  editedPrice: number;
+  editedCurrency: Currency;
+}
+
 export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, userCurrency, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
   const distanceUnit = getDistanceUnit(userCurrency);
 
+  // makeDefaultRow is a function (not a constant) so it captures userCurrency at call time
+  const makeDefaultRow = (currency: Currency): FilamentRow => ({
+    filamentId: '',
+    grams: 0,
+    editedPrice: 0,
+    editedCurrency: currency,
+  });
+
   // Print job inputs - restore from sessionStorage if available
   const [printName, setPrintName] = useState(() => getStoredValue('printName', ''));
-  const [filamentGrams, setFilamentGrams] = useState(() => getStoredValue('filamentGrams', 0));
-  const [filamentId, setFilamentId] = useState(() => getStoredValue('filamentId', ''));
-  const [editedFilamentPrice, setEditedFilamentPrice] = useState(() => getStoredValue('editedFilamentPrice', 0));
-  const [editedFilamentCurrency, setEditedFilamentCurrency] = useState<Currency>(() => getStoredValue('editedFilamentCurrency', 'USD'));
+  const [filamentRows, setFilamentRows] = useState<FilamentRow[]>(() =>
+    getStoredValue('filamentRows', [makeDefaultRow(userCurrency)])
+  );
+
+  // TEMPORARY shims — removed in Plan 03 when cost calc and save are refactored
+  const filamentId = filamentRows[0]?.filamentId ?? '';
+  const filamentGrams = filamentRows[0]?.grams ?? 0;
+  const editedFilamentPrice = filamentRows[0]?.editedPrice ?? 0;
+  const editedFilamentCurrency = filamentRows[0]?.editedCurrency ?? userCurrency;
+
+  // Helper functions for filament row management
+  const addFilamentRow = () => {
+    if (filamentRows.length >= 16) return;
+    setFilamentRows(prev => [...prev, makeDefaultRow(userCurrency)]);
+  };
+
+  const removeFilamentRow = (index: number) => {
+    if (index === 0) return;
+    setFilamentRows(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateFilamentRow = (index: number, patch: Partial<FilamentRow>) => {
+    setFilamentRows(prev => prev.map((row, i) => i === index ? { ...row, ...patch } : row));
+  };
   const [selectedInstanceId, setSelectedInstanceId] = useState(() => {
     const stored = getStoredValue('selectedInstanceId', '');
     // If stored value is empty or doesn't match any current printer, use first available
@@ -100,10 +136,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
     const formState = {
       printName,
-      filamentGrams,
-      filamentId,
-      editedFilamentPrice,
-      editedFilamentCurrency,
+      filamentRows,
       selectedInstanceId,
       printTimeHours,
       modelCost,
@@ -125,7 +158,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     };
     sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
   }, [
-    editingJob, printName, filamentGrams, filamentId, editedFilamentPrice, editedFilamentCurrency,
+    editingJob, printName, filamentRows,
     selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, prepTimeMinutes, postProcessingMinutes,
     failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, lastEdited,
     shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace
@@ -135,8 +168,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   useEffect(() => {
     if (editingJob) {
       setPrintName(editingJob.name);
-      setFilamentGrams(editingJob.filamentGrams);
-      setFilamentId(editingJob.filamentId);
       setSelectedInstanceId(editingJob.printerInstanceId);
       setPrintTimeHours(editingJob.printTimeHours);
       setModelCost(editingJob.modelCost);
@@ -149,12 +180,17 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setSellingPrice(editingJob.sellingPrice);
       setLastEdited('price');
 
-      // Set filament price from material if available
-      const filament = materials.find(m => m.id === editingJob.filamentId);
-      if (filament) {
-        setEditedFilamentPrice(filament.costPerUnit ?? 0);
-        setEditedFilamentCurrency(filament.currency || 'USD');
-      }
+      // Restore filament rows from FilamentUsage[] (new multi-filament data model)
+      const restoredRows: FilamentRow[] = (editingJob.filaments ?? []).map(fu => {
+        const asset = materials.find(m => m.id === fu.filamentId);
+        return {
+          filamentId: fu.filamentId,
+          grams: fu.grams,
+          editedPrice: fu.pricePerGram ?? asset?.costPerUnit ?? 0,
+          editedCurrency: fu.currency ?? asset?.currency ?? userCurrency,
+        };
+      });
+      setFilamentRows(restoredRows.length > 0 ? restoredRows : [makeDefaultRow(userCurrency)]);
     }
   }, [editingJob, materials]);
 
@@ -326,13 +362,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     return methods;
   }, [userCurrency, shippingConfig.customCarriers]);
 
-  // Handle filament selection from the nested dropdown
-  const handleFilamentSelect = (filament: Material) => {
-    setFilamentId(filament.id);
-    setEditedFilamentPrice(filament.costPerUnit ?? 0);
-    setEditedFilamentCurrency(filament.currency || 'USD');
-  };
-
   // Calculate costs - separating per-unit consumables from fixed costs
   const costs = useMemo((): CostBreakdown => {
     // Filament cost (uses edited price which may differ from database price)
@@ -445,9 +474,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // Clear form handler
   const clearForm = () => {
     setPrintName('');
-    setFilamentGrams(0);
-    setFilamentId('');
-    setEditedFilamentPrice(0);
+    setFilamentRows([makeDefaultRow(userCurrency)]);
     setSelectedInstanceId(printerInstances[0]?.id || '');
     setPrintTimeHours(0);
     setModelCost(0);
@@ -494,12 +521,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
     if (editingJob) {
       // Update existing job
+      // TEMPORARY shim — Plan 03 replaces this with full filamentRows mapping
       const updatedJob: PrintJob = {
         ...editingJob,
         name: printName.trim(),
         updatedAt: new Date(),
-        filamentId,
-        filamentGrams,
+        filaments: [{ filamentId, grams: filamentGrams, pricePerGram: editedFilamentPrice, currency: editedFilamentCurrency }],
         printTimeHours,
         printerInstanceId: selectedInstanceId,
         modelCost,
@@ -520,13 +547,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setTimeout(() => setJustSaved(false), 3000);
     } else {
       // Create new job
+      // TEMPORARY shim — Plan 03 replaces this with full filamentRows mapping
       const job: PrintJob = {
         id: `job-${Date.now()}`,
         name: printName.trim(),
         createdAt: new Date(),
         updatedAt: new Date(),
-        filamentId,
-        filamentGrams,
+        filaments: [{ filamentId, grams: filamentGrams, pricePerGram: editedFilamentPrice, currency: editedFilamentCurrency }],
         printTimeHours,
         printerInstanceId: selectedInstanceId,
         modelCost,
@@ -635,19 +662,24 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <h2 className="text-lg font-semibold text-white mb-4">Print Job Details</h2>
 
         {/* G-code Import */}
+        {/* TEMPORARY shim — Plan 03 replaces this with full multi-filament import handling (maps all filaments[]) */}
         <GcodeImport
           assets={materials}
-          onImport={({ filamentGrams: grams, printTimeHours: time, filamentId: fId, printName: name }) => {
-            if (grams > 0) setFilamentGrams(grams);
+          onImport={({ filaments, printTimeHours: time, printName: name }) => {
             if (time > 0) setPrintTimeHours(time);
             if (name && !printName) setPrintName(name);
-            if (fId) {
-              const matched = materials.find(m => m.id === fId);
-              if (matched) {
-                setFilamentId(fId);
-                setEditedFilamentPrice(matched.costPerUnit ?? 0);
-                setEditedFilamentCurrency(matched.currency || 'USD');
-              }
+            // Update first filament row with first imported filament's data
+            const first = filaments[0];
+            if (first) {
+              const matched = first.filamentId ? materials.find(m => m.id === first.filamentId) : undefined;
+              updateFilamentRow(0, {
+                ...(first.grams > 0 ? { grams: first.grams } : {}),
+                ...(matched ? {
+                  filamentId: matched.id,
+                  editedPrice: matched.costPerUnit ?? 0,
+                  editedCurrency: matched.currency || userCurrency,
+                } : {}),
+              });
             }
           }}
         />
@@ -686,29 +718,62 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             )}
           </div>
 
-          {/* Filament Selector - Nested dropdown with editable price */}
-          <div className="lg:col-span-2">
-            <FilamentSelector
-              materials={materials}
-              selectedFilamentId={filamentId}
-              onSelect={handleFilamentSelect}
-              editedPrice={editedFilamentPrice}
-              editedCurrency={editedFilamentCurrency}
-              onPriceChange={setEditedFilamentPrice}
-              onCurrencyChange={setEditedFilamentCurrency}
-              userCurrency={userCurrency}
-            />
-          </div>
+          {/* Multi-Filament Rows */}
+          <div className="lg:col-span-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs text-slate-400">Filaments *</label>
+              <button
+                type="button"
+                onClick={addFilamentRow}
+                disabled={filamentRows.length >= 16}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors"
+              >
+                + Add Filament
+              </button>
+            </div>
 
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Filament Used (g)</label>
-            <input
-              type="number"
-              value={filamentGrams || ''}
-              onChange={e => setFilamentGrams(parseFloat(e.target.value) || 0)}
-              placeholder="From slicer"
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-            />
+            {filamentRows.map((row, index) => (
+              <div key={index} className="flex items-start gap-3 bg-slate-700/30 p-3 rounded-lg">
+                <div className="flex-1">
+                  <FilamentSelector
+                    materials={materials}
+                    selectedFilamentId={row.filamentId}
+                    onSelect={(filament) => updateFilamentRow(index, {
+                      filamentId: filament.id,
+                      editedPrice: filament.costPerUnit ?? 0,
+                      editedCurrency: filament.currency || userCurrency,
+                    })}
+                    editedPrice={row.editedPrice}
+                    editedCurrency={row.editedCurrency}
+                    onPriceChange={(price) => updateFilamentRow(index, { editedPrice: price })}
+                    onCurrencyChange={(currency) => updateFilamentRow(index, { editedCurrency: currency })}
+                    userCurrency={userCurrency}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Grams</label>
+                  <input
+                    type="number"
+                    value={row.grams || ''}
+                    onChange={e => updateFilamentRow(index, { grams: parseFloat(e.target.value) || 0 })}
+                    placeholder="g"
+                    className="w-24 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                  />
+                </div>
+                {index > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removeFilamentRow(index)}
+                    className="mt-5 text-red-400 hover:text-red-300 p-1"
+                    aria-label="Remove filament row"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
 
           <div>
