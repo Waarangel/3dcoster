@@ -65,9 +65,23 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   // Print job inputs - restore from sessionStorage if available
   const [printName, setPrintName] = useState(() => getStoredValue('printName', ''));
-  const [filamentRows, setFilamentRows] = useState<FilamentRow[]>(() =>
-    getStoredValue('filamentRows', [makeDefaultRow(userCurrency)])
-  );
+  const [filamentRows, setFilamentRows] = useState<FilamentRow[]>(() => {
+    try {
+      const stored = sessionStorage.getItem(FORM_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // New format: has filamentRows array
+        if (Array.isArray(parsed.filamentRows) && parsed.filamentRows.length > 0) {
+          return parsed.filamentRows as FilamentRow[];
+        }
+        // Old format: has filamentId scalar -- graceful fallback per PERSIST-02
+        // Just fall through to default
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+    return [makeDefaultRow(userCurrency)];
+  });
 
   // Helper functions for filament row management
   const addFilamentRow = () => {
