@@ -80,7 +80,7 @@ Plans:
 | 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
 | 3. Calculator UI + Import | 3/3 | Complete | 2026-04-15 |
 | 4. Jobs Display | 1/1 | Complete | 2026-04-15 |
-| 5. Printer Maintenance Alerts | 0/? | Not started | - |
+| 5. Printer Maintenance Alerts | 0/1 | In progress | - |
 | 6. 3MF Multi-Plate Project Import | 0/? | Not started | - |
 
 ### Phase 5: Printer Maintenance Alerts
@@ -90,7 +90,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. When a printer's accumulated printHours crosses a 500-hour interval (500, 1000, 1500, etc.), a popup/toast warns the user that maintenance is due for that printer
   2. The maintenance alert is dismissable and does not re-trigger for the same interval after acknowledgment
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 05-01-PLAN.md — Maintenance alert modal, boundary detection in handleSaveJob, localStorage dismissed state
 
 ### Phase 6: 3MF Multi-Plate Project Import
 **Goal**: Users can import a sliced Bambu Studio / OrcaSlicer 3MF file to get total project cost across all build plates in a single import
