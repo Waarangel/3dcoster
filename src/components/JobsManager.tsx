@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { PrintJob, Material, PrinterConfig, PrinterInstance, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
 
@@ -24,6 +24,17 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
 
   const { sales, addSale } = useSales(selectedJobId || undefined);
+  const { sales: allSales } = useSales();
+
+  const salesByJob = useMemo(() => {
+    const map = new Map<string, Sale[]>();
+    for (const sale of allSales ?? []) {
+      const existing = map.get(sale.jobId);
+      if (existing) existing.push(sale);
+      else map.set(sale.jobId, [sale]);
+    }
+    return map;
+  }, [allSales]);
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
@@ -83,25 +94,36 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
     }
   };
 
-  // Calculate break-even info for a job
-  const getBreakEvenInfo = (job: PrintJob) => {
-    const revenueEarned = job.copiesSold * job.sellingPrice;
-    const profitPerUnit = job.sellingPrice - job.costPerUnit;
+  // Calculate break-even info for a job using actual sale revenue
+  const getBreakEvenInfo = useCallback((job: PrintJob) => {
+    const jobSales = salesByJob.get(job.id) ?? [];
+    const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue, 0);
+    const totalCost = job.costPerUnit * job.copiesSold + job.modelCost;
+    const actualProfit = actualRevenue - totalCost;
 
-    // How many copies to break even (recover model cost)
-    const breakEvenCopies = profitPerUnit > 0
-      ? Math.ceil(job.modelCost / profitPerUnit)
+    // Theoretical profit per unit at listed sell price
+    const theoreticalProfitPerUnit = job.sellingPrice - job.costPerUnit;
+
+    // Actual average profit per unit from real sales
+    const actualProfitPerUnit = job.copiesSold > 0
+      ? (actualRevenue - job.costPerUnit * job.copiesSold) / job.copiesSold
+      : theoreticalProfitPerUnit;
+
+    // Break-even copies uses actual avg profit if sales exist, otherwise theoretical
+    const effectiveProfitPerUnit = job.copiesSold > 0 ? actualProfitPerUnit : theoreticalProfitPerUnit;
+    const breakEvenCopies = effectiveProfitPerUnit > 0
+      ? Math.ceil(job.modelCost / effectiveProfitPerUnit)
       : job.modelCost > 0 ? Infinity : 0;
     const remainingToBreakEven = Math.max(0, breakEvenCopies - job.copiesSold);
 
     return {
-      revenueEarned,
-      profitPerUnit,
+      revenueEarned: actualRevenue,
+      profitPerUnit: actualProfitPerUnit,
       breakEvenCopies,
       remainingToBreakEven,
-      isBreakEven: job.copiesSold >= breakEvenCopies,
+      isBreakEven: actualProfit >= 0 && job.copiesSold > 0,
     };
-  };
+  }, [salesByJob]);
 
   const handleRecordSale = async () => {
     if (!selectedJob || saleQuantity <= 0) return;
