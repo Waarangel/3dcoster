@@ -6,11 +6,16 @@ import { NewBadge } from './NewBadge';
 interface GcodeImportProps {
   assets: Asset[];
   onImport: (result: {
-    filamentGrams: number;
+    filaments: Array<{ filamentId?: string; grams: number }>;
     printTimeHours: number;
-    filamentId?: string;
     printName?: string;
   }) => void;
+}
+
+interface SuccessInfo {
+  slicer: string;
+  time: string;
+  filaments: Array<{ type: string | null; matched: string | null; grams: number }>;
 }
 
 const SLICER_LABELS: Record<string, string> = {
@@ -27,13 +32,7 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successInfo, setSuccessInfo] = useState<{
-    slicer: string;
-    grams: number;
-    time: string;
-    type: string | null;
-    matched: string | null;
-  } | null>(null);
+  const [successInfo, setSuccessInfo] = useState<SuccessInfo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-dismiss success banner after 8 seconds
@@ -57,19 +56,37 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
       const content = await readGcodeFile(file);
       const result = parseGcode(content);
 
-      if (!result.filamentGrams && !result.printTimeHours && !result.filamentType) {
+      if (!result.filamentGrams && !result.printTimeHours && !result.filamentType && result.filamentTypes.length === 0) {
         setError('Could not extract any print data from this G-code file. The slicer format may not be supported.');
         setIsParsing(false);
         return;
       }
 
-      // Auto-match filament from user's library
-      const matchId = findBestFilamentMatch(
-        result.filamentType,
-        result.filamentVendor,
-        assets,
-        result.filamentSettingsId
-      );
+      // Build per-extruder filaments array
+      const filaments: Array<{ filamentId?: string; grams: number }> =
+        result.filamentTypes.length > 0
+          ? result.filamentTypes.map((type, i) => ({
+              filamentId:
+                findBestFilamentMatch(
+                  type,
+                  result.filamentVendors[i] ?? null,
+                  assets,
+                  result.filamentSettingsIds[i] ?? null
+                ) ?? undefined,
+              grams: result.filamentGramsPerExtruder[i] ?? 0,
+            }))
+          : [
+              {
+                filamentId:
+                  findBestFilamentMatch(
+                    result.filamentType,
+                    result.filamentVendor,
+                    assets,
+                    result.filamentSettingsId
+                  ) ?? undefined,
+                grams: result.filamentGrams ?? 0,
+              },
+            ];
 
       // Extract print name from filename: "Body3_PETG_8h40m.gcode" → "Body3"
       const printName = file.name
@@ -81,27 +98,24 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
         .replace(/\s+/g, ' ')
         .trim();
 
-      const matchedType = result.filamentType
-        ? matchFilamentType(result.filamentType, result.filamentSettingsId)
-        : null;
-
-      const matchedFilament = matchId ? assets.find(a => a.id === matchId) : null;
-
       // Auto-apply to form immediately
       onImport({
-        filamentGrams: result.filamentGrams ?? 0,
+        filaments,
         printTimeHours: result.printTimeHours ?? 0,
-        filamentId: matchId ?? undefined,
         printName: printName || undefined,
       });
 
       // Show brief success banner
       setSuccessInfo({
         slicer: SLICER_LABELS[result.slicer] || result.slicer,
-        grams: result.filamentGrams ?? 0,
         time: result.rawPrintTimeString || `${(result.printTimeHours ?? 0).toFixed(2)}h`,
-        type: matchedType,
-        matched: matchedFilament?.name ?? null,
+        filaments: filaments.map((f, i) => ({
+          type: result.filamentTypes[i]
+            ? matchFilamentType(result.filamentTypes[i], result.filamentSettingsIds[i] ?? null)
+            : null,
+          matched: f.filamentId ? (assets.find(a => a.id === f.filamentId)?.name ?? null) : null,
+          grams: f.grams,
+        })),
       });
     } catch (err) {
       setError(err instanceof Error ? `Failed to read G-code file: ${err.message}` : 'Failed to read G-code file');
@@ -133,22 +147,24 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
             <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full">
-                {successInfo.slicer}
-              </span>
-              {successInfo.grams > 0 && (
-                <span className="text-green-300">{successInfo.grams.toFixed(1)}g</span>
-              )}
-              {successInfo.time && (
-                <span className="text-green-300">{successInfo.time}</span>
-              )}
-              {successInfo.type && (
-                <span className="text-green-300">{successInfo.type}</span>
-              )}
-              {successInfo.matched && (
-                <span className="text-slate-400">→ {successInfo.matched}</span>
-              )}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full">
+                  {successInfo.slicer}
+                </span>
+                {successInfo.time && (
+                  <span className="text-green-300">{successInfo.time}</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                {successInfo.filaments.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-green-300">{f.grams.toFixed(1)}g</span>
+                    {f.type && <span className="text-green-300">{f.type}</span>}
+                    {f.matched && <span className="text-slate-400">-&gt; {f.matched}</span>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <button
