@@ -9,7 +9,7 @@ interface JobsManagerProps {
   printerInstances: PrinterInstance[];
   shippingConfig: ShippingConfig;
   userCurrency: Currency;
-  onDeleteJob: (id: string) => void;
+  onDeleteJob: (id: string) => Promise<void>;
   onEditJob: (job: PrintJob) => void;
 }
 
@@ -22,6 +22,7 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
   const [saleShippingMethod, setSaleShippingMethod] = useState<ShippingMethodType>('local_pickup');
   const [saleShippingCost, setSaleShippingCost] = useState(0);
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
+  const [deleteConfirmJobId, setDeleteConfirmJobId] = useState<string | null>(null);
 
   const { sales, addSale } = useSales(selectedJobId || undefined);
   const { sales: allSales } = useSales();
@@ -162,12 +163,16 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
   };
 
   const handleDeleteJob = (id: string) => {
-    if (window.confirm('Delete this job and all associated sales records?')) {
-      onDeleteJob(id);
-      if (selectedJobId === id) {
-        setSelectedJobId(null);
-      }
+    setDeleteConfirmJobId(id);
+  };
+
+  const confirmDeleteJob = async () => {
+    if (!deleteConfirmJobId) return;
+    await onDeleteJob(deleteConfirmJobId);
+    if (selectedJobId === deleteConfirmJobId) {
+      setSelectedJobId(null);
     }
+    setDeleteConfirmJobId(null);
   };
 
   const getFilamentName = (filamentId: string) => {
@@ -463,6 +468,32 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmJobId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteConfirmJobId(null)}>
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Job</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              Delete this job and all associated sales records? This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setDeleteConfirmJobId(null)}
+                className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteJob}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
