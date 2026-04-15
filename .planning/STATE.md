@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 05-01 tasks 1-2, awaiting human verify checkpoint
-last_updated: "2026-04-15T13:31:16.239Z"
+stopped_at: Completed 06-01-PLAN.md (3MF parser + TDD)
+last_updated: "2026-04-15T13:38:50.573Z"
 last_activity: 2026-04-15 — Completed 04-01 jobs display hardening, empty-filament fallback, human-verified round-trip
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 100
 ---
 
@@ -57,6 +57,7 @@ Progress: [██████████] 100%
 | Phase 03-calculator-ui-import P03 | 30min | 3 tasks | 1 files |
 | Phase 04-jobs-display P01 | 8min | 2 tasks | 1 files |
 | Phase 05-printer-maintenance-alerts P01 | 12min | 2 tasks | 4 files |
+| Phase 06-3mf-multi-plate-project-import P01 | 10min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,8 @@ Recent decisions affecting current work:
 - [Phase 05-printer-maintenance-alerts]: Capture hoursBefore before awaits in handleSaveJob; compute hoursAfter from argument (React state pre-update pattern)
 - [Phase 05-printer-maintenance-alerts]: MAINTENANCE_INTERVAL=500 exported as named constant from maintenanceDismissed.ts for future reconfigurability
 - [Phase 05-printer-maintenance-alerts]: localStorage key '3dcoster-maintenance-dismissed' stores Record<instanceId, number[]> — independent per-printer dismissed interval tracking
+- [Phase 06-3mf-multi-plate-project-import]: metresToGrams uses metres*100 for cm length — plan formula had unit inconsistency; correct physics gives ~29.82g for 10m PLA 1.75mm
+- [Phase 06-3mf-multi-plate-project-import]: Static import of getMaterialDensity at module top instead of dynamic import in filament loop
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T13:31:16.236Z
-Stopped at: Completed 05-01 tasks 1-2, awaiting human verify checkpoint
+Last session: 2026-04-15T13:38:50.570Z
+Stopped at: Completed 06-01-PLAN.md (3MF parser + TDD)
 Resume file: None

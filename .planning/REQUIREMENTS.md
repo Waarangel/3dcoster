@@ -57,10 +57,10 @@
 
 ### 3MF Import
 
-- [ ] **3MF-01**: Parse sliced Bambu/Orca 3MF files (ZIP with slice_info.config) to extract per-plate filament and time data
-- [ ] **3MF-02**: Sum filament usage and print time across all plates, populate calculator with project totals
-- [ ] **3MF-03**: Detect non-sliced 3MF files and show helpful error explaining slicing is required
-- [ ] **3MF-04**: Display plate count so user knows it's a multi-plate project
+- [x] **3MF-01**: Parse sliced Bambu/Orca 3MF files (ZIP with slice_info.config) to extract per-plate filament and time data
+- [x] **3MF-02**: Sum filament usage and print time across all plates, populate calculator with project totals
+- [x] **3MF-03**: Detect non-sliced 3MF files and show helpful error explaining slicing is required
+- [x] **3MF-04**: Display plate count so user knows it's a multi-plate project
 
 ## v2 Requirements
 
@@ -114,10 +114,10 @@
 | PERSIST-02 | Phase 3 | Pending |
 | MAINT-01 | Phase 5 | Complete |
 | MAINT-02 | Phase 5 | Complete |
-| 3MF-01 | Phase 6 | Pending |
-| 3MF-02 | Phase 6 | Pending |
-| 3MF-03 | Phase 6 | Pending |
-| 3MF-04 | Phase 6 | Pending |
+| 3MF-01 | Phase 6 | Complete |
+| 3MF-02 | Phase 6 | Complete |
+| 3MF-03 | Phase 6 | Complete |
+| 3MF-04 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 30 total
