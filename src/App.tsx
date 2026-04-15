@@ -8,9 +8,11 @@ import { CostCalculator } from './components/CostCalculator';
 import { JobsManager } from './components/JobsManager';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
+import { MaintenanceAlertModal } from './components/MaintenanceAlertModal';
 import { NewBadge } from './components/NewBadge';
 import { Footer } from './components/Footer';
 import { UpdateBanner } from './components/UpdateBanner';
+import { isMaintenanceDismissed, markMaintenanceDismissed, MAINTENANCE_INTERVAL } from './utils/maintenanceDismissed';
 
 type Tab = 'calculator' | 'jobs' | 'materials' | 'settings';
 
@@ -36,6 +38,7 @@ function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingJob, setEditingJob] = useState<PrintJob | null>(null);
+  const [maintenanceAlert, setMaintenanceAlert] = useState<{ instanceId: string; hours: number } | null>(null);
   const isStandalone = useIsStandalone();
 
   // Database hooks
@@ -104,8 +107,26 @@ function App() {
 
   // Handle saving a job and updating printer hours
   const handleSaveJob = async (job: PrintJob, printHours: number) => {
+    // Capture hours BEFORE the update (printerInstances holds pre-update values)
+    const instance = printerInstances.find(i => i.id === job.printerInstanceId);
+    const hoursBefore = instance?.printHours ?? 0;
+
     await addJob(job);
     await addPrintHours(job.printerInstanceId, printHours);
+
+    // Detect 500h interval boundary crossing
+    if (printHours > 0) {
+      const hoursAfter = hoursBefore + printHours;
+      const intervalsBefore = Math.floor(hoursBefore / MAINTENANCE_INTERVAL);
+      const intervalsAfter = Math.floor(hoursAfter / MAINTENANCE_INTERVAL);
+
+      if (intervalsAfter > intervalsBefore && intervalsAfter > 0) {
+        const crossedAt = intervalsAfter * MAINTENANCE_INTERVAL;
+        if (!isMaintenanceDismissed(job.printerInstanceId, crossedAt)) {
+          setMaintenanceAlert({ instanceId: job.printerInstanceId, hours: crossedAt });
+        }
+      }
+    }
   };
 
   // Handle editing a job - switch to calculator and load job data
@@ -204,6 +225,18 @@ function App() {
         onResetMarketplaceFees={resetMarketplaceFees}
       />
 
+      {/* Maintenance Alert Modal */}
+      <MaintenanceAlertModal
+        alert={maintenanceAlert}
+        printerInstances={printerInstances}
+        onDismiss={() => {
+          if (maintenanceAlert) {
+            markMaintenanceDismissed(maintenanceAlert.instanceId, maintenanceAlert.hours);
+          }
+          setMaintenanceAlert(null);
+        }}
+      />
+
       {/* Tabs */}
       <div className="bg-slate-800/50 border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4">
@@ -212,7 +245,7 @@ function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap min-h-[44px] flex items-center ${
+                className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap min-h-[44px] flex items-center gap-1 ${
                   activeTab === tab.id
                     ? 'text-blue-400'
                     : 'text-slate-400 hover:text-slate-200'
@@ -220,6 +253,7 @@ function App() {
               >
                 <span className="sm:hidden">{tab.shortLabel}</span>
                 <span className="hidden sm:inline">{tab.label}</span>
+                {tab.id === 'settings' && <NewBadge feature="printer-maintenance-alerts" />}
                 {activeTab === tab.id && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
                 )}
