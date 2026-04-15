@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-01-PLAN.md — GcodeImport multi-filament callback refactored
-last_updated: "2026-04-15T12:14:11.796Z"
-last_activity: 2026-04-14 — Completed 02-01 multi-material parser, verified with real G-code files
+stopped_at: Completed 03-02-PLAN.md — FilamentRow[] state refactor and dynamic row UI
+last_updated: "2026-04-15T13:00:00.000Z"
+last_activity: 2026-04-15 — Completed 03-02 FilamentRow state refactor, dynamic add/remove filament rows
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 5
-  completed_plans: 3
-  percent: 100
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 
 ## Current Position
 
-Phase: 2 of 4 (G-code Parser)
-Plan: 1 of 1 in current phase (complete)
-Status: Phase 2 complete, ready for Phase 3 planning
-Last activity: 2026-04-14 — Completed 02-01 multi-material parser, verified with real G-code files
+Phase: 3 of 4 (Calculator UI + Import)
+Plan: 2 of 3 in current phase (03-02 complete)
+Status: Phase 3 in progress — FilamentRow[] state done, cost calc + save refactor (03-03) remaining
+Last activity: 2026-04-15 — Completed 03-02 FilamentRow state refactor, dynamic filament rows rendering
 
-Progress: [██████████] 100%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100%
 | Phase 01-data-foundation P01 | 8min | 2 tasks | 2 files |
 | Phase 02-gcode-parser P01 | 5min | 2 tasks | 2 files |
 | Phase 03-calculator-ui-import P01 | 4min | 1 tasks | 1 files |
+| Phase 03-calculator-ui-import P02 | 25min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 02-gcode-parser]: Export getMaterialDensity from gcodeParser.ts — fixes pre-existing PLA-only density bug for nozzle wear and enables Phase 3 reuse
 - [Phase 03-calculator-ui-import]: onImport callback changed to filaments[] array — CostCalculator type errors expected, resolved in Plan 03-02
 - [Phase 03-calculator-ui-import]: Success toast restructured: slicer + time header row, per-extruder stacked list below
+- [Phase 03-calculator-ui-import P02]: FilamentRow is internal form state (not exported); distinct from DB FilamentUsage type
+- [Phase 03-calculator-ui-import P02]: TEMPORARY shims extract row[0] values to keep cost calc/save compiling; Plan 03-03 removes them
+- [Phase 03-calculator-ui-import P02]: makeDefaultRow is a function not a constant — captures userCurrency at call time
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T12:14:11.793Z
-Stopped at: Completed 03-01-PLAN.md — GcodeImport multi-filament callback refactored
+Last session: 2026-04-15T13:00:00.000Z
+Stopped at: Completed 03-02-PLAN.md — FilamentRow[] state refactor and dynamic row UI
 Resume file: None

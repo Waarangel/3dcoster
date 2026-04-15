@@ -54,8 +54,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — GcodeImport multi-material: widen onImport to filaments array, per-extruder matching, stacked toast
-- [ ] 03-02-PLAN.md — CostCalculator state refactor: replace scalar filament state with FilamentRow[] array, dynamic row UI
+- [x] 03-01-PLAN.md — GcodeImport multi-material: widen onImport to filaments array, per-extruder matching, stacked toast
+- [x] 03-02-PLAN.md — CostCalculator state refactor: replace scalar filament state with FilamentRow[] array, dynamic row UI
 - [ ] 03-03-PLAN.md — Cost calculation, save/restore, import wiring, session persistence with backward-compat fallback
 
 ### Phase 4: Jobs Display
@@ -73,5 +73,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 1/1 | Complete   | 2026-04-14 |
 | 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
-| 3. Calculator UI + Import | 0/3 | Not started | - |
+| 3. Calculator UI + Import | 2/3 | In progress | - |
 | 4. Jobs Display | 0/? | Not started | - |
