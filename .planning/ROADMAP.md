@@ -8,8 +8,8 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
 
 - [x] **Phase 1: Data Foundation** - New FilamentUsage type, updated PrintJob shape, and v4->v5 database migration (completed 2026-04-14)
 - [x] **Phase 2: G-code Parser** - Extract all filaments from semicolon-separated slicer output instead of discarding extras (completed 2026-04-14)
-- [ ] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence
-- [ ] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array
+- [x] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence (completed 2026-04-15)
+- [x] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array (completed 2026-04-15)
 
 ## Phase Details
 
@@ -56,7 +56,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — GcodeImport multi-material: widen onImport to filaments array, per-extruder matching, stacked toast
 - [x] 03-02-PLAN.md — CostCalculator state refactor: replace scalar filament state with FilamentRow[] array, dynamic row UI
-- [ ] 03-03-PLAN.md — Cost calculation, save/restore, import wiring, session persistence with backward-compat fallback
+- [x] 03-03-PLAN.md — Cost calculation, save/restore, import wiring, session persistence with backward-compat fallback
 
 ### Phase 4: Jobs Display
 **Goal**: Saved multi-material jobs are fully visible and editable in the jobs list
@@ -68,7 +68,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md — Harden filament display edge cases in JobsManager, verify edit-restore round-trip
+- [x] 04-01-PLAN.md — Harden filament display edge cases in JobsManager, verify edit-restore round-trip
 
 ## Progress
 
@@ -76,5 +76,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 1/1 | Complete   | 2026-04-14 |
 | 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
-| 3. Calculator UI + Import | 2/3 | In progress | - |
-| 4. Jobs Display | 0/1 | Not started | - |
+| 3. Calculator UI + Import | 3/3 | Complete | 2026-04-15 |
+| 4. Jobs Display | 1/1 | Complete | 2026-04-15 |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-03-PLAN.md — Multi-filament cost calculation, save/restore, session persistence
-last_updated: "2026-04-15T12:44:01.362Z"
-last_activity: 2026-04-15 — Completed 03-03 cost calc, save/restore, import wiring, session persistence
+stopped_at: Completed 04-01-PLAN.md — Jobs display hardening and edit-restore verification
+last_updated: "2026-04-15T14:35:00.000Z"
+last_activity: 2026-04-15 — Completed 04-01 jobs display hardening, empty-filament fallback, human-verified round-trip
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  completed_phases: 4
+  total_plans: 6
+  completed_plans: 6
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** Accurate cost calculation for multi-material prints so users can price jobs correctly
-**Current focus:** Phase 3 — Calculator UI + Import (complete)
+**Current focus:** Phase 4 — Jobs Display (complete)
 
 ## Current Position
 
-Phase: 3 of 4 (Calculator UI + Import) — COMPLETE
-Plan: 3 of 3 in current phase (03-03 complete)
-Status: Phase 3 complete — all three plans executed; multi-material calculator fully wired end-to-end
-Last activity: 2026-04-15 — Completed 03-03 cost calc, save/restore, import wiring, session persistence
+Phase: 4 of 4 (Jobs Display) — COMPLETE
+Plan: 1 of 1 in current phase (04-01 complete)
+Status: Phase 4 complete — jobs display hardened, edit round-trip verified, all phases done
+Last activity: 2026-04-15 — Completed 04-01 jobs display hardening, empty-filament fallback, human-verified round-trip
 
 Progress: [██████████] 100%
 
@@ -55,6 +55,7 @@ Progress: [██████████] 100%
 | Phase 03-calculator-ui-import P01 | 4min | 1 tasks | 1 files |
 | Phase 03-calculator-ui-import P02 | 25min | 2 tasks | 2 files |
 | Phase 03-calculator-ui-import P03 | 30min | 3 tasks | 1 files |
+| Phase 04-jobs-display P01 | 8min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,7 @@ Recent decisions affecting current work:
 - [Phase 03-calculator-ui-import P03]: FILAMENT_DENSITY constant removed — getMaterialDensity called per row for correct per-material nozzle wear
 - [Phase 03-calculator-ui-import P03]: handleSaveJob writes filaments: FilamentUsage[] — old filamentId/filamentGrams fields fully removed
 - [Phase 03-calculator-ui-import P03]: Session storage backward compat uses Array.isArray check — old scalar format falls back to single default row without error
+- [Phase 04-jobs-display P01]: Empty filaments array renders "No filament data" in italic muted text instead of blank space before pipe separator
 
 ### Pending Todos
 
@@ -90,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T14:00:00.000Z
-Stopped at: Completed 03-03-PLAN.md — Multi-filament cost calculation, save/restore, session persistence
+Last session: 2026-04-15T14:35:00.000Z
+Stopped at: Completed 04-01-PLAN.md — Jobs display hardening and edit-restore verification
 Resume file: None

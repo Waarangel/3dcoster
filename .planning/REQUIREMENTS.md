@@ -42,8 +42,8 @@
 
 ### Jobs Display
 
-- [ ] **JOBS-01**: JobsManager shows all filaments per job (e.g., "PETG 200g + PLA 50g")
-- [ ] **JOBS-02**: Editing a job restores all filament rows with correct price fallback
+- [x] **JOBS-01**: JobsManager shows all filaments per job (e.g., "PETG 200g + PLA 50g")
+- [x] **JOBS-02**: Editing a job restores all filament rows with correct price fallback
 
 ### Persistence
 
@@ -96,8 +96,8 @@
 | COST-01 | Phase 3 | Pending |
 | COST-02 | Phase 3 | Pending |
 | COST-03 | Phase 3 | Pending |
-| JOBS-01 | Phase 4 | Pending |
-| JOBS-02 | Phase 4 | Pending |
+| JOBS-01 | Phase 4 | Complete |
+| JOBS-02 | Phase 4 | Complete |
 | PERSIST-01 | Phase 3 | Pending |
 | PERSIST-02 | Phase 3 | Pending |
 
