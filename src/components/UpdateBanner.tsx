@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // Current app version - update this when releasing new versions
-export const APP_VERSION = '1.2.4';
+export const APP_VERSION = '1.3.0';
 
 const DOWNLOAD_URL = 'https://3dcoster.vercel.app/download';
 
