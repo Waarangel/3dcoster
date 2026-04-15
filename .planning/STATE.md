@@ -59,6 +59,11 @@ Progress: [██████████] 100%
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 5 added: Printer Maintenance Alerts — track print hours, warn at 500h intervals
+- Phase 6 added: 3MF Multi-Plate Project Import — parse sliced Bambu/Orca 3MF for multi-plate project costing
+
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.

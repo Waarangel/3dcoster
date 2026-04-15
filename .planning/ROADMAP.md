@@ -10,6 +10,8 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
 - [x] **Phase 2: G-code Parser** - Extract all filaments from semicolon-separated slicer output instead of discarding extras (completed 2026-04-14)
 - [x] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence (completed 2026-04-15)
 - [x] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array (completed 2026-04-15)
+- [ ] **Phase 5: Printer Maintenance Alerts** - Track print hours and warn at 500h maintenance intervals
+- [ ] **Phase 6: 3MF Multi-Plate Project Import** - Import sliced 3MF files for total multi-plate project costing
 
 ## Phase Details
 
@@ -78,3 +80,25 @@ Plans:
 | 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
 | 3. Calculator UI + Import | 3/3 | Complete | 2026-04-15 |
 | 4. Jobs Display | 1/1 | Complete | 2026-04-15 |
+| 5. Printer Maintenance Alerts | 0/? | Not started | - |
+| 6. 3MF Multi-Plate Project Import | 0/? | Not started | - |
+
+### Phase 5: Printer Maintenance Alerts
+**Goal**: Track accumulated print hours per printer instance and alert users at 500-hour maintenance intervals with a dismissable popup
+**Depends on**: Nothing (uses existing PrinterInstance.printHours infrastructure)
+**Requirements**: MAINT-01, MAINT-02
+**Success Criteria** (what must be TRUE):
+  1. When a printer's accumulated printHours crosses a 500-hour interval (500, 1000, 1500, etc.), a popup/toast warns the user that maintenance is due for that printer
+  2. The maintenance alert is dismissable and does not re-trigger for the same interval after acknowledgment
+**Plans**: TBD
+
+### Phase 6: 3MF Multi-Plate Project Import
+**Goal**: Users can import a sliced Bambu Studio / OrcaSlicer 3MF file to get total project cost across all build plates in a single import
+**Depends on**: Nothing (new import path alongside existing gcode import)
+**Requirements**: 3MF-01, 3MF-02, 3MF-03, 3MF-04
+**Success Criteria** (what must be TRUE):
+  1. Dropping a sliced 3MF file (Bambu/Orca) extracts per-plate filament grams, filament types, and print times from slice_info.config
+  2. The import sums filament usage and print time across all plates and populates the calculator with the project totals
+  3. Importing a non-sliced 3MF (geometry-only) shows a helpful error message explaining that the file needs to be sliced first
+  4. The number of plates is displayed so the user knows this is a multi-plate project
+**Plans**: TBD

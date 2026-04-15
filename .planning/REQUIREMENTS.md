@@ -50,6 +50,18 @@
 - [ ] **PERSIST-01**: Session storage persists multi-filament form state
 - [ ] **PERSIST-02**: Old session storage format (single filament) gracefully falls back to default
 
+### Printer Maintenance
+
+- [ ] **MAINT-01**: Popup warning when printer crosses 500h maintenance interval (500, 1000, 1500, etc.)
+- [ ] **MAINT-02**: Maintenance alert is dismissable and does not re-trigger for acknowledged intervals
+
+### 3MF Import
+
+- [ ] **3MF-01**: Parse sliced Bambu/Orca 3MF files (ZIP with slice_info.config) to extract per-plate filament and time data
+- [ ] **3MF-02**: Sum filament usage and print time across all plates, populate calculator with project totals
+- [ ] **3MF-03**: Detect non-sliced 3MF files and show helpful error explaining slicing is required
+- [ ] **3MF-04**: Display plate count so user knows it's a multi-plate project
+
 ## v2 Requirements
 
 ### Cost Display
@@ -70,7 +82,7 @@
 | Per-filament CostBreakdown detail | Total sufficient for v1, adds UI complexity |
 | AMS slot management | Separate feature, not cost calculation |
 | Filament inventory/spool tracking | Separate feature |
-| 3MF file import | Current parser uses gcode only |
+| ~~3MF file import~~ | ~~Current parser uses gcode only~~ → Moved to Phase 6 |
 
 ## Traceability
 
@@ -100,10 +112,16 @@
 | JOBS-02 | Phase 4 | Complete |
 | PERSIST-01 | Phase 3 | Pending |
 | PERSIST-02 | Phase 3 | Pending |
+| MAINT-01 | Phase 5 | Pending |
+| MAINT-02 | Phase 5 | Pending |
+| 3MF-01 | Phase 6 | Pending |
+| 3MF-02 | Phase 6 | Pending |
+| 3MF-03 | Phase 6 | Pending |
+| 3MF-04 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 24 total
-- Mapped to phases: 24
+- v1 requirements: 30 total
+- Mapped to phases: 30
 - Unmapped: 0 ✓
 
 ---
