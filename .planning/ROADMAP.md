@@ -81,7 +81,7 @@ Plans:
 | 3. Calculator UI + Import | 3/3 | Complete | 2026-04-15 |
 | 4. Jobs Display | 1/1 | Complete | 2026-04-15 |
 | 5. Printer Maintenance Alerts | 0/1 | In progress | - |
-| 6. 3MF Multi-Plate Project Import | 0/? | Not started | - |
+| 6. 3MF Multi-Plate Project Import | 0/2 | Not started | - |
 
 ### Phase 5: Printer Maintenance Alerts
 **Goal**: Track accumulated print hours per printer instance and alert users at 500-hour maintenance intervals with a dismissable popup
@@ -104,4 +104,8 @@ Plans:
   2. The import sums filament usage and print time across all plates and populates the calculator with the project totals
   3. Importing a non-sliced 3MF (geometry-only) shows a helpful error message explaining that the file needs to be sliced first
   4. The number of plates is displayed so the user knows this is a multi-plate project
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Install JSZip + vitest, create threeMfParser.ts with TDD (all parsing logic + tests)
+- [ ] 06-02-PLAN.md — Wire 3MF parser into GcodeImport UI, feature badge, human-verify full flow
