@@ -214,7 +214,12 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
                       )}
                     </div>
                     <div className="mt-1 text-sm text-slate-400">
-                      {getFilamentName(job.filaments?.[0]?.filamentId ?? '')} | {job.filaments?.[0]?.grams ?? 0}g | {job.printTimeHours}h
+                      {(job.filaments ?? []).map((f, i) => (
+                        <span key={i}>
+                          {i > 0 && ' + '}
+                          {getFilamentName(f.filamentId ?? '')}{f.grams ? ` ${f.grams}g` : ''}
+                        </span>
+                      ))} | {job.printTimeHours}h
                     </div>
                   </div>
                   <div className="text-right">
