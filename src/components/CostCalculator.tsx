@@ -740,21 +740,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           {/* Multi-Filament Rows */}
           <div className="lg:col-span-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs text-slate-400">Filaments *</label>
-              <button
-                type="button"
-                onClick={addFilamentRow}
-                disabled={filamentRows.length >= 16}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors"
-              >
-                + Add Filament
-              </button>
-            </div>
+            <label className="block text-xs text-slate-400">Filaments *</label>
 
             {filamentRows.map((row, index) => (
-              <div key={index} className="flex items-start gap-3 bg-slate-700/30 p-3 rounded-lg">
-                <div className="flex-1">
+              <div key={index} className="flex items-start gap-2 bg-slate-700/30 p-3 rounded-lg">
+                <div className="flex-1 min-w-0">
                   <FilamentSelector
                     materials={materials}
                     selectedFilamentId={row.filamentId}
@@ -770,28 +760,42 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     userCurrency={userCurrency}
                   />
                 </div>
-                <div>
+                <div className="shrink-0 w-[196px]">
                   <label className="block text-xs text-slate-400 mb-1">Grams</label>
-                  <input
-                    type="number"
-                    value={row.grams || ''}
-                    onChange={e => updateFilamentRow(index, { grams: parseFloat(e.target.value) || 0 })}
-                    placeholder="g"
-                    className="w-24 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                  />
+                  <div className="flex gap-1 items-center">
+                    <input
+                      type="number"
+                      value={row.grams || ''}
+                      onChange={e => updateFilamentRow(index, { grams: parseFloat(e.target.value) || 0 })}
+                      placeholder="g"
+                      className="w-24 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                    />
+                    {index === filamentRows.length - 1 && filamentRows.length < 16 && (
+                      <button
+                        type="button"
+                        onClick={addFilamentRow}
+                        className="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white w-[44px] h-[44px] rounded-lg transition-colors flex items-center justify-center shrink-0"
+                        aria-label="Add filament row"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                    )}
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeFilamentRow(index)}
+                        className="bg-slate-700 hover:bg-slate-600 text-red-400 hover:text-red-300 w-[44px] h-[44px] rounded-lg transition-colors flex items-center justify-center shrink-0"
+                        aria-label="Remove filament row"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {index > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => removeFilamentRow(index)}
-                    className="mt-5 text-red-400 hover:text-red-300 p-1"
-                    aria-label="Remove filament row"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
               </div>
             ))}
           </div>

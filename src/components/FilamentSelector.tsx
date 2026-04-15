@@ -101,7 +101,7 @@ export function FilamentSelector({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 text-left flex justify-between items-center"
+          className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 text-left flex justify-between items-center min-h-[44px]"
         >
           <span className={selectedFilament ? 'text-white' : 'text-slate-400'}>
             {selectedFilament
