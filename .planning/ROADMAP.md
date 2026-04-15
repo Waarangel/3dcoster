@@ -6,7 +6,7 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
 
 ## Phases
 
-- [x] **Phase 1: Data Foundation** - New FilamentUsage type, updated PrintJob shape, and v4→v5 database migration (completed 2026-04-14)
+- [x] **Phase 1: Data Foundation** - New FilamentUsage type, updated PrintJob shape, and v4->v5 database migration (completed 2026-04-14)
 - [x] **Phase 2: G-code Parser** - Extract all filaments from semicolon-separated slicer output instead of discarding extras (completed 2026-04-14)
 - [ ] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence
 - [ ] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array
@@ -51,7 +51,12 @@ Plans:
   3. Importing a multi-material G-code file populates all detected filament rows with matched assets and correct grams; the success toast lists all materials with weights
   4. Filament cost is the sum of (grams × pricePerGram) across all rows, and nozzle wear uses the correct density for each material instead of assuming PLA
   5. Refreshing the page restores the full multi-filament form state; old single-filament session storage falls back to the default single empty row without errors
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — GcodeImport multi-material: widen onImport to filaments array, per-extruder matching, stacked toast
+- [ ] 03-02-PLAN.md — CostCalculator state refactor: replace scalar filament state with FilamentRow[] array, dynamic row UI
+- [ ] 03-03-PLAN.md — Cost calculation, save/restore, import wiring, session persistence with backward-compat fallback
 
 ### Phase 4: Jobs Display
 **Goal**: Saved multi-material jobs are fully visible and editable in the jobs list
@@ -68,5 +73,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 1/1 | Complete   | 2026-04-14 |
 | 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
-| 3. Calculator UI + Import | 0/? | Not started | - |
+| 3. Calculator UI + Import | 0/3 | Not started | - |
 | 4. Jobs Display | 0/? | Not started | - |
