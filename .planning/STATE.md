@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-02-PLAN.md — FilamentRow[] state refactor and dynamic row UI
-last_updated: "2026-04-15T13:00:00.000Z"
-last_activity: 2026-04-15 — Completed 03-02 FilamentRow state refactor, dynamic add/remove filament rows
+stopped_at: Completed 03-03-PLAN.md — Multi-filament cost calculation, save/restore, session persistence
+last_updated: "2026-04-15T14:00:00.000Z"
+last_activity: 2026-04-15 — Completed 03-03 multi-filament cost calc wired end-to-end; Phase 03 complete
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** Accurate cost calculation for multi-material prints so users can price jobs correctly
-**Current focus:** Phase 2 — G-code Parser (complete)
+**Current focus:** Phase 3 — Calculator UI + Import (complete)
 
 ## Current Position
 
-Phase: 3 of 4 (Calculator UI + Import)
-Plan: 2 of 3 in current phase (03-02 complete)
-Status: Phase 3 in progress — FilamentRow[] state done, cost calc + save refactor (03-03) remaining
-Last activity: 2026-04-15 — Completed 03-02 FilamentRow state refactor, dynamic filament rows rendering
+Phase: 3 of 4 (Calculator UI + Import) — COMPLETE
+Plan: 3 of 3 in current phase (03-03 complete)
+Status: Phase 3 complete — all three plans executed; multi-material calculator fully wired end-to-end
+Last activity: 2026-04-15 — Completed 03-03 cost calc, save/restore, import wiring, session persistence
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [████████░░] 80%
 | Phase 02-gcode-parser P01 | 5min | 2 tasks | 2 files |
 | Phase 03-calculator-ui-import P01 | 4min | 1 tasks | 1 files |
 | Phase 03-calculator-ui-import P02 | 25min | 2 tasks | 2 files |
+| Phase 03-calculator-ui-import P03 | 30min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 03-calculator-ui-import P02]: FilamentRow is internal form state (not exported); distinct from DB FilamentUsage type
 - [Phase 03-calculator-ui-import P02]: TEMPORARY shims extract row[0] values to keep cost calc/save compiling; Plan 03-03 removes them
 - [Phase 03-calculator-ui-import P02]: makeDefaultRow is a function not a constant — captures userCurrency at call time
+- [Phase 03-calculator-ui-import P03]: FILAMENT_DENSITY constant removed — getMaterialDensity called per row for correct per-material nozzle wear
+- [Phase 03-calculator-ui-import P03]: handleSaveJob writes filaments: FilamentUsage[] — old filamentId/filamentGrams fields fully removed
+- [Phase 03-calculator-ui-import P03]: Session storage backward compat uses Array.isArray check — old scalar format falls back to single default row without error
 
 ### Pending Todos
 
@@ -86,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T13:00:00.000Z
-Stopped at: Completed 03-02-PLAN.md — FilamentRow[] state refactor and dynamic row UI
+Last session: 2026-04-15T14:00:00.000Z
+Stopped at: Completed 03-03-PLAN.md — Multi-filament cost calculation, save/restore, session persistence
 Resume file: None
