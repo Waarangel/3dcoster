@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-01-PLAN.md — all tasks done, human verification approved
-last_updated: "2026-04-15T11:43:03.116Z"
+stopped_at: Completed 03-01-PLAN.md — GcodeImport multi-filament callback refactored
+last_updated: "2026-04-15T12:14:11.796Z"
 last_activity: 2026-04-14 — Completed 02-01 multi-material parser, verified with real G-code files
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
   percent: 100
 ---
 
@@ -52,6 +52,7 @@ Progress: [██████████] 100%
 *Updated after each plan completion*
 | Phase 01-data-foundation P01 | 8min | 2 tasks | 2 files |
 | Phase 02-gcode-parser P01 | 5min | 2 tasks | 2 files |
+| Phase 03-calculator-ui-import P01 | 4min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - [Phase 01-data-foundation]: Clean removal of filamentId/filamentGrams — no deprecated optional stubs (locked decision)
 - [Phase 01-data-foundation]: Dexie v5 migration returns modify() promise to ensure complete record conversion
 - [Phase 02-gcode-parser]: Export getMaterialDensity from gcodeParser.ts — fixes pre-existing PLA-only density bug for nozzle wear and enables Phase 3 reuse
+- [Phase 03-calculator-ui-import]: onImport callback changed to filaments[] array — CostCalculator type errors expected, resolved in Plan 03-02
+- [Phase 03-calculator-ui-import]: Success toast restructured: slicer + time header row, per-extruder stacked list below
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T23:44:36.720Z
-Stopped at: Completed 02-01-PLAN.md — all tasks done, human verification approved
+Last session: 2026-04-15T12:14:11.793Z
+Stopped at: Completed 03-01-PLAN.md — GcodeImport multi-filament callback refactored
 Resume file: None

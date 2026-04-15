@@ -22,9 +22,9 @@
 
 ### Import
 
-- [ ] **IMPORT-01**: GcodeImport passes filaments array (not single filamentId) to CostCalculator
-- [ ] **IMPORT-02**: Each imported filament is auto-matched independently against user's asset library
-- [ ] **IMPORT-03**: Success toast shows all detected materials with weights
+- [x] **IMPORT-01**: GcodeImport passes filaments array (not single filamentId) to CostCalculator
+- [x] **IMPORT-02**: Each imported filament is auto-matched independently against user's asset library
+- [x] **IMPORT-03**: Success toast shows all detected materials with weights
 
 ### Calculator UI
 
@@ -85,9 +85,9 @@
 | GCODE-03 | Phase 2 | Complete |
 | GCODE-04 | Phase 2 | Complete |
 | GCODE-05 | Phase 2 | Complete |
-| IMPORT-01 | Phase 3 | Pending |
-| IMPORT-02 | Phase 3 | Pending |
-| IMPORT-03 | Phase 3 | Pending |
+| IMPORT-01 | Phase 3 | Complete |
+| IMPORT-02 | Phase 3 | Complete |
+| IMPORT-03 | Phase 3 | Complete |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
