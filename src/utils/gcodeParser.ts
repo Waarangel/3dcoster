@@ -161,11 +161,15 @@ function parseBambuStyle(text: string): Partial<GcodeParseResult> {
   const prusaResult = parsePrusaStyle(text);
   Object.assign(result, prusaResult);
 
-  // Bambu header: "; total filament weight [g] : 433.16" — direct grams (best source)
+  // Bambu header: "; total filament weight [g] : 25.03,20.32" — comma-separated per-extruder weights
   if (!result.filamentGrams) {
-    const weightMatch = text.match(/;\s*total filament weight \[g\]\s*:\s*([\d.]+)/);
+    const weightMatch = text.match(/;\s*total filament weight \[g\]\s*:\s*([\d.,]+)/);
     if (weightMatch) {
-      result.filamentGrams = parseFloat(weightMatch[1]);
+      const weights = weightMatch[1].split(',').map(Number).filter(n => !isNaN(n));
+      if (weights.length > 0) {
+        result.filamentGramsPerExtruder = weights;
+        result.filamentGrams = weights.reduce((a, b) => a + b, 0);
+      }
     }
   }
 
@@ -196,11 +200,15 @@ function parseBambuStyle(text: string): Partial<GcodeParseResult> {
     }
   }
 
-  // Bambu header: "; total filament length [mm] : 140692.44" (colon separator)
+  // Bambu header: "; total filament length [mm] : 7883.66,6599.14" (comma-separated per-extruder)
   if (!result.filamentGrams && !result.rawFilamentLength) {
-    const lengthMatch = text.match(/;\s*total filament length \[mm\]\s*:\s*([\d.]+)/);
+    const lengthMatch = text.match(/;\s*total filament length \[mm\]\s*:\s*([\d.,]+)/);
     if (lengthMatch) {
-      result.rawFilamentLength = parseFloat(lengthMatch[1]);
+      const lengths = lengthMatch[1].split(',').map(Number).filter(n => !isNaN(n));
+      if (lengths.length > 0) {
+        // Store total length for fallback conversion
+        result.rawFilamentLength = lengths.reduce((a, b) => a + b, 0);
+      }
     }
   }
 
@@ -391,10 +399,19 @@ export function parseGcode(content: string): GcodeParseResult {
   }
 
   // Initialize array defaults from parsed data
-  const filamentTypes = parsed.filamentTypes ?? [];
-  const filamentVendors = parsed.filamentVendors ?? [];
-  const filamentSettingsIds = parsed.filamentSettingsIds ?? [];
+  let filamentTypes = parsed.filamentTypes ?? [];
+  let filamentVendors = parsed.filamentVendors ?? [];
+  let filamentSettingsIds = parsed.filamentSettingsIds ?? [];
   let filamentGramsPerExtruder = parsed.filamentGramsPerExtruder ?? [];
+
+  // Bambu AMS correction: config block lists ALL AMS slots (e.g., 5) but header per-extruder
+  // weights only list actually-used extruders (e.g., 2). Trim type/vendor/settings arrays
+  // to match the actual extruder count from the header.
+  if (filamentGramsPerExtruder.length > 0 && filamentTypes.length > filamentGramsPerExtruder.length) {
+    filamentTypes = filamentTypes.slice(0, filamentGramsPerExtruder.length);
+    filamentVendors = filamentVendors.slice(0, filamentGramsPerExtruder.length);
+    filamentSettingsIds = filamentSettingsIds.slice(0, filamentGramsPerExtruder.length);
+  }
 
   // Convert length to grams if we have length but no grams
   let filamentGrams = parsed.filamentGrams ?? null;
