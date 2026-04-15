@@ -14,11 +14,11 @@
 
 ### G-code Parser
 
-- [ ] **GCODE-01**: Parser extracts all filament types from semicolon-separated `filament_type` line
-- [ ] **GCODE-02**: Parser extracts per-extruder weight from `filament used [g]` semicolon-separated values
-- [ ] **GCODE-03**: Parser extracts all filament vendors and settings IDs (per-extruder arrays)
-- [ ] **GCODE-04**: When only total weight available, first extruder gets total, rest get zero
-- [ ] **GCODE-05**: Backward-compatible single fields remain as first-element aliases
+- [x] **GCODE-01**: Parser extracts all filament types from semicolon-separated `filament_type` line
+- [x] **GCODE-02**: Parser extracts per-extruder weight from `filament used [g]` semicolon-separated values
+- [x] **GCODE-03**: Parser extracts all filament vendors and settings IDs (per-extruder arrays)
+- [x] **GCODE-04**: When only total weight available, first extruder gets total, rest get zero
+- [x] **GCODE-05**: Backward-compatible single fields remain as first-element aliases
 
 ### Import
 
@@ -80,11 +80,11 @@
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
 | DATA-04 | Phase 1 | Complete |
-| GCODE-01 | Phase 2 | Pending |
-| GCODE-02 | Phase 2 | Pending |
-| GCODE-03 | Phase 2 | Pending |
-| GCODE-04 | Phase 2 | Pending |
-| GCODE-05 | Phase 2 | Pending |
+| GCODE-01 | Phase 2 | Complete |
+| GCODE-02 | Phase 2 | Complete |
+| GCODE-03 | Phase 2 | Complete |
+| GCODE-04 | Phase 2 | Complete |
+| GCODE-05 | Phase 2 | Complete |
 | IMPORT-01 | Phase 3 | Pending |
 | IMPORT-02 | Phase 3 | Pending |
 | IMPORT-03 | Phase 3 | Pending |

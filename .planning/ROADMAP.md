@@ -7,7 +7,7 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
 ## Phases
 
 - [x] **Phase 1: Data Foundation** - New FilamentUsage type, updated PrintJob shape, and v4→v5 database migration (completed 2026-04-14)
-- [ ] **Phase 2: G-code Parser** - Extract all filaments from semicolon-separated slicer output instead of discarding extras
+- [x] **Phase 2: G-code Parser** - Extract all filaments from semicolon-separated slicer output instead of discarding extras (completed 2026-04-14)
 - [ ] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence
 - [ ] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array
 
@@ -39,7 +39,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01-PLAN.md — Extend GcodeParseResult with array fields, update all slicer parsers, export getMaterialDensity
+- [x] 02-01-PLAN.md — Extend GcodeParseResult with array fields, update all slicer parsers, export getMaterialDensity
 
 ### Phase 3: Calculator UI + Import
 **Goal**: Users can enter, import, and save multi-material jobs with accurate per-filament cost and nozzle wear calculations
@@ -67,6 +67,6 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 1/1 | Complete   | 2026-04-14 |
-| 2. G-code Parser | 0/1 | Not started | - |
+| 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
 | 3. Calculator UI + Import | 0/? | Not started | - |
 | 4. Jobs Display | 0/? | Not started | - |
