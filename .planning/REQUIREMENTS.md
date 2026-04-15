@@ -52,8 +52,8 @@
 
 ### Printer Maintenance
 
-- [ ] **MAINT-01**: Popup warning when printer crosses 500h maintenance interval (500, 1000, 1500, etc.)
-- [ ] **MAINT-02**: Maintenance alert is dismissable and does not re-trigger for acknowledged intervals
+- [x] **MAINT-01**: Popup warning when printer crosses 500h maintenance interval (500, 1000, 1500, etc.)
+- [x] **MAINT-02**: Maintenance alert is dismissable and does not re-trigger for acknowledged intervals
 
 ### 3MF Import
 
@@ -112,8 +112,8 @@
 | JOBS-02 | Phase 4 | Complete |
 | PERSIST-01 | Phase 3 | Pending |
 | PERSIST-02 | Phase 3 | Pending |
-| MAINT-01 | Phase 5 | Pending |
-| MAINT-02 | Phase 5 | Pending |
+| MAINT-01 | Phase 5 | Complete |
+| MAINT-02 | Phase 5 | Complete |
 | 3MF-01 | Phase 6 | Pending |
 | 3MF-02 | Phase 6 | Pending |
 | 3MF-03 | Phase 6 | Pending |

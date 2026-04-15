@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 04-01-PLAN.md — Jobs display hardening and edit-restore verification
-last_updated: "2026-04-15T13:07:48.839Z"
+stopped_at: Completed 05-01 tasks 1-2, awaiting human verify checkpoint
+last_updated: "2026-04-15T13:31:16.239Z"
 last_activity: 2026-04-15 — Completed 04-01 jobs display hardening, empty-filament fallback, human-verified round-trip
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 6
+  completed_phases: 5
+  total_plans: 9
+  completed_plans: 7
   percent: 100
 ---
 
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 | Phase 03-calculator-ui-import P02 | 25min | 2 tasks | 2 files |
 | Phase 03-calculator-ui-import P03 | 30min | 3 tasks | 1 files |
 | Phase 04-jobs-display P01 | 8min | 2 tasks | 1 files |
+| Phase 05-printer-maintenance-alerts P01 | 12min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,9 @@ Recent decisions affecting current work:
 - [Phase 03-calculator-ui-import P03]: handleSaveJob writes filaments: FilamentUsage[] — old filamentId/filamentGrams fields fully removed
 - [Phase 03-calculator-ui-import P03]: Session storage backward compat uses Array.isArray check — old scalar format falls back to single default row without error
 - [Phase 04-jobs-display P01]: Empty filaments array renders "No filament data" in italic muted text instead of blank space before pipe separator
+- [Phase 05-printer-maintenance-alerts]: Capture hoursBefore before awaits in handleSaveJob; compute hoursAfter from argument (React state pre-update pattern)
+- [Phase 05-printer-maintenance-alerts]: MAINTENANCE_INTERVAL=500 exported as named constant from maintenanceDismissed.ts for future reconfigurability
+- [Phase 05-printer-maintenance-alerts]: localStorage key '3dcoster-maintenance-dismissed' stores Record<instanceId, number[]> — independent per-printer dismissed interval tracking
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T14:35:00.000Z
-Stopped at: Completed 04-01-PLAN.md — Jobs display hardening and edit-restore verification
+Last session: 2026-04-15T13:31:16.236Z
+Stopped at: Completed 05-01 tasks 1-2, awaiting human verify checkpoint
 Resume file: None

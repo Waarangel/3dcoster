@@ -10,7 +10,7 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
 - [x] **Phase 2: G-code Parser** - Extract all filaments from semicolon-separated slicer output instead of discarding extras (completed 2026-04-14)
 - [x] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence (completed 2026-04-15)
 - [x] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array (completed 2026-04-15)
-- [ ] **Phase 5: Printer Maintenance Alerts** - Track print hours and warn at 500h maintenance intervals
+- [x] **Phase 5: Printer Maintenance Alerts** - Track print hours and warn at 500h maintenance intervals (completed 2026-04-15)
 - [ ] **Phase 6: 3MF Multi-Plate Project Import** - Import sliced 3MF files for total multi-plate project costing
 
 ## Phase Details
@@ -80,7 +80,7 @@ Plans:
 | 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
 | 3. Calculator UI + Import | 3/3 | Complete | 2026-04-15 |
 | 4. Jobs Display | 1/1 | Complete | 2026-04-15 |
-| 5. Printer Maintenance Alerts | 0/1 | In progress | - |
+| 5. Printer Maintenance Alerts | 1/1 | Complete   | 2026-04-15 |
 | 6. 3MF Multi-Plate Project Import | 0/2 | Not started | - |
 
 ### Phase 5: Printer Maintenance Alerts
