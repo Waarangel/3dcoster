@@ -612,10 +612,18 @@ export function findBestFilamentMatch(
   const filamentAssets = assets.filter(a => a.category === 'filament');
   if (filamentAssets.length === 0) return null;
 
-  // Filter by matching filament type
-  const typeMatches = filamentAssets.filter(a => a.filamentType === matchedType);
+  // Filter by matching filament type (exact match first)
+  let typeMatches = filamentAssets.filter(a => a.filamentType === matchedType);
+
+  // Fallback: match variants by base type prefix (e.g., "PETG" matches "PETG HF", "PETG-CF")
   if (typeMatches.length === 0) {
-    // No exact type match — return first filament as fallback? No, return null
+    const baseType = matchedType.toLowerCase();
+    typeMatches = filamentAssets.filter(a =>
+      a.filamentType?.toLowerCase().startsWith(baseType)
+    );
+  }
+
+  if (typeMatches.length === 0) {
     return null;
   }
 

@@ -52,12 +52,12 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
       const result = await parseThreeMf(file);
 
       if (!result.isSliced) {
-        setError('This 3MF file hasn\'t been sliced yet. Open it in Bambu Studio or OrcaSlicer, slice it, then export the sliced 3MF.');
+        setError('This 3MF hasn\'t been sliced. In Bambu Studio: click "Slice All" then "Export all sliced file" to get a sliced .3mf.');
         return;
       }
 
       if (result.plateCount === 0 || result.filamentsByType.length === 0) {
-        setError('Could not extract print data from this 3MF. The file may be empty or in an unsupported format.');
+        setError('Could not extract print data from this 3MF. Make sure you used "Slice All" and then "Export all sliced file" in Bambu Studio or OrcaSlicer.');
         return;
       }
 
@@ -243,11 +243,11 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-2">
-          {error}
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-2 flex items-start justify-between gap-3">
+          <span>{error}</span>
           <button
             onClick={() => setError(null)}
-            className="ml-2 underline hover:text-red-300"
+            className="underline hover:text-red-300 whitespace-nowrap shrink-0"
           >
             Dismiss
           </button>
