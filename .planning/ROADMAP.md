@@ -11,7 +11,7 @@ This milestone upgrades 3DCoster from single-filament to multi-material tracking
 - [x] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence (completed 2026-04-15)
 - [x] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array (completed 2026-04-15)
 - [x] **Phase 5: Printer Maintenance Alerts** - Track print hours and warn at 500h maintenance intervals (completed 2026-04-15)
-- [ ] **Phase 6: 3MF Multi-Plate Project Import** - Import sliced 3MF files for total multi-plate project costing
+- [x] **Phase 6: 3MF Multi-Plate Project Import** - Import sliced 3MF files for total multi-plate project costing (completed 2026-04-15)
 
 ## Phase Details
 
@@ -81,7 +81,7 @@ Plans:
 | 3. Calculator UI + Import | 3/3 | Complete | 2026-04-15 |
 | 4. Jobs Display | 1/1 | Complete | 2026-04-15 |
 | 5. Printer Maintenance Alerts | 1/1 | Complete   | 2026-04-15 |
-| 6. 3MF Multi-Plate Project Import | 0/2 | Not started | - |
+| 6. 3MF Multi-Plate Project Import | 2/2 | Complete | 2026-04-15 |
 
 ### Phase 5: Printer Maintenance Alerts
 **Goal**: Track accumulated print hours per printer instance and alert users at 500-hour maintenance intervals with a dismissable popup
@@ -93,7 +93,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md — Maintenance alert modal, boundary detection in handleSaveJob, localStorage dismissed state
+- [x] 05-01-PLAN.md — Maintenance alert modal, boundary detection in handleSaveJob, localStorage dismissed state
 
 ### Phase 6: 3MF Multi-Plate Project Import
 **Goal**: Users can import a sliced Bambu Studio / OrcaSlicer 3MF file to get total project cost across all build plates in a single import
@@ -107,5 +107,5 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Install JSZip + vitest, create threeMfParser.ts with TDD (all parsing logic + tests)
-- [ ] 06-02-PLAN.md — Wire 3MF parser into GcodeImport UI, feature badge, human-verify full flow
+- [x] 06-01-PLAN.md — Install JSZip + vitest, create threeMfParser.ts with TDD (all parsing logic + tests)
+- [x] 06-02-PLAN.md — Wire 3MF parser into GcodeImport UI, feature badge, human-verify full flow
