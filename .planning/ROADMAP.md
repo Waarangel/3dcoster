@@ -65,7 +65,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. The jobs list shows all filaments for a multi-material job (e.g., "PETG 200g + PLA 50g") and shows the single filament for single-material jobs in the same format as today
   2. Clicking edit on any saved job (including jobs migrated from the old schema) restores all filament rows with correct gram values and price overrides (or asset-library fallback for migrated jobs)
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 04-01-PLAN.md — Harden filament display edge cases in JobsManager, verify edit-restore round-trip
 
 ## Progress
 
@@ -74,4 +77,4 @@ Plans:
 | 1. Data Foundation | 1/1 | Complete   | 2026-04-14 |
 | 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
 | 3. Calculator UI + Import | 2/3 | In progress | - |
-| 4. Jobs Display | 0/? | Not started | - |
+| 4. Jobs Display | 0/1 | Not started | - |
