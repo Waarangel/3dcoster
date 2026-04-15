@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Asset } from '../types';
 import { parseGcode, matchFilamentType, findBestFilamentMatch, readGcodeFile } from '../utils/gcodeParser';
+import { parseThreeMf } from '../utils/threeMfParser';
 import { NewBadge } from './NewBadge';
 
 interface GcodeImportProps {
@@ -42,9 +43,71 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
     return () => clearTimeout(timer);
   }, [successInfo]);
 
+  const processThreeMfFile = useCallback(async (file: File) => {
+    setIsParsing(true);
+    setError(null);
+    setSuccessInfo(null);
+
+    try {
+      const result = await parseThreeMf(file);
+
+      if (!result.isSliced) {
+        setError('This 3MF file hasn\'t been sliced yet. Open it in Bambu Studio or OrcaSlicer, slice it, then export the sliced 3MF.');
+        return;
+      }
+
+      if (result.plateCount === 0 || result.filamentsByType.length === 0) {
+        setError('Could not extract print data from this 3MF. The file may be empty or in an unsupported format.');
+        return;
+      }
+
+      // Map filamentsByType to the filaments array using asset matching
+      const filaments: Array<{ filamentId?: string; grams: number }> = result.filamentsByType.map(f => ({
+        filamentId: findBestFilamentMatch(f.type, null, assets, null) ?? undefined,
+        grams: f.grams,
+      }));
+
+      // Extract print name from filename
+      const printName = file.name
+        .replace(/\.gcode\.3mf$/i, '')
+        .replace(/\.3mf$/i, '')
+        .replace(/_/g, ' ')
+        .trim();
+
+      onImport({
+        filaments,
+        printTimeHours: result.totalPrintTimeHours,
+        printName: printName || undefined,
+      });
+
+      setSuccessInfo({
+        slicer: `3MF \u2014 ${result.plateCount} plate${result.plateCount !== 1 ? 's' : ''}`,
+        time: `${result.totalPrintTimeHours.toFixed(2)}h`,
+        filaments: result.filamentsByType.map(f => ({
+          type: f.type,
+          matched: (() => {
+            const id = findBestFilamentMatch(f.type, null, assets, null);
+            return id ? (assets.find(a => a.id === id)?.name ?? null) : null;
+          })(),
+          grams: f.grams,
+        })),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? `Failed to parse 3MF: ${err.message}` : 'Failed to parse 3MF');
+    } finally {
+      setIsParsing(false);
+    }
+  }, [assets, onImport]);
+
   const processFile = useCallback(async (file: File) => {
+    // Handle .3mf files (both .3mf and .gcode.3mf from Bambu Studio)
+    if (file.name.toLowerCase().endsWith('.3mf')) {
+      await processThreeMfFile(file);
+      return;
+    }
+
     if (!file.name.toLowerCase().endsWith('.gcode') && !file.name.toLowerCase().endsWith('.gc')) {
-      setError('Please select a .gcode file');
+      setError('Please select a .gcode or .3mf file');
       return;
     }
 
@@ -122,7 +185,7 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
     } finally {
       setIsParsing(false);
     }
-  }, [assets, onImport]);
+  }, [assets, onImport, processThreeMfFile]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -209,12 +272,16 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
           <svg className="w-6 h-6 mx-auto mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <p className="text-sm flex items-center justify-center gap-1.5">Drop .gcode file here or click to browse <NewBadge feature="gcode-import" /></p>
-          <p className="text-xs text-slate-500 mt-1">Supports Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, SuperSlicer, IdeaMaker</p>
+          <p className="text-sm flex items-center justify-center gap-1.5">
+            Drop .gcode or .3mf file here or click to browse
+            <NewBadge feature="gcode-import" />
+            <NewBadge feature="3mf-import" />
+          </p>
+          <p className="text-xs text-slate-500 mt-1">Supports Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, SuperSlicer, IdeaMaker + Bambu/Orca 3MF projects</p>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".gcode,.gc"
+            accept=".gcode,.gc,.3mf"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -225,7 +292,7 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
       {isParsing && (
         <div className="border border-slate-600 rounded-lg p-4 text-center">
           <div className="animate-spin w-5 h-5 border-2 border-slate-400 border-t-blue-500 rounded-full mx-auto mb-2" />
-          <p className="text-sm text-slate-400">Parsing G-code...</p>
+          <p className="text-sm text-slate-400">Parsing file...</p>
         </div>
       )}
     </div>
