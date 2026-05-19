@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PrinterConfig, PrinterInstance, ElectricityConfig, PrintJob } from '../types';
-import { Button, Input, Select } from './ui';
+import { Button, Input, Select, EmptyState } from './ui';
+import { PrinterIcon } from './ui/icons';
 
 interface PrinterSettingsProps {
   printers: PrinterConfig[];
@@ -196,7 +197,12 @@ export function PrinterSettings({
 
         {/* Printer Instances List */}
         {printerInstances.length === 0 ? (
-          <p className="text-slate-500 text-sm">No printers added yet. Add your first printer to start tracking.</p>
+          <EmptyState
+            icon={<PrinterIcon className="w-12 h-12" />}
+            title="No printers added yet"
+            description="Add your first printer to track depreciation, electricity costs, and maintenance intervals across every job."
+            cta={{ label: 'Add Printer', onClick: () => setShowAddForm(true) }}
+          />
         ) : (
           <div className="space-y-3">
             {printerInstances.map(instance => {
