@@ -36,7 +36,7 @@ docs/                 # Documentation (ROADMAP.md)
 ## Development
 
 ### Dev Server
-Always use port 5173 (Google OAuth is configured there):
+Always use port 4173 (pinned in `vite.config.ts`):
 ```bash
 npm run dev
 ```

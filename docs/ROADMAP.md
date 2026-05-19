@@ -150,59 +150,85 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 |---|---------|------|--------|--------|-------|-----|
 | 1 | Tax/VAT on selling price | Free | 4 | 1 | 4.0 | Single field + multiply. Every seller needs this. |
 | 2 | Quick duplicate job | Free | 4 | 1 | 4.0 | Clone button + prefill form. Huge time saver. |
-| 3 | Customer details on quotes | Free | 3 | 1 | 3.0 | Add name/email/phone fields to job. Simple schema change. |
-| 4 | Printer maintenance budget | Free | 3 | 1 | 3.0 | Single cost field per printer. Crosslink has it. |
+| 3 | Customer details on quotes | Free | 3 | 1 | 3.0 | Add name/email/phone fields to job. Simple schema change. *Audit 2026-05-19: `Sale.customerName` already exists ([types.ts:184](src/types.ts:184)); remaining work = add email/phone and attach to `PrintJob`, not just Sale.* |
+| 4 | Printer maintenance budget | Free | 3 | 1 | 3.0 | Single cost field per printer. Crosslink has it. *Audit 2026-05-19: alerts ship via [MaintenanceAlertModal.tsx](src/components/MaintenanceAlertModal.tsx); the service-cost field on `PrinterInstance` is the missing piece.* |
 | 5 | Support material waste % | Free | 3 | 1 | 3.0 | Single percentage field. Quick win. |
-| 6 | Export to CSV/Excel | Free | 4 | 1.5 | 2.7 | JSON→CSV conversion. Users have asked. |
+| 6 | Export to CSV/Excel (jobs + sales) | Free | 4 | 1.5 | 2.7 | JSON→CSV conversion. Users have asked. *Audit 2026-05-19: assets CSV export already shipped via [csvHelpers.ts:307](src/utils/csvHelpers.ts:307) (`generateExportCsv`); remaining work = jobs + sales CSV (different schema).* |
 | 7 | Bed adhesion consumables | Free | 2 | 1 | 2.0 | Add-on cost field. Trivial. |
 | 8 | Empty states with CTAs | Free | 3 | 1.5 | 2.0 | Illustrations + copy for blank screens. Polish. |
 | 9 | Inconsistent styling pass | Free | 3 | 1.5 | 2.0 | Already flagged by users. Use existing ui/ components. |
+| 10 | Default profit margin setting | Free | 3 | 1 | 3.0 | Replace hardcoded 30% with user-configurable default. Currently set in CostCalculator.tsx:118. |
+| 11 | Etsy ToS compliance helper | Free | 3 | 1 | 3.0 | Per-job origin/license field + third-party-STL flag + compliance attestation export. Time-sensitive after Etsy's June 2025 "original design only" rule. Pure whitespace — no competitor touches this. *(Source: SWOT, 2026-05-18)* |
+| 12 | Schedule-C / COGS exporter | Free | 4 | 1.5 | 2.7 | IRS-shaped bookkeeper report (US Schedule C COGS) generated from existing sales + material consumption. Etsy/Craftybase forums asking for this weekly. We're the only tool with the underlying data. *(Source: SWOT, 2026-05-18)* |
+
+### ✅ SHIPPED (was DO NEXT)
+
+| Feature | Shipped | Evidence |
+|---------|---------|----------|
+| G-code import | v1.0 milestone | [gcodeParser.ts](src/utils/gcodeParser.ts), [GcodeImport.tsx](src/components/GcodeImport.tsx) — multi-slicer (Prusa, Bambu, Cura, IdeaMaker, OrcaSlicer, SuperSlicer) |
+| Multi-material prints | v1.0 milestone | `PrintJob.filaments: FilamentUsage[]` ([types.ts:146](src/types.ts:146)); add/remove rows in [CostCalculator.tsx:89-99](src/components/CostCalculator.tsx:89) |
+| Default profit margin setting | 2026-05-18 | UserProfile field + SettingsModal Pricing tab |
 
 ### DO NEXT — High impact, moderate effort (Score 1.0-1.9)
 
 | # | Feature | Tier | Impact | Effort | Score | Why |
 |---|---------|------|--------|--------|-------|-----|
-| 10 | Printable/PDF quote | Free | 5 | 3 | 1.7 | Bridges calc → customer. Needs PDF lib (jsPDF). |
-| 11 | Multi-color/AMS purge waste | Free | 3 | 2 | 1.5 | Growing Bambu AMS user base. Moderate UI work. |
-| 12 | Dark mode | Free | 3 | 2 | 1.5 | Already dark-ish. Needs proper theming + toggle. |
-| 13 | ROI calculator | Free | 4 | 3 | 1.3 | Unique — no competitor has this. New page + projection math. |
-| 14 | G-code import | Free | 4 | 3 | 1.3 | Parse text file for time/weight. Moderate parsing work. |
-| 15 | Multi-material prints | Free | 3 | 2.5 | 1.2 | UI for multiple materials per job. Schema change. |
-| 16 | Batch pricing | Free | 3 | 2.5 | 1.2 | Volume discount tiers. Moderate calc logic. |
-| 17 | Material inventory tracking | Free | 3 | 2.5 | 1.2 | Stock levels, deduction on job, alerts. New data model. |
-| 18 | Skeleton loading states | Free | 2 | 2 | 1.0 | Component shells. Nice polish. |
-| 19 | Performance optimization | Free | 3 | 3 | 1.0 | Bundle splitting, lazy loading, virtualization. |
-| 20 | Unit tests for calcs | Free | 3 | 3 | 1.0 | Critical for confidence as features grow. |
-| 21 | Accounting CSV export | Free | 2 | 2 | 1.0 | QBO/Wave format. Niche but straightforward. |
+| 13 | Printable/PDF quote | Free | 5 | 3 | 1.7 | Bridges calc → customer. Needs PDF lib (jsPDF). |
+| 14 | Editable tags on saved jobs | Free | 3 | 2 | 1.5 | Max 6 tags/job. Drives filter + search in Jobs view. Schema field + tag editor UI + filter chips. |
+| 15 | Multi-color/AMS purge waste | Free | 3 | 2 | 1.5 | Growing Bambu AMS user base. Moderate UI work. *Audit 2026-05-19: 3MF parser ingests multi-filament data but purge/flush volume isn't priced — confirmed outstanding.* |
+| 16 | Dark mode | Free | 3 | 2 | 1.5 | Already dark-ish. Needs proper theming + toggle. *Audit 2026-05-19: no theme context, hardcoded slate-900; commented-out `// theme?:` in [types.ts:313](src/types.ts:313) suggests prior intent.* |
+| 17 | Slicer bridge (Orca/Bambu) | Free | 4 | 3 | 1.3 | Post-process script for OrcaSlicer + Bambu Studio: one-click "send sliced job to 3DCoster" with time/weight pre-filled. Strategic hedge against slicer-native cost models. *(Source: SWOT, 2026-05-18)* |
+| 18 | ROI calculator | Free | 4 | 3 | 1.3 | Unique — no competitor has this. New page + projection math. |
+| 19 | Batch pricing | Free | 3 | 2.5 | 1.2 | Volume discount tiers. Moderate calc logic. |
+| 20 | Material inventory tracking | Free | 3 | 2.5 | 1.2 | Stock levels, deduction on job, alerts. New data model. *Audit 2026-05-19: `Asset.unitsPerPackage`/`lifespanUnits` exist; remaining work = current stock + deduction + low-stock alerts.* |
+| 21 | Skeleton loading states | Free | 2 | 2 | 1.0 | Component shells. Nice polish. |
+| 22 | Performance optimization | Free | 3 | 3 | 1.0 | Bundle splitting, virtualization. *Audit 2026-05-19: route lazy-loading done ([main.tsx:10-15](src/main.tsx:10)); remaining = `manualChunks` in vite.config and list virtualization for jobs/assets.* |
+| 23 | Unit tests for calcs | Free | 3 | 3 | 1.0 | Critical for confidence as features grow. *Audit 2026-05-19: vitest infra exists, one test ([threeMfParser.test.ts](src/utils/threeMfParser.test.ts)); remaining = tests for cost calculation logic in CostCalculator.* |
+| 24 | Accounting CSV export | Free | 2 | 2 | 1.0 | QBO/Wave format. Niche but straightforward. (See #12 for Schedule-C specifically.) |
 
 ### DO LATER — High effort or niche impact (Score <1.0)
 
 | # | Feature | Tier | Impact | Effort | Score | Why |
 |---|---------|------|--------|--------|-------|-----|
-| 22 | Resin/SLA support | Free | 4 | 4 | 1.0 | Entire new cost model. Different consumables, different math. |
-| 23 | Historical analytics | Free | 4 | 4 | 1.0 | Time-series data, charts, new DB schema. Big project. |
-| 24 | Slicer integration | Free | 3 | 4 | 0.8 | Multiple slicer formats. Plugin/API work. |
-| 25 | E2E tests | Free | 2 | 3 | 0.7 | Playwright/Cypress setup. Important but not user-facing. |
-| 26 | STL file analysis | Free | 3 | 5 | 0.6 | Requires 3D geometry parsing in browser. Complex. |
+| 25 | Resin/SLA support | Free | 4 | 4 | 1.0 | Entire new cost model. Different consumables, different math. |
+| 26 | Historical analytics | Free | 4 | 4 | 1.0 | Time-series data, charts, new DB schema. Big project. |
+| 27 | E2E tests | Free | 2 | 3 | 0.7 | Playwright/Cypress setup. Important but not user-facing. |
+| 28 | STL file analysis | Free | 3 | 5 | 0.6 | Requires 3D geometry parsing in browser. Complex. |
+
+### Free / Paid Line — Guiding Principle
+
+> **Free for the person. Paid when the tool wears your brand to your customers, or works while you sleep.**
+
+The core application — cost calculation, jobs, sales tracking, multi-printer fleet, all cost factors, records-keeping, tax compliance helpers, polish — stays free forever. Paid is reserved for four axes:
+
+1. **White-label branding** on customer-facing outputs (free version always available with a small "Made with 3DCoster" footer)
+2. **Hosted infrastructure** (cloud sync, embeddable widgets, shareable links, email delivery, customer portal)
+3. **Live integrations** with marketplaces, accounting, printers (CSV exports stay free)
+4. **Automation, AI, and multi-user** (workflow rules, photo-to-quote, team collaboration)
+
+See "Paid Tiers" section near the bottom of this doc for the full tier breakdown. Reference: [Free/Paid line research, 2026-05-19](#).
 
 ### PAID TIER BUILD ORDER
 
-Build in phases. Each phase unlocks the next. Phase 1 is the foundation everything else depends on.
+Build in phases. Each phase unlocks the next. P1 = highest-leverage paywall + foundation.
 
-| Phase | Feature | Tier | Impact | Effort | Score | Notes |
-|-------|---------|------|--------|--------|-------|-------|
-| **P1** | Cloud sync (Supabase) | Pro | 5 | 4 | 1.3 | Foundation for ALL paid features. Build first. |
-| **P1** | Customer management | Pro | 4 | 2 | 2.0 | DB + CRUD. Natural extension of quote details. |
-| **P1** | Job history + search | Pro | 4 | 2 | 2.0 | Already have jobs. Add persistence + filters. |
-| **P2** | PDF invoicing (branded) | Pro | 4 | 3 | 1.3 | Extends free PDF quote with branding + numbering. |
-| **P2** | Templates & presets | Pro | 3 | 2 | 1.5 | Save/load job configs. Good retention driver. |
-| **P2** | Basic KPI dashboard | Pro | 4 | 3 | 1.3 | Revenue, margins, volume cards. First "wow" moment. |
-| **P3** | Embeddable quote widget | Biz | 5 | 4 | 1.3 | KEY DIFFERENTIATOR. iframe/embed + API. |
-| **P3** | Order mgmt (Etsy/Shopify) | Biz | 5 | 5 | 1.0 | API integrations. Complex but high value. |
-| **P3** | Expense tracking | Biz | 3 | 2 | 1.5 | Categories + entries. Relatively simple. |
-| **P4** | Financials per order | Biz | 4 | 3 | 1.3 | COGS from calcs. Auto-populate margins. |
-| **P4** | Customer portal | Biz | 4 | 4 | 1.0 | Separate public-facing app. High effort, high wow. |
-| **P4** | Fulfillment tracking | Biz | 3 | 3 | 1.0 | State machine + carrier integration. |
+| Phase | Feature | Tier | Axis | Notes |
+|-------|---------|------|------|-------|
+| **P1** | White-label PDF quotes | Pro | Branding | The Stimalo line. Peak willingness-to-pay moment. Free PDF stays available with footer. |
+| **P1** | Cloud sync (Supabase) | Pro | Hosted infra | Foundation for any cross-device or hosted feature. |
+| **P1** | Email delivery of quotes | Pro | Hosted infra | Our SMTP sends on user's behalf. |
+| **P2** | Shareable hosted quote links | Pro | Hosted + branding | Public URL with cost breakdown view. |
+| **P2** | Slicer bridge (Orca/Bambu, if backend-required) | Pro | Automation | Falls to FREE if a pure client-side post-process script suffices. |
+| **P3** | Embeddable customer quote widget | Biz | Hosted + branding | KEY DIFFERENTIATOR. Tied to user's real calcs. |
+| **P3** | Order mgmt with Etsy/Shopify/Square sync | Biz | Live integration | Live API sync. |
+| **P3** | Live accounting sync (Xero/QuickBooks) | Biz | Live integration | CSV/Schedule-C export stays free. |
+| **P4** | Customer portal | Biz | Hosted + branding | Branded order tracking page. |
+| **P4** | Customer self-serve quoting & booking | Biz | Hosted + customer-facing | Public intake form on our infra. |
+| **P4** | AI photo-to-quote | Biz | AI inference | GPU cost recovery. |
+| **P5** | Printer integration & monitoring | Ent | Live integration | Real-time fleet status. |
+| **P5** | Workflow automation (When/Then) | Ent | Automation | Background rule engine. |
+| **P5** | Team collaboration (roles, mentions) | Ent | Multi-user | Multi-user requires backend. |
+| **P6** | API access + webhooks | Ent | Infra exposure | REST + webhooks. |
 | **P5** | Sync health dashboard | Biz | 2 | 2 | 1.0 | Status indicators, logs. Important for trust. |
 | **P5** | Accounting integration | Biz | 3 | 4 | 0.8 | QuickBooks/Xero APIs. Ongoing maintenance cost. |
 | **P6** | Printer monitoring | Ent | 4 | 5 | 0.8 | Hardware integration. Very complex. |
@@ -278,6 +304,10 @@ These features enhance the core cost calculator and remain free forever.
 - [ ] **Dark mode** - First-class dark theme (not just inverted colors). Signals premium, modern tool. *(Source: UX research, Feb 2026)*
 - [ ] **Empty states with CTAs** - Every blank screen should guide users (illustration + action + brief explanation). *(Source: UX research, Feb 2026)*
 - [ ] **Skeleton loading states** - Show content structure while loading for perceived speed. *(Source: UX research, Feb 2026)*
+- [ ] **Default profit margin setting** - User-configurable default profit margin % for new jobs (currently hardcoded to 30% in CostCalculator.tsx). Open questions: global vs per-printer scope, apply to existing jobs or new only, where to expose the setting. *(Discussion needed before implementation)*
+- [ ] **Editable tags on saved jobs** - Free-text tags (max 6 per job) to drive filter + search in the Jobs view. Schema: `tags: string[]` on PrintJob. UI: chip editor on job detail + filter chip bar above the jobs list. *(User-requested, 2026-05-18)*
+- [ ] **Etsy ToS compliance helper** - Per-job origin/license field (own design / licensed / third-party STL), compliance attestation export. Time-sensitive after Etsy's June 2025 "original design only" rule. No competitor touches this. *(Source: SWOT, 2026-05-18)*
+- [ ] **Slicer bridge (Orca/Bambu)** - Post-process script for OrcaSlicer + Bambu Studio that pushes weight/time/filament selection to 3DCoster as a pre-filled new job. Hedge against slicer-native cost math. Multi-year unmet request on Bambu forums. *(Source: SWOT, 2026-05-18)*
 
 ### Material & Inventory (Free Tier)
 - [ ] **Material inventory tracking** - Track filament stock levels with low-stock alerts. Predict reorder timing based on usage velocity. *(Source: Competitor research, Feb 2026)*
@@ -285,6 +315,7 @@ These features enhance the core cost calculator and remain free forever.
 ### Integrations (Free Tier)
 - [ ] **Slicer integration** - Pull data from PrusaSlicer, Bambu Studio, Cura
 - [ ] **Accounting export** - QuickBooks/Wave compatible CSV exports
+- [ ] **Schedule-C / COGS exporter** - US-tax-specific report from existing sales + material consumption. IRS Schedule C line-item shape, bookkeeper-friendly CSV. Distinct from QBO/Wave export (which is system-integration; this is tax-prep). *(Source: SWOT, 2026-05-18)*
 
 ---
 
@@ -475,111 +506,102 @@ className="p-4 md:p-6 lg:p-8"
 
 ## Paid Tiers: Business Management Platform
 
+### Guiding Principle
+
+**Free for the person. Paid when the tool wears your brand to your customers, or works while you sleep.**
+
+The core application is free forever — calculator, jobs, sales tracking, multi-printer fleet, all cost factors, records-keeping, tax compliance helpers, dark mode, polish. Every future improvement to the calculator itself is free.
+
+The four axes that warrant a paid tier:
+
+1. **White-label branding** — your logo and colors on outputs that go to your customers (PDF quotes, hosted quote links, customer portal). Free users get the same outputs with a small "Made with 3DCoster" footer. *This is the highest-leverage paywall — sellers are at peak willingness-to-pay when sending a quote to a customer, and the footer is organic marketing.*
+2. **Hosted infrastructure** — cloud sync, embeddable widgets, shareable URLs, email delivery, customer portal. Anything that runs on our servers and incurs ongoing cost.
+3. **Live integrations** — real API connections to marketplaces (Etsy / Shopify / Square), accounting (Xero / QuickBooks), printers (network monitoring). CSV exports stay free.
+4. **Automation, AI, and multi-user** — work done in the background (workflow rules, monitoring), AI inference (photo-to-quote, forecasting), team collaboration (multi-user roles).
+
+*(Source: Free/Paid line research 2026-05-19 — Stimalo, Printforge, Obsidian, Cal.com, Tailscale all converge on this principle.)*
+
 ### Strategic Positioning
 
 **Key competitive insight**: No competitor starts from cost calculation and builds up into business management. Everyone else starts from printer management or order management. 3DCoster's unique position is that quotes and invoices can be powered by REAL calculated costs — nobody else does this. This is a defensible differentiator.
 
 **Target market gap**: The "Small 3D Printing Business" segment (1-25 printers, $1K-$50K/mo revenue, selling on Etsy/Shopify/local) is significantly underserved. Enterprise tools (AMFG, Materialise) are too expensive and complex. Spreadsheets and free calculators don't scale. *(Source: ERP competitor research, Feb 2026)*
 
-**Context**: User feedback (Ken Pauley, Jan 2026) suggested integrating full order management functionality similar to his "MTNEARZ Business Manager" tool. Market research (Feb 2026) confirmed this gap across 15+ competitors including SimplyPrint, 3DPrinterOS, AstroPrint, Layers.app, DigiFabster, and Phasio.
+**Pricing benchmark**: Stimalo (closest analog) is €5.99/mo for white-label PDFs + analytics. Printforge starts $9 AUD/mo. DigiFabster starts $49/mo. We can sit at the lower end ($5-9/mo Pro) because the core stays free — Pro is pure professional polish.
+
+**Context**: User feedback (Ken Pauley, Jan 2026) suggested integrating full order management similar to his "MTNEARZ Business Manager" tool. Market research (Feb 2026) confirmed this gap across 15+ competitors including SimplyPrint, 3DPrinterOS, AstroPrint, Layers.app, DigiFabster, and Phasio.
 
 ---
 
-### Pro Tier (~$9-15/month)
-*Target: Hobby sellers doing 10-50 orders/month who've outgrown spreadsheets.*
+### Pro Tier (~$5-9/month)
+*Target: Individual makers who want to look professional to their customers.*
 
-- **Cloud Sync & Multi-Device**
-  - Sync job data, settings, and history across devices
+- **White-label PDF quotes**
+  - Your logo, business name, and colors in the header
+  - Removes the "Made with 3DCoster" footer
+  - The first natural paywall: peak willingness-to-pay at the moment of sending a quote
+
+- **Cloud sync & multi-device**
+  - Sync jobs, settings, assets, and history across web + desktop
   - Automatic backups
-  - Requires backend (Supabase or similar)
+  - Requires backend (Supabase)
 
-- **Customer Management**
-  - Customer database with contact info, order history, notes
-  - Repeat customer tracking and lifetime value
-  - Customer details attached to quotes *(Source: Crosslink Sheet, Feb 2026)*
+- **Email delivery of quotes**
+  - Send PDF quotes directly from 3DCoster via our SMTP
+  - Customer reply-to your email
+  - Optional: sent / opened tracking
 
-- **Job History & Analytics**
-  - Searchable job history with filters
-  - Cost trends over time (material prices, electricity rates)
-  - Profit/loss per job and per customer
-  - Basic KPI dashboard (revenue, margins, volume)
-
-- **Printable/Branded Invoicing**
-  - Generate PDF invoices from job calculations
-  - Shop logo, payment terms, itemized costs
-  - Invoice numbering and tracking
-
-- **Templates & Presets**
-  - Save common job configurations as templates
-  - One-click apply for repeat orders
-  - Quote templates with standard terms
+- **Shareable hosted quote links**
+  - Public URL (e.g. `quotes.3dcoster.app/<your-shop>/q/123`)
+  - Interactive cost breakdown view in browser
+  - Lighter than PDF; better for revisions and accept/decline workflows
 
 ---
 
-### Business Tier (~$29-49/month)
-*Target: Active sellers doing 50-200+ orders/month across multiple marketplaces.*
+### Business Tier (~$19-29/month)
+*Target: Active sellers integrating with marketplaces and operating customer-facing.*
 
-- **Embeddable Quote Widget** (KEY DIFFERENTIATOR)
-  - Embed a cost calculator on your own website
-  - Customer selects material, size, quantity → gets instant quote
-  - Quote is powered by your REAL cost calculations + markup
+- **Embeddable Customer Quote Widget** (KEY DIFFERENTIATOR)
+  - Embed on your own website (Shopify / Wix / Squarespace / static)
+  - Customer selects material, size, quantity → instant quote powered by your real cost model
   - No competitor offers this — quotes tied to actual calculated costs *(Source: ERP competitor research, Feb 2026)*
 
-- **Order Management**
-  - Sync with Square, Shopify, Etsy APIs
-  - Order status tracking (Open, Completed, Canceled, Draft)
-  - Order search, filtering, and pagination
-  - Deep link back to source platform (e.g., "Open in Square") *(Source: MTNEARZ screenshots, Feb 2026)*
+- **Order Management with marketplace sync**
+  - Live API sync with Square, Shopify, Etsy
+  - Status pipeline (Open → Printing → Shipped → Delivered → Paid)
+  - Deep link back to source platform *(Source: MTNEARZ screenshots, Feb 2026)*
   - Kanban board view for order pipeline *(Source: UX research, Feb 2026)*
+  - Product catalog sync (Square/Shopify) with 3DCoster job linkage
 
-- **Financials Per Order**
-  - Auto-populate COGS from 3DCoster calculations
-  - Gross Sales, Tax, Platform Fees, Net Sales
-  - Shipping Cost, Fully Landed Cost
-  - Gross Profit, Net Profit, Margins per order
-
-- **Line Item Tracking**
-  - Products per order with materials/colors
-  - Link to 3DCoster job calculations
-  - Inventory deduction
-
-- **Product Catalog Management** *(Source: MTNEARZ screenshots, Feb 2026)*
-  - Separate product catalog (not just line items per order)
-  - Sync catalog from Square/Shopify independently from order sync
-  - Product ↔ 3DCoster job mapping (link a catalog item to its cost calculation)
-
-- **Expense Tracking** *(Source: MTNEARZ screenshots, Feb 2026)*
-  - Track business expenses beyond COGS (rent, tools, subscriptions, etc.)
-  - Expense categorization
-  - Factor into overall profitability reporting
-
-- **Fulfillment**
-  - Print packing slip generation
-  - Carrier integration
-  - Tracking number management
-  - Fulfillment state machine separate from order status (e.g., Proposed → Shipped → Delivered) *(Source: MTNEARZ screenshots, Feb 2026)*
-
-- **Dashboard & Reporting**
-  - KPI cards: Total Orders + revenue, YTD, quarterly, last 30 days (both count AND dollar amounts) *(Source: MTNEARZ screenshots, Feb 2026)*
-  - Revenue reports, profit margin analysis, best-selling products
-  - Dedicated Reports tab/page *(Source: MTNEARZ screenshots, Feb 2026)*
-  - 5-second rule: main insight visible immediately *(Source: UX research, Feb 2026)*
+- **Live Accounting Integration**
+  - QuickBooks / Xero / Wave live sync
+  - Auto-categorized expenses, tax-ready reporting
+  - (Note: free CSV/Schedule-C exports remain available — this tier adds live API sync.)
 
 - **Customer Portal**
-  - Client-facing order tracking page (branded)
-  - Visual progress tracker: Order Placed → Printing → Post-Processing → Ready
-  - Customer self-serve order lookup by ID/email
-  - No competitor does this well for 3D print shops *(Source: UX research, Feb 2026)*
+  - Branded client-facing order tracking page
+  - Visual progress: Order Placed → Printing → Post-Processing → Ready
+  - Customer self-serve order lookup by ID/email *(Source: UX research, Feb 2026)*
 
-- **Accounting Integration**
-  - QuickBooks / Xero / Wave sync
-  - Auto-categorized expenses
-  - Tax-ready reporting
+- **Customer Self-Serve Quoting & Booking**
+  - Public intake page on our infra
+  - Customer requests quote without an account
+  - Calendly-style pickup/dropoff booking with conflict detection
+  - Buffer time between jobs for bed prep
 
-- **Sync & Integration Health** *(Source: MTNEARZ screenshots, Feb 2026)*
-  - API connection status indicators (green/red health dots)
-  - Last sync timestamp with record count
-  - Separate sync actions: Sync All Orders, Sync Last 30 Days, Sync Catalog, Refresh Dashboard
+- **AI Photo-to-Quote**
+  - Customer sends a photo of what they want
+  - Vision model estimates weight / time / material
+  - Auto-priced through your cost model
+  - GPU inference cost recovery
+
+- **Fulfillment**
+  - Carrier API integration (label printing, tracking numbers)
+  - Fulfillment state machine separate from order status (Proposed → Shipped → Delivered) *(Source: MTNEARZ screenshots, Feb 2026)*
+
+- **Sync & Integration Health Dashboard** *(Source: MTNEARZ screenshots, Feb 2026)*
+  - API connection status indicators
+  - Last sync timestamp + record count
   - Sync audit log / history
 
 ---
@@ -589,33 +611,20 @@ className="p-4 md:p-6 lg:p-8"
 
 - **Printer Integration & Monitoring**
   - Real-time printer status in dashboard
-  - Auto-capture print time from connected printers
+  - Auto-capture print time from network-connected printers
   - Algorithmic job routing to available printers
-  - Print queue management with Gantt view *(Source: UX research, Feb 2026)*
+  - Gantt-view print queue management *(Source: UX research, Feb 2026)*
 
 - **Workflow Automation**
-  - Visual "When/Then" automation builder (no code)
-  - Example: "When order status → Printing, email customer: Your order is being printed!"
-  - Template automations for common scenarios
-  - Automation history log *(Source: UX research, Feb 2026)*
+  - Visual "When/Then" rule builder (no code)
+  - Example: "When order status → Printing, email customer"
+  - Template automations + automation history log *(Source: UX research, Feb 2026)*
 
 - **Team Collaboration**
-  - Multi-user access with roles
+  - Multi-user access with roles (Owner / Operator / Sales)
   - @mentions and threaded comments on jobs
   - Activity feed per job (who changed what, when)
   - Handoff notes between workflow stages *(Source: UX research, Feb 2026)*
-
-- **Calendar & Scheduling**
-  - Calendar view for print queue planning
-  - Customer self-serve pickup booking (Calendly-style)
-  - Buffer time between jobs for bed prep
-  - Conflict detection (two jobs can't be on same printer) *(Source: UX research, Feb 2026)*
-
-- **AI Features**
-  - Profitability forecasting from historical data
-  - Price optimization suggestions based on sell-through rates
-  - Busy period detection and stock-up alerts
-  - AI-powered quote generation from job descriptions *(Source: UX research, Feb 2026)*
 
 - **API Access**
   - REST API for custom integrations
@@ -623,18 +632,36 @@ className="p-4 md:p-6 lg:p-8"
 
 ---
 
+### What's NOT paid (clarifying the line)
+
+Earlier drafts of this roadmap labeled the following as Pro tier features. Under the 2026-05-19 free/paid line revision, **all of these are now FREE** because they are "for the person":
+
+- **Customer details on a job** (name, email, phone) — records-keeping, not a CRM
+- **Job history + search + filters** — your own data, local
+- **Templates & presets** — your own patterns and shortcuts
+- **Expense tracking** — your own bookkeeping (distinct from live accounting sync)
+- **Local KPI dashboard / cost trends over time** — your own data, no external surface
+- **Schedule-C / COGS exporter + accounting CSV** — personal tax compliance
+- **Material inventory tracking** — records of what you have
+- **PDF quote with "Made with 3DCoster" footer** — basic professional output for everyone
+- **Etsy ToS compliance helper** — personal compliance, time-sensitive
+- **ROI calculator, historical analytics, dark mode, polish** — calculator + UX improvements stay free per the public promise
+- **All cost-model enhancements** (resin/SLA, AMS purge waste, support waste %, bed adhesion, etc.) — the calculator itself is free forever
+
+---
+
 ### Why Paid Tiers
-- Significantly more complex (API integrations, order state management)
-- Ongoing maintenance for third-party API changes
-- Server costs for cloud sync and API proxying
-- Support costs for business-critical features
-- Target audience gets clear ROI: time savings + better pricing decisions
+- Ongoing infrastructure cost (cloud sync, hosted widgets, email delivery)
+- Third-party API maintenance (Etsy / Shopify / Square / Xero / QBO change frequently)
+- AI inference costs (vision model, forecasting)
+- Support cost for business-critical workflows
 
 ### Implementation Notes
-- Requires backend for API auth, syncing, and multi-device support
-- Consider Supabase for quick MVP (auth, database, edge functions)
-- Mobile experience becomes critical at Business tier and above
-- Start with Pro tier MVP, validate demand before building Business tier
+- Free tier remains 100% local-first / offline-capable. Building a paid tier never compromises the free experience.
+- Paid features require a backend — Supabase planned (auth + Postgres + edge functions)
+- Build order: P1 (white-label PDF + cloud sync + email delivery) is the highest-leverage starting point — solo makers paying for professional polish, single SKU
+- Mobile experience becomes critical at Business tier (customer portal, quote widget)
+- Validate Pro tier demand before building Business tier infrastructure
 
 ---
 
