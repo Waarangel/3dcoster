@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Currency, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
 import { NewBadge } from './NewBadge';
+import { Button, Input } from './ui';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -165,19 +166,17 @@ export function SettingsModal({
             </svg>
             <h2 className="text-lg font-semibold text-white">Settings</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1"
-          >
+          <Button variant="ghost" btnSize="sm" onClick={onClose}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-slate-700">
           {tabs.map(tab => (
+            // allow-raw-html: tab buttons use dynamic active/inactive class with border-b-2 indicator that no Button variant maps to (Pitfall 4)
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -202,7 +201,7 @@ export function SettingsModal({
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Default Profit Margin</h3>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Profit Margin (%)</label>
-                  <input
+                  <Input
                     type="number"
                     step="0.1"
                     min="0"
@@ -213,7 +212,6 @@ export function SettingsModal({
                       const next = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0), 99.9) : 0;
                       onUserProfileChange({ ...userProfile, defaultProfitMargin: next });
                     }}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="text-xs text-slate-500 mt-2">
                     Applied to new jobs and when the form is cleared or a job is saved. You can still adjust the margin per job in the calculator.
@@ -232,30 +230,28 @@ export function SettingsModal({
                 <div className="grid grid-cols-1 gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Max Delivery Radius ({distanceUnit})</label>
-                    <input
+                    <Input
                       type="number"
                       value={distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm).toFixed(1) : shippingConfig.maxDeliveryRadiusKm}
                       onChange={e => {
                         const inputVal = parseFloat(e.target.value) || 0;
                         onShippingChange({ ...shippingConfig, maxDeliveryRadiusKm: distanceUnit === 'mi' ? milesToKm(inputVal) : inputVal });
                       }}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Fuel Price ({currencySymbol}/{fuelUnit})</label>
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         value={shippingConfig.gasPricePerLiter}
                         onChange={e => onShippingChange({ ...shippingConfig, gasPricePerLiter: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">{fuelUnit === 'gal' ? 'Fuel Economy (MPG)' : 'Fuel (L/100km)'}</label>
-                      <input
+                      <Input
                         type="number"
                         step="0.1"
                         value={fuelUnit === 'gal' ? litersPer100KmToMpg(shippingConfig.vehicleFuelEfficiency).toFixed(1) : shippingConfig.vehicleFuelEfficiency}
@@ -263,7 +259,6 @@ export function SettingsModal({
                           const inputVal = parseFloat(e.target.value) || 0;
                           onShippingChange({ ...shippingConfig, vehicleFuelEfficiency: fuelUnit === 'gal' ? mpgToLitersPer100Km(inputVal) : inputVal });
                         }}
-                        className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -287,54 +282,49 @@ export function SettingsModal({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">UPS ({currencySymbol})</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={shippingConfig.upsBaseCost}
                       onChange={e => onShippingChange({ ...shippingConfig, upsBaseCost: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">FedEx ({currencySymbol})</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={shippingConfig.fedexBaseCost}
                       onChange={e => onShippingChange({ ...shippingConfig, fedexBaseCost: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">DHL ({currencySymbol})</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={shippingConfig.dhlBaseCost}
                       onChange={e => onShippingChange({ ...shippingConfig, dhlBaseCost: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   {userCurrency === 'CAD' && (
                     <>
                       <div>
                         <label className="block text-xs text-slate-400 mb-1">Canada Post ({currencySymbol})</label>
-                        <input
+                        <Input
                           type="number"
                           step="0.01"
                           value={shippingConfig.canadaPostBaseCost}
                           onChange={e => onShippingChange({ ...shippingConfig, canadaPostBaseCost: parseFloat(e.target.value) || 0 })}
-                          className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-slate-400 mb-1">Purolator ({currencySymbol})</label>
-                        <input
+                        <Input
                           type="number"
                           step="0.01"
                           value={shippingConfig.purolatorBaseCost}
                           onChange={e => onShippingChange({ ...shippingConfig, purolatorBaseCost: parseFloat(e.target.value) || 0 })}
-                          className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </>
@@ -342,36 +332,33 @@ export function SettingsModal({
                   {userCurrency === 'USD' && (
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">USPS ({currencySymbol})</label>
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         value={shippingConfig.uspsBaseCost}
                         onChange={e => onShippingChange({ ...shippingConfig, uspsBaseCost: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   )}
                   {userCurrency === 'GBP' && (
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Royal Mail ({currencySymbol})</label>
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         value={shippingConfig.royalMailBaseCost}
                         onChange={e => onShippingChange({ ...shippingConfig, royalMailBaseCost: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   )}
                   {(userCurrency === 'AUD' || userCurrency === 'NZD') && (
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Australia Post ({currencySymbol})</label>
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         value={shippingConfig.australiaPostBaseCost}
                         onChange={e => onShippingChange({ ...shippingConfig, australiaPostBaseCost: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   )}
@@ -390,49 +377,53 @@ export function SettingsModal({
                       <div key={carrier.id} className="flex items-center gap-2 bg-slate-700/50 p-2 rounded-lg">
                         {editingCarrierId === carrier.id ? (
                           <>
-                            <input
+                            <Input
                               type="text"
                               value={carrier.name}
                               onChange={e => handleUpdateCarrier(carrier.id, 'name', e.target.value)}
-                              className="flex-1 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0"
+                              className="flex-1"
                             />
-                            <input
+                            <Input
                               type="number"
                               step="0.01"
                               min="0"
                               value={carrier.defaultCost}
                               onChange={e => handleUpdateCarrier(carrier.id, 'defaultCost', Math.max(0, parseFloat(e.target.value) || 0))}
-                              className="w-20 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0 text-right"
+                              className="w-20 text-right"
                             />
-                            <button
+                            <Button
+                              variant="ghost"
+                              btnSize="sm"
                               onClick={() => setEditingCarrierId(null)}
-                              className="text-green-400 hover:text-green-300 p-1"
+                              className="text-green-400 hover:text-green-300"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                            </button>
+                            </Button>
                           </>
                         ) : (
                           <>
                             <span className="flex-1 text-sm text-white">{carrier.name}</span>
                             <span className="text-sm text-slate-300 font-mono">{currencySymbol}{carrier.defaultCost.toFixed(2)}</span>
-                            <button
+                            <Button
+                              variant="ghost"
+                              btnSize="sm"
                               onClick={() => setEditingCarrierId(carrier.id)}
-                              className="text-slate-400 hover:text-slate-200 p-1"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                               </svg>
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="danger"
+                              btnSize="sm"
                               onClick={() => handleDeleteCarrier(carrier.id)}
-                              className="text-red-400 hover:text-red-300 p-1"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
-                            </button>
+                            </Button>
                           </>
                         )}
                       </div>
@@ -442,29 +433,28 @@ export function SettingsModal({
 
                 {/* Add new carrier */}
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     placeholder="Carrier name"
                     value={newCarrierName}
                     onChange={e => setNewCarrierName(e.target.value)}
-                    className="flex-1 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                    className="flex-1"
                   />
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     min="0"
                     placeholder={`Cost (${currencySymbol})`}
                     value={newCarrierCost}
                     onChange={e => setNewCarrierCost(e.target.value)}
-                    className="w-24 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                    className="w-24"
                   />
-                  <button
+                  <Button
                     onClick={handleAddCarrier}
                     disabled={!newCarrierName.trim() || !newCarrierCost}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
                   >
                     Add
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -486,32 +476,29 @@ export function SettingsModal({
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Selling Fee (%)</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
                       value={marketplaceFees.facebookShippedPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, facebookShippedPercent: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Min Fee ({currencySymbol})</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={marketplaceFees.facebookMinFee}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, facebookMinFee: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Processing (%)</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
                       value={marketplaceFees.facebookProcessingPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, facebookProcessingPercent: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -523,52 +510,47 @@ export function SettingsModal({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Transaction Fee (%)</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
                       value={marketplaceFees.etsyTransactionPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyTransactionPercent: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Payment Fee (%)</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
                       value={marketplaceFees.etsyPaymentPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyPaymentPercent: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Payment Fixed ({currencySymbol})</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={marketplaceFees.etsyPaymentFixed}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyPaymentFixed: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Listing Fee ({currencySymbol})</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={marketplaceFees.etsyListingFee}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyListingFee: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="col-span-2">
                     <label className="block text-xs text-slate-400 mb-1">Offsite Ads Fee (%)</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
                       value={marketplaceFees.etsyOffsiteAdPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyOffsiteAdPercent: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -580,22 +562,20 @@ export function SettingsModal({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Final Value Fee (%)</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
                       value={marketplaceFees.ebayFinalValuePercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, ebayFinalValuePercent: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Fixed Fee ({currencySymbol})</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={marketplaceFees.ebayFixedFee}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, ebayFixedFee: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -606,12 +586,11 @@ export function SettingsModal({
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Amazon Handmade</h3>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Referral Fee (%)</label>
-                  <input
+                  <Input
                     type="number"
                     step="0.1"
                     value={marketplaceFees.amazonHandmadePercent}
                     onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, amazonHandmadePercent: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -628,60 +607,64 @@ export function SettingsModal({
                       <div key={mp.id} className="flex items-center gap-2 bg-slate-700/50 p-2 rounded-lg">
                         {editingMarketplaceId === mp.id ? (
                           <>
-                            <input
+                            <Input
                               type="text"
                               value={mp.name}
                               onChange={e => handleUpdateMarketplace(mp.id, 'name', e.target.value)}
-                              className="flex-1 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0"
                               placeholder="Name"
+                              className="flex-1"
                             />
-                            <input
+                            <Input
                               type="number"
                               step="0.1"
                               min="0"
                               value={mp.feePercent}
                               onChange={e => handleUpdateMarketplace(mp.id, 'feePercent', Math.max(0, parseFloat(e.target.value) || 0))}
-                              className="w-16 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0 text-right"
                               placeholder="%"
+                              className="w-16 text-right"
                             />
-                            <input
+                            <Input
                               type="number"
                               step="0.01"
                               min="0"
                               value={mp.fixedFee}
                               onChange={e => handleUpdateMarketplace(mp.id, 'fixedFee', Math.max(0, parseFloat(e.target.value) || 0))}
-                              className="w-16 bg-slate-600 text-white text-sm px-2 py-1 rounded border-0 text-right"
                               placeholder="Fixed"
+                              className="w-16 text-right"
                             />
-                            <button
+                            <Button
+                              variant="ghost"
+                              btnSize="sm"
                               onClick={() => setEditingMarketplaceId(null)}
-                              className="text-green-400 hover:text-green-300 p-1"
+                              className="text-green-400 hover:text-green-300"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                            </button>
+                            </Button>
                           </>
                         ) : (
                           <>
                             <span className="flex-1 text-sm text-white">{mp.name}</span>
                             <span className="text-xs text-slate-400">{mp.feePercent}% + {currencySymbol}{mp.fixedFee.toFixed(2)}</span>
-                            <button
+                            <Button
+                              variant="ghost"
+                              btnSize="sm"
                               onClick={() => setEditingMarketplaceId(mp.id)}
-                              className="text-slate-400 hover:text-slate-200 p-1"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                               </svg>
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="danger"
+                              btnSize="sm"
                               onClick={() => handleDeleteMarketplace(mp.id)}
-                              className="text-red-400 hover:text-red-300 p-1"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
-                            </button>
+                            </Button>
                           </>
                         )}
                       </div>
@@ -691,49 +674,50 @@ export function SettingsModal({
 
                 {/* Add new marketplace */}
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     placeholder="Marketplace name"
                     value={newMarketplaceName}
                     onChange={e => setNewMarketplaceName(e.target.value)}
-                    className="flex-1 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                    className="flex-1"
                   />
-                  <input
+                  <Input
                     type="number"
                     step="0.1"
                     min="0"
                     placeholder="Fee %"
                     value={newMarketplacePercent}
                     onChange={e => setNewMarketplacePercent(e.target.value)}
-                    className="w-16 bg-slate-700 text-white text-sm px-2 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                    className="w-16"
                   />
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     min="0"
                     placeholder={`Fixed (${currencySymbol})`}
                     value={newMarketplaceFixed}
                     onChange={e => setNewMarketplaceFixed(e.target.value)}
-                    className="w-20 bg-slate-700 text-white text-sm px-2 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                    className="w-20"
                   />
-                  <button
+                  <Button
                     onClick={handleAddMarketplace}
                     disabled={!newMarketplaceName.trim()}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
                   >
                     Add
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* Reset to defaults */}
               <div className="pt-4 border-t border-slate-700">
-                <button
+                <Button
+                  variant="ghost"
+                  btnSize="sm"
                   onClick={onResetMarketplaceFees}
-                  className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                  className="text-slate-400 hover:text-slate-200"
                 >
                   Reset all marketplace fees to defaults
-                </button>
+                </Button>
               </div>
             </div>
           )}
