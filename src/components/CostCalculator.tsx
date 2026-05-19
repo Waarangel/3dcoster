@@ -3,6 +3,7 @@ import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, Mater
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
+import { Button, Input, Select } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { getMaterialDensity } from '../utils/gcodeParser';
 
@@ -648,14 +649,16 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </svg>
             <span className="text-red-300">{validationError}</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={() => setValidationError(null)}
-            className="text-slate-500 hover:text-slate-300 ml-2"
+            className="ml-2 text-slate-500 hover:text-slate-300"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
       )}
 
@@ -668,15 +671,16 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               {editingJob.copiesSold} copies sold | Created {new Date(editingJob.createdAt).toLocaleDateString()}
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={() => {
               clearForm();
               onCancelEdit();
             }}
-            className="text-slate-400 hover:text-white transition-colors"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       )}
 
@@ -708,12 +712,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-4">
           <div className="lg:col-span-2">
             <label className="block text-xs text-slate-400 mb-1">Print Name *</label>
-            <input
+            <Input
               type="text"
               value={printName}
               onChange={e => setPrintName(e.target.value)}
               placeholder="e.g., Dragon Figurine"
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
@@ -722,10 +725,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             {printerInstances.length === 0 ? (
               <p className="text-yellow-400 text-sm">No printers set up. Go to Printer Settings to add one.</p>
             ) : (
-              <select
+              <Select
                 value={selectedInstanceId}
                 onChange={e => setSelectedInstanceId(e.target.value)}
-                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               >
                 {printerInstances.map(instance => {
                   const config = printers.find(p => p.id === instance.printerConfigId);
@@ -735,7 +737,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     </option>
                   );
                 })}
-              </select>
+              </Select>
             )}
           </div>
 
@@ -764,36 +766,38 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 <div className="shrink-0 w-[196px]">
                   <label className="block text-xs text-slate-400 mb-1">Grams</label>
                   <div className="flex gap-1 items-center">
-                    <input
+                    <Input
                       type="number"
                       value={row.grams || ''}
                       onChange={e => updateFilamentRow(index, { grams: parseFloat(e.target.value) || 0 })}
                       placeholder="g"
-                      className="w-24 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                      className="w-24"
                     />
                     {index === filamentRows.length - 1 && filamentRows.length < 16 && (
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
                         onClick={addFilamentRow}
-                        className="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white w-[44px] h-[44px] rounded-lg transition-colors flex items-center justify-center shrink-0"
+                        className="w-[44px] h-[44px] !px-0 !py-0 shrink-0"
                         aria-label="Add filament row"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                      </button>
+                      </Button>
                     )}
                     {index > 0 && (
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
                         onClick={() => removeFilamentRow(index)}
-                        className="bg-slate-700 hover:bg-slate-600 text-red-400 hover:text-red-300 w-[44px] h-[44px] rounded-lg transition-colors flex items-center justify-center shrink-0"
+                        className="w-[44px] h-[44px] !px-0 !py-0 shrink-0 text-red-400 hover:text-red-300"
                         aria-label="Remove filament row"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -803,28 +807,27 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
-            <input
+            <Input
               type="number"
               step="0.1"
               value={printTimeHours || ''}
               onChange={e => setPrintTimeHours(parseFloat(e.target.value) || 0)}
               placeholder="From slicer"
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">Model/STL Cost ({currencySymbol})</label>
-            <input
+            <Input
               type="number"
               step="0.01"
               value={modelCost || ''}
               onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
               placeholder="0 if free/own design"
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
             {modelCost > 0 && (
               <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
                 <input
                   type="checkbox"
                   checked={modelCostPerUnit}
@@ -843,13 +846,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 <span>Author Min Price ({currencySymbol})</span>
                 <NewBadge feature="author-min-price" />
               </label>
-              <input
+              <Input
                 type="number"
                 step="0.01"
                 value={authorMinPrice || ''}
                 onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
                 placeholder="Optional"
-                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
               <p className="text-xs text-slate-500 mt-1">Warn if selling below this</p>
             </div>
@@ -857,36 +859,33 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">Failure Rate (%, max 99)</label>
-            <input
+            <Input
               type="number"
               min="0"
               max="99"
               value={failureRate || ''}
               onChange={e => setFailureRate(Math.min(parseFloat(e.target.value) || 0, 99))}
               placeholder="5"
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">Prep Time (min)</label>
-            <input
+            <Input
               type="number"
               value={prepTimeMinutes || ''}
               onChange={e => setPrepTimeMinutes(parseInt(e.target.value) || 0)}
               placeholder="Slicing, bed prep, etc."
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">Post-Processing (min)</label>
-            <input
+            <Input
               type="number"
               value={postProcessingMinutes || ''}
               onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
               placeholder="Support removal, sanding, etc."
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
           </div>
         </div>
@@ -896,13 +895,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">Post-Processing Materials</h2>
-          <button
+          <Button
+            btnSize="sm"
             onClick={addMaterialUsage}
             disabled={nonFilaments.length === 0}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
           >
             + Add Material
-          </button>
+          </Button>
         </div>
 
         {materialsUsed.length === 0 ? (
@@ -913,34 +912,35 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               const material = materials.find(m => m.id === usage.materialId);
               return (
                 <div key={index} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
-                  <select
+                  <Select
                     value={usage.materialId}
                     onChange={e => updateMaterialUsage(index, 'materialId', e.target.value)}
-                    className="flex-1 bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 min-h-[44px]"
+                    className="flex-1"
                   >
                     {nonFilaments.map(m => (
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
-                  </select>
+                  </Select>
                   <div className="flex items-center gap-2">
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
                       value={usage.quantity}
                       onChange={e => updateMaterialUsage(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="w-20 bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 text-right min-h-[44px]"
+                      className="w-20 text-right"
                     />
                     <span className="text-slate-400 text-sm w-12">{material?.unit || ''}</span>
                   </div>
                   <span className="text-slate-300 text-sm font-mono w-16 text-right">
                     {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
                   </span>
-                  <button
+                  <Button
+                    variant="danger"
+                    btnSize="sm"
                     onClick={() => removeMaterialUsage(index)}
-                    className="text-red-400 hover:text-red-300 p-1"
                   >
                     ✕
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -955,24 +955,23 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
           <div>
             <label className="block text-xs text-slate-400 mb-1">Shipping Method</label>
-            <select
+            <Select
               value={shippingMethod}
               onChange={e => {
                 setShippingMethod(e.target.value as ShippingMethodType);
                 setShippingOverrideCost(null); // Reset override when method changes
               }}
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             >
               {availableShippingMethods.map(method => (
                 <option key={method.value} value={method.value}>{method.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {shippingMethod === 'dropoff' && (
             <div>
               <label className="block text-xs text-slate-400 mb-1">Distance ({distanceUnit})</label>
-              <input
+              <Input
                 type="number"
                 value={distanceUnit === 'mi' ? (shippingDistanceKm > 0 ? kmToMiles(shippingDistanceKm).toFixed(1) : '') : (shippingDistanceKm || '')}
                 onChange={e => {
@@ -982,7 +981,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 }}
                 max={distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm) : shippingConfig.maxDeliveryRadiusKm}
                 placeholder={`Max ${distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm).toFixed(0) : shippingConfig.maxDeliveryRadiusKm}${distanceUnit}`}
-                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
               {shippingDistanceKm > shippingConfig.maxDeliveryRadiusKm && (
                 <p className="text-xs text-red-400 mt-1">Exceeds max delivery radius!</p>
@@ -992,21 +990,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">Carrier Cost ({currencySymbol})</label>
-            <input
+            <Input
               type="number"
               step="0.01"
               value={shippingOverrideCost !== null ? shippingOverrideCost : shippingCost}
               onChange={e => setShippingOverrideCost(parseFloat(e.target.value) || 0)}
               placeholder={shippingCost.toFixed(2)}
-              className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
             {shippingOverrideCost !== null && (
-              <button
+              <Button
+                variant="ghost"
+                btnSize="sm"
                 onClick={() => setShippingOverrideCost(null)}
-                className="text-xs text-blue-400 hover:text-blue-300 mt-1"
+                className="mt-1 text-blue-400 hover:text-blue-300 text-xs"
               >
                 Reset to default
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -1021,17 +1020,18 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               </h3>
               <p className="text-xs text-slate-500">Boxes, bubble wrap, tape, etc.</p>
             </div>
-            <button
+            <Button
+              btnSize="sm"
               onClick={() => {
                 if (consumables.length > 0) {
                   setPackagingMaterials([...packagingMaterials, { materialId: consumables[0].id, quantity: 1 }]);
                 }
               }}
               disabled={consumables.length === 0}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors"
+              className="text-xs"
             >
               + Add Packaging
-            </button>
+            </Button>
           </div>
 
           {packagingMaterials.length === 0 ? (
@@ -1042,21 +1042,21 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 const material = materials.find(m => m.id === usage.materialId);
                 return (
                   <div key={index} className="flex items-center gap-3 bg-slate-700/50 p-2 rounded-lg">
-                    <select
+                    <Select
                       value={usage.materialId}
                       onChange={e => {
                         const updated = [...packagingMaterials];
                         updated[index] = { ...updated[index], materialId: e.target.value };
                         setPackagingMaterials(updated);
                       }}
-                      className="flex-1 bg-slate-700 text-white text-base md:text-sm px-3 py-1.5 rounded-lg border-0 min-h-[44px]"
+                      className="flex-1"
                     >
                       {consumables.map(m => (
                         <option key={m.id} value={m.id}>{m.name}</option>
                       ))}
-                    </select>
+                    </Select>
                     <div className="flex items-center gap-2">
-                      <input
+                      <Input
                         type="number"
                         step="0.1"
                         value={usage.quantity}
@@ -1065,19 +1065,21 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                           updated[index] = { ...updated[index], quantity: parseFloat(e.target.value) || 0 };
                           setPackagingMaterials(updated);
                         }}
-                        className="w-16 bg-slate-700 text-white text-base md:text-sm px-2 py-1.5 rounded-lg border-0 text-right min-h-[44px]"
+                        inputSize="sm"
+                        className="w-16 text-right"
                       />
                       <span className="text-slate-400 text-xs w-8">{material?.unit || ''}</span>
                     </div>
                     <span className="text-slate-300 text-sm font-mono w-14 text-right">
                       {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
                     </span>
-                    <button
+                    <Button
+                      variant="danger"
+                      btnSize="sm"
                       onClick={() => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
-                      className="text-red-400 hover:text-red-300 p-1"
                     >
                       ✕
-                    </button>
+                    </Button>
                   </div>
                 );
               })}
@@ -1115,17 +1117,16 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Selling Platform</label>
-              <select
+              <Select
                 value={marketplace}
                 onChange={e => setMarketplace(e.target.value as MarketplaceType)}
-                className="w-full bg-slate-700 text-white text-base md:text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               >
                 {availableMarketplaces.map(opt => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </Select>
               <p className="text-xs text-slate-500 mt-1">
                 {availableMarketplaces.find(m => m.value === marketplace)?.description}
               </p>
@@ -1153,15 +1154,15 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div>
             <label className="block text-sm font-medium text-white mb-1">Profit Margin</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">%</span>
-              <input
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
+              <Input
                 type="number"
                 value={profitMarginPercent || ''}
                 onChange={e => {
                   setProfitMarginPercent(parseFloat(e.target.value) || 0);
                   setLastEdited('margin');
                 }}
-                className="w-full bg-slate-700 text-white text-base md:text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                className="pl-8"
               />
             </div>
           </div>
@@ -1169,8 +1170,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div>
             <label className="block text-sm font-medium text-white mb-1">Target Profit</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{currencySymbol}</span>
-              <input
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
+              <Input
                 type="number"
                 step="0.01"
                 value={targetProfit || ''}
@@ -1178,7 +1179,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   setTargetProfit(parseFloat(e.target.value) || 0);
                   setLastEdited('profit');
                 }}
-                className="w-full bg-slate-700 text-white text-base md:text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                className="pl-8"
               />
             </div>
           </div>
@@ -1186,8 +1187,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div>
             <label className="block text-sm font-medium text-white mb-1">Selling Price</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{currencySymbol}</span>
-              <input
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
+              <Input
                 type="number"
                 step="0.01"
                 value={sellingPrice || ''}
@@ -1195,7 +1196,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   setSellingPrice(parseFloat(e.target.value) || 0);
                   setLastEdited('price');
                 }}
-                className="w-full bg-slate-700 text-white text-base md:text-sm pl-8 pr-3 py-2.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                className="pl-8"
               />
             </div>
           </div>
@@ -1401,23 +1402,27 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           </span>
         )}
         {editingJob && (
-          <button
+          <Button
+            variant="secondary"
+            btnSize="lg"
             onClick={() => {
               clearForm();
               onCancelEdit();
             }}
-            className="w-full md:w-auto px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-medium rounded-lg transition-colors min-h-[44px]"
+            className="w-full md:w-auto"
           >
             Cancel Edit
-          </button>
+          </Button>
         )}
-        <button
+        <Button
+          variant={editingJob ? 'primary' : 'success'}
+          btnSize="lg"
           onClick={handleSaveJob}
           disabled={!printName.trim() || filamentRows.every(r => !r.filamentId) || trueCost <= 0}
-          className={`w-full md:w-auto px-6 py-3 ${editingJob ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors min-h-[44px]`}
+          className="w-full md:w-auto"
         >
           {editingJob ? 'Update Job' : 'Save Job for Tracking'}
-        </button>
+        </Button>
       </div>
     </div>
   );
