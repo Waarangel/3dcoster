@@ -12,10 +12,8 @@ Requirements for milestone v1.1. Each maps to exactly one roadmap phase. All req
 - [x] **UI-01**: All `<button>` elements in `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` are replaced with the shared `<Button>` / `<ButtonLink>` components from `src/components/ui/`, preserving existing behavior (variant, size, disabled, onClick)
 - [x] **UI-02**: All `<input>`, `<select>`, and `<textarea>` elements in the three components above are replaced with shared `<Input>` / `<Select>` / `<Textarea>` primitives, preserving type coercion, validation, and onChange behavior
 - [x] **UI-03**: A lint rule (eslint custom or comment-based) prevents new raw `<button>` / `<input>` / `<select>` elements from being added to main app components in the future — caught at build time
-- [ ] **UI-04**: Every empty screen in the app (Asset library with no assets, JobsManager with no jobs, PrinterSettings with no printers configured) shows an empty-state component with an icon/illustration, headline, supporting copy, and a primary CTA button that drives the user to the next action
+- [x] **UI-04**: Every empty screen in the app (Asset library with no assets, JobsManager with no jobs, PrinterSettings with no printers configured) shows an empty-state component with an icon/illustration, headline, supporting copy, and a primary CTA button that drives the user to the next action
 - [ ] **UI-05**: Skeleton loading components are shown during initial IndexedDB load — assets list, jobs list, and printer list each have their own skeleton shape matching the final content layout. The plain "Loading…" text in [App.tsx](src/App.tsx) is removed
-- [ ] **UI-06**: User can toggle between Light / Dark / System theme from a control in Settings; preference persists in localStorage and survives reloads. System mode follows OS preference and reacts to OS-level changes in real time
-- [ ] **UI-07**: Both light and dark themes render every existing surface correctly — calculator, jobs list, asset library, printer settings, settings modal, profile modal, update banner, maintenance alert modal, marketing pages — with no hardcoded slate-900 leaks and no contrast failures
 
 ### Test
 
@@ -47,11 +45,12 @@ Explicitly excluded from v1.1. Documented to prevent scope creep.
 | Feature | Reason |
 |---------|--------|
 | All v1.2 (Quote-to-Customer) features | Deferred per 2026-05-19 milestone-swap decision |
-| Customizable theme colors / brand colors | Light/dark/system only in v1.1; brand-color = paid tier |
+| Light/dark/system theme toggle (former UI-06, UI-07) | App ships dark-only by design; no toggle planned for v1.1+ (Phase 10 removed 2026-05-19) |
+| Customizable theme colors / brand colors | Brand-color = paid tier; out of scope |
 | Full design-system token pass | Primitives pass first; full token system is a later effort |
 | Playwright / Cypress E2E tests | Vitest unit tests for cost calcs only in v1.1; E2E in a future milestone |
 | Marketing-page redesign | Polish pass is scoped to the calculator app + JobsManager + Settings; marketing pages are static and out of scope here |
-| Animation / motion design pass | Out of scope; consider after dark mode lands and we know what surfaces respond to theme |
+| Animation / motion design pass | Out of scope for v1.1 |
 
 ## Traceability
 
@@ -62,20 +61,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-01 | Phase 7 | Complete |
 | UI-02 | Phase 7 | Complete |
 | UI-03 | Phase 7 | Complete |
-| UI-04 | Phase 8 | Pending |
+| UI-04 | Phase 8 | Complete |
 | UI-05 | Phase 9 | Pending |
-| UI-06 | Phase 10 | Pending |
-| UI-07 | Phase 10 | Pending |
-| TEST-01 | Phase 11 | Pending |
-| TEST-02 | Phase 11 | Pending |
-| PERF-01 | Phase 12 | Pending |
-| PERF-02 | Phase 12 | Pending |
+| TEST-01 | Phase 10 | Pending |
+| TEST-02 | Phase 10 | Pending |
+| PERF-01 | Phase 11 | Pending |
+| PERF-02 | Phase 11 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 11 total
-- Mapped to phases: 11
+- v1.1 requirements: 9 total
+- Mapped to phases: 9
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-19*
-*Last updated: 2026-05-19 — Milestone v1.1 redefined as Polish & Foundation; traceability filled from ROADMAP.md*
+*Last updated: 2026-05-19 — UI-06/UI-07 moved to Out of Scope; Phase 10 (Dark Mode) removed; subsequent phases renumbered (11→10, 12→11)*

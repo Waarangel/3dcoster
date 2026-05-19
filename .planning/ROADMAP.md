@@ -2,14 +2,15 @@
 
 **Milestone:** v1.1 Polish & Foundation
 **Defined:** 2026-05-19
-**Phase range:** 7–12 (v1.0 ended at Phase 6)
-**Requirements:** 11 total (UI-01–UI-07, TEST-01–TEST-02, PERF-01–PERF-02)
-**Coverage:** 11/11 — 100%
+**Phase range:** 7–11 (v1.0 ended at Phase 6)
+**Requirements:** 9 total (UI-01–UI-05, TEST-01–TEST-02, PERF-01–PERF-02)
+**Coverage:** 9/9 — 100%
 
 **Constraints encoded in this roadmap:**
 - All phases are FREE tier — no paid-tier work in this milestone
 - All phases are LOCAL-ONLY — no backend, no Supabase, no API calls
-- Phase 7 is foundational: its primitives must be available before Phases 8–10 add new UI surfaces
+- Phase 7 is foundational: its primitives must be available before Phases 8–9 add new UI surfaces
+- App ships dark-only — no light/system theme toggle in v1.1 (Phase 10 removed 2026-05-19)
 
 ---
 
@@ -18,9 +19,8 @@
 - [x] **Phase 7: Styling Primitives Pass** — Replace raw HTML form elements in main components with shared ui/ primitives (completed 2026-05-19)
 - [x] **Phase 8: Empty States with CTAs** — Every blank screen guides users with an empty-state component (completed 2026-05-19)
 - [ ] **Phase 9: Skeleton Loading States** — Skeleton shapes replace plain "Loading..." text during IndexedDB load
-- [ ] **Phase 10: Dark Mode** — First-class light/dark/system theme toggle; all surfaces correct in both themes
-- [ ] **Phase 11: Cost-Calculation Unit Tests** — Full vitest coverage of cost-calc logic, runs on every CI build
-- [ ] **Phase 12: Performance Optimization** — manualChunks vendor split + list virtualization for jobs and assets
+- [ ] **Phase 10: Cost-Calculation Unit Tests** — Full vitest coverage of cost-calc logic, runs on every CI build
+- [ ] **Phase 11: Performance Optimization** — manualChunks vendor split + list virtualization for jobs and assets
 
 ---
 
@@ -40,7 +40,7 @@
 - [x] 07-03-PLAN.md — Wave 0: Install lint guard (script + package.json + pre-commit hook) and refactor 9 lightweight components (MaintenanceAlertModal, UpdateBanner, FilamentSelector, Header, GcodeImport, ImageCarousel, CsvImportModal, UserProfileModal, BambuImport); finishes with 5 adversarial lint tests
 - [x] 07-01-PLAN.md — Wave 1: Refactor SettingsModal (44), CostCalculator (32), PrinterSettings (18) — heaviest tier (94 raw elements)
 - [x] 07-02-PLAN.md — Wave 1: Refactor AssetLibrary (40, contains the only `<form>`) and JobsManager (13) — medium tier (53 raw elements)
-**Note**: Internal refactoring only — no user-visible change. No NEW badge. Phases 8, 9, and 10 depend on this pass so they build new UI surfaces on consistent primitives from the start.
+**Note**: Internal refactoring only — no user-visible change. No NEW badge. Phases 8 and 9 depend on this pass so they build new UI surfaces on consistent primitives from the start.
 
 ### Phase 8: Empty States with CTAs
 **Goal**: Every blank screen in the app shows an empty-state component with an illustration, headline, supporting copy, and a primary CTA button that drives the user to the next action
@@ -69,23 +69,9 @@
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 10: Dark Mode
-**Goal**: Users can toggle between Light, Dark, and System themes from Settings; preference persists across sessions; every existing surface renders correctly in both themes with no hardcoded color leaks
-**Depends on**: Phase 7 (consistent primitive classes make theme token application tractable); Phases 8 and 9 should complete before Phase 10 so their new surfaces are themeable from the start
-**Requirements**: UI-06, UI-07
-**Success Criteria** (what must be TRUE):
-  1. A Light / Dark / System toggle control is present in Settings; user selection persists in localStorage and survives page reload
-  2. System mode reads the OS-level preference at load time and reacts in real time to OS theme changes without a manual page reload
-  3. Every existing surface — calculator, jobs list, asset library, printer settings, settings modal, profile modal, update banner, maintenance alert modal — renders correctly in both light and dark themes with no hardcoded `slate-900` leaks and no contrast failures
-  4. Marketing pages (Landing, Download, FAQ, etc.) render correctly in both themes — no white-on-white or black-on-black surfaces
-  5. The theme implementation uses CSS custom properties or a Tailwind `dark:` class strategy (not per-component duplication); the chosen approach is recorded in PROJECT.md Key Decisions at phase completion
-**Plans**: TBD
-**UI hint**: yes
-**NEW Badge**: yes — `dark-mode` registered in `src/features.ts`; badge placed as absolute overlay on the theme toggle control in Settings
-
-### Phase 11: Cost-Calculation Unit Tests
+### Phase 10: Cost-Calculation Unit Tests
 **Goal**: Vitest unit tests cover all cost-calculation factors in CostCalculator.tsx and run automatically under `npm test` and on every CI/build pass
-**Depends on**: Phase 7 completing (ensures the component under test is in its final clean state); no other UI phase dependency — can execute in parallel with Phases 8–10 if desired
+**Depends on**: Phase 7 completing (ensures the component under test is in its final clean state); no other UI phase dependency — can execute in parallel with Phases 8–9 if desired
 **Requirements**: TEST-01, TEST-02
 **Success Criteria** (what must be TRUE):
   1. Unit tests cover all calculation factors: material cost (multi-filament, per-filament weight), electricity, printer depreciation, nozzle wear (per-material density via `getMaterialDensity`), labor (prep + post-processing time), failure-rate adjustment, and model amortization
@@ -94,7 +80,7 @@
   4. All tests are deterministic: no IndexedDB dependency, no browser API dependency, no network calls
 **Plans**: TBD
 
-### Phase 12: Performance Optimization
+### Phase 11: Performance Optimization
 **Goal**: Vite produces explicit vendor chunks that keep the main app bundle under 300 KB gzipped; jobs and asset lists use virtualization for lists exceeding 100 items and remain smooth under 4× CPU throttle
 **Depends on**: Nothing — this is a build-config and rendering change; no dependency on prior v1.1 phases. Can execute in parallel with any other phase.
 **Requirements**: PERF-01, PERF-02
@@ -114,9 +100,8 @@
 | 7. Styling Primitives Pass | 3/3 | Complete    | 2026-05-19 |
 | 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
 | 9. Skeleton Loading States | 0/TBD | Not started | - |
-| 10. Dark Mode | 0/TBD | Not started | - |
-| 11. Cost-Calculation Unit Tests | 0/TBD | Not started | - |
-| 12. Performance Optimization | 0/TBD | Not started | - |
+| 10. Cost-Calculation Unit Tests | 0/TBD | Not started | - |
+| 11. Performance Optimization | 0/TBD | Not started | - |
 
 ---
 
@@ -129,14 +114,12 @@
 | UI-03 | Phase 7 | UI |
 | UI-04 | Phase 8 | UI |
 | UI-05 | Phase 9 | UI |
-| UI-06 | Phase 10 | UI |
-| UI-07 | Phase 10 | UI |
-| TEST-01 | Phase 11 | Test |
-| TEST-02 | Phase 11 | Test |
-| PERF-01 | Phase 12 | Performance |
-| PERF-02 | Phase 12 | Performance |
+| TEST-01 | Phase 10 | Test |
+| TEST-02 | Phase 10 | Test |
+| PERF-01 | Phase 11 | Performance |
+| PERF-02 | Phase 11 | Performance |
 
-**Mapped: 11/11** — no orphans
+**Mapped: 9/9** — no orphans (UI-06, UI-07 moved to Out of Scope per 2026-05-19 — app ships dark-only)
 
 ---
 
@@ -146,13 +129,11 @@
 Phase 7 (Primitives Pass)  <-- foundation for all UI phases
   └── Phase 8 (Empty States)      -- uses Button primitive from Phase 7
   └── Phase 9 (Skeleton States)   -- uses Card primitive from Phase 7
-  └── Phase 10 (Dark Mode)        -- Phase 7 + 8 + 9 should complete first
-                                     so new surfaces are themeable at once
 
-Phase 11 (Unit Tests)      -- depends on Phase 7 only (component in final state)
-                              can run in parallel with Phases 8–10
+Phase 10 (Unit Tests)      -- depends on Phase 7 only (component in final state)
+                              can run in parallel with Phases 8–9
 
-Phase 12 (Performance)     -- no UI dependency; can run in parallel with any phase
+Phase 11 (Performance)     -- no UI dependency; can run in parallel with any phase
 ```
 
 ---

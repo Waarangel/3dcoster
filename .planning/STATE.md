@@ -90,9 +90,9 @@ Recent decisions affecting current work:
 - [v1.0 Phase 06 P02]: processThreeMfFile is separate useCallback from processFile for clean 3MF vs gcode separation
 - [v1.1 Roadmap 2026-05-19]: Free/paid line — all v1.1 work is free-tier, local-only; no Supabase, no API calls
 - [v1.1 Roadmap 2026-05-19]: Styling primitives pass (Phase 7) is foundational — Phases 8, 9, 10 depend on its completion so new surfaces use consistent primitives
-- [v1.1 Roadmap 2026-05-19]: Dark mode Phase 10 theme strategy (CSS custom properties vs Tailwind dark: class) to be decided and recorded in PROJECT.md at Phase 10 plan time; commented-out `// theme?:` in src/types.ts:313 suggests prior intent
-- [v1.1 Roadmap 2026-05-19]: NEW badge rule applies — dark-mode toggle and empty-state CTAs are user-visible (badge required); primitives pass is invisible internal work (no badge)
-- [v1.1 Roadmap 2026-05-19]: Vitest infra exists (one test: threeMfParser.test.ts); Phase 11 adds cost-calc tests; tax/VAT test included as pending/skipped, activates in v1.2
+- [v1.1 Roadmap 2026-05-19]: Phase 10 (Dark Mode) removed; app ships dark-only by design (Slate-based theme already in place, zero `dark:` Tailwind classes used). UI-06/UI-07 moved to Out of Scope. Phases 11/12 renumbered to 10/11.
+- [v1.1 Roadmap 2026-05-19]: NEW badge rule applies — empty-state CTAs are user-visible (badge required); primitives pass is invisible internal work (no badge)
+- [v1.1 Roadmap 2026-05-19]: Vitest infra exists (one test: threeMfParser.test.ts); Phase 10 adds cost-calc tests (renumbered from 11 after Dark Mode removal); tax/VAT test included as pending/skipped, activates in v1.2
 
 ### Pending Todos
 
