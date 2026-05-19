@@ -9,9 +9,9 @@ Requirements for milestone v1.1. Each maps to exactly one roadmap phase. All req
 
 ### UI
 
-- [ ] **UI-01**: All `<button>` elements in `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` are replaced with the shared `<Button>` / `<ButtonLink>` components from `src/components/ui/`, preserving existing behavior (variant, size, disabled, onClick)
-- [ ] **UI-02**: All `<input>`, `<select>`, and `<textarea>` elements in the three components above are replaced with shared `<Input>` / `<Select>` / `<Textarea>` primitives, preserving type coercion, validation, and onChange behavior
-- [ ] **UI-03**: A lint rule (eslint custom or comment-based) prevents new raw `<button>` / `<input>` / `<select>` elements from being added to main app components in the future — caught at build time
+- [x] **UI-01**: All `<button>` elements in `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` are replaced with the shared `<Button>` / `<ButtonLink>` components from `src/components/ui/`, preserving existing behavior (variant, size, disabled, onClick)
+- [x] **UI-02**: All `<input>`, `<select>`, and `<textarea>` elements in the three components above are replaced with shared `<Input>` / `<Select>` / `<Textarea>` primitives, preserving type coercion, validation, and onChange behavior
+- [x] **UI-03**: A lint rule (eslint custom or comment-based) prevents new raw `<button>` / `<input>` / `<select>` elements from being added to main app components in the future — caught at build time
 - [ ] **UI-04**: Every empty screen in the app (Asset library with no assets, JobsManager with no jobs, PrinterSettings with no printers configured) shows an empty-state component with an icon/illustration, headline, supporting copy, and a primary CTA button that drives the user to the next action
 - [ ] **UI-05**: Skeleton loading components are shown during initial IndexedDB load — assets list, jobs list, and printer list each have their own skeleton shape matching the final content layout. The plain "Loading…" text in [App.tsx](src/App.tsx) is removed
 - [ ] **UI-06**: User can toggle between Light / Dark / System theme from a control in Settings; preference persists in localStorage and survives reloads. System mode follows OS preference and reacts to OS-level changes in real time
@@ -59,9 +59,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UI-01 | Phase 7 | Pending |
-| UI-02 | Phase 7 | Pending |
-| UI-03 | Phase 7 | Pending |
+| UI-01 | Phase 7 | Complete |
+| UI-02 | Phase 7 | Complete |
+| UI-03 | Phase 7 | Complete |
 | UI-04 | Phase 8 | Pending |
 | UI-05 | Phase 9 | Pending |
 | UI-06 | Phase 10 | Pending |
