@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
 import { NewBadge } from './NewBadge';
 import { CsvImportModal } from './CsvImportModal';
-import { Button, Input, Select } from './ui';
+import { Button, Input, Select, EmptyState } from './ui';
+import { PackageIcon } from './ui/icons';
 
 interface AssetLibraryProps {
   assets: Asset[];
@@ -388,6 +389,15 @@ export function AssetLibrary({
         </div>
       </div>
 
+      {assets.length === 0 ? (
+        <EmptyState
+          icon={<PackageIcon className="w-12 h-12" />}
+          title="No materials in your library yet"
+          description="Add your first filament to start tracking material costs across jobs. You can also import from CSV if you already have a list."
+          cta={{ label: 'Add Material', onClick: startAdding }}
+        />
+      ) : (
+        <>
       {/* Filter tabs + Search */}
       <div className="flex gap-2 mb-4 flex-wrap items-center">
         {/* allow-raw-html */}
@@ -1064,6 +1074,8 @@ export function AssetLibrary({
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* CSV Import Modal */}
       <CsvImportModal
