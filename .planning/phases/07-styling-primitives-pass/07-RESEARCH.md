@@ -687,17 +687,15 @@ UpdateBanner references `__IS_TAURI__` in its JS logic (not in JSX). This is a V
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should SettingsModal tabs be refactored to a `Tab` primitive?**
+1. **Should SettingsModal tabs be refactored to a `Tab` primitive?** — **RESOLVED:** Leave as `// allow-raw-html` for Phase 7. CONTEXT.md defers a `Tab` primitive to a future DX pass.
    - What we know: The tab button pattern is duplicated in SettingsModal and potentially elsewhere in future components.
    - What's unclear: Whether a `Tab` primitive belongs in `ui/` or stays as a local pattern.
-   - Recommendation: Leave as `// allow-raw-html` for Phase 7; the CONTEXT.md defers a `Tab` primitive to a future DX pass.
 
-2. **Should the lint guard also cover `src/pages/`?**
-   - What we know: CONTEXT.md D-03 says to exclude `src/pages/`. Marketing pages are out of scope.
+2. **Should the lint guard also cover `src/pages/`?** — **RESOLVED:** Exclude `src/pages/` per CONTEXT.md D-02. The marketing redesign milestone can add its own lint scope when it lands.
+   - What we know: CONTEXT.md D-02 says marketing pages are out of scope.
    - What's unclear: Whether unscoped `src/pages/` growth will drift over time.
-   - Recommendation: Exclude `src/pages/` for now per D-03; the marketing redesign milestone can add its own lint scope.
 
 ---
 
