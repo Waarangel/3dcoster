@@ -1,58 +1,44 @@
-# Requirements: 3DCoster v1.1 — Quote-to-Customer
+# Requirements: 3DCoster v1.1 — Polish & Foundation
 
 **Defined:** 2026-05-19
-**Core Value:** Turn the cost calculator into a complete quoting tool — every saved job becomes something you can confidently send to a customer.
+**Core Value:** Establish a consistent component foundation so every subsequent free-tier milestone is built on the same primitives — no rework when v1.2+ features ship.
 
 ## v1.1 Requirements
 
 Requirements for milestone v1.1. Each maps to exactly one roadmap phase. All requirements sit on the FREE side of the free/paid line per [docs/ROADMAP.md](../docs/ROADMAP.md) "Guiding Principle" (2026-05-19).
 
-### Pricing
+### UI
 
-- [ ] **PRICING-01**: User can add a configurable Tax/VAT percentage to a job's selling price, displayed as a separate line item in the cost breakdown
-- [ ] **PRICING-02**: User can set a default Tax/VAT percentage in Settings → Pricing (applied to new jobs on creation and on form clear)
-- [ ] **PRICING-03**: Tax/VAT percentage persists per-saved-job and round-trips through edit/duplicate without loss
+- [ ] **UI-01**: All `<button>` elements in `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` are replaced with the shared `<Button>` / `<ButtonLink>` components from `src/components/ui/`, preserving existing behavior (variant, size, disabled, onClick)
+- [ ] **UI-02**: All `<input>`, `<select>`, and `<textarea>` elements in the three components above are replaced with shared `<Input>` / `<Select>` / `<Textarea>` primitives, preserving type coercion, validation, and onChange behavior
+- [ ] **UI-03**: A lint rule (eslint custom or comment-based) prevents new raw `<button>` / `<input>` / `<select>` elements from being added to main app components in the future — caught at build time
+- [ ] **UI-04**: Every empty screen in the app (Asset library with no assets, JobsManager with no jobs, PrinterSettings with no printers configured) shows an empty-state component with an icon/illustration, headline, supporting copy, and a primary CTA button that drives the user to the next action
+- [ ] **UI-05**: Skeleton loading components are shown during initial IndexedDB load — assets list, jobs list, and printer list each have their own skeleton shape matching the final content layout. The plain "Loading…" text in [App.tsx](src/App.tsx) is removed
+- [ ] **UI-06**: User can toggle between Light / Dark / System theme from a control in Settings; preference persists in localStorage and survives reloads. System mode follows OS preference and reacts to OS-level changes in real time
+- [ ] **UI-07**: Both light and dark themes render every existing surface correctly — calculator, jobs list, asset library, printer settings, settings modal, profile modal, update banner, maintenance alert modal, marketing pages — with no hardcoded slate-900 leaks and no contrast failures
 
-### Job Management
+### Test
 
-- [ ] **JOB-01**: User can duplicate any saved job into the calculator with all fields pre-filled (filaments, printer, times, customer, tags, tax/VAT) — the duplicate creates a new in-progress job, not a saved record
-- [ ] **JOB-02**: User can attach customer name, email, and phone to a saved `PrintJob` (currently `Sale.customerName` exists; this extends to PrintJob with full contact fields)
-- [ ] **JOB-03**: User can add up to 6 free-text tags to a saved job; tag input enforces the cap with a clear validation message
-- [ ] **JOB-04**: User can filter the JobsManager list by selecting one or more tags as chips; multi-select uses OR semantics
-- [ ] **JOB-05**: User can search the JobsManager list by tag substring (typing partial tag matches jobs containing any tag with that substring)
+- [ ] **TEST-01**: Unit tests cover the cost-calculation logic in CostCalculator.tsx — material cost (multi-filament), electricity, depreciation, nozzle wear (per-material density), labor (prep + post-processing), failure-rate adjustment, model amortization, and tax/VAT (when v1.2 lands, the tax tests will be additive)
+- [ ] **TEST-02**: Cost calc test suite runs under `npm test` and is exercised on every CI run / `npm run build`
 
-### Export
+### Performance
 
-- [ ] **EXPORT-01**: User can generate a PDF quote from any saved job, downloadable to the local filesystem
-- [ ] **EXPORT-02**: PDF quote includes: job name, customer details (if present), cost breakdown line items, selling price, tax/VAT (if applicable), shop currency, and a small "Made with 3DCoster" footer with a link to 3dcoster.app
-- [ ] **EXPORT-03**: PDF generation works fully offline (no network call — PDF library bundled client-side)
-
-### Compliance
-
-- [ ] **COMPLIANCE-01**: User can flag each job with an origin/license type — one of: `own_design`, `licensed_commercial`, `third_party_stl`, `unknown`. Default is `unknown` for migrated and new jobs until set.
-- [ ] **COMPLIANCE-02**: User can export a compliance attestation CSV listing all jobs flagged as `own_design` or `licensed_commercial` (date, job name, origin type, customer if present) — intended for Etsy / marketplace dispute response
+- [ ] **PERF-01**: `vite.config.ts` defines `build.rollupOptions.output.manualChunks` that splits at minimum the React runtime and Dexie into separate vendor chunks; main app chunk is under 300 KB gzipped (currently ~189 KB gzipped pre-split, but the largest dep mix will benefit from explicit split)
+- [ ] **PERF-02**: JobsManager and Asset library lists use virtualization (react-window or react-virtual) when the list exceeds 100 items; lists of any size remain smooth on a low-end device equivalent (CPU 4× slowdown in DevTools)
 
 ## v2 / Future Requirements
 
 Deferred to a future milestone.
 
-### Pricing
+### UI
 
-- **PRICING-F1**: Per-region tax presets (e.g. "Canada GST 5%", "EU VAT 20%") with one-click apply
+- **UI-F1**: Full design-system token pass (typography scale, animation curves, elevation tokens) — primitives pass is the minimum viable foundation; the larger design-system effort comes later
+- **UI-F2**: Customizable theme accent color (user picks brand color) — out of scope for v1.1, ties to white-label/paid tier
 
-### Job Management
+### Test
 
-- **JOB-F1**: Bulk tag operations (apply/remove tag from multiple jobs at once)
-- **JOB-F2**: Tag-based grouping in JobsManager (collapsible groups by primary tag)
-
-### Export
-
-- **EXPORT-F1**: Customizable PDF quote template (which line items to include/hide)
-- **EXPORT-F2**: Per-quote terms-and-conditions text block
-
-### Compliance
-
-- **COMPLIANCE-F1**: Live Etsy listing-status lookup for flagged jobs (requires backend — paid tier)
+- **TEST-F1**: E2E tests (Playwright or Cypress) covering critical user flows (create job, save, edit, delete, calculate cost). Vitest unit-test infra is in scope for v1.1; E2E is a separate later milestone
 
 ## Out of Scope
 
@@ -60,14 +46,12 @@ Explicitly excluded from v1.1. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| White-label PDF (your logo, colors, no footer) | Paid Pro tier — see ROADMAP "Paid Tiers" |
-| Email delivery of PDF quote | Requires hosted SMTP — paid Pro tier |
-| Shareable hosted quote URL | Requires backend — paid Pro tier |
-| Customer database / CRM with cross-job history | Customer details on job is records-keeping (free); full CRM is paid Business tier |
-| Live Etsy API integration | Compliance helper is manual flag + export only this milestone — live API is paid |
-| PDF invoice numbering / accounting integration | Out of scope for quote-focused milestone; covered under future Accounting milestone |
-| Multiple currencies on a single quote | Quote uses the job's stored currency; conversion not in v1.1 |
-| Tag autocomplete from prior jobs | Nice-to-have; v1.1 ships with free-text tags and adds autocomplete later if needed |
+| All v1.2 (Quote-to-Customer) features | Deferred per 2026-05-19 milestone-swap decision |
+| Customizable theme colors / brand colors | Light/dark/system only in v1.1; brand-color = paid tier |
+| Full design-system token pass | Primitives pass first; full token system is a later effort |
+| Playwright / Cypress E2E tests | Vitest unit tests for cost calcs only in v1.1; E2E in a future milestone |
+| Marketing-page redesign | Polish pass is scoped to the calculator app + JobsManager + Settings; marketing pages are static and out of scope here |
+| Animation / motion design pass | Out of scope; consider after dark mode lands and we know what surfaces respond to theme |
 
 ## Traceability
 
@@ -75,25 +59,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PRICING-01 | Phase 7 | Pending |
-| PRICING-02 | Phase 7 | Pending |
-| PRICING-03 | Phase 7 | Pending |
-| JOB-01 | Phase 8 | Pending |
-| JOB-02 | Phase 9 | Pending |
-| JOB-03 | Phase 10 | Pending |
-| JOB-04 | Phase 10 | Pending |
-| JOB-05 | Phase 10 | Pending |
-| EXPORT-01 | Phase 11 | Pending |
-| EXPORT-02 | Phase 11 | Pending |
-| EXPORT-03 | Phase 11 | Pending |
-| COMPLIANCE-01 | Phase 12 | Pending |
-| COMPLIANCE-02 | Phase 12 | Pending |
+| UI-01 | Phase 7 | Pending |
+| UI-02 | Phase 7 | Pending |
+| UI-03 | Phase 7 | Pending |
+| UI-04 | Phase 8 | Pending |
+| UI-05 | Phase 9 | Pending |
+| UI-06 | Phase 10 | Pending |
+| UI-07 | Phase 10 | Pending |
+| TEST-01 | Phase 11 | Pending |
+| TEST-02 | Phase 11 | Pending |
+| PERF-01 | Phase 12 | Pending |
+| PERF-02 | Phase 12 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 13 total
-- Mapped to phases: 13 ✓
-- Unmapped: 0 ✓
+- v1.1 requirements: 11 total
+- Mapped to phases: 11
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-19*
-*Last updated: 2026-05-19 — traceability populated after roadmap creation*
+*Last updated: 2026-05-19 — Milestone v1.1 redefined as Polish & Foundation; traceability filled from ROADMAP.md*

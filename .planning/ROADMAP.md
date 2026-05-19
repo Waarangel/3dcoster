@@ -1,116 +1,154 @@
-# Roadmap: 3DCoster v1.1 — Quote-to-Customer
+# Roadmap: 3DCoster v1.1 — Polish & Foundation
 
-## Overview
+**Milestone:** v1.1 Polish & Foundation
+**Defined:** 2026-05-19
+**Phase range:** 7–12 (v1.0 ended at Phase 6)
+**Requirements:** 11 total (UI-01–UI-07, TEST-01–TEST-02, PERF-01–PERF-02)
+**Coverage:** 11/11 — 100%
 
-v1.1 transforms 3DCoster from a cost calculator into a complete quoting tool. Six tightly-scoped phases carry every saved job from raw cost data to something you can confidently hand to a customer: tax-aware pricing, customer contact details, searchable tags, a downloadable PDF quote, and Etsy compliance attestation. All features are FREE tier; all data stays local; all schema changes preserve existing v1.0 multi-material jobs without data loss.
+**Constraints encoded in this roadmap:**
+- All phases are FREE tier — no paid-tier work in this milestone
+- All phases are LOCAL-ONLY — no backend, no Supabase, no API calls
+- Phase 7 is foundational: its primitives must be available before Phases 8–10 add new UI surfaces
 
-Phases continue from v1.0 (which ended at Phase 6).
-
-## Constraints (apply to all phases)
-
-- **Free tier**: All v1.1 features are free. PDF quote includes "Made with 3DCoster" footer linking to 3dcoster.app; white-label PDF is paid tier.
-- **Offline-first**: No network calls during feature operation. PDF library (jsPDF or pdfmake) bundled client-side.
-- **Dexie migration**: Every schema change ships with a Dexie version migration that preserves existing v1.0 multi-material jobs without data loss.
-- **NEW Badge rule**: Every shipped phase adds an entry to `src/features.ts` and places `<NewBadge>` as an absolute overlay (never inline, never disrupts layout).
-- **Dev server port**: 4173 (pinned in `vite.config.ts`).
+---
 
 ## Phases
 
-- [ ] **Phase 7: Tax/VAT** - Add configurable Tax/VAT percentage to selling price, per-job and as a Settings default
-- [ ] **Phase 8: Quick Duplicate Job** - One-click clone of any saved job into the calculator with all fields pre-filled
-- [ ] **Phase 9: Customer Details** - Attach customer name, email, and phone to any saved PrintJob
-- [ ] **Phase 10: Tags, Filter & Search** - Editable tags (max 6) on saved jobs with OR-filter chips and substring search in JobsManager
-- [ ] **Phase 11: PDF Quote** - Generate a downloadable PDF quote from any saved job, fully offline, with "Made with 3DCoster" footer
-- [ ] **Phase 12: Etsy Compliance Helper** - Per-job origin/license flag and CSV compliance attestation export for marketplace disputes
+- [ ] **Phase 7: Styling Primitives Pass** — Replace raw HTML form elements in main components with shared ui/ primitives
+- [ ] **Phase 8: Empty States with CTAs** — Every blank screen guides users with an empty-state component
+- [ ] **Phase 9: Skeleton Loading States** — Skeleton shapes replace plain "Loading..." text during IndexedDB load
+- [ ] **Phase 10: Dark Mode** — First-class light/dark/system theme toggle; all surfaces correct in both themes
+- [ ] **Phase 11: Cost-Calculation Unit Tests** — Full vitest coverage of cost-calc logic, runs on every CI build
+- [ ] **Phase 12: Performance Optimization** — manualChunks vendor split + list virtualization for jobs and assets
+
+---
 
 ## Phase Details
 
-### Phase 7: Tax/VAT
-**Goal**: Users can add a configurable Tax/VAT percentage to any job's selling price, with a Settings default that pre-fills new jobs.
+### Phase 7: Styling Primitives Pass
+**Goal**: All raw `<button>`, `<input>`, `<select>`, and `<textarea>` elements in `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` are replaced with shared `src/components/ui/` primitives, and a lint guard prevents regression
 **Depends on**: Phase 6 (v1.0 complete)
-**Requirements**: PRICING-01, PRICING-02, PRICING-03
+**Requirements**: UI-01, UI-02, UI-03
 **Success Criteria** (what must be TRUE):
-  1. User can enter a Tax/VAT % on any job in the calculator; the cost breakdown shows it as a separate line item below selling price with the computed dollar amount
-  2. User can set a default Tax/VAT % in Settings → Pricing; new jobs and cleared forms pick up that default automatically
-  3. Saving a job persists its Tax/VAT %; re-opening the job for edit shows the same value; duplicating the job (Phase 8) carries the value forward without loss
-  4. Existing v1.0 saved jobs (no tax field) continue to load and display correctly after the Dexie migration — no errors, no missing data
+  1. `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` contain zero raw `<button>`, `<input>`, `<select>`, or `<textarea>` elements — confirmed by grep after the phase ships
+  2. All replaced elements preserve existing behavior: correct variants, sizes, disabled states, type coercion, validation, and onChange/onClick handlers
+  3. A lint rule (ESLint custom rule or enforced comment convention) is active at build time — `npm run lint` catches any future raw form-element introduction in main app components
+  4. No visual regression: the app looks and behaves identically to pre-Phase-7 for all three components in both normal and disabled states
+**Plans**: TBD
+**Note**: Internal refactoring only — no user-visible change. No NEW badge. Phases 8, 9, and 10 depend on this pass so they build new UI surfaces on consistent primitives from the start.
+
+### Phase 8: Empty States with CTAs
+**Goal**: Every blank screen in the app shows an empty-state component with an illustration, headline, supporting copy, and a primary CTA button that drives the user to the next action
+**Depends on**: Phase 7 (empty-state component uses shared Button primitive from Phase 7's pass)
+**Requirements**: UI-04
+**Success Criteria** (what must be TRUE):
+  1. The Asset library screen with zero assets shows an empty-state component (icon/illustration + headline + supporting copy + CTA button leading to "Add Asset")
+  2. The Jobs screen with zero saved jobs shows an empty-state component with a CTA leading to the cost calculator
+  3. The Printer Settings screen with no printers configured shows an empty-state component with a CTA leading to "Add Printer"
+  4. All three empty-state CTA buttons use the shared `Button` primitive from `src/components/ui/` — no raw `<button>` introduced
+**Plans**: TBD
+**UI hint**: yes
+**NEW Badge**: yes — `empty-states` registered in `src/features.ts`; badge placed as absolute overlay on the relevant tab or section heading (not inline, not on the CTA itself to avoid double-click confusion)
+
+### Phase 9: Skeleton Loading States
+**Goal**: Skeleton loading components replace the plain "Loading..." text during initial IndexedDB load for all three list views
+**Depends on**: Phase 7 (skeleton card shape uses shared Card primitive for visual consistency)
+**Requirements**: UI-05
+**Success Criteria** (what must be TRUE):
+  1. The assets list, jobs list, and printer list each show a skeleton component during initial IndexedDB load — each skeleton matches the approximate shape and row count of the real content layout
+  2. The plain "Loading..." text in `App.tsx` is removed; no plain-text loading fallback remains anywhere in the three list views
+  3. Skeleton components are replaced by real content (or Phase 8 empty states) once data loads — no flicker, no skeleton persisting after load
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 8: Quick Duplicate Job
-**Goal**: Users can duplicate any saved job into the calculator pre-filled with all its fields — no re-entry required.
-**Depends on**: Phase 7
-**Requirements**: JOB-01
+### Phase 10: Dark Mode
+**Goal**: Users can toggle between Light, Dark, and System themes from Settings; preference persists across sessions; every existing surface renders correctly in both themes with no hardcoded color leaks
+**Depends on**: Phase 7 (consistent primitive classes make theme token application tractable); Phases 8 and 9 should complete before Phase 10 so their new surfaces are themeable from the start
+**Requirements**: UI-06, UI-07
 **Success Criteria** (what must be TRUE):
-  1. Every saved job in JobsManager has a "Duplicate" action that loads the calculator with all fields pre-filled (filaments, printer, times, customer, tags, tax/VAT)
-  2. The duplicate appears as a new in-progress job in the calculator form — no new saved record is created until the user explicitly clicks Save
-  3. Editing and saving the duplicate creates a distinct new saved job; the original job is unchanged
+  1. A Light / Dark / System toggle control is present in Settings; user selection persists in localStorage and survives page reload
+  2. System mode reads the OS-level preference at load time and reacts in real time to OS theme changes without a manual page reload
+  3. Every existing surface — calculator, jobs list, asset library, printer settings, settings modal, profile modal, update banner, maintenance alert modal — renders correctly in both light and dark themes with no hardcoded `slate-900` leaks and no contrast failures
+  4. Marketing pages (Landing, Download, FAQ, etc.) render correctly in both themes — no white-on-white or black-on-black surfaces
+  5. The theme implementation uses CSS custom properties or a Tailwind `dark:` class strategy (not per-component duplication); the chosen approach is recorded in PROJECT.md Key Decisions at phase completion
 **Plans**: TBD
 **UI hint**: yes
+**NEW Badge**: yes — `dark-mode` registered in `src/features.ts`; badge placed as absolute overlay on the theme toggle control in Settings
 
-### Phase 9: Customer Details
-**Goal**: Users can attach a customer's name, email, and phone number to any saved PrintJob.
-**Depends on**: Phase 7
-**Requirements**: JOB-02
+### Phase 11: Cost-Calculation Unit Tests
+**Goal**: Vitest unit tests cover all cost-calculation factors in CostCalculator.tsx and run automatically under `npm test` and on every CI/build pass
+**Depends on**: Phase 7 completing (ensures the component under test is in its final clean state); no other UI phase dependency — can execute in parallel with Phases 8–10 if desired
+**Requirements**: TEST-01, TEST-02
 **Success Criteria** (what must be TRUE):
-  1. The job save form includes optional fields for customer name, email, and phone
-  2. Saved customer details are visible on the job card or detail view in JobsManager
-  3. Customer fields round-trip through edit without loss; duplicating a job (Phase 8) carries customer details forward
-  4. Existing saved jobs (no customer fields) load correctly after the Dexie migration — no errors, customer section shows empty
+  1. Unit tests cover all calculation factors: material cost (multi-filament, per-filament weight), electricity, printer depreciation, nozzle wear (per-material density via `getMaterialDensity`), labor (prep + post-processing time), failure-rate adjustment, and model amortization
+  2. A named pending/skipped test for the tax/VAT factor is included with a note that it activates when v1.2 lands — the suite is extensible without rework
+  3. `npm test` exits with code 0 on a clean codebase; the test suite is integrated so CI fails the build if any test fails
+  4. All tests are deterministic: no IndexedDB dependency, no browser API dependency, no network calls
 **Plans**: TBD
-**UI hint**: yes
 
-### Phase 10: Tags, Filter & Search
-**Goal**: Users can label saved jobs with up to 6 free-text tags and quickly find jobs by filtering or searching those tags in JobsManager.
-**Depends on**: Phase 9
-**Requirements**: JOB-03, JOB-04, JOB-05
+### Phase 12: Performance Optimization
+**Goal**: Vite produces explicit vendor chunks that keep the main app bundle under 300 KB gzipped; jobs and asset lists use virtualization for lists exceeding 100 items and remain smooth under 4× CPU throttle
+**Depends on**: Nothing — this is a build-config and rendering change; no dependency on prior v1.1 phases. Can execute in parallel with any other phase.
+**Requirements**: PERF-01, PERF-02
 **Success Criteria** (what must be TRUE):
-  1. User can add up to 6 tags to a job; attempting to add a 7th shows a clear validation message and is blocked
-  2. Selecting one or more tag chips above the jobs list filters to jobs that contain any of the selected tags (OR semantics); deselecting all chips restores the full list
-  3. Typing in the tag search box shows only jobs whose tags contain the typed substring (partial match, case-insensitive)
-  4. Chip filter and text search compose correctly — both active at once narrows results as expected
-  5. Existing saved jobs (no tags field) continue to appear in the unfiltered list after the Dexie migration
+  1. `vite.config.ts` defines `build.rollupOptions.output.manualChunks` splitting at minimum the React runtime and Dexie into separate vendor chunks — confirmed visible in the generated `dist/assets/` output filenames
+  2. The main app chunk is under 300 KB gzipped — verified via `npm run build` and inspecting chunk sizes
+  3. The jobs list and asset library list use virtualization (react-window or react-virtual) when item count exceeds 100; scrolling a 500-item test list under 4× CPU slowdown in DevTools produces no dropped frames
+  4. Lists with fewer than 100 items render identically to pre-Phase-12 — no regressions for the common case
 **Plans**: TBD
-**UI hint**: yes
 
-### Phase 11: PDF Quote
-**Goal**: Users can generate and download a professional PDF quote from any saved job with no network call required.
-**Depends on**: Phase 9
-**Requirements**: EXPORT-01, EXPORT-02, EXPORT-03
-**Success Criteria** (what must be TRUE):
-  1. Any saved job has a "Download PDF Quote" action that triggers an immediate local file download — no server round-trip
-  2. The downloaded PDF contains: job name, customer details (if present), cost breakdown line items, selling price, Tax/VAT line (if applicable), shop currency, and a "Made with 3DCoster — 3dcoster.app" footer
-  3. PDF generation works with no internet connection — verified by disabling network in DevTools and confirming the download still completes
-  4. The generated PDF renders legibly on a standard A4 or Letter page with no content cut off or overflowing
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 12: Etsy Compliance Helper
-**Goal**: Users can flag each job with its design origin/license type and export a CSV attestation listing compliant jobs for marketplace dispute response.
-**Depends on**: Phase 9
-**Requirements**: COMPLIANCE-01, COMPLIANCE-02
-**Success Criteria** (what must be TRUE):
-  1. Every saved job has an origin/license selector with four options: Own Design, Licensed Commercial, Third-Party STL, Unknown; new and migrated jobs default to Unknown
-  2. The selected flag is visible on the job card or detail view and persists through edit without loss
-  3. A "Export Compliance CSV" action generates a downloadable CSV listing all jobs flagged as Own Design or Licensed Commercial, with columns: date, job name, origin type, customer name (if present)
-  4. The export works fully offline and produces a valid CSV that opens correctly in Excel and Google Sheets
-  5. Existing v1.0 jobs load without errors after the Dexie migration and default to Unknown origin type
-**Plans**: TBD
-**UI hint**: yes
+---
 
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Tax/VAT | 0/? | Not started | - |
-| 8. Quick Duplicate Job | 0/? | Not started | - |
-| 9. Customer Details | 0/? | Not started | - |
-| 10. Tags, Filter & Search | 0/? | Not started | - |
-| 11. PDF Quote | 0/? | Not started | - |
-| 12. Etsy Compliance Helper | 0/? | Not started | - |
+| 7. Styling Primitives Pass | 0/TBD | Not started | - |
+| 8. Empty States with CTAs | 0/TBD | Not started | - |
+| 9. Skeleton Loading States | 0/TBD | Not started | - |
+| 10. Dark Mode | 0/TBD | Not started | - |
+| 11. Cost-Calculation Unit Tests | 0/TBD | Not started | - |
+| 12. Performance Optimization | 0/TBD | Not started | - |
 
 ---
-*Milestone: v1.1 — Quote-to-Customer*
-*Created: 2026-05-19*
-*Phases: 7–12 (continuing from v1.0 Phase 6)*
-*Coverage: 13/13 requirements mapped*
+
+## Coverage Map
+
+| Requirement | Phase | Category |
+|-------------|-------|----------|
+| UI-01 | Phase 7 | UI |
+| UI-02 | Phase 7 | UI |
+| UI-03 | Phase 7 | UI |
+| UI-04 | Phase 8 | UI |
+| UI-05 | Phase 9 | UI |
+| UI-06 | Phase 10 | UI |
+| UI-07 | Phase 10 | UI |
+| TEST-01 | Phase 11 | Test |
+| TEST-02 | Phase 11 | Test |
+| PERF-01 | Phase 12 | Performance |
+| PERF-02 | Phase 12 | Performance |
+
+**Mapped: 11/11** — no orphans
+
+---
+
+## Dependency Graph
+
+```
+Phase 7 (Primitives Pass)  <-- foundation for all UI phases
+  └── Phase 8 (Empty States)      -- uses Button primitive from Phase 7
+  └── Phase 9 (Skeleton States)   -- uses Card primitive from Phase 7
+  └── Phase 10 (Dark Mode)        -- Phase 7 + 8 + 9 should complete first
+                                     so new surfaces are themeable at once
+
+Phase 11 (Unit Tests)      -- depends on Phase 7 only (component in final state)
+                              can run in parallel with Phases 8–10
+
+Phase 12 (Performance)     -- no UI dependency; can run in parallel with any phase
+```
+
+---
+
+*Roadmap created: 2026-05-19*
+*Overwrites previous ROADMAP.md (v1.1 Quote-to-Customer — deferred to v1.2 per 2026-05-19 milestone swap)*

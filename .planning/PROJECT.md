@@ -8,19 +8,25 @@
 
 Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
 
-## Current Milestone: v1.1 Quote-to-Customer
+## Current Milestone: v1.1 Polish & Foundation
 
-**Goal:** Turn the cost calculator into a complete quoting tool — every saved job becomes something you can confidently send to a customer.
+**Goal:** Establish a consistent component foundation so every subsequent free-tier milestone is built on the same primitives — no rework when v1.2+ features ship.
 
 **Target features:**
-- Tax/VAT on selling price (per-job + default in Settings)
-- Quick duplicate of any saved job
-- Customer details (name/email/phone) on saved jobs
-- Editable tags on saved jobs (max 6) with filter + search
-- Printable PDF quote with "Made with 3DCoster" footer (free tier)
-- Etsy ToS compliance helper (origin/license flag + attestation export)
+- Styling primitives pass — replace raw `<button>`/`<input>`/`<select>` in CostCalculator, JobsManager, PrinterSettings with shared `src/components/ui/` primitives
+- Empty states with CTAs for every blank screen (assets, jobs, printers)
+- Skeleton loading states (replaces "Loading…" text)
+- Dark mode — first-class light/dark/system theme toggle
+- Unit tests for cost-calculation logic (vitest infra already exists)
+- Performance optimization — vite `manualChunks` for vendor split + list virtualization for jobs/assets
 
 All items sit on the FREE side of the free/paid line per [docs/ROADMAP.md](../docs/ROADMAP.md) "Guiding Principle" (2026-05-19).
+
+**Why this slot:** The 2026-05-19 audit flagged the styling-primitives pass as the highest-leverage outstanding item (the `ui/` primitives already exist but main components don't use them). Shipping 5+ more free-tier feature milestones on raw HTML primitives means redoing every styling decision later. Foundation-first compounds; foundation-last creates rework debt.
+
+## Next Milestone (planned, not yet defined): v1.2 Quote-to-Customer
+
+Tax/VAT, Quick duplicate, Customer details on jobs, Editable tags + filter/search, Printable PDF quote (free tier with "Made with 3DCoster" footer), Etsy ToS compliance helper. All items deferred from v1.1; will be defined as v1.2 once v1.1 ships.
 
 ## Requirements
 
@@ -53,21 +59,19 @@ All items sit on the FREE side of the free/paid line per [docs/ROADMAP.md](../do
 
 ### Active (v1.1)
 
-- [ ] Tax/VAT percentage on selling price (per-job override + default in Settings)
-- [ ] Quick duplicate of any saved job
-- [ ] Customer details (name/email/phone) on PrintJob
-- [ ] Editable tags (max 6) on PrintJob with filter + search in JobsManager
-- [ ] Printable PDF quote with cost breakdown + customer details + footer
-- [ ] Etsy ToS origin/license flag on PrintJob + compliance attestation export
+- [ ] All `<button>`/`<input>`/`<select>` in CostCalculator, JobsManager, PrinterSettings use shared `src/components/ui/` primitives
+- [ ] Every empty screen (assets, jobs, printers) shows an empty-state component (illustration + headline + CTA)
+- [ ] Skeleton loading components shown during initial IndexedDB load (replaces plain "Loading..." text)
+- [ ] First-class theme toggle (light / dark / system) in Settings, with all surfaces rendering both themes correctly
+- [ ] Unit-test coverage for cost-calculation logic in CostCalculator (material, electricity, depreciation, nozzle wear, labor, failure rate)
+- [ ] vite `manualChunks` splits vendor from app code; jobs and asset lists use virtualization for >100 items
 
 ### Out of Scope (for v1.1)
 
-- White-label PDF branding (paid Pro tier)
-- Email delivery of quotes (hosted, paid tier)
-- Shareable hosted quote links (hosted, paid tier)
-- Customer database with cross-job history / CRM (full CRM is paid tier)
-- Live Etsy / Shopify API integration for compliance status (paid tier)
-- AMS slot management / filament inventory tracking (separate feature)
+- All v1.2 features (Quote-to-Customer suite — Tax/VAT, customer details, tags, PDF quote, Etsy ToS helper, Quick duplicate)
+- E2E tests (Playwright/Cypress setup) — separate later milestone
+- Full design-system overhaul (typography scale, animation tokens) — primitives pass is the minimum viable foundation
+- Customizable theme colors — light/dark/system only in v1.1
 
 ## Context
 
@@ -99,8 +103,9 @@ All items sit on the FREE side of the free/paid line per [docs/ROADMAP.md](../do
 | Export `getMaterialDensity` for nozzle wear | Fixes pre-existing PLA-only bug | v1.0 | ✓ Shipped |
 | Default profit margin in `UserProfile` | Same shape as `laborHourlyRate` (personal pricing default) | 2026-05-18 | ✓ Shipped |
 | Free/paid line = branding + hosted + integrations + automation | Stimalo / Obsidian / Cal.com / Tailscale convergence | 2026-05-19 | Adopted |
-| v1.1 = Quote-to-Customer (6 items) | Most user-visible theme; all FREE-side | v1.1 | Pending |
-| PDF quote: free with footer, white-label paid | Stimalo line — peak willingness-to-pay moment + organic marketing | v1.1 | Pending |
+| Free-tier-first milestone arc (v1.1–v1.6 free, then v2.0 paid) | Maximize free value before paying backend complexity tax | 2026-05-19 | Adopted |
+| v1.1 = Polish & Foundation (not Quote-to-Customer) | Foundation-first compounds across 5+ subsequent milestones; foundation-last creates rework debt | v1.1 | Pending |
+| PDF quote: free with footer, white-label paid (deferred to v1.2) | Stimalo line — peak willingness-to-pay moment + organic marketing | v1.2 | Deferred |
 
 ## Evolution
 
@@ -120,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-19 — Milestone v1.1 (Quote-to-Customer) initiated*
+*Last updated: 2026-05-19 — Milestone v1.1 redefined as Polish & Foundation (Quote-to-Customer shifted to v1.2)*
