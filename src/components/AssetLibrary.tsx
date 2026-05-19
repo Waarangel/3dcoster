@@ -381,14 +381,16 @@ export function AssetLibrary({
                 <span className="hidden sm:inline">Import CSV</span>
                 <NewBadge feature="csv-import" className="absolute -top-3 -right-3" />
               </Button>
-              <Button
-                variant="secondary"
-                btnSize="sm"
-                onClick={handleReset}
-                className="flex-1 sm:flex-none"
-              >
-                Reset {filterCategory === 'all' ? 'All' : getCategoryLabel(filterCategory)}
-              </Button>
+              {assets.length > 0 && (
+                <Button
+                  variant="secondary"
+                  btnSize="sm"
+                  onClick={handleReset}
+                  className="flex-1 sm:flex-none"
+                >
+                  Reset {filterCategory === 'all' ? 'All' : getCategoryLabel(filterCategory)}
+                </Button>
+              )}
               <Button
                 btnSize="sm"
                 onClick={startAdding}
