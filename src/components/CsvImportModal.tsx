@@ -8,6 +8,7 @@ import {
   type ParsedRow,
   type CsvParseResult,
 } from '../utils/csvHelpers';
+import { Button } from './ui';
 
 interface CsvImportModalProps {
   isOpen: boolean;
@@ -158,28 +159,30 @@ export function CsvImportModal({ isOpen, onClose, existingAssets, onImportAssets
         <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
           <div className="flex items-center gap-3">
             {step === 'preview' && (
-              <button
+              <Button
+                variant="ghost"
+                btnSize="sm"
                 onClick={() => { setStep('upload'); setParseResult(null); setError(null); }}
-                className="text-slate-400 hover:text-white transition-colors"
                 title="Back to upload"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-              </button>
+              </Button>
             )}
             <h3 className="text-lg font-semibold text-white">
               {step === 'upload' ? 'Import Assets from CSV' : 'Preview Import'}
             </h3>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -216,22 +219,21 @@ export function CsvImportModal({ isOpen, onClose, existingAssets, onImportAssets
         {/* Footer */}
         {step === 'preview' && (
           <div className="shrink-0 flex items-center justify-between p-4 border-t border-slate-700">
-            <button
+            <Button
+              variant="ghost"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleImport}
               disabled={importCount === 0 || isImporting}
-              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             >
               {isImporting
                 ? 'Importing...'
                 : `Import ${importCount} Asset${importCount !== 1 ? 's' : ''}`
               }
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -264,18 +266,22 @@ function UploadStep({
       <div className="bg-slate-700/50 rounded-lg p-3">
         <p className="text-sm text-slate-300 mb-2">Download a sample template to get started:</p>
         <div className="flex gap-3 flex-wrap">
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={() => downloadCsv(generateSampleCsv('material'), '3dcoster-materials-template.csv')}
-            className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
           >
             📦 Materials template
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={() => downloadCsv(generateSampleCsv('printer'), '3dcoster-printers-template.csv')}
-            className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
           >
             🖨️ Printers template
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -283,7 +289,7 @@ function UploadStep({
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400">
           {error}
-          <button onClick={onDismissError} className="ml-2 underline hover:text-red-300">Dismiss</button>
+          <Button variant="ghost" btnSize="sm" onClick={onDismissError} className="ml-2 underline hover:text-red-300">Dismiss</Button>
         </div>
       )}
 
@@ -308,6 +314,7 @@ function UploadStep({
         <p className="text-xs text-slate-500 mt-1">
           Supports materials, consumables, finishing, tools, packaging, and printers
         </p>
+        {/* allow-raw-html: hidden file picker — primitive base styles would bleed through `hidden` */}
         <input
           ref={fileInputRef}
           type="file"
@@ -383,7 +390,7 @@ function PreviewStep({
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400">
           {error}
-          <button onClick={onDismissError} className="ml-2 underline hover:text-red-300">Dismiss</button>
+          <Button variant="ghost" btnSize="sm" onClick={onDismissError} className="ml-2 underline hover:text-red-300">Dismiss</Button>
         </div>
       )}
 
@@ -413,6 +420,7 @@ function PreviewStep({
           <div className="flex items-center gap-2 text-sm">
             <span className="text-slate-400">Duplicates:</span>
             <label className="flex items-center gap-1.5 cursor-pointer">
+              {/* allow-raw-html: native radio grouping via name= attribute; accent-blue-500 would break under Input base styles (L-4) */}
               <input
                 type="radio"
                 name="duplicateMode"
@@ -423,6 +431,7 @@ function PreviewStep({
               <span className="text-slate-300">Skip</span>
             </label>
             <label className="flex items-center gap-1.5 cursor-pointer">
+              {/* allow-raw-html: native radio grouping via name= attribute; accent-blue-500 would break under Input base styles (L-4) */}
               <input
                 type="radio"
                 name="duplicateMode"
@@ -436,19 +445,23 @@ function PreviewStep({
         )}
 
         <div className="flex gap-2 ml-auto">
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={onSelectAll}
-            className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            className="text-blue-400 hover:text-blue-300 text-xs"
           >
             Select all valid
-          </button>
+          </Button>
           <span className="text-slate-600">|</span>
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={onDeselectAll}
-            className="text-xs text-slate-400 hover:text-slate-300 transition-colors"
+            className="text-xs"
           >
             Deselect all
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -486,6 +499,7 @@ function RowItem({ row, isSelected, onToggle }: { row: ParsedRow; isSelected: bo
       }
     `}>
       {/* Checkbox */}
+      {/* allow-raw-html: row-selection checkbox; accent-blue-500 would break under Input base styles (L-4) */}
       <input
         type="checkbox"
         checked={isSelected}
