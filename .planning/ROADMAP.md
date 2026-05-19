@@ -51,7 +51,10 @@
   2. The Jobs screen with zero saved jobs shows an empty-state component with a CTA leading to the cost calculator
   3. The Printer Settings screen with no printers configured shows an empty-state component with a CTA leading to "Add Printer"
   4. All three empty-state CTA buttons use the shared `Button` primitive from `src/components/ui/` — no raw `<button>` introduced
-**Plans**: TBD
+**Plans**: 2 plans
+**Plans**:
+- [ ] 08-01-PLAN.md — Wave 1: Create EmptyState primitive + shouldShowEmptyState predicate + unit tests; three Lucide-style icon components (Package, ClipboardList, Printer) + icons sub-barrel; add EmptyState to top-level ui barrel; register `empty-states` in src/features.ts
+- [ ] 08-02-PLAN.md — Wave 2: Wire EmptyState into AssetLibrary, JobsManager (with new onSwitchTab prop drilled from App.tsx), and PrinterSettings; add NewBadge `empty-states` overlay on jobs/materials/settings tab buttons; manual UAT checkpoint verifies CTA interactions and badge layout
 **UI hint**: yes
 **NEW Badge**: yes — `empty-states` registered in `src/features.ts`; badge placed as absolute overlay on the relevant tab or section heading (not inline, not on the CTA itself to avoid double-click confusion)
 
@@ -109,7 +112,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Styling Primitives Pass | 3/3 | Complete    | 2026-05-19 |
-| 8. Empty States with CTAs | 0/TBD | Not started | - |
+| 8. Empty States with CTAs | 0/2 | Not started | - |
 | 9. Skeleton Loading States | 0/TBD | Not started | - |
 | 10. Dark Mode | 0/TBD | Not started | - |
 | 11. Cost-Calculation Unit Tests | 0/TBD | Not started | - |
@@ -156,4 +159,5 @@ Phase 12 (Performance)     -- no UI dependency; can run in parallel with any pha
 
 *Roadmap created: 2026-05-19*
 *Phase 7 plans created: 2026-05-19*
+*Phase 8 plans created: 2026-05-19*
 *Overwrites previous ROADMAP.md (v1.1 Quote-to-Customer — deferred to v1.2 per 2026-05-19 milestone swap)*
