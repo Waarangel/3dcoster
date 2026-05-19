@@ -1,129 +1,99 @@
-# Requirements: 3DCoster Multi-Material Support
+# Requirements: 3DCoster v1.1 — Quote-to-Customer
 
-**Defined:** 2026-04-14
-**Core Value:** Accurate cost calculation for multi-material prints
+**Defined:** 2026-05-19
+**Core Value:** Turn the cost calculator into a complete quoting tool — every saved job becomes something you can confidently send to a customer.
 
-## v1 Requirements
+## v1.1 Requirements
 
-### Data Model
+Requirements for milestone v1.1. Each maps to exactly one roadmap phase. All requirements sit on the FREE side of the free/paid line per [docs/ROADMAP.md](../docs/ROADMAP.md) "Guiding Principle" (2026-05-19).
 
-- [x] **DATA-01**: PrintJob stores multiple filaments as `filaments: FilamentUsage[]` replacing single `filamentId`/`filamentGrams`
-- [x] **DATA-02**: Each FilamentUsage tracks filamentId, grams, optional pricePerGram override, and currency
-- [x] **DATA-03**: Database migration (v4→v5) converts existing single-filament jobs to filaments array
-- [x] **DATA-04**: Migration handles edge cases: empty filamentId, missing filamentGrams, undefined values
+### Pricing
 
-### G-code Parser
+- [ ] **PRICING-01**: User can add a configurable Tax/VAT percentage to a job's selling price, displayed as a separate line item in the cost breakdown
+- [ ] **PRICING-02**: User can set a default Tax/VAT percentage in Settings → Pricing (applied to new jobs on creation and on form clear)
+- [ ] **PRICING-03**: Tax/VAT percentage persists per-saved-job and round-trips through edit/duplicate without loss
 
-- [x] **GCODE-01**: Parser extracts all filament types from semicolon-separated `filament_type` line
-- [x] **GCODE-02**: Parser extracts per-extruder weight from `filament used [g]` semicolon-separated values
-- [x] **GCODE-03**: Parser extracts all filament vendors and settings IDs (per-extruder arrays)
-- [x] **GCODE-04**: When only total weight available, first extruder gets total, rest get zero
-- [x] **GCODE-05**: Backward-compatible single fields remain as first-element aliases
+### Job Management
 
-### Import
+- [ ] **JOB-01**: User can duplicate any saved job into the calculator with all fields pre-filled (filaments, printer, times, customer, tags, tax/VAT) — the duplicate creates a new in-progress job, not a saved record
+- [ ] **JOB-02**: User can attach customer name, email, and phone to a saved `PrintJob` (currently `Sale.customerName` exists; this extends to PrintJob with full contact fields)
+- [ ] **JOB-03**: User can add up to 6 free-text tags to a saved job; tag input enforces the cap with a clear validation message
+- [ ] **JOB-04**: User can filter the JobsManager list by selecting one or more tags as chips; multi-select uses OR semantics
+- [ ] **JOB-05**: User can search the JobsManager list by tag substring (typing partial tag matches jobs containing any tag with that substring)
 
-- [x] **IMPORT-01**: GcodeImport passes filaments array (not single filamentId) to CostCalculator
-- [x] **IMPORT-02**: Each imported filament is auto-matched independently against user's asset library
-- [x] **IMPORT-03**: Success toast shows all detected materials with weights
+### Export
 
-### Calculator UI
+- [ ] **EXPORT-01**: User can generate a PDF quote from any saved job, downloadable to the local filesystem
+- [ ] **EXPORT-02**: PDF quote includes: job name, customer details (if present), cost breakdown line items, selling price, tax/VAT (if applicable), shop currency, and a small "Made with 3DCoster" footer with a link to 3dcoster.app
+- [ ] **EXPORT-03**: PDF generation works fully offline (no network call — PDF library bundled client-side)
 
-- [ ] **UI-01**: Form shows one filament row by default with FilamentSelector + grams input
-- [ ] **UI-02**: "+" button adds additional filament rows (max 16)
-- [ ] **UI-03**: Remove button on each row except the first
-- [ ] **UI-04**: Each row has independent price/currency override
-- [ ] **UI-05**: At least one filament must be selected for validation to pass
+### Compliance
 
-### Cost Calculation
+- [ ] **COMPLIANCE-01**: User can flag each job with an origin/license type — one of: `own_design`, `licensed_commercial`, `third_party_stl`, `unknown`. Default is `unknown` for migrated and new jobs until set.
+- [ ] **COMPLIANCE-02**: User can export a compliance attestation CSV listing all jobs flagged as `own_design` or `licensed_commercial` (date, job name, origin type, customer if present) — intended for Etsy / marketplace dispute response
 
-- [ ] **COST-01**: Filament cost sums `grams * pricePerGram` across all filaments
-- [ ] **COST-02**: Nozzle wear uses per-material density (not hardcoded PLA) via exported `getMaterialDensity`
-- [ ] **COST-03**: Price override persisted on saved job for historical accuracy
+## v2 / Future Requirements
 
-### Jobs Display
+Deferred to a future milestone.
 
-- [x] **JOBS-01**: JobsManager shows all filaments per job (e.g., "PETG 200g + PLA 50g")
-- [x] **JOBS-02**: Editing a job restores all filament rows with correct price fallback
+### Pricing
 
-### Persistence
+- **PRICING-F1**: Per-region tax presets (e.g. "Canada GST 5%", "EU VAT 20%") with one-click apply
 
-- [ ] **PERSIST-01**: Session storage persists multi-filament form state
-- [ ] **PERSIST-02**: Old session storage format (single filament) gracefully falls back to default
+### Job Management
 
-### Printer Maintenance
+- **JOB-F1**: Bulk tag operations (apply/remove tag from multiple jobs at once)
+- **JOB-F2**: Tag-based grouping in JobsManager (collapsible groups by primary tag)
 
-- [x] **MAINT-01**: Popup warning when printer crosses 500h maintenance interval (500, 1000, 1500, etc.)
-- [x] **MAINT-02**: Maintenance alert is dismissable and does not re-trigger for acknowledged intervals
+### Export
 
-### 3MF Import
+- **EXPORT-F1**: Customizable PDF quote template (which line items to include/hide)
+- **EXPORT-F2**: Per-quote terms-and-conditions text block
 
-- [x] **3MF-01**: Parse sliced Bambu/Orca 3MF files (ZIP with slice_info.config) to extract per-plate filament and time data
-- [x] **3MF-02**: Sum filament usage and print time across all plates, populate calculator with project totals
-- [x] **3MF-03**: Detect non-sliced 3MF files and show helpful error explaining slicing is required
-- [x] **3MF-04**: Display plate count so user knows it's a multi-plate project
+### Compliance
 
-## v2 Requirements
-
-### Cost Display
-
-- **DISPLAY-01**: Per-filament cost breakdown in CostBreakdown summary
-- **DISPLAY-02**: Filament usage analytics across saved jobs
-
-### Inventory
-
-- **INV-01**: AMS slot tracking / filament inventory management
-- **INV-02**: Remaining spool weight tracking with alerts
+- **COMPLIANCE-F1**: Live Etsy listing-status lookup for flagged jobs (requires backend — paid tier)
 
 ## Out of Scope
 
+Explicitly excluded from v1.1. Documented to prevent scope creep.
+
 | Feature | Reason |
 |---------|--------|
-| Backend sync | No backend exists, all data local |
-| Per-filament CostBreakdown detail | Total sufficient for v1, adds UI complexity |
-| AMS slot management | Separate feature, not cost calculation |
-| Filament inventory/spool tracking | Separate feature |
-| ~~3MF file import~~ | ~~Current parser uses gcode only~~ → Moved to Phase 6 |
+| White-label PDF (your logo, colors, no footer) | Paid Pro tier — see ROADMAP "Paid Tiers" |
+| Email delivery of PDF quote | Requires hosted SMTP — paid Pro tier |
+| Shareable hosted quote URL | Requires backend — paid Pro tier |
+| Customer database / CRM with cross-job history | Customer details on job is records-keeping (free); full CRM is paid Business tier |
+| Live Etsy API integration | Compliance helper is manual flag + export only this milestone — live API is paid |
+| PDF invoice numbering / accounting integration | Out of scope for quote-focused milestone; covered under future Accounting milestone |
+| Multiple currencies on a single quote | Quote uses the job's stored currency; conversion not in v1.1 |
+| Tag autocomplete from prior jobs | Nice-to-have; v1.1 ships with free-text tags and adds autocomplete later if needed |
 
 ## Traceability
 
+Which phases cover which requirements. Updated during roadmap creation.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Complete |
-| DATA-02 | Phase 1 | Complete |
-| DATA-03 | Phase 1 | Complete |
-| DATA-04 | Phase 1 | Complete |
-| GCODE-01 | Phase 2 | Complete |
-| GCODE-02 | Phase 2 | Complete |
-| GCODE-03 | Phase 2 | Complete |
-| GCODE-04 | Phase 2 | Complete |
-| GCODE-05 | Phase 2 | Complete |
-| IMPORT-01 | Phase 3 | Complete |
-| IMPORT-02 | Phase 3 | Complete |
-| IMPORT-03 | Phase 3 | Complete |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 3 | Pending |
-| UI-05 | Phase 3 | Pending |
-| COST-01 | Phase 3 | Pending |
-| COST-02 | Phase 3 | Pending |
-| COST-03 | Phase 3 | Pending |
-| JOBS-01 | Phase 4 | Complete |
-| JOBS-02 | Phase 4 | Complete |
-| PERSIST-01 | Phase 3 | Pending |
-| PERSIST-02 | Phase 3 | Pending |
-| MAINT-01 | Phase 5 | Complete |
-| MAINT-02 | Phase 5 | Complete |
-| 3MF-01 | Phase 6 | Complete |
-| 3MF-02 | Phase 6 | Complete |
-| 3MF-03 | Phase 6 | Complete |
-| 3MF-04 | Phase 6 | Complete |
+| PRICING-01 | TBD | Pending |
+| PRICING-02 | TBD | Pending |
+| PRICING-03 | TBD | Pending |
+| JOB-01 | TBD | Pending |
+| JOB-02 | TBD | Pending |
+| JOB-03 | TBD | Pending |
+| JOB-04 | TBD | Pending |
+| JOB-05 | TBD | Pending |
+| EXPORT-01 | TBD | Pending |
+| EXPORT-02 | TBD | Pending |
+| EXPORT-03 | TBD | Pending |
+| COMPLIANCE-01 | TBD | Pending |
+| COMPLIANCE-02 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 30 total
-- Mapped to phases: 30
-- Unmapped: 0 ✓
+- v1.1 requirements: 13 total
+- Mapped to phases: 0 (pending roadmap creation)
+- Unmapped: 13 ⚠️
 
 ---
-*Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after roadmap creation*
+*Requirements defined: 2026-05-19*
+*Last updated: 2026-05-19 after initial definition*
