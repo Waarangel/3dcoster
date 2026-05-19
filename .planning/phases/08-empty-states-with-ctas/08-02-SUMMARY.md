@@ -208,4 +208,4 @@ None. Every wiring change connects to a real, working handler — no placeholder
 - [x] `npm run lint:no-raw-html` exits 0
 - [x] `npm test` exits 0 (13 tests passing, no regression)
 - [x] `npm run build` completes the full pipeline (lint + tsc + vite + PWA)
-- [ ] Task 5 manual UAT (deferred — checkpoint awaiting user verification)
+- [x] Task 5 manual UAT — approved by user 2026-05-19 (all seven UAT steps A–G passed in `npm run dev` on port 4173)
