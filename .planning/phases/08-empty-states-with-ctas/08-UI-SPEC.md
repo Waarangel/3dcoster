@@ -36,8 +36,7 @@ Declared values (Tailwind v4 defaults, multiples of 4):
 | xs | 4px (`gap-1`, `p-1`) | Icon stroke detail, inline tight gaps |
 | sm | 8px (`gap-2`, `p-2`) | NewBadge corner offset (`-top-1 -right-1`) |
 | md | 16px (`gap-4`, `mb-4`) | Heading-to-paragraph spacing inside EmptyState |
-| lg | 24px (`p-6`, `mb-6`) | Card panel padding (existing JobsManager wrapper) |
-| xl | 32px (`mt-8`) | Spacing between paragraph and CTA button |
+| lg | 24px (`p-6`, `mb-6`, `mt-6`) | Card panel padding; spacing between paragraph and CTA button |
 | 2xl | 48px (`py-12`, `w-12 h-12`) | Vertical empty-state padding; minimum icon size |
 | 3xl | 64px (`w-16 h-16`) | Maximum icon size (per CONTEXT.md D-02: 48–64px range) |
 
@@ -51,17 +50,19 @@ Declared values (Tailwind v4 defaults, multiples of 4):
 
 ## Typography
 
-Three declared sizes, two declared weights (within the 3–4 size / 2 weight budget):
+Three declared sizes, two declared weights (400 regular, 600 semibold) — plus one inherited from Phase 7 Button (500 medium, locked upstream).
 
 | Role | Size | Weight | Line Height | Tailwind Class |
 |------|------|--------|-------------|----------------|
 | Heading | 18px | 600 (semibold) | 1.4 | `text-lg font-semibold text-white` |
 | Body | 14px | 400 (regular) | 1.5 | `text-sm text-slate-500 leading-relaxed` |
-| CTA label | 14px | 500 (medium, inherited from Button primitive) | 1.4 | inherited from Button `font-medium text-sm` |
+| CTA label | 14px | inherited (500 — Phase 7 Button) | 1.4 | inherited from Button `font-medium text-sm` |
+
+**Inherited weights:** EmptyState declares 2 weights (400 regular, 600 semibold). The CTA label's 500-medium weight is inherited from the Phase 7 Button primitive and is locked upstream. No new weight is introduced by Phase 8.
 
 **Notes:**
 - Heading and CTA label both use `text-sm`/`text-lg` from Tailwind defaults — same vertical-rhythm family as existing `JobsManager.tsx:196` (`text-lg font-semibold`) and `JobsManager.tsx:199` (`text-sm`).
-- Body color `text-slate-500` matches the existing JobsManager empty-state supporting-paragraph color (line 199). The headline uses `text-slate-400` if a softer color is preferred at UAT, but the locked default is `text-white` for stronger anchor.
+- Body color `text-slate-500` matches the existing JobsManager empty-state supporting-paragraph color (line 199). Headline color is locked to `text-white` for a strong visual anchor.
 - No third heading level (subhead) — EmptyState has only one heading per instance.
 
 ---
