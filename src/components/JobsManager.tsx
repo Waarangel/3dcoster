@@ -1,11 +1,12 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { PrintJob, Material, PrinterConfig, PrinterInstance, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
-import { Button, Input, Select, EmptyState } from './ui';
+import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 
 interface JobsManagerProps {
   jobs: PrintJob[];
+  isLoading: boolean;
   materials: Material[];
   printers: PrinterConfig[];
   printerInstances: PrinterInstance[];
@@ -16,7 +17,31 @@ interface JobsManagerProps {
   onSwitchTab: (tab: 'calculator' | 'jobs' | 'materials' | 'settings') => void;
 }
 
-export function JobsManager({ jobs, materials, printers, printerInstances, shippingConfig, userCurrency, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+function JobsListSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[0, 1, 2, 3].map(i => (
+        <div key={i} className="p-4 rounded-lg border bg-slate-700/50 border-slate-600">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-3">
+                <Skeleton variant="line" width="w-40" />
+                <Skeleton variant="line" width="w-32" height="h-5" rounded="rounded-full" />
+              </div>
+              <Skeleton variant="line" width="w-3/4" />
+            </div>
+            <div className="text-right space-y-1">
+              <Skeleton variant="line" width="w-20" height="h-6" className="ml-auto" />
+              <Skeleton variant="line" width="w-16" className="ml-auto" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function JobsManager({ jobs, isLoading, materials, printers, printerInstances, shippingConfig, userCurrency, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState(1);
@@ -192,26 +217,22 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
   };
   void _getPrinterName; // Silence unused warning
 
-  if (jobs.length === 0) {
-    return (
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold text-white mb-4">My Print Jobs</h2>
-        <EmptyState
-          icon={<ClipboardListIcon className="w-12 h-12" />}
-          title="No jobs saved yet"
-          description={<>Use the Cost Calculator to create and save print jobs.<br />Track sales and see how many copies you need to break even.</>}
-          cta={{ label: 'Open Calculator', onClick: () => onSwitchTab('calculator') }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Jobs List */}
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <h2 className="text-lg font-semibold text-white mb-4">My Print Jobs</h2>
 
+        {isLoading ? (
+          <JobsListSkeleton />
+        ) : shouldShowEmptyState(jobs, isLoading) ? (
+          <EmptyState
+            icon={<ClipboardListIcon className="w-12 h-12" />}
+            title="No jobs saved yet"
+            description={<>Use the Cost Calculator to create and save print jobs.<br />Track sales and see how many copies you need to break even.</>}
+            cta={{ label: 'Open Calculator', onClick: () => onSwitchTab('calculator') }}
+          />
+        ) : (
         <div className="space-y-3">
           {jobs.map(job => {
             const info = getBreakEvenInfo(job);
@@ -341,6 +362,7 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Sale Form Modal */}

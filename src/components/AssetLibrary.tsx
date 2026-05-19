@@ -2,11 +2,12 @@ import { useState, useMemo } from 'react';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
 import { NewBadge } from './NewBadge';
 import { CsvImportModal } from './CsvImportModal';
-import { Button, Input, Select, EmptyState } from './ui';
+import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { PackageIcon } from './ui/icons';
 
 interface AssetLibraryProps {
   assets: Asset[];
+  isLoading: boolean;
   onAddAsset: (asset: Asset) => void;
   onUpdateAsset: (asset: Asset) => void;
   onDeleteAsset: (id: string) => void;
@@ -15,6 +16,64 @@ interface AssetLibraryProps {
   onResetPrinters: () => void;
   itemsPerPage: number;
   onItemsPerPageChange: (value: number) => void;
+}
+
+function AssetListSkeleton() {
+  return (
+    <>
+      {/* Mobile cards — 3 placeholder cards */}
+      <div className="md:hidden space-y-3">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton variant="line" width="w-32" />
+              <Skeleton variant="line" width="w-16" height="h-5" rounded="rounded-full" />
+            </div>
+            <Skeleton variant="line" width="w-24" />
+            <Skeleton variant="line" width="w-full" />
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/50">
+              <Skeleton variant="line" />
+              <Skeleton variant="line" />
+              <Skeleton variant="line" />
+              <Skeleton variant="line" />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Skeleton variant="line" height="h-9" className="flex-1" />
+              <Skeleton variant="line" height="h-9" className="flex-1" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table — 5 placeholder rows */}
+      <div className="hidden md:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-slate-400 text-left border-b border-slate-700">
+              <th className="pb-2 font-medium"><Skeleton variant="line" width="w-20" /></th>
+              <th className="pb-2 font-medium"><Skeleton variant="line" width="w-16" /></th>
+              <th className="pb-2 font-medium"><Skeleton variant="line" width="w-12" /></th>
+              <th className="pb-2 font-medium text-right"><Skeleton variant="line" width="w-16" className="ml-auto" /></th>
+              <th className="pb-2 font-medium text-right"><Skeleton variant="line" width="w-16" className="ml-auto" /></th>
+              <th className="pb-2 font-medium text-right"><Skeleton variant="line" width="w-16" className="ml-auto" /></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/50">
+            {[0, 1, 2, 3, 4].map(i => (
+              <tr key={i}>
+                <td className="py-2"><Skeleton variant="line" width="w-32" /></td>
+                <td className="py-2"><Skeleton variant="line" width="w-24" /></td>
+                <td className="py-2"><Skeleton variant="line" width="w-16" /></td>
+                <td className="py-2"><Skeleton variant="line" width="w-20" className="ml-auto" /></td>
+                <td className="py-2"><Skeleton variant="line" width="w-20" className="ml-auto" /></td>
+                <td className="py-2"><Skeleton variant="line" width="w-24" className="ml-auto" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 }
 
 // Built-in category labels
@@ -60,6 +119,7 @@ function getCategoryColor(category: AssetCategory): string {
 
 export function AssetLibrary({
   assets,
+  isLoading,
   onAddAsset,
   onUpdateAsset,
   onDeleteAsset,
@@ -403,7 +463,9 @@ export function AssetLibrary({
         </div>
       </div>
 
-      {assets.length === 0 ? (
+      {isLoading ? (
+        <AssetListSkeleton />
+      ) : shouldShowEmptyState(assets, isLoading) ? (
         <EmptyState
           icon={<PackageIcon className="w-12 h-12" />}
           title="No materials in your library yet"

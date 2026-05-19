@@ -59,7 +59,6 @@ function App() {
   const {
     electricity,
     updateElectricity,
-    isLoading: settingsLoading,
   } = useAllSettings();
 
   const {
@@ -72,7 +71,6 @@ function App() {
 
   const {
     printers,
-    isLoading: printersLoading,
   } = usePrinters();
 
   const {
@@ -87,23 +85,18 @@ function App() {
   const {
     profile: userProfile,
     updateProfile: updateUserProfile,
-    isLoading: profileLoading,
   } = useUserProfile();
 
   const {
     shipping: shippingConfig,
     updateShipping: updateShippingConfig,
-    isLoading: shippingLoading,
   } = useShippingConfig();
 
   const {
     fees: marketplaceFees,
     updateFees: updateMarketplaceFees,
     resetToDefaults: resetMarketplaceFees,
-    isLoading: feesLoading,
   } = useMarketplaceFees();
-
-  const isLoading = assetsLoading || settingsLoading || jobsLoading || printersLoading || instancesLoading || profileLoading || shippingLoading || feesLoading;
 
   // Handle saving a job and updating printer hours
   const handleSaveJob = async (job: PrintJob, printHours: number) => {
@@ -145,14 +138,6 @@ function App() {
     { id: 'materials', label: 'Asset Library', shortLabel: 'Assets' },
     { id: 'settings', label: 'Printer Settings', shortLabel: 'Printers' },
   ];
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -289,6 +274,7 @@ function App() {
         {activeTab === 'jobs' && (
           <JobsManager
             jobs={jobs}
+            isLoading={jobsLoading}
             materials={materials}
             printers={printers}
             printerInstances={printerInstances}
@@ -303,6 +289,7 @@ function App() {
         {activeTab === 'materials' && (
           <AssetLibrary
             assets={assets}
+            isLoading={assetsLoading}
             onAddAsset={addAsset}
             onUpdateAsset={updateAsset}
             onDeleteAsset={deleteAsset}
@@ -318,6 +305,7 @@ function App() {
           <PrinterSettings
             printers={printers}
             printerInstances={printerInstances}
+            isLoading={instancesLoading}
             jobs={jobs}
             electricity={electricity}
             onAddInstance={addInstance}
