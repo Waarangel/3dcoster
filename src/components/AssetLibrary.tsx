@@ -320,6 +320,18 @@ export function AssetLibrary({
     setIsAdding(true);
   };
 
+  // Empty-state CTA opens the Add form pre-selected to "filament" so the
+  // form category matches the empty-state copy ("Add your first filament").
+  // The top-right "+ Add" button still calls startAdding so the populated-state
+  // behaviour (pre-select from current filter) is unchanged.
+  const startAddingFilament = () => {
+    setFormData({ category: 'filament' });
+    setEditingId(null);
+    setShowCustomCategory(false);
+    setCustomCategoryInput('');
+    setIsAdding(true);
+  };
+
   const cancelEdit = () => {
     setFormData({ category: 'consumable' });
     setEditingId(null);
@@ -394,7 +406,7 @@ export function AssetLibrary({
           icon={<PackageIcon className="w-12 h-12" />}
           title="No materials in your library yet"
           description="Add your first filament to start tracking material costs across jobs. You can also import from CSV if you already have a list."
-          cta={{ label: 'Add Material', onClick: startAdding }}
+          cta={{ label: 'Add Material', onClick: startAddingFilament }}
         />
       ) : (
         <>
