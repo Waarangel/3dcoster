@@ -27,15 +27,19 @@
 ## Phase Details
 
 ### Phase 7: Styling Primitives Pass
-**Goal**: All raw `<button>`, `<input>`, `<select>`, and `<textarea>` elements in `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` are replaced with shared `src/components/ui/` primitives, and a lint guard prevents regression
+**Goal**: All raw `<button>`, `<input>`, `<select>`, and `<textarea>` elements across the 14 main app components (CONTEXT.md D-01 expanded scope) are replaced with shared `src/components/ui/` primitives, and a grep-based lint guard prevents regression
 **Depends on**: Phase 6 (v1.0 complete)
 **Requirements**: UI-01, UI-02, UI-03
 **Success Criteria** (what must be TRUE):
-  1. `CostCalculator.tsx`, `JobsManager.tsx`, and `PrinterSettings.tsx` contain zero raw `<button>`, `<input>`, `<select>`, or `<textarea>` elements — confirmed by grep after the phase ships
-  2. All replaced elements preserve existing behavior: correct variants, sizes, disabled states, type coercion, validation, and onChange/onClick handlers
-  3. A lint rule (ESLint custom rule or enforced comment convention) is active at build time — `npm run lint` catches any future raw form-element introduction in main app components
-  4. No visual regression: the app looks and behaves identically to pre-Phase-7 for all three components in both normal and disabled states
-**Plans**: TBD
+  1. All 14 in-scope main components (SettingsModal, CostCalculator, PrinterSettings, JobsManager, AssetLibrary, CsvImportModal, UserProfileModal, BambuImport, GcodeImport, ImageCarousel, UpdateBanner, FilamentSelector, Header, MaintenanceAlertModal) contain zero raw `<button>`, `<input>`, `<select>`, or `<textarea>` elements outside `// allow-raw-html` opt-outs — confirmed by `node scripts/lint-no-raw-html.mjs`
+  2. All replaced elements preserve existing behavior: correct variants, sizes, disabled states, type coercion, validation, and onChange/onClick handlers (D-08)
+  3. Grep-based lint guard is active at build time — `npm run build` chains `node scripts/lint-no-raw-html.mjs` and a pre-commit hook blocks raw form-element introduction
+  4. No behavioral regression: AssetLibrary form-submit semantics intact; SettingsModal tab switching works; CostCalculator inputs accept and coerce numeric values
+**Plans**: 3 plans
+**Plans**:
+- [ ] 07-03-PLAN.md — Wave 0: Install lint guard (script + package.json + pre-commit hook) and refactor 9 lightweight components (MaintenanceAlertModal, UpdateBanner, FilamentSelector, Header, GcodeImport, ImageCarousel, CsvImportModal, UserProfileModal, BambuImport); finishes with 5 adversarial lint tests
+- [ ] 07-01-PLAN.md — Wave 1: Refactor SettingsModal (44), CostCalculator (32), PrinterSettings (18) — heaviest tier (94 raw elements)
+- [ ] 07-02-PLAN.md — Wave 1: Refactor AssetLibrary (40, contains the only `<form>`) and JobsManager (13) — medium tier (53 raw elements)
 **Note**: Internal refactoring only — no user-visible change. No NEW badge. Phases 8, 9, and 10 depend on this pass so they build new UI surfaces on consistent primitives from the start.
 
 ### Phase 8: Empty States with CTAs
@@ -104,7 +108,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Styling Primitives Pass | 0/TBD | Not started | - |
+| 7. Styling Primitives Pass | 0/3 | Planned | - |
 | 8. Empty States with CTAs | 0/TBD | Not started | - |
 | 9. Skeleton Loading States | 0/TBD | Not started | - |
 | 10. Dark Mode | 0/TBD | Not started | - |
@@ -151,4 +155,5 @@ Phase 12 (Performance)     -- no UI dependency; can run in parallel with any pha
 ---
 
 *Roadmap created: 2026-05-19*
+*Phase 7 plans created: 2026-05-19*
 *Overwrites previous ROADMAP.md (v1.1 Quote-to-Customer — deferred to v1.2 per 2026-05-19 milestone swap)*
