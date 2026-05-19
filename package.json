@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/lint-no-raw-html.mjs && tsc -b && vite build",
     "lint": "eslint .",
+    "lint:no-raw-html": "node scripts/lint-no-raw-html.mjs",
     "preview": "vite preview",
+    "prepare": "chmod +x .git/hooks/pre-commit 2>/dev/null || true",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
