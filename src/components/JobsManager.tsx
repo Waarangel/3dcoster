@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { PrintJob, Material, PrinterConfig, PrinterInstance, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
-import { Button, Input, Select } from './ui';
+import { Button, Input, Select, EmptyState } from './ui';
+import { ClipboardListIcon } from './ui/icons';
 
 interface JobsManagerProps {
   jobs: PrintJob[];
@@ -12,9 +13,10 @@ interface JobsManagerProps {
   userCurrency: Currency;
   onDeleteJob: (id: string) => Promise<void>;
   onEditJob: (job: PrintJob) => void;
+  onSwitchTab: (tab: 'calculator' | 'jobs' | 'materials' | 'settings') => void;
 }
 
-export function JobsManager({ jobs, materials, printers, printerInstances, shippingConfig, userCurrency, onDeleteJob, onEditJob }: JobsManagerProps) {
+export function JobsManager({ jobs, materials, printers, printerInstances, shippingConfig, userCurrency, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState(1);
@@ -194,14 +196,12 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
     return (
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <h2 className="text-lg font-semibold text-white mb-4">My Print Jobs</h2>
-        <div className="text-center py-12">
-          <p className="text-slate-400 mb-2">No jobs saved yet</p>
-          <p className="text-slate-500 text-sm">
-            Use the Cost Calculator to create and save print jobs.
-            <br />
-            Track sales and see how many copies you need to break even.
-          </p>
-        </div>
+        <EmptyState
+          icon={<ClipboardListIcon className="w-12 h-12" />}
+          title="No jobs saved yet"
+          description={<>Use the Cost Calculator to create and save print jobs.<br />Track sales and see how many copies you need to break even.</>}
+          cta={{ label: 'Open Calculator', onClick: () => onSwitchTab('calculator') }}
+        />
       </div>
     );
   }

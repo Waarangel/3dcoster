@@ -256,6 +256,9 @@ function App() {
                 <span className="sm:hidden">{tab.shortLabel}</span>
                 <span className="hidden sm:inline">{tab.label}</span>
                 {tab.id === 'settings' && <NewBadge feature="printer-maintenance-alerts" />}
+                {(tab.id === 'jobs' || tab.id === 'materials' || tab.id === 'settings') && (
+                  <NewBadge feature="empty-states" className="absolute -top-1 -right-1" />
+                )}
                 {activeTab === tab.id && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
                 )}
@@ -294,6 +297,7 @@ function App() {
             userCurrency={userProfile.currency}
             onDeleteJob={deleteJob}
             onEditJob={handleEditJob}
+            onSwitchTab={setActiveTab}
           />
         )}
 
