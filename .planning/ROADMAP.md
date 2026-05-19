@@ -1,111 +1,116 @@
-# Roadmap: 3DCoster Multi-Material Support
+# Roadmap: 3DCoster v1.1 — Quote-to-Customer
 
 ## Overview
 
-This milestone upgrades 3DCoster from single-filament to multi-material tracking. The work follows a strict dependency chain: the data model must ship first (everything compiles against it), then the G-code parser (which produces the array shape the UI consumes), then the full calculator UI and import wiring (the largest phase), and finally the jobs display (completes end-to-end visibility of saved multi-material jobs).
+v1.1 transforms 3DCoster from a cost calculator into a complete quoting tool. Six tightly-scoped phases carry every saved job from raw cost data to something you can confidently hand to a customer: tax-aware pricing, customer contact details, searchable tags, a downloadable PDF quote, and Etsy compliance attestation. All features are FREE tier; all data stays local; all schema changes preserve existing v1.0 multi-material jobs without data loss.
+
+Phases continue from v1.0 (which ended at Phase 6).
+
+## Constraints (apply to all phases)
+
+- **Free tier**: All v1.1 features are free. PDF quote includes "Made with 3DCoster" footer linking to 3dcoster.app; white-label PDF is paid tier.
+- **Offline-first**: No network calls during feature operation. PDF library (jsPDF or pdfmake) bundled client-side.
+- **Dexie migration**: Every schema change ships with a Dexie version migration that preserves existing v1.0 multi-material jobs without data loss.
+- **NEW Badge rule**: Every shipped phase adds an entry to `src/features.ts` and places `<NewBadge>` as an absolute overlay (never inline, never disrupts layout).
+- **Dev server port**: 4173 (pinned in `vite.config.ts`).
 
 ## Phases
 
-- [x] **Phase 1: Data Foundation** - New FilamentUsage type, updated PrintJob shape, and v4->v5 database migration (completed 2026-04-14)
-- [x] **Phase 2: G-code Parser** - Extract all filaments from semicolon-separated slicer output instead of discarding extras (completed 2026-04-14)
-- [x] **Phase 3: Calculator UI + Import** - Multi-filament form rows, cost/nozzle calculations, import wiring, session persistence (completed 2026-04-15)
-- [x] **Phase 4: Jobs Display** - JobsManager shows all filaments per job; edit restores full filament array (completed 2026-04-15)
-- [x] **Phase 5: Printer Maintenance Alerts** - Track print hours and warn at 500h maintenance intervals (completed 2026-04-15)
-- [x] **Phase 6: 3MF Multi-Plate Project Import** - Import sliced 3MF files for total multi-plate project costing (completed 2026-04-15)
+- [ ] **Phase 7: Tax/VAT** - Add configurable Tax/VAT percentage to selling price, per-job and as a Settings default
+- [ ] **Phase 8: Quick Duplicate Job** - One-click clone of any saved job into the calculator with all fields pre-filled
+- [ ] **Phase 9: Customer Details** - Attach customer name, email, and phone to any saved PrintJob
+- [ ] **Phase 10: Tags, Filter & Search** - Editable tags (max 6) on saved jobs with OR-filter chips and substring search in JobsManager
+- [ ] **Phase 11: PDF Quote** - Generate a downloadable PDF quote from any saved job, fully offline, with "Made with 3DCoster" footer
+- [ ] **Phase 12: Etsy Compliance Helper** - Per-job origin/license flag and CSV compliance attestation export for marketplace disputes
 
 ## Phase Details
 
-### Phase 1: Data Foundation
-**Goal**: The data layer supports multiple filaments per job, and all existing jobs are migrated without data loss
-**Depends on**: Nothing (first phase)
-**Requirements**: DATA-01, DATA-02, DATA-03, DATA-04
+### Phase 7: Tax/VAT
+**Goal**: Users can add a configurable Tax/VAT percentage to any job's selling price, with a Settings default that pre-fills new jobs.
+**Depends on**: Phase 6 (v1.0 complete)
+**Requirements**: PRICING-01, PRICING-02, PRICING-03
 **Success Criteria** (what must be TRUE):
-  1. TypeScript compiles with the new FilamentUsage type and PrintJob no longer has filamentId/filamentGrams fields
-  2. Opening the app after migration does not throw errors and existing jobs are visible with their filament data intact
-  3. Jobs that previously had no filament selected migrate to an empty filaments array without crashing
-  4. Jobs that previously had a filament selected migrate to a single-element filaments array with correct grams preserved
-**Plans**: 1 plan
+  1. User can enter a Tax/VAT % on any job in the calculator; the cost breakdown shows it as a separate line item below selling price with the computed dollar amount
+  2. User can set a default Tax/VAT % in Settings → Pricing; new jobs and cleared forms pick up that default automatically
+  3. Saving a job persists its Tax/VAT %; re-opening the job for edit shows the same value; duplicating the job (Phase 8) carries the value forward without loss
+  4. Existing v1.0 saved jobs (no tax field) continue to load and display correctly after the Dexie migration — no errors, no missing data
+**Plans**: TBD
+**UI hint**: yes
 
-Plans:
-- [x] 01-01-PLAN.md — Add FilamentUsage type, update PrintJob, write Dexie v4->v5 migration
-
-### Phase 2: G-code Parser
-**Goal**: The parser extracts all filaments from multi-material G-code instead of silently discarding extras
-**Depends on**: Phase 1
-**Requirements**: GCODE-01, GCODE-02, GCODE-03, GCODE-04, GCODE-05
+### Phase 8: Quick Duplicate Job
+**Goal**: Users can duplicate any saved job into the calculator pre-filled with all its fields — no re-entry required.
+**Depends on**: Phase 7
+**Requirements**: JOB-01
 **Success Criteria** (what must be TRUE):
-  1. Importing a Bambu Studio multi-color G-code file yields filamentTypes[], filamentVendors[], filamentSettingsIds[], and filamentGramsPerExtruder[] arrays with correct element counts
-  2. Importing a single-material G-code file produces single-element arrays; existing single-field aliases (filamentType, filamentGrams) are unchanged
-  3. When only total filament weight is present (Bambu header only), the first extruder receives the total and remaining extruders receive zero
-  4. getMaterialDensity is exported from gcodeParser.ts and usable by other modules
-**Plans**: 1 plan
+  1. Every saved job in JobsManager has a "Duplicate" action that loads the calculator with all fields pre-filled (filaments, printer, times, customer, tags, tax/VAT)
+  2. The duplicate appears as a new in-progress job in the calculator form — no new saved record is created until the user explicitly clicks Save
+  3. Editing and saving the duplicate creates a distinct new saved job; the original job is unchanged
+**Plans**: TBD
+**UI hint**: yes
 
-Plans:
-- [x] 02-01-PLAN.md — Extend GcodeParseResult with array fields, update all slicer parsers, export getMaterialDensity
-
-### Phase 3: Calculator UI + Import
-**Goal**: Users can enter, import, and save multi-material jobs with accurate per-filament cost and nozzle wear calculations
-**Depends on**: Phase 2
-**Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05, COST-01, COST-02, COST-03, IMPORT-01, IMPORT-02, IMPORT-03, PERSIST-01, PERSIST-02
+### Phase 9: Customer Details
+**Goal**: Users can attach a customer's name, email, and phone number to any saved PrintJob.
+**Depends on**: Phase 7
+**Requirements**: JOB-02
 **Success Criteria** (what must be TRUE):
-  1. The calculator form shows one filament row by default; a "+" button adds up to 16 rows; each row except the first has a remove button
-  2. Each filament row has its own material selector, gram input, and price/currency override that save independently to the job record
-  3. Importing a multi-material G-code file populates all detected filament rows with matched assets and correct grams; the success toast lists all materials with weights
-  4. Filament cost is the sum of (grams × pricePerGram) across all rows, and nozzle wear uses the correct density for each material instead of assuming PLA
-  5. Refreshing the page restores the full multi-filament form state; old single-filament session storage falls back to the default single empty row without errors
-**Plans**: 3 plans
+  1. The job save form includes optional fields for customer name, email, and phone
+  2. Saved customer details are visible on the job card or detail view in JobsManager
+  3. Customer fields round-trip through edit without loss; duplicating a job (Phase 8) carries customer details forward
+  4. Existing saved jobs (no customer fields) load correctly after the Dexie migration — no errors, customer section shows empty
+**Plans**: TBD
+**UI hint**: yes
 
-Plans:
-- [x] 03-01-PLAN.md — GcodeImport multi-material: widen onImport to filaments array, per-extruder matching, stacked toast
-- [x] 03-02-PLAN.md — CostCalculator state refactor: replace scalar filament state with FilamentRow[] array, dynamic row UI
-- [x] 03-03-PLAN.md — Cost calculation, save/restore, import wiring, session persistence with backward-compat fallback
-
-### Phase 4: Jobs Display
-**Goal**: Saved multi-material jobs are fully visible and editable in the jobs list
-**Depends on**: Phase 3
-**Requirements**: JOBS-01, JOBS-02
+### Phase 10: Tags, Filter & Search
+**Goal**: Users can label saved jobs with up to 6 free-text tags and quickly find jobs by filtering or searching those tags in JobsManager.
+**Depends on**: Phase 9
+**Requirements**: JOB-03, JOB-04, JOB-05
 **Success Criteria** (what must be TRUE):
-  1. The jobs list shows all filaments for a multi-material job (e.g., "PETG 200g + PLA 50g") and shows the single filament for single-material jobs in the same format as today
-  2. Clicking edit on any saved job (including jobs migrated from the old schema) restores all filament rows with correct gram values and price overrides (or asset-library fallback for migrated jobs)
-**Plans**: 1 plan
+  1. User can add up to 6 tags to a job; attempting to add a 7th shows a clear validation message and is blocked
+  2. Selecting one or more tag chips above the jobs list filters to jobs that contain any of the selected tags (OR semantics); deselecting all chips restores the full list
+  3. Typing in the tag search box shows only jobs whose tags contain the typed substring (partial match, case-insensitive)
+  4. Chip filter and text search compose correctly — both active at once narrows results as expected
+  5. Existing saved jobs (no tags field) continue to appear in the unfiltered list after the Dexie migration
+**Plans**: TBD
+**UI hint**: yes
 
-Plans:
-- [x] 04-01-PLAN.md — Harden filament display edge cases in JobsManager, verify edit-restore round-trip
+### Phase 11: PDF Quote
+**Goal**: Users can generate and download a professional PDF quote from any saved job with no network call required.
+**Depends on**: Phase 9
+**Requirements**: EXPORT-01, EXPORT-02, EXPORT-03
+**Success Criteria** (what must be TRUE):
+  1. Any saved job has a "Download PDF Quote" action that triggers an immediate local file download — no server round-trip
+  2. The downloaded PDF contains: job name, customer details (if present), cost breakdown line items, selling price, Tax/VAT line (if applicable), shop currency, and a "Made with 3DCoster — 3dcoster.app" footer
+  3. PDF generation works with no internet connection — verified by disabling network in DevTools and confirming the download still completes
+  4. The generated PDF renders legibly on a standard A4 or Letter page with no content cut off or overflowing
+**Plans**: TBD
+**UI hint**: yes
 
-## Progress
+### Phase 12: Etsy Compliance Helper
+**Goal**: Users can flag each job with its design origin/license type and export a CSV attestation listing compliant jobs for marketplace dispute response.
+**Depends on**: Phase 9
+**Requirements**: COMPLIANCE-01, COMPLIANCE-02
+**Success Criteria** (what must be TRUE):
+  1. Every saved job has an origin/license selector with four options: Own Design, Licensed Commercial, Third-Party STL, Unknown; new and migrated jobs default to Unknown
+  2. The selected flag is visible on the job card or detail view and persists through edit without loss
+  3. A "Export Compliance CSV" action generates a downloadable CSV listing all jobs flagged as Own Design or Licensed Commercial, with columns: date, job name, origin type, customer name (if present)
+  4. The export works fully offline and produces a valid CSV that opens correctly in Excel and Google Sheets
+  5. Existing v1.0 jobs load without errors after the Dexie migration and default to Unknown origin type
+**Plans**: TBD
+**UI hint**: yes
+
+## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation | 1/1 | Complete   | 2026-04-14 |
-| 2. G-code Parser | 1/1 | Complete | 2026-04-14 |
-| 3. Calculator UI + Import | 3/3 | Complete | 2026-04-15 |
-| 4. Jobs Display | 1/1 | Complete | 2026-04-15 |
-| 5. Printer Maintenance Alerts | 1/1 | Complete   | 2026-04-15 |
-| 6. 3MF Multi-Plate Project Import | 2/2 | Complete | 2026-04-15 |
+| 7. Tax/VAT | 0/? | Not started | - |
+| 8. Quick Duplicate Job | 0/? | Not started | - |
+| 9. Customer Details | 0/? | Not started | - |
+| 10. Tags, Filter & Search | 0/? | Not started | - |
+| 11. PDF Quote | 0/? | Not started | - |
+| 12. Etsy Compliance Helper | 0/? | Not started | - |
 
-### Phase 5: Printer Maintenance Alerts
-**Goal**: Track accumulated print hours per printer instance and alert users at 500-hour maintenance intervals with a dismissable popup
-**Depends on**: Nothing (uses existing PrinterInstance.printHours infrastructure)
-**Requirements**: MAINT-01, MAINT-02
-**Success Criteria** (what must be TRUE):
-  1. When a printer's accumulated printHours crosses a 500-hour interval (500, 1000, 1500, etc.), a popup/toast warns the user that maintenance is due for that printer
-  2. The maintenance alert is dismissable and does not re-trigger for the same interval after acknowledgment
-**Plans**: 1 plan
-
-Plans:
-- [x] 05-01-PLAN.md — Maintenance alert modal, boundary detection in handleSaveJob, localStorage dismissed state
-
-### Phase 6: 3MF Multi-Plate Project Import
-**Goal**: Users can import a sliced Bambu Studio / OrcaSlicer 3MF file to get total project cost across all build plates in a single import
-**Depends on**: Nothing (new import path alongside existing gcode import)
-**Requirements**: 3MF-01, 3MF-02, 3MF-03, 3MF-04
-**Success Criteria** (what must be TRUE):
-  1. Dropping a sliced 3MF file (Bambu/Orca) extracts per-plate filament grams, filament types, and print times from slice_info.config
-  2. The import sums filament usage and print time across all plates and populates the calculator with the project totals
-  3. Importing a non-sliced 3MF (geometry-only) shows a helpful error message explaining that the file needs to be sliced first
-  4. The number of plates is displayed so the user knows this is a multi-plate project
-**Plans**: 2 plans
-
-Plans:
-- [x] 06-01-PLAN.md — Install JSZip + vitest, create threeMfParser.ts with TDD (all parsing logic + tests)
-- [x] 06-02-PLAN.md — Wire 3MF parser into GcodeImport UI, feature badge, human-verify full flow
+---
+*Milestone: v1.1 — Quote-to-Customer*
+*Created: 2026-05-19*
+*Phases: 7–12 (continuing from v1.0 Phase 6)*
+*Coverage: 13/13 requirements mapped*

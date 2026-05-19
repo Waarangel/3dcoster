@@ -75,25 +75,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PRICING-01 | TBD | Pending |
-| PRICING-02 | TBD | Pending |
-| PRICING-03 | TBD | Pending |
-| JOB-01 | TBD | Pending |
-| JOB-02 | TBD | Pending |
-| JOB-03 | TBD | Pending |
-| JOB-04 | TBD | Pending |
-| JOB-05 | TBD | Pending |
-| EXPORT-01 | TBD | Pending |
-| EXPORT-02 | TBD | Pending |
-| EXPORT-03 | TBD | Pending |
-| COMPLIANCE-01 | TBD | Pending |
-| COMPLIANCE-02 | TBD | Pending |
+| PRICING-01 | Phase 7 | Pending |
+| PRICING-02 | Phase 7 | Pending |
+| PRICING-03 | Phase 7 | Pending |
+| JOB-01 | Phase 8 | Pending |
+| JOB-02 | Phase 9 | Pending |
+| JOB-03 | Phase 10 | Pending |
+| JOB-04 | Phase 10 | Pending |
+| JOB-05 | Phase 10 | Pending |
+| EXPORT-01 | Phase 11 | Pending |
+| EXPORT-02 | Phase 11 | Pending |
+| EXPORT-03 | Phase 11 | Pending |
+| COMPLIANCE-01 | Phase 12 | Pending |
+| COMPLIANCE-02 | Phase 12 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 13 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 13 ⚠️
+- Mapped to phases: 13 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-19*
-*Last updated: 2026-05-19 after initial definition*
+*Last updated: 2026-05-19 — traceability populated after roadmap creation*
