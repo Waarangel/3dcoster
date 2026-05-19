@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { PrinterConfig, PrinterInstance, ElectricityConfig, PrintJob } from '../types';
-import { Button, Input, Select, EmptyState } from './ui';
+import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { PrinterIcon } from './ui/icons';
 
 interface PrinterSettingsProps {
   printers: PrinterConfig[];
   printerInstances: PrinterInstance[];
+  isLoading: boolean;
   jobs: PrintJob[];
   electricity: ElectricityConfig;
   onAddInstance: (instance: PrinterInstance) => void;
@@ -14,9 +15,35 @@ interface PrinterSettingsProps {
   onElectricityChange: (config: ElectricityConfig) => void;
 }
 
+function PrinterListSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[0, 1, 2].map(i => (
+        <div key={i} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 space-y-2">
+              <Skeleton variant="line" width="w-40" />
+              <Skeleton variant="line" width="w-56" />
+              <Skeleton variant="line" width="w-full" />
+              <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mt-1">
+                <Skeleton variant="line" height="h-full" width="w-1/3" rounded="rounded-full" />
+              </div>
+            </div>
+            <div className="flex gap-2 ml-4">
+              <Skeleton variant="line" width="w-14" height="h-8" />
+              <Skeleton variant="line" width="w-16" height="h-8" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PrinterSettings({
   printers,
   printerInstances,
+  isLoading,
   jobs,
   electricity,
   onAddInstance,
@@ -196,7 +223,9 @@ export function PrinterSettings({
         )}
 
         {/* Printer Instances List */}
-        {printerInstances.length === 0 ? (
+        {isLoading ? (
+          <PrinterListSkeleton />
+        ) : shouldShowEmptyState(printerInstances, isLoading) ? (
           <EmptyState
             icon={<PrinterIcon className="w-12 h-12" />}
             title="No printers added yet"
