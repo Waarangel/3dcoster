@@ -37,7 +37,7 @@
   4. No behavioral regression: AssetLibrary form-submit semantics intact; SettingsModal tab switching works; CostCalculator inputs accept and coerce numeric values
 **Plans**: 3 plans
 **Plans**:
-- [ ] 07-03-PLAN.md — Wave 0: Install lint guard (script + package.json + pre-commit hook) and refactor 9 lightweight components (MaintenanceAlertModal, UpdateBanner, FilamentSelector, Header, GcodeImport, ImageCarousel, CsvImportModal, UserProfileModal, BambuImport); finishes with 5 adversarial lint tests
+- [x] 07-03-PLAN.md — Wave 0: Install lint guard (script + package.json + pre-commit hook) and refactor 9 lightweight components (MaintenanceAlertModal, UpdateBanner, FilamentSelector, Header, GcodeImport, ImageCarousel, CsvImportModal, UserProfileModal, BambuImport); finishes with 5 adversarial lint tests
 - [ ] 07-01-PLAN.md — Wave 1: Refactor SettingsModal (44), CostCalculator (32), PrinterSettings (18) — heaviest tier (94 raw elements)
 - [ ] 07-02-PLAN.md — Wave 1: Refactor AssetLibrary (40, contains the only `<form>`) and JobsManager (13) — medium tier (53 raw elements)
 **Note**: Internal refactoring only — no user-visible change. No NEW badge. Phases 8, 9, and 10 depend on this pass so they build new UI surfaces on consistent primitives from the start.
@@ -108,7 +108,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Styling Primitives Pass | 0/3 | Planned | - |
+| 7. Styling Primitives Pass | 1/3 | In Progress|  |
 | 8. Empty States with CTAs | 0/TBD | Not started | - |
 | 9. Skeleton Loading States | 0/TBD | Not started | - |
 | 10. Dark Mode | 0/TBD | Not started | - |
