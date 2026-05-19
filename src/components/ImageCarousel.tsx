@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Button } from './ui';
 
 import screenshot1 from '../assets/screenshots/image1.png';
 import screenshot2 from '../assets/screenshots/image2.png';
@@ -92,36 +93,35 @@ export function ImageCarousel() {
       </div>
 
       {/* Left arrow */}
-      <button
+      <Button
+        variant="ghost"
+        btnSize="sm"
         onClick={goPrev}
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center
-                   bg-slate-900/70 hover:bg-slate-900/90 text-white rounded-full
-                   transition-all backdrop-blur-sm border border-slate-700/50
-                   opacity-0 group-hover:opacity-100 cursor-pointer"
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full backdrop-blur-sm border border-slate-700/50 opacity-0 group-hover:opacity-100 bg-slate-900/70 hover:bg-slate-900/90 text-white"
         aria-label="Previous screenshot"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-      </button>
+      </Button>
 
       {/* Right arrow */}
-      <button
+      <Button
+        variant="ghost"
+        btnSize="sm"
         onClick={goNext}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center
-                   bg-slate-900/70 hover:bg-slate-900/90 text-white rounded-full
-                   transition-all backdrop-blur-sm border border-slate-700/50
-                   opacity-0 group-hover:opacity-100 cursor-pointer"
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full backdrop-blur-sm border border-slate-700/50 opacity-0 group-hover:opacity-100 bg-slate-900/70 hover:bg-slate-900/90 text-white"
         aria-label="Next screenshot"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-      </button>
+      </Button>
 
       {/* Dot indicators */}
       <div className="flex items-center justify-center gap-2 mt-4">
         {images.map((_, index) => (
+          // allow-raw-html: dot indicator — dynamic width (w-6/w-2.5) + no children, no Button variant covers it
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}

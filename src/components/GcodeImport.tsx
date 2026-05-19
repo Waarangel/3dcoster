@@ -3,6 +3,7 @@ import type { Asset } from '../types';
 import { parseGcode, matchFilamentType, findBestFilamentMatch, readGcodeFile } from '../utils/gcodeParser';
 import { parseThreeMf } from '../utils/threeMfParser';
 import { NewBadge } from './NewBadge';
+import { Button } from './ui';
 
 interface GcodeImportProps {
   assets: Asset[];
@@ -230,14 +231,16 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
               </div>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={() => setSuccessInfo(null)}
-            className="text-slate-500 hover:text-slate-300 ml-2"
+            className="ml-2 text-slate-500 hover:text-slate-300"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
       )}
 
@@ -245,12 +248,14 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-2 flex items-start justify-between gap-3">
           <span>{error}</span>
-          <button
+          <Button
+            variant="ghost"
+            btnSize="sm"
             onClick={() => setError(null)}
             className="underline hover:text-red-300 whitespace-nowrap shrink-0"
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
 
@@ -278,6 +283,7 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
             <NewBadge feature="3mf-import" />
           </p>
           <p className="text-xs text-slate-500 mt-1">Supports Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, SuperSlicer, IdeaMaker + Bambu/Orca 3MF projects</p>
+          {/* allow-raw-html: hidden file picker — primitive base styles would bleed through `hidden` */}
           <input
             ref={fileInputRef}
             type="file"

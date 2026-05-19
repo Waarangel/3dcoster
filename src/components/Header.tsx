@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Button } from './ui';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -61,10 +62,12 @@ export function Header() {
         </div>
 
         {/* Hamburger button - visible only below md */}
-        <button
+        <Button
           ref={buttonRef}
+          variant="ghost"
+          btnSize="sm"
           onClick={() => setMobileMenuOpen((prev) => !prev)}
-          className="md:hidden flex items-center justify-center w-11 h-11 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors"
+          className="md:hidden w-11 h-11 rounded-lg"
           aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileMenuOpen}
         >
@@ -93,7 +96,7 @@ export function Header() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Mobile menu dropdown */}
