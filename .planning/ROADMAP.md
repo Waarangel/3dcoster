@@ -15,7 +15,7 @@
 
 ## Phases
 
-- [ ] **Phase 7: Styling Primitives Pass** — Replace raw HTML form elements in main components with shared ui/ primitives
+- [x] **Phase 7: Styling Primitives Pass** — Replace raw HTML form elements in main components with shared ui/ primitives (completed 2026-05-19)
 - [ ] **Phase 8: Empty States with CTAs** — Every blank screen guides users with an empty-state component
 - [ ] **Phase 9: Skeleton Loading States** — Skeleton shapes replace plain "Loading..." text during IndexedDB load
 - [ ] **Phase 10: Dark Mode** — First-class light/dark/system theme toggle; all surfaces correct in both themes
@@ -38,8 +38,8 @@
 **Plans**: 3 plans
 **Plans**:
 - [x] 07-03-PLAN.md — Wave 0: Install lint guard (script + package.json + pre-commit hook) and refactor 9 lightweight components (MaintenanceAlertModal, UpdateBanner, FilamentSelector, Header, GcodeImport, ImageCarousel, CsvImportModal, UserProfileModal, BambuImport); finishes with 5 adversarial lint tests
-- [ ] 07-01-PLAN.md — Wave 1: Refactor SettingsModal (44), CostCalculator (32), PrinterSettings (18) — heaviest tier (94 raw elements)
-- [ ] 07-02-PLAN.md — Wave 1: Refactor AssetLibrary (40, contains the only `<form>`) and JobsManager (13) — medium tier (53 raw elements)
+- [x] 07-01-PLAN.md — Wave 1: Refactor SettingsModal (44), CostCalculator (32), PrinterSettings (18) — heaviest tier (94 raw elements)
+- [x] 07-02-PLAN.md — Wave 1: Refactor AssetLibrary (40, contains the only `<form>`) and JobsManager (13) — medium tier (53 raw elements)
 **Note**: Internal refactoring only — no user-visible change. No NEW badge. Phases 8, 9, and 10 depend on this pass so they build new UI surfaces on consistent primitives from the start.
 
 ### Phase 8: Empty States with CTAs
@@ -108,7 +108,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Styling Primitives Pass | 1/3 | In Progress|  |
+| 7. Styling Primitives Pass | 3/3 | Complete   | 2026-05-19 |
 | 8. Empty States with CTAs | 0/TBD | Not started | - |
 | 9. Skeleton Loading States | 0/TBD | Not started | - |
 | 10. Dark Mode | 0/TBD | Not started | - |
