@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { PrintJob, Material, PrinterConfig, PrinterInstance, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
+import { Button, Input, Select } from './ui';
 
 interface JobsManagerProps {
   jobs: PrintJob[];
@@ -295,24 +296,26 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      <button
+                      <Button
+                        variant="success"
+                        btnSize="sm"
                         onClick={(e) => { e.stopPropagation(); setShowSaleForm(true); setSalePrice(job.sellingPrice); }}
-                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                       >
                         Record Sale
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        btnSize="sm"
                         onClick={(e) => { e.stopPropagation(); handleEditJob(); }}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                       >
                         Edit
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="danger"
+                        btnSize="sm"
                         onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }}
-                        className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm rounded-lg transition-colors"
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
 
                     {/* Recent sales */}
@@ -350,34 +353,31 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Quantity</label>
-                  <input
+                  <Input
                     type="number"
                     min="1"
                     value={saleQuantity}
                     onChange={e => setSaleQuantity(parseInt(e.target.value) || 1)}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Price per Unit ($)</label>
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     value={salePrice}
                     onChange={e => setSalePrice(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Customer Name (optional)</label>
-                <input
+                <Input
                   type="text"
                   value={customerName}
                   onChange={e => setCustomerName(e.target.value)}
                   placeholder="Facebook Marketplace buyer"
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -387,28 +387,26 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Method</label>
-                    <select
+                    <Select
                       value={saleShippingMethod}
                       onChange={e => {
                         const method = e.target.value as ShippingMethodType;
                         setSaleShippingMethod(method);
                         setSaleShippingCost(getDefaultShippingCost(method));
                       }}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     >
                       {availableShippingMethods.map(m => (
                         <option key={m.value} value={m.value}>{m.label}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Cost ($)</label>
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       value={saleShippingCost}
                       onChange={e => setSaleShippingCost(parseFloat(e.target.value) || 0)}
-                      className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -417,15 +415,14 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
               {/* Marketplace for this sale */}
               <div>
                 <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Marketplace</div>
-                <select
+                <Select
                   value={saleMarketplace}
                   onChange={e => setSaleMarketplace(e.target.value as MarketplaceType)}
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 >
                   {availableMarketplaces.map(m => (
                     <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {/* Summary */}
@@ -455,18 +452,19 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
               </div>
 
               <div className="flex gap-2 pt-2">
-                <button
+                <Button
+                  variant="success"
                   onClick={handleRecordSale}
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                  className="flex-1"
                 >
                   Record Sale
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
                   onClick={() => setShowSaleForm(false)}
-                  className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -482,18 +480,18 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
               Delete this job and all associated sales records? This cannot be undone.
             </p>
             <div className="flex gap-2 justify-end">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setDeleteConfirmJobId(null)}
-                className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={confirmDeleteJob}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                className="bg-red-600 hover:bg-red-700"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>
