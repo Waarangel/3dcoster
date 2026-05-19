@@ -68,7 +68,7 @@
   3. Skeleton components are replaced by real content (or Phase 8 empty states) once data loads — no flicker, no skeleton persisting after load
 **Plans**: 2 plans
 **Plans**:
-- [ ] 09-01-PLAN.md — Wave 1: Create Skeleton primitive (variants line/card/circle, animate-pulse, role=status) with RED→GREEN unit tests; update src/components/ui/index.ts to export Skeleton + re-export shouldShowEmptyState
+- [x] 09-01-PLAN.md — Wave 1: Create Skeleton primitive (variants line/card/circle, animate-pulse, role=status) with RED→GREEN unit tests; update src/components/ui/index.ts to export Skeleton + re-export shouldShowEmptyState
 - [ ] 09-02-PLAN.md — Wave 2: Remove App.tsx global isLoading gate + prune 5 unused destructurings + drill 3 isLoading props; wire AssetListSkeleton (mobile+desktop), JobsListSkeleton (single-return refactor), PrinterListSkeleton co-located in consumers; D-10 ternary order; manual UAT checkpoint
 **UI hint**: yes
 
@@ -102,7 +102,7 @@
 |-------|----------------|--------|-----------|
 | 7. Styling Primitives Pass | 3/3 | Complete    | 2026-05-19 |
 | 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
-| 9. Skeleton Loading States | 0/2 | Not started | - |
+| 9. Skeleton Loading States | 1/2 | In Progress|  |
 | 10. Cost-Calculation Unit Tests | 0/TBD | Not started | - |
 | 11. Performance Optimization | 0/TBD | Not started | - |
 
