@@ -294,6 +294,7 @@ function App() {
             userCurrency={userProfile.currency}
             onDeleteJob={deleteJob}
             onEditJob={handleEditJob}
+            onSwitchTab={setActiveTab}
           />
         )}
 
