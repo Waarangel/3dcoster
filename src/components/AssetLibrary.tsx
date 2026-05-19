@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
 import { NewBadge } from './NewBadge';
 import { CsvImportModal } from './CsvImportModal';
+import { Button, Input, Select } from './ui';
 
 interface AssetLibraryProps {
   assets: Asset[];
@@ -354,9 +355,11 @@ export function AssetLibrary({
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           {!isAdding && (
             <>
-              <button
+              <Button
+                variant="secondary"
+                btnSize="sm"
                 onClick={() => setShowCsvImport(true)}
-                className="relative flex-1 sm:flex-none px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                className="relative flex-1 sm:flex-none gap-1.5"
                 title="Import assets from CSV"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,19 +367,22 @@ export function AssetLibrary({
                 </svg>
                 <span className="hidden sm:inline">Import CSV</span>
                 <NewBadge feature="csv-import" className="absolute -top-3 -right-3" />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                btnSize="sm"
                 onClick={handleReset}
-                className="flex-1 sm:flex-none px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
+                className="flex-1 sm:flex-none"
               >
                 Reset {filterCategory === 'all' ? 'All' : getCategoryLabel(filterCategory)}
-              </button>
-              <button
+              </Button>
+              <Button
+                btnSize="sm"
                 onClick={startAdding}
-                className="flex-1 sm:flex-none px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                className="flex-1 sm:flex-none"
               >
                 + Add {filterCategory === 'all' ? 'Asset' : getCategoryLabel(filterCategory).replace(/s$/, '')}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -384,6 +390,7 @@ export function AssetLibrary({
 
       {/* Filter tabs + Search */}
       <div className="flex gap-2 mb-4 flex-wrap items-center">
+        {/* allow-raw-html */}
         <button
           onClick={() => handleFilterChange('all')}
           className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors ${
@@ -395,6 +402,7 @@ export function AssetLibrary({
           All
         </button>
         {allCategories.map(cat => (
+          /* allow-raw-html */
           <button
             key={cat}
             onClick={() => handleFilterChange(cat)}
@@ -412,20 +420,22 @@ export function AssetLibrary({
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input
+          <Input
             type="text"
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             placeholder="Search..."
-            className="w-full bg-slate-700 text-white text-sm pl-9 pr-8 py-2 min-h-[40px] rounded-lg border-0 focus:ring-2 focus:ring-blue-500 placeholder-slate-500"
+            className="pl-9 pr-8 placeholder-slate-500"
           />
           {searchQuery && (
-            <button
+            <Button
+              variant="ghost"
+              btnSize="sm"
               onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-lg leading-none"
             >
               ×
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -441,11 +451,10 @@ export function AssetLibrary({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Name</label>
-              <input
+              <Input
                 type="text"
                 value={formData.name || ''}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 placeholder={isPrinterForm ? "e.g., Creality Ender 3 V3" : "Asset name"}
                 required
               />
@@ -454,40 +463,43 @@ export function AssetLibrary({
               <label className="block text-xs text-slate-400 mb-1">Category</label>
               {showCustomCategory ? (
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={customCategoryInput}
                     onChange={e => setCustomCategoryInput(e.target.value)}
-                    className="flex-1 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                    className="flex-1"
                     placeholder="e.g., resin, packaging, electronics"
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    btnSize="sm"
                     onClick={() => { setShowCustomCategory(false); setCustomCategoryInput(''); }}
-                    className="px-2 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <select
+                  <Select
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value as AssetCategory })}
-                    className="flex-1 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                    className="flex-1"
                   >
                     {allCategories.map(cat => (
                       <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
                     ))}
-                  </select>
-                  <button
+                  </Select>
+                  <Button
                     type="button"
+                    variant="secondary"
+                    btnSize="sm"
                     onClick={() => setShowCustomCategory(true)}
-                    className="px-2 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded whitespace-nowrap"
+                    className="whitespace-nowrap"
                     title="Create custom category"
                   >
                     + New
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -495,11 +507,10 @@ export function AssetLibrary({
             {/* Brand field for all */}
             <div>
               <label className="block text-xs text-slate-400 mb-1">Brand (optional)</label>
-              <input
+              <Input
                 type="text"
                 value={formData.brand || ''}
                 onChange={e => setFormData({ ...formData, brand: e.target.value })}
-                className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 placeholder={isPrinterForm ? "e.g., Creality, Prusa, Bambu" : "e.g., Bambu Lab"}
               />
             </div>
@@ -509,55 +520,50 @@ export function AssetLibrary({
               <>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     value={formData.purchasePrice || ''}
                     onChange={e => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="299"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Wattage (avg during print)</label>
-                  <input
+                  <Input
                     type="number"
                     value={formData.wattage || ''}
                     onChange={e => setFormData({ ...formData, wattage: parseFloat(e.target.value) })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="100"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Expected Lifespan (hours)</label>
-                  <input
+                  <Input
                     type="number"
                     value={formData.expectedLifespanHours || ''}
                     onChange={e => setFormData({ ...formData, expectedLifespanHours: parseFloat(e.target.value) })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="5000"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Nozzle Cost ($)</label>
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     value={formData.nozzleCost || ''}
                     onChange={e => setFormData({ ...formData, nozzleCost: parseFloat(e.target.value) })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="10"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Nozzle Lifespan (cm³)</label>
-                  <input
+                  <Input
                     type="number"
                     value={formData.nozzleLifespanCm3 || ''}
                     onChange={e => setFormData({ ...formData, nozzleLifespanCm3: parseFloat(e.target.value) })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="15000"
                   />
                 </div>
@@ -567,45 +573,41 @@ export function AssetLibrary({
               <>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Unit (g, ml, sheet, etc.)</label>
-                  <input
+                  <Input
                     type="text"
                     value={formData.unit || ''}
                     onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="g"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Package Cost ($)</label>
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     value={formData.packageCost || ''}
                     onChange={e => setFormData({ ...formData, packageCost: parseFloat(e.target.value) })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="20.00"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Units per Package</label>
-                  <input
+                  <Input
                     type="number"
                     value={formData.unitsPerPackage || ''}
                     onChange={e => setFormData({ ...formData, unitsPerPackage: parseInt(e.target.value) })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="1000"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Lifespan (uses, optional)</label>
-                  <input
+                  <Input
                     type="number"
                     value={formData.lifespanUnits || ''}
                     onChange={e => setFormData({ ...formData, lifespanUnits: parseInt(e.target.value) || undefined })}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                     placeholder="For reusable items"
                   />
                 </div>
@@ -614,11 +616,10 @@ export function AssetLibrary({
           </div>
           <div>
             <label className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
-            <input
+            <Input
               type="text"
               value={formData.notes || ''}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
               placeholder="Any notes..."
             />
           </div>
@@ -626,21 +627,21 @@ export function AssetLibrary({
           <div>
             <label className="block text-xs text-slate-400 mb-1">Tags (optional)</label>
             <div className="flex gap-2 mb-2">
-              <input
+              <Input
                 type="text"
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
-                className="flex-1 bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                className="flex-1"
                 placeholder="Add a tag and press Enter..."
               />
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={addTag}
-                className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg"
               >
                 Add
-              </button>
+              </Button>
             </div>
             {formData.tags && formData.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
@@ -650,32 +651,31 @@ export function AssetLibrary({
                     className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-slate-600 text-slate-300"
                   >
                     {tag}
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      btnSize="sm"
                       onClick={() => removeTag(tag)}
-                      className="text-slate-400 hover:text-red-400"
+                      className="text-slate-400 hover:text-red-400 !p-0 !min-h-0"
                     >
                       ×
-                    </button>
+                    </Button>
                   </span>
                 ))}
               </div>
             )}
           </div>
           <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-            >
+            <Button type="submit">
               {editingId ? 'Update' : 'Add'} {isPrinterForm ? 'Printer' : 'Material'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={cancelEdit}
-              className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -683,10 +683,10 @@ export function AssetLibrary({
       {/* Mobile Sort */}
       <div className="md:hidden flex items-center gap-2 mb-3">
         <span className="text-sm text-slate-400">Sort:</span>
-        <select
+        <Select
+          selectSize="sm"
           value={sortField}
           onChange={e => { setSortField(e.target.value); setCurrentPage(1); }}
-          className="bg-slate-700 text-white text-sm px-2 py-1.5 min-h-[40px] rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
         >
           <option value="name">Name</option>
           <option value="brand">Brand</option>
@@ -703,14 +703,15 @@ export function AssetLibrary({
               <option value="packageCost">Package Cost</option>
             </>
           )}
-        </select>
-        <button
+        </Select>
+        <Button
+          variant="secondary"
+          btnSize="sm"
           onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
-          className="px-2 py-1.5 min-h-[40px] bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
           title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
         >
           {sortDirection === 'asc' ? '\u2191 A-Z' : '\u2193 Z-A'}
-        </button>
+        </Button>
       </div>
 
       {/* Mobile Card View */}
@@ -816,18 +817,20 @@ export function AssetLibrary({
 
                 {/* Action buttons */}
                 <div className="flex gap-2 pt-2 border-t border-slate-700/50">
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={() => startEdit(asset)}
-                    className="flex-1 min-h-[44px] px-4 py-2 bg-slate-700 hover:bg-slate-600 text-blue-400 text-sm font-medium rounded-lg transition-colors"
+                    className="flex-1 text-blue-400"
                   >
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
                     onClick={() => onDeleteAsset(asset.id)}
-                    className="flex-1 min-h-[44px] px-4 py-2 bg-slate-700 hover:bg-slate-600 text-red-400 text-sm font-medium rounded-lg transition-colors"
+                    className="flex-1 text-red-400"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -889,18 +892,22 @@ export function AssetLibrary({
                     ${asset.nozzleCost?.toFixed(2) || '0.00'}
                   </td>
                   <td className="py-2 text-right">
-                    <button
+                    <Button
+                      variant="ghost"
+                      btnSize="sm"
                       onClick={() => startEdit(asset)}
                       className="text-blue-400 hover:text-blue-300 mr-2"
                     >
                       Edit
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      btnSize="sm"
                       onClick={() => onDeleteAsset(asset.id)}
                       className="text-red-400 hover:text-red-300"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -958,18 +965,22 @@ export function AssetLibrary({
                     {asset.currency || '$'} {(asset.packageCost ?? 0).toFixed(2)}
                   </td>
                   <td className="py-2 text-right">
-                    <button
+                    <Button
+                      variant="ghost"
+                      btnSize="sm"
                       onClick={() => startEdit(asset)}
                       className="text-blue-400 hover:text-blue-300 mr-2"
                     >
                       Edit
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      btnSize="sm"
                       onClick={() => onDeleteAsset(asset.id)}
                       className="text-red-400 hover:text-red-300"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -986,17 +997,17 @@ export function AssetLibrary({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-slate-400">Show:</span>
-            <select
+            <Select
+              selectSize="sm"
               value={itemsPerPage}
               onChange={e => handleItemsPerPageChange(Number(e.target.value))}
-              className="bg-slate-700 text-white text-sm px-2 py-1 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
               <option value={0}>All</option>
-            </select>
+            </Select>
           </div>
           <div className="text-sm text-slate-400">
             {itemsPerPage === 0 ? (
@@ -1008,13 +1019,14 @@ export function AssetLibrary({
         </div>
         {totalPages > 1 && itemsPerPage !== 0 && (
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="secondary"
+              btnSize="sm"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-white text-sm rounded-lg transition-colors"
             >
               Previous
-            </button>
+            </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
                 // Show first pages, current page area, and last pages
@@ -1029,27 +1041,26 @@ export function AssetLibrary({
                   page = currentPage - 4 + i;
                 }
                 return (
-                  <button
+                  <Button
                     key={page}
+                    variant={currentPage === page ? 'primary' : 'secondary'}
+                    btnSize="sm"
                     onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 text-sm rounded-lg transition-colors ${
-                      currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'
-                    }`}
+                    className={currentPage === page ? '!w-8 !min-w-0 !min-h-0 !px-0 h-8' : '!w-8 !min-w-0 !min-h-0 !px-0 h-8 text-slate-400 hover:text-white'}
                   >
                     {page}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
-            <button
+            <Button
+              variant="secondary"
+              btnSize="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-white text-sm rounded-lg transition-colors"
             >
               Next
-            </button>
+            </Button>
           </div>
         )}
       </div>
