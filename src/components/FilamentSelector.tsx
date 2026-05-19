@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Material, Currency } from '../types';
+import { Button, Input } from './ui';
 
 interface FilamentSelectorProps {
   materials: Material[];
@@ -98,10 +99,12 @@ export function FilamentSelector({
       {/* Main dropdown trigger */}
       <div ref={containerRef} className="relative">
         <label className="block text-xs text-slate-400 mb-1">Filament</label>
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          fullWidth
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 text-left flex justify-between items-center min-h-[44px]"
+          className="!justify-between text-left"
         >
           <span className={selectedFilament ? 'text-white' : 'text-slate-400'}>
             {selectedFilament
@@ -111,7 +114,7 @@ export function FilamentSelector({
           <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-        </button>
+        </Button>
 
         {/* Dropdown menu */}
         {isOpen && (
@@ -165,12 +168,11 @@ export function FilamentSelector({
       {selectedFilament && (
         <div>
           <label className="block text-xs text-slate-400 mb-1">Price per gram ({editedCurrency})</label>
-          <input
+          <Input
             type="number"
             step="0.001"
             value={editedPrice || ''}
             onChange={e => onPriceChange(parseFloat(e.target.value) || 0)}
-            className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
           />
         </div>
       )}

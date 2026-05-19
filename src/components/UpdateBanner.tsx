@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Button } from './ui';
 
 // Current app version - update this when releasing new versions
 export const APP_VERSION = '1.3.1';
@@ -88,21 +89,25 @@ export function UpdateBanner() {
       <span>
         A new version ({updateInfo.version}) is available!
       </span>
-      <button
+      <Button
+        variant="ghost"
+        btnSize="sm"
         onClick={handleDownload}
-        className="px-3 py-1 bg-white text-blue-600 rounded font-medium hover:bg-blue-50 transition-colors"
+        className="bg-white text-blue-600 hover:bg-blue-50 font-medium"
       >
         Download
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        btnSize="sm"
         onClick={handleDismiss}
-        className="text-white/80 hover:text-white transition-colors"
+        className="text-white/80 hover:text-white"
         aria-label="Dismiss"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
-      </button>
+      </Button>
     </div>
   );
 }

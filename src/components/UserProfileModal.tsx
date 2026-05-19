@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG, getCurrencySymbol } from '../utils/currency';
 import { NewBadge } from './NewBadge';
+import { Button, Input, Select } from './ui';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -51,14 +52,11 @@ export function UserProfileModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <h2 className="text-lg font-semibold text-white">User Settings</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1"
-          >
+          <Button variant="ghost" btnSize="sm" onClick={onClose}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -69,12 +67,11 @@ export function UserProfileModal({
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Name (optional)</label>
-                <input
+                <Input
                   type="text"
                   value={userProfile.name || ''}
                   onChange={e => onProfileChange({ ...userProfile, name: e.target.value || undefined })}
                   placeholder="Your name"
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -82,7 +79,7 @@ export function UserProfileModal({
                   <span>Currency</span>
                   <NewBadge feature="multi-currency" />
                 </label>
-                <select
+                <Select
                   value={userCurrency}
                   onChange={e => {
                     const currency = e.target.value as Currency;
@@ -96,27 +93,25 @@ export function UserProfileModal({
                       },
                     });
                   }}
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(CURRENCY_CONFIG).map(([code, config]) => (
                     <option key={code} value={code}>
                       {code} - {config.name}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <p className="text-xs text-slate-500 mt-1">
                   Filament prices will show only your currency.
                 </p>
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Your Hourly Rate ({currencySymbol})</label>
-                <input
+                <Input
                   type="number"
                   step="0.01"
                   value={userProfile.laborHourlyRate || ''}
                   onChange={e => onProfileChange({ ...userProfile, laborHourlyRate: parseFloat(e.target.value) || 0 })}
                   placeholder="20"
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   Value your time! Includes prep, monitoring, and post-processing.
@@ -134,7 +129,7 @@ export function UserProfileModal({
             <div className="grid grid-cols-1 gap-3">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Street Address</label>
-                <input
+                <Input
                   type="text"
                   value={userProfile.address?.street || ''}
                   onChange={e => onProfileChange({
@@ -142,13 +137,12 @@ export function UserProfileModal({
                     address: { ...userProfile.address, street: e.target.value || undefined, country: userProfile.address?.country || CURRENCY_CONFIG[userCurrency].country },
                   })}
                   placeholder="123 Main St"
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">City</label>
-                  <input
+                  <Input
                     type="text"
                     value={userProfile.address?.city || ''}
                     onChange={e => onProfileChange({
@@ -156,12 +150,11 @@ export function UserProfileModal({
                       address: { ...userProfile.address, city: e.target.value || undefined, country: userProfile.address?.country || CURRENCY_CONFIG[userCurrency].country },
                     })}
                     placeholder="Toronto"
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Province/State/Region</label>
-                  <input
+                  <Input
                     type="text"
                     value={userProfile.address?.province || ''}
                     onChange={e => onProfileChange({
@@ -169,14 +162,13 @@ export function UserProfileModal({
                       address: { ...userProfile.address, province: e.target.value || undefined, country: userProfile.address?.country || CURRENCY_CONFIG[userCurrency].country },
                     })}
                     placeholder="ON"
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Postal/ZIP Code</label>
-                  <input
+                  <Input
                     type="text"
                     value={userProfile.address?.postalCode || ''}
                     onChange={e => onProfileChange({
@@ -184,16 +176,14 @@ export function UserProfileModal({
                       address: { ...userProfile.address, postalCode: e.target.value || undefined, country: userProfile.address?.country || CURRENCY_CONFIG[userCurrency].country },
                     })}
                     placeholder="M5V 1A1"
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Country</label>
-                  <input
+                  <Input
                     type="text"
                     value={CURRENCY_CONFIG[userCurrency].countryName}
                     disabled
-                    className="w-full bg-slate-600 text-slate-400 text-sm px-3 py-2 rounded-lg border-0 cursor-not-allowed"
                   />
                 </div>
               </div>

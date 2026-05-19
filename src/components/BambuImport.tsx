@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { Asset } from '../types';
 import { bambuFilaments, BAMBU_DATA_LAST_UPDATED, BAMBU_DATA_CURRENCY, BAMBU_DATA_SOURCE } from '../data/bambuFilaments';
+import { Button } from './ui';
 
 interface BambuImportProps {
   existingAssets: Asset[];
@@ -95,9 +96,11 @@ export function BambuImport({ existingAssets, onImportAssets, onUpdateAsset }: B
 
   if (!isOpen) {
     return (
-      <button
+      <Button
+        variant="success"
+        btnSize="sm"
         onClick={handleOpen}
-        className="flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-emerald-600/80 hover:bg-emerald-600 text-white text-sm rounded-lg transition-colors"
+        className="gap-1.5"
         title="Import Bambu Lab filament catalog with prices"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +108,7 @@ export function BambuImport({ existingAssets, onImportAssets, onUpdateAsset }: B
         </svg>
         <span className="hidden sm:inline">Bambu Prices</span>
         <span className="sm:hidden">Bambu</span>
-      </button>
+      </Button>
     );
   }
 
@@ -121,14 +124,15 @@ export function BambuImport({ existingAssets, onImportAssets, onUpdateAsset }: B
                 {bambuFilaments.length} products | Prices in {BAMBU_DATA_CURRENCY} from {BAMBU_DATA_SOURCE} | Updated {BAMBU_DATA_LAST_UPDATED}
               </p>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              btnSize="sm"
               onClick={() => setIsOpen(false)}
-              className="text-slate-400 hover:text-white transition-colors p-1"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
 
           {/* Status badges */}
@@ -148,36 +152,42 @@ export function BambuImport({ existingAssets, onImportAssets, onUpdateAsset }: B
 
           {/* Select all */}
           <div className="flex items-center gap-2 mt-3">
-            <button
+            <Button
+              variant="ghost"
+              btnSize="sm"
               onClick={toggleAll}
-              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs"
             >
               {selectedIndices.size === bambuFilaments.length ? 'Deselect All' : 'Select All'}
-            </button>
+            </Button>
             <span className="text-xs text-slate-500">|</span>
-            <button
+            <Button
+              variant="ghost"
+              btnSize="sm"
               onClick={() => {
                 const newOnly = new Set<number>();
                 analysis.forEach(a => { if (!a.existing) newOnly.add(a.index); });
                 setSelectedIndices(newOnly);
               }}
-              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs"
             >
               New Only
-            </button>
+            </Button>
             {priceChangedProducts.length > 0 && (
               <>
                 <span className="text-xs text-slate-500">|</span>
-                <button
+                <Button
+                  variant="ghost"
+                  btnSize="sm"
                   onClick={() => {
                     const changed = new Set<number>();
                     analysis.forEach(a => { if (a.priceChanged) changed.add(a.index); });
                     setSelectedIndices(changed);
                   }}
-                  className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                  className="text-xs"
                 >
                   Price Changes Only
-                </button>
+                </Button>
               </>
             )}
           </div>
@@ -196,6 +206,7 @@ export function BambuImport({ existingAssets, onImportAssets, onUpdateAsset }: B
                   ${existing && !priceChanged ? 'opacity-50' : ''}
                 `}
               >
+                {/* allow-raw-html: selection checkbox with custom border/bg/text — Input primitive base styles would override these (L-4) */}
                 <input
                   type="checkbox"
                   checked={isSelected}
@@ -244,19 +255,21 @@ export function BambuImport({ existingAssets, onImportAssets, onUpdateAsset }: B
               {selectedNewCount === 0 && selectedUpdateCount === 0 && <span>Nothing selected</span>}
             </div>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="secondary"
+                btnSize="sm"
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="success"
+                btnSize="sm"
                 onClick={handleImport}
                 disabled={selectedIndices.size === 0}
-                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:text-slate-400 text-white text-sm rounded-lg transition-colors"
               >
                 Import Selected
-              </button>
+              </Button>
             </div>
           </div>
         </div>
