@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PrinterConfig, PrinterInstance, ElectricityConfig, PrintJob } from '../types';
+import { Button, Input, Select } from './ui';
 
 interface PrinterSettingsProps {
   printers: PrinterConfig[];
@@ -75,12 +76,9 @@ export function PrinterSettings({
             <h2 className="text-lg font-semibold text-white">My Printers</h2>
             <p className="text-xs text-slate-400 mt-1">Add your specific machines with nicknames to track hours</p>
           </div>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-          >
+          <Button btnSize="sm" onClick={() => setShowAddForm(true)}>
             + Add Printer
-          </button>
+          </Button>
         </div>
 
         {/* Add Printer Form */}
@@ -90,34 +88,31 @@ export function PrinterSettings({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Nickname *</label>
-                <input
+                <Input
                   type="text"
                   value={newInstanceNickname}
                   onChange={e => setNewInstanceNickname(e.target.value)}
                   placeholder="e.g., Office P1S, Garage A1"
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Printer Model</label>
-                <select
+                <Select
                   value={newInstancePrinterId}
                   onChange={e => setNewInstancePrinterId(e.target.value)}
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 >
                   {printers.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Starting Hours</label>
-                <input
+                <Input
                   type="number"
                   value={newInstanceHours}
                   onChange={e => setNewInstanceHours(parseFloat(e.target.value) || 0)}
                   placeholder="0"
-                  className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -128,21 +123,19 @@ export function PrinterSettings({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
-                  <input
+                  <Input
                     type="number"
                     value={newInstancePurchasePrice ?? selectedPrinterConfig?.purchasePrice ?? ''}
                     onChange={e => setNewInstancePurchasePrice(e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder={selectedPrinterConfig?.purchasePrice?.toString() || '0'}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="text-xs text-slate-500 mt-1">What you paid</p>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Recovery Period</label>
-                  <select
+                  <Select
                     value={newInstanceRecoveryMonths}
                     onChange={e => setNewInstanceRecoveryMonths(parseInt(e.target.value))}
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={3}>3 months</option>
                     <option value={6}>6 months</option>
@@ -150,17 +143,16 @@ export function PrinterSettings({
                     <option value={18}>18 months</option>
                     <option value={24}>24 months (2 years)</option>
                     <option value={36}>36 months (3 years)</option>
-                  </select>
+                  </Select>
                   <p className="text-xs text-slate-500 mt-1">Target to break even</p>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Monthly Print Hours</label>
-                  <input
+                  <Input
                     type="number"
                     value={newInstanceMonthlyHours}
                     onChange={e => setNewInstanceMonthlyHours(parseFloat(e.target.value) || 0)}
                     placeholder="40"
-                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="text-xs text-slate-500 mt-1">Expected usage</p>
                 </div>
@@ -185,19 +177,19 @@ export function PrinterSettings({
             </div>
 
             <div className="flex gap-2 mt-4">
-              <button
+              <Button
+                variant="success"
                 onClick={handleAddInstance}
                 disabled={!newInstanceNickname.trim()}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white text-sm rounded-lg transition-colors"
               >
                 Add Printer
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -242,39 +234,35 @@ export function PrinterSettings({
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Nickname</label>
-                          <input
+                          <Input
                             type="text"
                             value={instance.nickname}
                             onChange={e => onUpdateInstance({ ...instance, nickname: e.target.value })}
-                            className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Print Hours</label>
-                          <input
+                          <Input
                             type="number"
                             value={instance.printHours}
                             onChange={e => onUpdateInstance({ ...instance, printHours: parseFloat(e.target.value) || 0 })}
-                            className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
-                          <input
+                          <Input
                             type="number"
                             value={instance.actualPurchasePrice ?? config?.purchasePrice ?? ''}
                             onChange={e => onUpdateInstance({ ...instance, actualPurchasePrice: e.target.value ? parseFloat(e.target.value) : undefined })}
-                            className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Recovery Period</label>
-                          <select
+                          <Select
                             value={instance.recoveryMonths ?? 12}
                             onChange={e => onUpdateInstance({ ...instance, recoveryMonths: parseInt(e.target.value) })}
-                            className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                           >
                             <option value={3}>3 months</option>
                             <option value={6}>6 months</option>
@@ -282,24 +270,22 @@ export function PrinterSettings({
                             <option value={18}>18 months</option>
                             <option value={24}>24 months</option>
                             <option value={36}>36 months</option>
-                          </select>
+                          </Select>
                         </div>
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Monthly Print Hours</label>
-                          <input
+                          <Input
                             type="number"
                             value={instance.estimatedMonthlyPrintHours ?? 40}
                             onChange={e => onUpdateInstance({ ...instance, estimatedMonthlyPrintHours: parseFloat(e.target.value) || 0 })}
-                            className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div className="flex items-end">
-                          <button
+                          <Button
                             onClick={() => setEditingInstanceId(null)}
-                            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                           >
                             Done
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -335,18 +321,22 @@ export function PrinterSettings({
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button
+                        <Button
+                          variant="secondary"
+                          btnSize="sm"
                           onClick={() => setEditingInstanceId(instance.id)}
-                          className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded transition-colors"
+                          className="text-xs"
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="danger"
+                          btnSize="sm"
                           onClick={() => handleDeleteInstance(instance.id)}
-                          className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs rounded transition-colors"
+                          className="text-xs"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -362,12 +352,12 @@ export function PrinterSettings({
         <h2 className="text-lg font-semibold text-white mb-4">Electricity</h2>
         <div>
           <label className="block text-xs text-slate-400 mb-1">Cost per kWh ($)</label>
-          <input
+          <Input
             type="number"
             step="0.01"
             value={electricity.costPerKwh}
             onChange={e => onElectricityChange({ costPerKwh: parseFloat(e.target.value) || 0 })}
-            className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 max-w-xs"
+            className="max-w-xs"
           />
         </div>
       </div>
