@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { PrinterInstance } from '../types';
+import { Button } from './ui';
 
 interface MaintenanceAlertModalProps {
   alert: { instanceId: string; hours: number } | null;
@@ -67,12 +68,9 @@ export function MaintenanceAlertModal({
 
         {/* Footer */}
         <div className="flex justify-end p-5 border-t border-slate-700">
-          <button
-            onClick={onDismiss}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
-          >
+          <Button onClick={onDismiss}>
             Got it
-          </button>
+          </Button>
         </div>
       </div>
     </div>
