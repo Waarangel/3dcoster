@@ -196,6 +196,8 @@ export interface UserProfile {
   name?: string;
   // Labor rate (what your time is worth)
   laborHourlyRate: number;
+  // Default profit margin (%) applied to new jobs and on clear/save
+  defaultProfitMargin?: number;
   // Address for shipping calculations
   address?: {
     street?: string;

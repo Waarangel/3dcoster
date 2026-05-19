@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Currency, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace } from '../types';
+import type { Currency, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
 import { NewBadge } from './NewBadge';
 
@@ -9,9 +9,11 @@ interface SettingsModalProps {
   shippingConfig: ShippingConfig;
   marketplaceFees: MarketplaceFees;
   userCurrency: Currency;
+  userProfile: UserProfile;
   onShippingChange: (config: ShippingConfig) => void;
   onMarketplaceFeesChange: (fees: MarketplaceFees) => void;
   onResetMarketplaceFees: () => void;
+  onUserProfileChange: (profile: UserProfile) => void;
 }
 
 export function SettingsModal({
@@ -20,9 +22,11 @@ export function SettingsModal({
   shippingConfig,
   marketplaceFees,
   userCurrency,
+  userProfile,
   onShippingChange,
   onMarketplaceFeesChange,
   onResetMarketplaceFees,
+  onUserProfileChange,
 }: SettingsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const currencySymbol = CURRENCY_CONFIG[userCurrency].symbol;
@@ -30,7 +34,7 @@ export function SettingsModal({
   const fuelUnit = getFuelUnit(userCurrency);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'shipping' | 'carriers' | 'marketplaces'>('shipping');
+  const [activeTab, setActiveTab] = useState<'pricing' | 'shipping' | 'carriers' | 'marketplaces'>('pricing');
 
   // Custom carrier form state
   const [newCarrierName, setNewCarrierName] = useState('');
@@ -137,6 +141,7 @@ export function SettingsModal({
   if (!isOpen) return null;
 
   const tabs = [
+    { id: 'pricing' as const, label: 'Pricing', feature: 'default-profit-margin' },
     { id: 'shipping' as const, label: 'Delivery & Fuel', feature: null },
     { id: 'carriers' as const, label: 'Carriers', feature: 'custom-carriers' },
     { id: 'marketplaces' as const, label: 'Marketplaces', feature: 'configurable-marketplace-fees' },
@@ -176,20 +181,48 @@ export function SettingsModal({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
+              className={`relative flex-1 px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center ${
                 activeTab === tab.id
                   ? 'text-blue-400 border-b-2 border-blue-400 -mb-[1px]'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {tab.label}
-              {tab.feature && <NewBadge feature={tab.feature} />}
+              {tab.feature && <NewBadge feature={tab.feature} className="absolute -top-1 -right-1 pointer-events-none" />}
             </button>
           ))}
         </div>
 
         {/* Content */}
         <div className="p-4">
+          {/* Pricing Tab */}
+          {activeTab === 'pricing' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-medium text-slate-300 mb-3">Default Profit Margin</h3>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Profit Margin (%)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="99.9"
+                    value={userProfile.defaultProfitMargin ?? 30}
+                    onChange={e => {
+                      const parsed = parseFloat(e.target.value);
+                      const next = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0), 99.9) : 0;
+                      onUserProfileChange({ ...userProfile, defaultProfitMargin: next });
+                    }}
+                    className="w-full bg-slate-700 text-white text-sm px-3 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Applied to new jobs and when the form is cleared or a job is saved. You can still adjust the margin per job in the calculator.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Delivery & Fuel Tab */}
           {activeTab === 'shipping' && (
             <div className="space-y-6">

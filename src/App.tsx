@@ -220,9 +220,11 @@ function App() {
         shippingConfig={shippingConfig}
         marketplaceFees={marketplaceFees}
         userCurrency={userProfile.currency}
+        userProfile={userProfile}
         onShippingChange={updateShippingConfig}
         onMarketplaceFeesChange={updateMarketplaceFees}
         onResetMarketplaceFees={resetMarketplaceFees}
+        onUserProfileChange={updateUserProfile}
       />
 
       {/* Maintenance Alert Modal */}
@@ -272,6 +274,7 @@ function App() {
             printerInstances={printerInstances}
             electricity={electricity}
             laborHourlyRate={userProfile.laborHourlyRate}
+            defaultProfitMargin={userProfile.defaultProfitMargin ?? 30}
             userCurrency={userProfile.currency}
             shippingConfig={shippingConfig}
             onSaveJob={handleSaveJob}

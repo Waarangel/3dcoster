@@ -295,6 +295,7 @@ export function useUserProfile() {
   const defaultProfile: UserProfile = {
     currency: 'CAD',
     laborHourlyRate: 15,
+    defaultProfitMargin: 30,
     address: {
       country: 'CA',
     },

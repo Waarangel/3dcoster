@@ -16,6 +16,7 @@ interface CostCalculatorProps {
   printerInstances: PrinterInstance[];
   electricity: ElectricityConfig;
   laborHourlyRate: number;
+  defaultProfitMargin: number;
   userCurrency: Currency;
   shippingConfig: ShippingConfig;
   onSaveJob: (job: PrintJob, printHours: number) => void;
@@ -49,7 +50,7 @@ interface FilamentRow {
   editedCurrency: Currency;
 }
 
-export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, userCurrency, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
+export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
@@ -115,7 +116,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [materialsUsed, setMaterialsUsed] = useState<MaterialUsage[]>(() => getStoredValue('materialsUsed', []));
 
   // Pricing inputs (interlinked)
-  const [profitMarginPercent, setProfitMarginPercent] = useState(() => getStoredValue('profitMarginPercent', 30));
+  const [profitMarginPercent, setProfitMarginPercent] = useState(() => getStoredValue('profitMarginPercent', defaultProfitMargin));
   const [targetProfit, setTargetProfit] = useState(() => getStoredValue('targetProfit', 0));
   const [sellingPrice, setSellingPrice] = useState(() => getStoredValue('sellingPrice', 0));
   const [lastEdited, setLastEdited] = useState<'margin' | 'profit' | 'price'>(() => getStoredValue('lastEdited', 'margin'));
@@ -501,7 +502,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     setMaterialsUsed([]);
     setSellingPrice(0);
     setTargetProfit(0);
-    setProfitMarginPercent(30);
+    setProfitMarginPercent(defaultProfitMargin);
     setLastEdited('margin');
     setShippingMethod('local_pickup');
     setShippingDistanceKm(0);
