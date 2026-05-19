@@ -13,7 +13,7 @@ Accurate cost calculation for 3D prints so users can price jobs correctly, maint
 **Goal:** Establish a consistent component foundation so every subsequent free-tier milestone is built on the same primitives — no rework when v1.2+ features ship.
 
 **Target features:**
-- Styling primitives pass — replace raw `<button>`/`<input>`/`<select>` in CostCalculator, JobsManager, PrinterSettings with shared `src/components/ui/` primitives
+- [x] Styling primitives pass — raw `<button>`/`<input>`/`<select>`/`<textarea>` replaced across 14 main components with shared `src/components/ui/` primitives; grep-based lint guard + pre-commit hook active (Phase 7, shipped 2026-05-19)
 - Empty states with CTAs for every blank screen (assets, jobs, printers)
 - Skeleton loading states (replaces "Loading…" text)
 - Dark mode — first-class light/dark/system theme toggle
@@ -125,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-19 — Milestone v1.1 redefined as Polish & Foundation (Quote-to-Customer shifted to v1.2)*
+*Last updated: 2026-05-19 — Phase 7 (Styling Primitives Pass) shipped: 14 main components refactored onto shared UI primitives, lint guard active*
