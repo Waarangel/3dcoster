@@ -5,3 +5,4 @@ export { Textarea } from './Textarea';
 export { Card } from './Card';
 export { EmptyState, shouldShowEmptyState } from './EmptyState';
 export { Skeleton } from './Skeleton';
+export { InfoTooltip } from './InfoTooltip';

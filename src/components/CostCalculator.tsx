@@ -3,7 +3,7 @@ import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, Mater
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
-import { Button, Input, Select } from './ui';
+import { Button, Input, Select, InfoTooltip } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { calculateCost } from '../utils/costCalc';
 
@@ -755,105 +755,118 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             ))}
           </div>
 
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
-            <Input
-              type="number"
-              step="0.1"
-              compact
-              value={printTimeHours || ''}
-              onChange={e => setPrintTimeHours(parseFloat(e.target.value) || 0)}
-              placeholder="From slicer"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Model/STL Cost ({currencySymbol})</label>
-            <Input
-              type="number"
-              step="0.01"
-              compact
-              value={modelCost || ''}
-              onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
-              placeholder="0 if free"
-            />
-            {modelCost > 0 && (
-              <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
-                <input
-                  type="checkbox"
-                  checked={modelCostPerUnit}
-                  onChange={e => setModelCostPerUnit(e.target.checked)}
-                  className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
-                />
-                <span className="text-xs text-slate-400">Per-unit license (pay each print)</span>
-                <NewBadge feature="per-unit-licensing" />
-              </label>
-            )}
-          </div>
-
-          {modelCost > 0 && (
+          {/* Print parameters — flex-wrap so compact numerics tight-pack, URL gets its own row */}
+          <div className="lg:col-span-3 flex flex-wrap gap-x-4 gap-y-3">
             <div>
-              <label className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-                <span>Author Min Price ({currencySymbol})</span>
-                <NewBadge feature="author-min-price" />
-              </label>
+              <label className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
+              <Input
+                type="number"
+                step="0.1"
+                compact
+                value={printTimeHours || ''}
+                onChange={e => setPrintTimeHours(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Model/STL Cost ({currencySymbol})</label>
               <Input
                 type="number"
                 step="0.01"
                 compact
-                value={authorMinPrice || ''}
-                onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
-                placeholder="Optional"
+                value={modelCost || ''}
+                onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
+                placeholder="0"
               />
-              <p className="text-xs text-slate-500 mt-1">Warn if selling below this</p>
+              {modelCost > 0 && (
+                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                  {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
+                  <input
+                    type="checkbox"
+                    checked={modelCostPerUnit}
+                    onChange={e => setModelCostPerUnit(e.target.checked)}
+                    className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
+                  />
+                  <span className="text-xs text-slate-400">Per-unit license (pay each print)</span>
+                  <NewBadge feature="per-unit-licensing" />
+                </label>
+              )}
             </div>
-          )}
 
-          <div className="md:col-span-2 lg:col-span-3">
-            <label className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-              <span>Model/STL URL</span>
-              <NewBadge feature="model-url" />
-            </label>
-            <Input
-              type="url"
-              value={modelUrl}
-              onChange={e => setModelUrl(e.target.value)}
-              placeholder="https://makerworld.com/..."
-            />
-            <p className="text-xs text-slate-500 mt-1">Save the source link so you can find it again later (works for free models too)</p>
-          </div>
+            {modelCost > 0 && (
+              <div>
+                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <span>Author Min Price ({currencySymbol})</span>
+                  <InfoTooltip text="Warn if selling below this" />
+                  <NewBadge feature="author-min-price" />
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  compact
+                  value={authorMinPrice || ''}
+                  onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                />
+              </div>
+            )}
 
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Failure Rate (%, max 99)</label>
-            <Input
-              type="number"
-              min="0"
-              max="99"
-              value={failureRate || ''}
-              onChange={e => setFailureRate(Math.min(parseFloat(e.target.value) || 0, 99))}
-              placeholder="5"
-            />
-          </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
+              <Input
+                type="number"
+                min="0"
+                max="99"
+                compact
+                value={failureRate || ''}
+                onChange={e => setFailureRate(Math.min(parseFloat(e.target.value) || 0, 99))}
+                placeholder="5"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Prep Time (min)</label>
-            <Input
-              type="number"
-              value={prepTimeMinutes || ''}
-              onChange={e => setPrepTimeMinutes(parseInt(e.target.value) || 0)}
-              placeholder="Slicing, bed prep, etc."
-            />
-          </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Prep Time (min)</span>
+                <InfoTooltip text="Slicing, bed prep, etc." />
+              </label>
+              <Input
+                type="number"
+                compact
+                value={prepTimeMinutes || ''}
+                onChange={e => setPrepTimeMinutes(parseInt(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Post-Processing (min)</label>
-            <Input
-              type="number"
-              value={postProcessingMinutes || ''}
-              onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
-              placeholder="Support removal, sanding, etc."
-            />
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Post-Processing (min)</span>
+                <InfoTooltip text="Support removal, sanding, etc." />
+              </label>
+              <Input
+                type="number"
+                compact
+                value={postProcessingMinutes || ''}
+                onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="basis-full">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Model/STL URL</span>
+                <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
+                <NewBadge feature="model-url" />
+              </label>
+              <Input
+                type="url"
+                value={modelUrl}
+                onChange={e => setModelUrl(e.target.value)}
+                placeholder="https://makerworld.com/..."
+                className="max-w-2xl"
+              />
+            </div>
           </div>
         </div>
       </div>
