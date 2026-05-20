@@ -755,9 +755,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             ))}
           </div>
 
-          {/* Print parameters — flex-wrap so compact numerics tight-pack, URL gets its own row */}
+          {/* Row 1: print parameters — uniform min-w chunks, no height-changing children */}
           <div className="lg:col-span-3 flex flex-wrap gap-x-4 gap-y-3">
-            <div>
+            <div className="min-w-[160px]">
               <label className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
               <Input
                 type="number"
@@ -769,7 +769,67 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               />
             </div>
 
-            <div>
+            <div className="min-w-[160px]">
+              <label className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
+              <Input
+                type="number"
+                min="0"
+                max="99"
+                compact
+                value={failureRate || ''}
+                onChange={e => setFailureRate(Math.min(parseFloat(e.target.value) || 0, 99))}
+                placeholder="5"
+              />
+            </div>
+
+            <div className="min-w-[160px]">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Prep Time (min)</span>
+                <InfoTooltip text="Slicing, bed prep, etc." />
+              </label>
+              <Input
+                type="number"
+                compact
+                value={prepTimeMinutes || ''}
+                onChange={e => setPrepTimeMinutes(parseInt(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="min-w-[160px]">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Post-Processing (min)</span>
+                <InfoTooltip text="Support removal, sanding, etc." />
+              </label>
+              <Input
+                type="number"
+                compact
+                value={postProcessingMinutes || ''}
+                onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {/* Row 2: Model/STL group — URL first (wider), then Cost (+per-unit) and Author Min Price.
+              Placed last so the per-unit checkbox toggling doesn't push other params down. */}
+          <div className="lg:col-span-3 flex flex-wrap gap-x-4 gap-y-3">
+            <div className="flex-1 min-w-[280px]">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Model/STL URL</span>
+                <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
+                <NewBadge feature="model-url" />
+              </label>
+              <Input
+                type="url"
+                value={modelUrl}
+                onChange={e => setModelUrl(e.target.value)}
+                placeholder="https://makerworld.com/..."
+                className="max-w-2xl"
+              />
+            </div>
+
+            <div className="min-w-[160px]">
               <label className="block text-xs text-slate-400 mb-1">Model/STL Cost ({currencySymbol})</label>
               <Input
                 type="number"
@@ -788,14 +848,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     onChange={e => setModelCostPerUnit(e.target.checked)}
                     className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
                   />
-                  <span className="text-xs text-slate-400">Per-unit license (pay each print)</span>
+                  <span className="text-xs text-slate-400">Per-unit license</span>
                   <NewBadge feature="per-unit-licensing" />
                 </label>
               )}
             </div>
 
             {modelCost > 0 && (
-              <div>
+              <div className="min-w-[160px]">
                 <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                   <span>Author Min Price ({currencySymbol})</span>
                   <InfoTooltip text="Warn if selling below this" />
@@ -811,62 +871,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 />
               </div>
             )}
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
-              <Input
-                type="number"
-                min="0"
-                max="99"
-                compact
-                value={failureRate || ''}
-                onChange={e => setFailureRate(Math.min(parseFloat(e.target.value) || 0, 99))}
-                placeholder="5"
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Prep Time (min)</span>
-                <InfoTooltip text="Slicing, bed prep, etc." />
-              </label>
-              <Input
-                type="number"
-                compact
-                value={prepTimeMinutes || ''}
-                onChange={e => setPrepTimeMinutes(parseInt(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Post-Processing (min)</span>
-                <InfoTooltip text="Support removal, sanding, etc." />
-              </label>
-              <Input
-                type="number"
-                compact
-                value={postProcessingMinutes || ''}
-                onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-
-            <div className="basis-full">
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Model/STL URL</span>
-                <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
-                <NewBadge feature="model-url" />
-              </label>
-              <Input
-                type="url"
-                value={modelUrl}
-                onChange={e => setModelUrl(e.target.value)}
-                placeholder="https://makerworld.com/..."
-                className="max-w-2xl"
-              />
-            </div>
           </div>
         </div>
       </div>
