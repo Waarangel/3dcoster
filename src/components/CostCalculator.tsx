@@ -111,6 +111,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [modelCost, setModelCost] = useState(() => getStoredValue('modelCost', 0));
   const [modelCostPerUnit, setModelCostPerUnit] = useState(() => getStoredValue('modelCostPerUnit', false));
   const [authorMinPrice, setAuthorMinPrice] = useState(() => getStoredValue('authorMinPrice', 0));
+  const [modelUrl, setModelUrl] = useState(() => getStoredValue('modelUrl', ''));
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(() => getStoredValue('prepTimeMinutes', 0));
   const [postProcessingMinutes, setPostProcessingMinutes] = useState(() => getStoredValue('postProcessingMinutes', 0));
   const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
@@ -150,6 +151,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       modelCost,
       modelCostPerUnit,
       authorMinPrice,
+      modelUrl,
       prepTimeMinutes,
       postProcessingMinutes,
       failureRate,
@@ -167,7 +169,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
   }, [
     editingJob, printName, filamentRows,
-    selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, prepTimeMinutes, postProcessingMinutes,
+    selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes, postProcessingMinutes,
     failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, lastEdited,
     shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace
   ]);
@@ -181,6 +183,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setModelCost(editingJob.modelCost);
       setModelCostPerUnit(editingJob.modelCostPerUnit ?? false);
       setAuthorMinPrice(editingJob.authorMinPrice ?? 0);
+      setModelUrl(editingJob.modelUrl ?? '');
       setPrepTimeMinutes(editingJob.prepTimeMinutes);
       setPostProcessingMinutes(editingJob.postProcessingMinutes);
       setFailureRate(editingJob.failureRate);
@@ -441,6 +444,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     setModelCost(0);
     setModelCostPerUnit(false);
     setAuthorMinPrice(0);
+    setModelUrl('');
     setPrepTimeMinutes(0);
     setPostProcessingMinutes(0);
     setFailureRate(5);
@@ -501,6 +505,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         modelCost,
         modelCostPerUnit,
         authorMinPrice: authorMinPrice || undefined,
+        modelUrl: modelUrl.trim() || undefined,
         prepTimeMinutes,
         postProcessingMinutes,
         materialsUsed,
@@ -527,6 +532,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         modelCost,
         modelCostPerUnit,
         authorMinPrice: authorMinPrice || undefined,
+        modelUrl: modelUrl.trim() || undefined,
         prepTimeMinutes,
         postProcessingMinutes,
         materialsUsed,
@@ -798,6 +804,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 placeholder="Optional"
               />
               <p className="text-xs text-slate-500 mt-1">Warn if selling below this</p>
+            </div>
+          )}
+
+          {modelCost > 0 && (
+            <div>
+              <label className="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                <span>Model/STL URL</span>
+                <NewBadge feature="model-url" />
+              </label>
+              <Input
+                type="url"
+                value={modelUrl}
+                onChange={e => setModelUrl(e.target.value)}
+                placeholder="https://makerworld.com/..."
+              />
+              <p className="text-xs text-slate-500 mt-1">Save the source link so you can find it again later</p>
             </div>
           )}
 

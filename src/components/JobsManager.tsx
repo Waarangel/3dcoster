@@ -307,6 +307,22 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       </div>
                     </div>
 
+                    {/* Model source URL */}
+                    {job.modelUrl && (
+                      <div className="mb-4 text-sm">
+                        <span className="text-slate-500">Model source: </span>
+                        <a
+                          href={job.modelUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-blue-400 hover:text-blue-300 underline break-all"
+                        >
+                          {job.modelUrl}
+                        </a>
+                      </div>
+                    )}
+
                     {/* Break-even progress bar */}
                     {/* WR-04: skip the progress bar entirely when break-even is
                         not computable (e.g., sell price <= cost with a positive

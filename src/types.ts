@@ -151,6 +151,7 @@ export interface PrintJob {
   modelCost: number;
   modelCostPerUnit?: boolean;    // If true, model cost is charged per unit (licensing), not amortized
   authorMinPrice?: number;        // Author's minimum sell price (for warning if underselling)
+  modelUrl?: string;              // Where the STL was purchased/downloaded — for finding it again later
 
   // Post-processing
   prepTimeMinutes: number;
