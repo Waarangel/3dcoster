@@ -37,7 +37,12 @@ function AssetListSkeleton() {
               <Skeleton variant="line" />
               <Skeleton variant="line" />
             </div>
-            <div className="flex gap-2 pt-2">
+            {/* IN-02: mirror the real mobile card's action-row divider
+                (see the action-button row in the real card render). Without
+                the border-t the skeleton's two button placeholders float
+                while the real version is sectioned — a small but visible
+                shape mismatch that D-03 calls out as a co-location bug. */}
+            <div className="flex gap-2 pt-2 border-t border-slate-700/50">
               <Skeleton variant="line" height="h-9" className="flex-1" />
               <Skeleton variant="line" height="h-9" className="flex-1" />
             </div>
