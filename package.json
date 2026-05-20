@@ -8,6 +8,7 @@
     "build": "node scripts/lint-no-raw-html.mjs && vitest run --coverage && tsc -b && vite build",
     "lint": "eslint .",
     "lint:no-raw-html": "node scripts/lint-no-raw-html.mjs",
+    "analyze": "vite build --mode analyze",
     "preview": "vite preview",
     "prepare": "chmod +x .git/hooks/pre-commit 2>/dev/null || true",
     "tauri": "tauri",
@@ -25,7 +26,8 @@
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.13.0"
+    "react-router-dom": "^7.13.0",
+    "react-window": "^2.2.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -44,6 +46,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "jsdom": "^29.0.2",
+    "rollup-plugin-visualizer": "^5.14.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
