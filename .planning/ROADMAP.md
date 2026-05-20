@@ -84,8 +84,8 @@
 **Plans**: 4 plans
 **Plans**:
 - [x] 10-01-PLAN.md — Wave 1: Extract cost-math useMemo into pure src/utils/costCalc.ts (CalcInput interface + 6 sub-helpers + calculateCost entrypoint with inline failure-rate clamp)
-- [ ] 10-02-PLAN.md — Wave 2: Refactor CostCalculator.tsx:374 useMemo to import and call calculateCost (byte-for-byte math preservation, dependency array unchanged)
-- [ ] 10-03-PLAN.md — Wave 2: Write src/utils/costCalc.test.ts with all D-13 edge cases (1/2/16 filament rows, failure-rate clamp boundaries, per-material density smoke tests) plus tax/VAT it.todo placeholder per D-12
+- [x] 10-02-PLAN.md — Wave 2: Refactor CostCalculator.tsx:374 useMemo to import and call calculateCost (byte-for-byte math preservation, dependency array unchanged)
+- [x] 10-03-PLAN.md — Wave 2: Write src/utils/costCalc.test.ts with all D-13 edge cases (1/2/16 filament rows, failure-rate clamp boundaries, per-material density smoke tests) plus tax/VAT it.todo placeholder per D-12
 - [ ] 10-04-PLAN.md — Wave 3: Wire vitest.config.ts coverage block (provider v8, scoped to costCalc.ts, thresholds 95/100/90) + update package.json scripts.build chain (lint-html → vitest+coverage → tsc → vite) + add test:watch
 
 ### Phase 11: Performance Optimization
@@ -108,7 +108,7 @@
 | 7. Styling Primitives Pass | 3/3 | Complete    | 2026-05-19 |
 | 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
 | 9. Skeleton Loading States | 2/2 | Complete   | 2026-05-20 |
-| 10. Cost-Calculation Unit Tests | 1/4 | In Progress|  |
+| 10. Cost-Calculation Unit Tests | 3/4 | In Progress|  |
 | 11. Performance Optimization | 0/TBD | Not started | - |
 
 ---
