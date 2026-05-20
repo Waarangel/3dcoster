@@ -64,4 +64,31 @@ describe('Skeleton', () => {
     expect(html).not.toContain('w-full');
     expect(html).not.toContain('rounded-xl');
   });
+
+  // --- IN-04 a11y: aria-busy="true" is part of the Skeleton a11y contract
+  // per CONTEXT.md. Lock it in so a future refactor that drops the attribute
+  // surfaces in CI rather than at UAT.
+  it('Test 9 (IN-04 a11y): renders aria-busy="true"', () => {
+    const html = renderToStaticMarkup(React.createElement(Skeleton));
+    expect(html).toMatch(/aria-busy="true"/);
+  });
+
+  // --- IN-04 props spread: SkeletonProps extends HTMLAttributes<HTMLDivElement>
+  // and the implementation spreads `...props` onto the root div. Consumers rely
+  // on that to pass `id`, `data-testid`, `style`, `aria-*`, etc. Lock the
+  // surface in so a future refactor that drops the spread (or wraps it
+  // conditionally) surfaces in CI.
+  //
+  // Two cases:
+  //  1. `id` — a strongly typed HTML attribute, validates type-level forwarding.
+  //  2. `data-testid` — a `data-*` attribute, validates the loosely typed
+  //     surface that React allows via `[key: \`data-${string}\`]`. The spread
+  //     is passed in via a typed object literal cast through the React props
+  //     contract to avoid TS strict-mode warnings on unknown keys.
+  it('Test 10 (IN-04 props spread): forwards arbitrary HTML attributes', () => {
+    const extraProps = { 'data-testid': 'sk-1', id: 'sk-id-1' } as React.HTMLAttributes<HTMLDivElement>;
+    const html = renderToStaticMarkup(React.createElement(Skeleton, extraProps));
+    expect(html).toContain('data-testid="sk-1"');
+    expect(html).toContain('id="sk-id-1"');
+  });
 });
