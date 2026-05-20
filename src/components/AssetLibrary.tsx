@@ -380,12 +380,18 @@ export function AssetLibrary({
     setIsAdding(true);
   };
 
-  // Empty-state CTA opens the Add form pre-selected to "filament" so the
-  // form category matches the empty-state copy ("Add your first filament").
-  // The top-right "+ Add" button still calls startAdding so the populated-state
-  // behaviour (pre-select from current filter) is unchanged.
-  const startAddingFilament = () => {
-    setFormData({ category: 'filament' });
+  // Empty-state CTA opens the Add form pre-selected to a specific category so
+  // the form matches the empty-state copy. WR-02: previously this was hardwired
+  // to 'filament', which mismatched the user's intent when they sat on the
+  // 'printer' tab with zero printers and were told to "Add Material". We now
+  // route by filterCategory: on the 'printer' tab, seed 'printer'; on 'all'
+  // (canonical empty-library surface) or any other tab, seed 'filament' as the
+  // friendly first-asset default unless the active filter is a specific
+  // (non-printer, non-'all') category, in which case seed that category.
+  const startAddingForEmptyState = () => {
+    const seedCategory: AssetCategory =
+      filterCategory === 'all' ? 'filament' : filterCategory;
+    setFormData({ category: seedCategory });
     setEditingId(null);
     setShowCustomCategory(false);
     setCustomCategoryInput('');
@@ -465,13 +471,35 @@ export function AssetLibrary({
 
       {isLoading ? (
         <AssetListSkeleton />
-      ) : shouldShowEmptyState(assets, isLoading) ? (
-        <EmptyState
-          icon={<PackageIcon className="w-12 h-12" />}
-          title="No materials in your library yet"
-          description="Add your first filament to start tracking material costs across jobs. You can also import from CSV if you already have a list."
-          cta={{ label: 'Add Material', onClick: startAddingFilament }}
-        />
+      ) : shouldShowEmptyState(displayAssets, isLoading) ? (
+        // WR-02: gate on displayAssets (current view) rather than raw assets.
+        // A printer-only library on the 'All' tab now correctly shows the
+        // empty-state hero instead of the populated chrome with an empty table.
+        // Empty-state copy + CTA route by the active filterCategory so a user
+        // sitting on the 'Printers' tab with zero printers is invited to add
+        // a printer rather than a material.
+        filterCategory === 'printer' ? (
+          <EmptyState
+            icon={<PackageIcon className="w-12 h-12" />}
+            title="No printers in your library yet"
+            description="Add your first printer to start tracking electricity, depreciation, and per-job machine cost. You can also import from CSV if you already have a list."
+            cta={{ label: 'Add Printer', onClick: startAddingForEmptyState }}
+          />
+        ) : filterCategory === 'all' ? (
+          <EmptyState
+            icon={<PackageIcon className="w-12 h-12" />}
+            title="No materials in your library yet"
+            description="Add your first filament to start tracking material costs across jobs. You can also import from CSV if you already have a list."
+            cta={{ label: 'Add Material', onClick: startAddingForEmptyState }}
+          />
+        ) : (
+          <EmptyState
+            icon={<PackageIcon className="w-12 h-12" />}
+            title={`No ${getCategoryLabel(filterCategory).toLowerCase()} in your library yet`}
+            description={`Add your first ${getCategoryLabel(filterCategory).toLowerCase().replace(/s$/, '')} to start tracking costs across jobs. You can also import from CSV if you already have a list.`}
+            cta={{ label: `Add ${getCategoryLabel(filterCategory).replace(/s$/, '')}`, onClick: startAddingForEmptyState }}
+          />
+        )
       ) : (
         <>
       {/* Filter tabs + Search */}
