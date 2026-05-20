@@ -57,11 +57,13 @@ Tax/VAT, Quick duplicate, Customer details on jobs, Editable tags + filter/searc
 - ✓ Default profit margin setting (2026-05-18) — user-configurable in Settings → Pricing
 - ✓ Printer maintenance alerts (500h intervals)
 
+**v1.1 Polish & Foundation (in progress):**
+- ✓ Skeleton loading components shown during initial IndexedDB load (validated in Phase 9, shipped 2026-05-19)
+
 ### Active (v1.1)
 
 - [ ] All `<button>`/`<input>`/`<select>` in CostCalculator, JobsManager, PrinterSettings use shared `src/components/ui/` primitives
 - [ ] Every empty screen (assets, jobs, printers) shows an empty-state component (illustration + headline + CTA)
-- [ ] Skeleton loading components shown during initial IndexedDB load (replaces plain "Loading..." text)
 - [ ] First-class theme toggle (light / dark / system) in Settings, with all surfaces rendering both themes correctly
 - [ ] Unit-test coverage for cost-calculation logic in CostCalculator (material, electricity, depreciation, nozzle wear, labor, failure rate)
 - [ ] vite `manualChunks` splits vendor from app code; jobs and asset lists use virtualization for >100 items
@@ -125,4 +127,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-19 — Phase 7 (Styling Primitives Pass) shipped: 14 main components refactored onto shared UI primitives, lint guard active*
+*Last updated: 2026-05-19 — Phase 9 (Skeleton Loading States) shipped: Skeleton primitive (3 variants, role=status) + AssetListSkeleton/JobsListSkeleton/PrinterListSkeleton wired into three consumers; App.tsx global "Loading..." gate removed; JobsManager refactored to single-return for modal stability*
