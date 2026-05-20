@@ -17,8 +17,8 @@ Requirements for milestone v1.1. Each maps to exactly one roadmap phase. All req
 
 ### Test
 
-- [ ] **TEST-01**: Unit tests cover the cost-calculation logic in CostCalculator.tsx — material cost (multi-filament), electricity, depreciation, nozzle wear (per-material density), labor (prep + post-processing), failure-rate adjustment, model amortization, and tax/VAT (when v1.2 lands, the tax tests will be additive)
-- [ ] **TEST-02**: Cost calc test suite runs under `npm test` and is exercised on every CI run / `npm run build`
+- [x] **TEST-01**: Unit tests cover the cost-calculation logic in CostCalculator.tsx — material cost (multi-filament), electricity, depreciation, nozzle wear (per-material density), labor (prep + post-processing), failure-rate adjustment, model amortization, and tax/VAT (when v1.2 lands, the tax tests will be additive)
+- [x] **TEST-02**: Cost calc test suite runs under `npm test` and is exercised on every CI run / `npm run build`
 
 ### Performance
 
@@ -63,8 +63,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-03 | Phase 7 | Complete |
 | UI-04 | Phase 8 | Complete |
 | UI-05 | Phase 9 | Pending |
-| TEST-01 | Phase 10 | Pending |
-| TEST-02 | Phase 10 | Pending |
+| TEST-01 | Phase 10 | Validated |
+| TEST-02 | Phase 10 | Validated |
 | PERF-01 | Phase 11 | Pending |
 | PERF-02 | Phase 11 | Pending |
 
