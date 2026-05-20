@@ -20,7 +20,7 @@
 - [x] **Phase 8: Empty States with CTAs** — Every blank screen guides users with an empty-state component (completed 2026-05-19)
 - [x] **Phase 9: Skeleton Loading States** — Skeleton shapes replace plain "Loading..." text during IndexedDB load (completed 2026-05-20)
 - [x] **Phase 10: Cost-Calculation Unit Tests** — Full vitest coverage of cost-calc logic, runs on every CI build (completed 2026-05-20)
-- [ ] **Phase 11: Performance Optimization** — manualChunks vendor split + list virtualization for jobs and assets
+- [x] **Phase 11: Performance Optimization** — manualChunks vendor split + list virtualization for jobs and assets (completed 2026-05-20)
 
 ---
 
@@ -104,7 +104,7 @@
 - [x] 11-03-PLAN.md — Wave 2: Create scripts/assert-bundle-size.mjs (300 KB gzipped gate per D-09 / D-11) and append it LAST in `scripts.build`
 - [x] 11-04-PLAN.md — Wave 3: JobsManager virtualization above 100 jobs using react-window v2 `<List>` + `useDynamicRowHeight` (design Q2 resolution: bimodal collapsed/expanded heights handled via cache + selection-driven reset)
 - [x] 11-05-PLAN.md — Wave 3: AssetLibrary virtualization at three call sites above 50 items/page (design Q1 resolution: `tagName="tbody"` primary path for desktop tables, div-grid fallback if breakage)
-- [ ] 11-06-PLAN.md — Wave 4: Manual UAT (500-job scroll under 4× CPU throttle, expand/collapse correctness, AssetLibrary 100/page smoothness) + Phase SUMMARY (design Q3 resolution: DevTools console snippets documented in SUMMARY — no script file)
+- [x] 11-06-PLAN.md — Wave 4: Manual UAT (500-job scroll under 4× CPU throttle, expand/collapse correctness, AssetLibrary 100/page smoothness) + Phase SUMMARY (design Q3 resolution: DevTools console snippets documented in SUMMARY — no script file)
 **Note**: Infrastructure phase — no user-visible feature, no NEW badge. Ships bundled with v1.2 release per CONTEXT.md (no standalone `v*` tag push for Phase 11 alone).
 
 ---
@@ -117,7 +117,7 @@
 | 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
 | 9. Skeleton Loading States | 2/2 | Complete   | 2026-05-20 |
 | 10. Cost-Calculation Unit Tests | 4/4 | Complete   | 2026-05-20 |
-| 11. Performance Optimization | 5/6 | In Progress|  |
+| 11. Performance Optimization | 6/6 | Complete   | 2026-05-20 |
 
 ---
 
