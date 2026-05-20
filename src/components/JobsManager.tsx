@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
@@ -217,6 +218,194 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     return filament ? `${filament.brand || ''} ${filament.filamentType || filament.name}`.trim() : 'Unknown';
   };
 
+  // Dynamic row-height cache for virtualized rendering (D-06, design Q2).
+  // The `key` arg invalidates the cache whenever selection changes, so the
+  // previously-expanded row collapses back to ~88px and the newly-selected
+  // row grows to its measured ~400px height. defaultRowHeight: 88 honors
+  // D-08's bias toward fixed sizing for the pre-measurement initial render.
+  const rowHeightCache = useDynamicRowHeight({
+    defaultRowHeight: 88,
+    key: selectedJobId ?? '',
+  });
+
+  // Plain card component (NO react-window typing). Used in BOTH branches:
+  // small-list direct render (no `style`) and virtualized List slot (with `style`).
+  function JobCard({ job, style }: { job: PrintJob; style?: React.CSSProperties }) {
+    const info = getBreakEvenInfo(job);
+    const isSelected = selectedJobId === job.id;
+
+    return (
+      <div
+        style={style}
+        onClick={() => setSelectedJobId(isSelected ? null : job.id)}
+        className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+          isSelected
+            ? 'bg-slate-700 border-blue-500'
+            : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+        }`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <h3 className="font-medium text-white">{job.name}</h3>
+              {info.isBreakEven ? (
+                <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+                  Break-even reached
+                </span>
+              ) : info.remainingToBreakEven === null ? (
+                // WR-04: profit-per-unit <= 0 with positive modelCost means
+                // break-even is unreachable at the current sell price.
+                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                  Break-even not reachable at current price
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                  {info.remainingToBreakEven} more to break even
+                </span>
+              )}
+            </div>
+            <div className="mt-1 text-sm text-slate-400">
+              {job.filaments && job.filaments.length > 0 ? (
+                job.filaments.map((f, i) => (
+                  <span key={i}>
+                    {i > 0 && ' + '}
+                    {getFilamentName(f.filamentId ?? '')}{f.grams ? ` ${f.grams}g` : ''}
+                  </span>
+                ))
+              ) : (
+                <span className="text-slate-500 italic">No filament data</span>
+              )} | {job.printTimeHours}h
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
+            <div className="text-xs text-slate-500">
+              {job.copiesSold} sold
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded details */}
+        {isSelected && (
+          <div className="mt-4 pt-4 border-t border-slate-600">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <div className="text-xs text-slate-500">Cost/Unit</div>
+                <div className="font-mono text-slate-300">${job.costPerUnit.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">Profit/Unit</div>
+                <div className="font-mono text-green-400">${info.profitPerUnit.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">Unit Sell Price</div>
+                <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
+              </div>
+            </div>
+
+            {/* Model source URL */}
+            {job.modelUrl && (
+              <div className="mb-4 text-sm">
+                <span className="text-slate-500">Model source: </span>
+                <a
+                  href={job.modelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-blue-400 hover:text-blue-300 underline break-all"
+                >
+                  {job.modelUrl}
+                </a>
+              </div>
+            )}
+
+            {/* Break-even progress bar */}
+            {/* WR-04: skip the progress bar entirely when break-even is
+                not computable (e.g., sell price <= cost with a positive
+                model cost). Show an informational line instead so the
+                UI never emits 'Infinity' / 'NaN'. */}
+            <div className="mb-4">
+              {info.breakEvenCopies === null ? (
+                <div className="text-xs text-slate-400">
+                  Break-even progress unavailable — sell price does not exceed cost per unit.
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Break-even Progress</span>
+                    <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
+                  </div>
+                  <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
+                      style={{
+                        width: info.breakEvenCopies === 0
+                          ? '100%'
+                          : `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button
+                variant="success"
+                btnSize="sm"
+                onClick={(e) => { e.stopPropagation(); setShowSaleForm(true); setSalePrice(job.sellingPrice); }}
+              >
+                Record Sale
+              </Button>
+              <Button
+                btnSize="sm"
+                onClick={(e) => { e.stopPropagation(); handleEditJob(); }}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="danger"
+                btnSize="sm"
+                onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }}
+              >
+                Delete
+              </Button>
+            </div>
+
+            {/* Recent sales */}
+            {sales.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-slate-300 mb-2">Recent Sales</h4>
+                <div className="space-y-1">
+                  {sales.slice(0, 5).map(sale => (
+                    <div key={sale.id} className="flex justify-between text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded">
+                      <span>
+                        {sale.quantity}x @ ${sale.unitPrice.toFixed(2)}
+                        {sale.customerName && <span className="text-slate-500 ml-2">({sale.customerName})</span>}
+                      </span>
+                      <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Thin adapter: bridges react-window v2's RowComponentProps shape into the
+  // plain JobCard. The `ariaAttributes` requirement is satisfied implicitly
+  // via the RowComponentProps type — JobRow never reads or forwards it.
+  // Note: NOT typed as React.FC — react-window v2's rowComponent expects a
+  // function returning ReactElement | null (not ReactNode), so a direct
+  // function expression with RowComponentProps on the param is the right shape.
+  const JobRow = ({ index, style, jobs }: RowComponentProps<{ jobs: PrintJob[] }>) => (
+    <JobCard job={jobs[index]} style={style} />
+  );
+
   return (
     <div className="space-y-6">
       {/* Jobs List */}
@@ -232,174 +421,22 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
             description={<>Use the Cost Calculator to create and save print jobs.<br />Track sales and see how many copies you need to break even.</>}
             cta={{ label: 'Open Calculator', onClick: () => onSwitchTab('calculator') }}
           />
+        ) : jobs.length > 100 ? (
+          <List
+            rowComponent={JobRow}
+            rowCount={jobs.length}
+            rowHeight={rowHeightCache}
+            rowProps={{ jobs }}
+            overscanCount={4}
+            style={{ height: '70vh' }}
+            className="space-y-0"
+          />
         ) : (
-        <div className="space-y-3">
-          {jobs.map(job => {
-            const info = getBreakEvenInfo(job);
-            const isSelected = selectedJobId === job.id;
-
-            return (
-              <div
-                key={job.id}
-                onClick={() => setSelectedJobId(isSelected ? null : job.id)}
-                className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                  isSelected
-                    ? 'bg-slate-700 border-blue-500'
-                    : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-medium text-white">{job.name}</h3>
-                      {info.isBreakEven ? (
-                        <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-                          Break-even reached
-                        </span>
-                      ) : info.remainingToBreakEven === null ? (
-                        // WR-04: profit-per-unit <= 0 with positive modelCost means
-                        // break-even is unreachable at the current sell price.
-                        <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                          Break-even not reachable at current price
-                        </span>
-                      ) : (
-                        <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                          {info.remainingToBreakEven} more to break even
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 text-sm text-slate-400">
-                      {job.filaments && job.filaments.length > 0 ? (
-                        job.filaments.map((f, i) => (
-                          <span key={i}>
-                            {i > 0 && ' + '}
-                            {getFilamentName(f.filamentId ?? '')}{f.grams ? ` ${f.grams}g` : ''}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-slate-500 italic">No filament data</span>
-                      )} | {job.printTimeHours}h
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
-                    <div className="text-xs text-slate-500">
-                      {job.copiesSold} sold
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expanded details */}
-                {isSelected && (
-                  <div className="mt-4 pt-4 border-t border-slate-600">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <div className="text-xs text-slate-500">Cost/Unit</div>
-                        <div className="font-mono text-slate-300">${job.costPerUnit.toFixed(2)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-500">Profit/Unit</div>
-                        <div className="font-mono text-green-400">${info.profitPerUnit.toFixed(2)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-500">Unit Sell Price</div>
-                        <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
-                      </div>
-                    </div>
-
-                    {/* Model source URL */}
-                    {job.modelUrl && (
-                      <div className="mb-4 text-sm">
-                        <span className="text-slate-500">Model source: </span>
-                        <a
-                          href={job.modelUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-blue-400 hover:text-blue-300 underline break-all"
-                        >
-                          {job.modelUrl}
-                        </a>
-                      </div>
-                    )}
-
-                    {/* Break-even progress bar */}
-                    {/* WR-04: skip the progress bar entirely when break-even is
-                        not computable (e.g., sell price <= cost with a positive
-                        model cost). Show an informational line instead so the
-                        UI never emits 'Infinity' / 'NaN'. */}
-                    <div className="mb-4">
-                      {info.breakEvenCopies === null ? (
-                        <div className="text-xs text-slate-400">
-                          Break-even progress unavailable — sell price does not exceed cost per unit.
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex justify-between text-xs text-slate-400 mb-1">
-                            <span>Break-even Progress</span>
-                            <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
-                          </div>
-                          <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
-                              style={{
-                                width: info.breakEvenCopies === 0
-                                  ? '100%'
-                                  : `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
-                              }}
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="success"
-                        btnSize="sm"
-                        onClick={(e) => { e.stopPropagation(); setShowSaleForm(true); setSalePrice(job.sellingPrice); }}
-                      >
-                        Record Sale
-                      </Button>
-                      <Button
-                        btnSize="sm"
-                        onClick={(e) => { e.stopPropagation(); handleEditJob(); }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="danger"
-                        btnSize="sm"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-
-                    {/* Recent sales */}
-                    {sales.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-slate-300 mb-2">Recent Sales</h4>
-                        <div className="space-y-1">
-                          {sales.slice(0, 5).map(sale => (
-                            <div key={sale.id} className="flex justify-between text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded">
-                              <span>
-                                {sale.quantity}x @ ${sale.unitPrice.toFixed(2)}
-                                {sale.customerName && <span className="text-slate-500 ml-2">({sale.customerName})</span>}
-                              </span>
-                              <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+          <div className="space-y-3">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
         )}
       </div>
 
