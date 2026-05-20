@@ -2,9 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // Build-time constant: true when built via `tauri build`, false for web builds
   // TAURI_ENV_PLATFORM is set by Tauri CLI during beforeBuildCommand
   define: {
@@ -64,9 +65,34 @@ export default defineConfig({
           }
         ]
       }
-    })
+    }),
+    // Visualizer is opt-in (D-10): only loaded when `vite build --mode analyze` runs.
+    // The default Vercel deploy chain pays zero visualizer cost.
+    ...(mode === 'analyze'
+      ? [visualizer({ open: true, gzipSize: true, brotliSize: true, filename: 'dist/stats.html' })]
+      : []),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Vendor chunk splitting per D-01: 3 named chunks for React, Dexie, and other deps.
+        // Function-style is clearer than object-style for the conditional logic and keeps the
+        // file self-contained (no helper to test in isolation).
+        // Order matters: the hooks package must be caught by its own substring match (NOT the
+        // shorter `/dexie/`, which would also match it via path prefix). The function returns
+        // undefined for non-node_modules ids — Rollup then bundles them into the default
+        // main/lazy chunks (preserves the existing React.lazy route splits, D-03).
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('/react/') || id.includes('/react-dom/')) return 'react-vendor';
+            if (id.includes('/dexie/') || id.includes('/dexie-react-hooks/')) return 'dexie-vendor';
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
   server: {
     port: 4173,
   },
-})
+}))
