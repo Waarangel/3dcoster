@@ -45,7 +45,13 @@ function AssetListSkeleton() {
         ))}
       </div>
 
-      {/* Desktop table — 5 placeholder rows */}
+      {/* Desktop table — 5 placeholder rows.
+          IN-01: matches the worst-case (printer) column count of 7
+          (Printer / Brand / Type / Price / Wattage / Nozzle / Actions). The
+          materials table has 6 columns; rendering 7 here means the skeleton
+          may show one extra placeholder column on the materials tab for a
+          frame or two, but the printer tab — which previously dropped the
+          Actions column placeholder entirely — now matches the real shape. */}
       <div className="hidden md:block">
         <table className="w-full text-sm">
           <thead>
@@ -53,6 +59,7 @@ function AssetListSkeleton() {
               <th className="pb-2 font-medium"><Skeleton variant="line" width="w-20" /></th>
               <th className="pb-2 font-medium"><Skeleton variant="line" width="w-16" /></th>
               <th className="pb-2 font-medium"><Skeleton variant="line" width="w-12" /></th>
+              <th className="pb-2 font-medium text-right"><Skeleton variant="line" width="w-16" className="ml-auto" /></th>
               <th className="pb-2 font-medium text-right"><Skeleton variant="line" width="w-16" className="ml-auto" /></th>
               <th className="pb-2 font-medium text-right"><Skeleton variant="line" width="w-16" className="ml-auto" /></th>
               <th className="pb-2 font-medium text-right"><Skeleton variant="line" width="w-16" className="ml-auto" /></th>
@@ -64,6 +71,7 @@ function AssetListSkeleton() {
                 <td className="py-2"><Skeleton variant="line" width="w-32" /></td>
                 <td className="py-2"><Skeleton variant="line" width="w-24" /></td>
                 <td className="py-2"><Skeleton variant="line" width="w-16" /></td>
+                <td className="py-2"><Skeleton variant="line" width="w-20" className="ml-auto" /></td>
                 <td className="py-2"><Skeleton variant="line" width="w-20" className="ml-auto" /></td>
                 <td className="py-2"><Skeleton variant="line" width="w-20" className="ml-auto" /></td>
                 <td className="py-2"><Skeleton variant="line" width="w-24" className="ml-auto" /></td>
