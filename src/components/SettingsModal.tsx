@@ -460,23 +460,21 @@ export function SettingsModal({
                   </div>
                 )}
 
-                {/* Add new carrier */}
-                <div className="flex gap-2">
+                {/* Add new carrier — grid keeps name wide and cost narrow regardless of modal width */}
+                <div className="grid grid-cols-[1fr_5rem_auto] gap-2">
                   <Input
                     type="text"
                     placeholder="Carrier name"
                     value={newCarrierName}
                     onChange={e => setNewCarrierName(e.target.value)}
-                    className="flex-1"
                   />
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={`Cost (${currencySymbol})`}
+                    placeholder={currencySymbol}
                     value={newCarrierCost}
                     onChange={e => setNewCarrierCost(e.target.value)}
-                    className="w-24"
                   />
                   <Button
                     onClick={handleAddCarrier}
