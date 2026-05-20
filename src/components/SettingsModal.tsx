@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
+import { NewBadge } from './NewBadge';
 import { Button, Input } from './ui';
 
 interface SettingsModalProps {
@@ -234,7 +235,10 @@ export function SettingsModal({
               </div>
 
               <div className="pt-4 border-t border-slate-700">
-                <h3 className="text-sm font-medium text-slate-300 mb-3">Default Profit Margin</h3>
+                <h3 className="text-sm font-medium text-slate-300 mb-3 relative inline-block">
+                  Default Profit Margin
+                  <NewBadge feature="default-profit-margin" className="absolute top-0 left-full ml-2 pointer-events-none" />
+                </h3>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Profit Margin (%)</label>
                   <Input
