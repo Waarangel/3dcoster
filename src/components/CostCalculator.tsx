@@ -5,7 +5,7 @@ import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
 import { Button, Input, Select } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
-import { getMaterialDensity } from '../utils/gcodeParser';
+import { calculateCost } from '../utils/costCalc';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -370,81 +370,25 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     return methods;
   }, [userCurrency, shippingConfig.customCarriers]);
 
-  // Calculate costs - separating per-unit consumables from fixed costs
-  const costs = useMemo((): CostBreakdown => {
-    // Filament cost: sum across all rows (uses edited price which may differ from database price)
-    const filamentCost = filamentRows.reduce((sum, row) => {
-      if (!row.filamentId || row.editedPrice <= 0) return sum;
-      return sum + row.grams * row.editedPrice;
-    }, 0);
-
-    // Electricity cost (needs printer to be selected)
-    const electricityCost = selectedPrinter
-      ? (selectedPrinter.wattage / 1000) * printTimeHours * electricity.costPerKwh
-      : 0;
-
-    // Printer depreciation - FIXED COST for this print job (not per-unit)
-    // Formula: (Purchase Price / Recovery Months) / Monthly Hours = $/hour
-    const purchasePrice = selectedInstance?.actualPurchasePrice ?? selectedPrinter?.purchasePrice ?? 0;
-    const recoveryMonths = selectedInstance?.recoveryMonths ?? 12;
-    const monthlyHours = selectedInstance?.estimatedMonthlyPrintHours ?? 40;
-    const totalRecoveryHours = recoveryMonths * monthlyHours;
-    const depreciationPerHour = totalRecoveryHours > 0 ? purchasePrice / totalRecoveryHours : 0;
-    const depreciation = depreciationPerHour * printTimeHours;
-
-    // Nozzle wear (based on volume) - FIXED COST for this print job
-    // Uses per-material density via getMaterialDensity (not hardcoded 1.24)
-    const totalVolumeCm3 = filamentRows.reduce((sum, row) => {
-      if (row.grams <= 0) return sum;
-      const asset = materials.find(m => m.id === row.filamentId);
-      const density = getMaterialDensity(asset?.filamentType ?? null);
-      return sum + row.grams / density;
-    }, 0);
-    const nozzleWear = selectedPrinter
-      ? (totalVolumeCm3 / selectedPrinter.nozzleLifespanCm3) * selectedPrinter.nozzleCost
-      : 0;
-
-    // Model amortization - handled separately as fixed cost
-    const modelAmortization = 0;
-
-    // Materials cost (consumables - per unit)
-    const materialsCost = materialsUsed.reduce((total, usage) => {
-      const material = materials.find(m => m.id === usage.materialId);
-      if (!material) return total;
-      return total + usage.quantity * (material.costPerUnit ?? 0);
-    }, 0);
-
-    // Labor cost (per unit)
-    const totalLaborMinutes = prepTimeMinutes + postProcessingMinutes;
-    const laborCost = (totalLaborMinutes / 60) * laborHourlyRate;
-
-    // Per-unit model license cost (if enabled)
-    const perUnitModelCost = modelCostPerUnit ? modelCost : 0;
-
-    // Per-unit subtotal (consumables only - NOT including depreciation/nozzle)
-    // When modelCostPerUnit is true, model cost is included here instead of fixed costs
-    const perUnitSubtotal = filamentCost + electricityCost + materialsCost + laborCost + perUnitModelCost;
-
-    // Failure-adjusted per-unit cost (clamp to 0-99 to prevent division by zero)
-    const clampedFailureRate = Math.min(Math.max(failureRate, 0), 99);
-    const failureMultiplier = 1 / (1 - clampedFailureRate / 100);
-    const failureAdjusted = perUnitSubtotal * failureMultiplier;
-
-    return {
-      filament: filamentCost,
-      electricity: electricityCost,
-      printerDepreciation: depreciation,  // Fixed cost - shown separately
-      nozzleWear: nozzleWear,              // Fixed cost - shown separately
-      modelAmortization: modelAmortization,
-      materials: materialsCost,
-      labor: laborCost,
-      subtotal: perUnitSubtotal,           // Per-unit only (no depreciation/nozzle)
-      failureAdjusted: failureAdjusted,    // Per-unit failure adjusted
-      profitMargin: profitMarginPercent,
-      targetProfit: targetProfit,
-      sellingPrice: sellingPrice,
-    };
-  }, [
+  // Cost calculation extracted to src/utils/costCalc.ts for testability (Phase 10, D-01)
+  const costs = useMemo((): CostBreakdown => calculateCost({
+    filamentRows,
+    printTimeHours,
+    selectedPrinter,
+    selectedInstance,
+    electricity,
+    materials,
+    materialsUsed,
+    prepTimeMinutes,
+    postProcessingMinutes,
+    laborHourlyRate,
+    failureRate,
+    profitMarginPercent,
+    targetProfit,
+    sellingPrice,
+    modelCost,
+    modelCostPerUnit,
+  }), [
     materials, filamentRows, printTimeHours, selectedPrinter, electricity,
     selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
     postProcessingMinutes, failureRate, profitMarginPercent, targetProfit, sellingPrice,
