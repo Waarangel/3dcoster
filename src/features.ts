@@ -18,7 +18,6 @@ export const featureReleases: Record<string, Date> = {
   'gcode-import': new Date('2026-02-14'),
   '3mf-import': new Date('2026-04-15'),
   'default-profit-margin': new Date('2026-05-18'),
-  'empty-states': new Date('2026-05-19'),
   // Add new features here with their release date
 };
 
