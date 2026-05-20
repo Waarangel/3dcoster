@@ -760,6 +760,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             <Input
               type="number"
               step="0.1"
+              compact
               value={printTimeHours || ''}
               onChange={e => setPrintTimeHours(parseFloat(e.target.value) || 0)}
               placeholder="From slicer"
@@ -771,9 +772,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             <Input
               type="number"
               step="0.01"
+              compact
               value={modelCost || ''}
               onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
-              placeholder="0 if free/own design"
+              placeholder="0 if free"
             />
             {modelCost > 0 && (
               <label className="flex items-center gap-2 mt-2 cursor-pointer">
@@ -799,6 +801,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               <Input
                 type="number"
                 step="0.01"
+                compact
                 value={authorMinPrice || ''}
                 onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
                 placeholder="Optional"
@@ -807,21 +810,19 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
           )}
 
-          {modelCost > 0 && (
-            <div>
-              <label className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-                <span>Model/STL URL</span>
-                <NewBadge feature="model-url" />
-              </label>
-              <Input
-                type="url"
-                value={modelUrl}
-                onChange={e => setModelUrl(e.target.value)}
-                placeholder="https://makerworld.com/..."
-              />
-              <p className="text-xs text-slate-500 mt-1">Save the source link so you can find it again later</p>
-            </div>
-          )}
+          <div className="md:col-span-2 lg:col-span-3">
+            <label className="flex items-center gap-2 text-xs text-slate-400 mb-1">
+              <span>Model/STL URL</span>
+              <NewBadge feature="model-url" />
+            </label>
+            <Input
+              type="url"
+              value={modelUrl}
+              onChange={e => setModelUrl(e.target.value)}
+              placeholder="https://makerworld.com/..."
+            />
+            <p className="text-xs text-slate-500 mt-1">Save the source link so you can find it again later (works for free models too)</p>
+          </div>
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">Failure Rate (%, max 99)</label>
