@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { List, type RowComponentProps } from 'react-window';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
 import { NewBadge } from './NewBadge';
 import { CsvImportModal } from './CsvImportModal';
@@ -440,6 +441,274 @@ export function AssetLibrary({
 
   const sortHeaderClass = 'pb-2 font-medium cursor-pointer hover:text-slate-200 transition-colors select-none';
 
+  // ---------------------------------------------------------------------------
+  // Virtualization sub-components (Phase 11-05 / PERF-02 / D-07).
+  // Three plain Row components are used in BOTH branches — the small-list direct
+  // render (no `style`) and the virtualized List slot (with `style`). Three thin
+  // adapters bridge react-window v2's RowComponentProps shape into the plain
+  // components for the `<List rowComponent>` slot.
+  // Adapters are typed via direct-param `RowComponentProps<...>` (NOT
+  // `React.FC<...>`) because v2's `rowComponent` slot requires a function
+  // returning `ReactElement | null`, not `ReactNode` — same pattern as
+  // JobsManager's JobRow adapter post-11-04.
+  // ---------------------------------------------------------------------------
+
+  // --- Mobile card (Asset) ---
+  function MobileCardItem({ asset, style }: { asset: Asset; style?: React.CSSProperties }) {
+    return (
+      <div
+        style={style}
+        className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"
+      >
+        {/* Header: Name + Type badge */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="text-base font-medium text-white truncate">
+              {asset.name}
+            </span>
+            {asset.category === 'printer' ? (
+              <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
+                {getCategoryLabel(asset.category)}
+              </span>
+            ) : asset.category === 'filament' && asset.filamentType ? (
+              <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">
+                {asset.filamentType}
+              </span>
+            ) : (
+              <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
+                {getCategoryLabel(asset.category)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Brand */}
+        {asset.brand && (
+          <div className="text-sm text-slate-400 mb-1">{asset.brand}</div>
+        )}
+
+        {/* Notes */}
+        {asset.notes && (
+          <div className="text-sm text-slate-400 mb-2">{asset.notes}</div>
+        )}
+
+        {/* Tags */}
+        {asset.tags && asset.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {asset.tags.map(tag => (
+              <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Cost details - differs by asset type */}
+        {asset.category === 'printer' ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3 pt-2 border-t border-slate-700/50">
+            <div className="text-slate-400">Price</div>
+            <div className="text-right font-mono text-white">
+              ${asset.purchasePrice?.toFixed(2) || '0.00'}
+            </div>
+            <div className="text-slate-400">Wattage</div>
+            <div className="text-right font-mono text-white">
+              {asset.wattage || 0}W
+            </div>
+            <div className="text-slate-400">Nozzle Cost</div>
+            <div className="text-right font-mono text-slate-400">
+              ${asset.nozzleCost?.toFixed(2) || '0.00'}
+            </div>
+            {asset.expectedLifespanHours && (
+              <>
+                <div className="text-slate-400">Lifespan</div>
+                <div className="text-right font-mono text-slate-400">
+                  {asset.expectedLifespanHours.toLocaleString()}h
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="pt-2 border-t border-slate-700/50 mb-3">
+            <div className="flex items-baseline justify-between mb-1">
+              <span className="text-sm text-slate-400">Cost/Unit</span>
+              <span className="text-base font-mono font-medium text-white">
+                {asset.currency || '$'}{(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm text-slate-400">Package</span>
+              <span className="text-sm font-mono text-slate-400">
+                {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)}
+              </span>
+            </div>
+            {asset.lifespanUnits && (
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-sm text-slate-400">Lifespan</span>
+                <span className="text-sm font-mono text-slate-400">
+                  {asset.lifespanUnits.toLocaleString()} uses
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex gap-2 pt-2 border-t border-slate-700/50">
+          <Button
+            variant="secondary"
+            onClick={() => startEdit(asset)}
+            className="flex-1 text-blue-400"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => onDeleteAsset(asset.id)}
+            className="flex-1 text-red-400"
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  const MobileCardRow = ({ index, style, assets }: RowComponentProps<{ assets: Asset[] }>) => (
+    <MobileCardItem asset={assets[index]} style={style} />
+  );
+
+  // --- Printer row (div-grid; 7 columns) ---
+  function PrinterRow({ asset, style }: { asset: Asset; style?: React.CSSProperties }) {
+    return (
+      <div
+        role="row"
+        style={style}
+        className="grid grid-cols-7 gap-x-4 py-2 text-slate-300 border-b border-slate-700/50 items-start"
+      >
+        <div role="cell">
+          <div>{asset.name}</div>
+          {asset.notes && (
+            <div className="text-xs text-slate-500">{asset.notes}</div>
+          )}
+          {asset.tags && asset.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {asset.tags.map(tag => (
+                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div role="cell" className="text-slate-400">
+          {asset.brand || '-'}
+        </div>
+        <div role="cell">
+          <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
+            {getCategoryLabel(asset.category)}
+          </span>
+        </div>
+        <div role="cell" className="text-right font-mono">
+          ${asset.purchasePrice?.toFixed(2) || '0.00'}
+        </div>
+        <div role="cell" className="text-right font-mono">
+          {asset.wattage || 0}W
+        </div>
+        <div role="cell" className="text-right font-mono text-slate-400">
+          ${asset.nozzleCost?.toFixed(2) || '0.00'}
+        </div>
+        <div role="cell" className="text-right">
+          <Button
+            variant="ghost"
+            btnSize="sm"
+            onClick={() => startEdit(asset)}
+            className="text-blue-400 hover:text-blue-300 mr-2"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="ghost"
+            btnSize="sm"
+            onClick={() => onDeleteAsset(asset.id)}
+            className="text-red-400 hover:text-red-300"
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  const PrinterRowAdapter = ({ index, style, assets }: RowComponentProps<{ assets: Asset[] }>) => (
+    <PrinterRow asset={assets[index]} style={style} />
+  );
+
+  // --- Material row (div-grid; 6 columns) ---
+  function MaterialRow({ asset, style }: { asset: Asset; style?: React.CSSProperties }) {
+    return (
+      <div
+        role="row"
+        style={style}
+        className="grid grid-cols-6 gap-x-4 py-2 text-slate-300 border-b border-slate-700/50 items-start"
+      >
+        <div role="cell">
+          <div>{asset.name}</div>
+          {asset.notes && (
+            <div className="text-xs text-slate-500">{asset.notes}</div>
+          )}
+          {asset.tags && asset.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {asset.tags.map(tag => (
+                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div role="cell" className="text-slate-400">
+          {asset.brand || '-'}
+        </div>
+        <div role="cell">
+          {asset.category === 'filament' && asset.filamentType ? (
+            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+              {asset.filamentType}
+            </span>
+          ) : (
+            <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
+              {getCategoryLabel(asset.category)}
+            </span>
+          )}
+        </div>
+        <div role="cell" className="text-right font-mono">
+          {asset.currency || '$'} {(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
+        </div>
+        <div role="cell" className="text-right font-mono text-slate-400">
+          {asset.currency || '$'} {(asset.packageCost ?? 0).toFixed(2)}
+        </div>
+        <div role="cell" className="text-right">
+          <Button
+            variant="ghost"
+            btnSize="sm"
+            onClick={() => startEdit(asset)}
+            className="text-blue-400 hover:text-blue-300 mr-2"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="ghost"
+            btnSize="sm"
+            onClick={() => onDeleteAsset(asset.id)}
+            className="text-red-400 hover:text-red-300"
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  const MaterialRowAdapter = ({ index, style, assets }: RowComponentProps<{ assets: Asset[] }>) => (
+    <MaterialRow asset={assets[index]} style={style} />
+  );
+
   return (
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
@@ -844,275 +1113,97 @@ export function AssetLibrary({
       {/* Mobile Card View */}
       <div className="md:hidden">
         {paginatedAssets.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {paginatedAssets.map(asset => (
-              <div
-                key={asset.id}
-                className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"
-              >
-                {/* Header: Name + Type badge */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <span className="text-base font-medium text-white truncate">
-                      {asset.name}
-                    </span>
-                    {asset.category === 'printer' ? (
-                      <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
-                        {getCategoryLabel(asset.category)}
-                      </span>
-                    ) : asset.category === 'filament' && asset.filamentType ? (
-                      <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">
-                        {asset.filamentType}
-                      </span>
-                    ) : (
-                      <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
-                        {getCategoryLabel(asset.category)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Brand */}
-                {asset.brand && (
-                  <div className="text-sm text-slate-400 mb-1">{asset.brand}</div>
-                )}
-
-                {/* Notes */}
-                {asset.notes && (
-                  <div className="text-sm text-slate-400 mb-2">{asset.notes}</div>
-                )}
-
-                {/* Tags */}
-                {asset.tags && asset.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {asset.tags.map(tag => (
-                      <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Cost details - differs by asset type */}
-                {asset.category === 'printer' ? (
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3 pt-2 border-t border-slate-700/50">
-                    <div className="text-slate-400">Price</div>
-                    <div className="text-right font-mono text-white">
-                      ${asset.purchasePrice?.toFixed(2) || '0.00'}
-                    </div>
-                    <div className="text-slate-400">Wattage</div>
-                    <div className="text-right font-mono text-white">
-                      {asset.wattage || 0}W
-                    </div>
-                    <div className="text-slate-400">Nozzle Cost</div>
-                    <div className="text-right font-mono text-slate-400">
-                      ${asset.nozzleCost?.toFixed(2) || '0.00'}
-                    </div>
-                    {asset.expectedLifespanHours && (
-                      <>
-                        <div className="text-slate-400">Lifespan</div>
-                        <div className="text-right font-mono text-slate-400">
-                          {asset.expectedLifespanHours.toLocaleString()}h
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="pt-2 border-t border-slate-700/50 mb-3">
-                    <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-sm text-slate-400">Cost/Unit</span>
-                      <span className="text-base font-mono font-medium text-white">
-                        {asset.currency || '$'}{(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-slate-400">Package</span>
-                      <span className="text-sm font-mono text-slate-400">
-                        {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)}
-                      </span>
-                    </div>
-                    {asset.lifespanUnits && (
-                      <div className="flex items-baseline justify-between mt-1">
-                        <span className="text-sm text-slate-400">Lifespan</span>
-                        <span className="text-sm font-mono text-slate-400">
-                          {asset.lifespanUnits.toLocaleString()} uses
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                <div className="flex gap-2 pt-2 border-t border-slate-700/50">
-                  <Button
-                    variant="secondary"
-                    onClick={() => startEdit(asset)}
-                    className="flex-1 text-blue-400"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => onDeleteAsset(asset.id)}
-                    className="flex-1 text-red-400"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+          effectiveItemsPerPage > 50 ? (
+            <List
+              rowComponent={MobileCardRow}
+              rowCount={paginatedAssets.length}
+              rowHeight={280}
+              rowProps={{ assets: paginatedAssets }}
+              defaultHeight={280}
+              overscanCount={3}
+              style={{ height: '70vh' }}
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {paginatedAssets.map(asset => (
+                <MobileCardItem key={asset.id} asset={asset} />
+              ))}
+            </div>
+          )
         ) : filteredAssets.length === 0 ? (
           <p className="text-center text-slate-500 py-4">No {filterCategory === 'printer' ? 'printers' : 'materials'} found</p>
         ) : null}
       </div>
 
-      {/* Desktop Table View */}
+      {/* Desktop Table View (div-grid replacement — Phase 11-05 / PERF-02 / D-07).
+          The two desktop `<table>` elements were replaced with `<div>`-based
+          grid markup so we can virtualize the body when the page-size predicate
+          fires. ARIA roles (row / columnheader / cell) preserve screen-reader
+          semantics. */}
       <div className="hidden md:block overflow-x-auto">
         {filterCategory === 'printer' ? (
-          /* Printer Table */
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-slate-400 text-left border-b border-slate-700">
-                <th className={sortHeaderClass} onClick={() => toggleSort('name')}>Printer<SortIndicator field="name" /></th>
-                <th className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></th>
-                <th className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></th>
-                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('purchasePrice')}>Price<SortIndicator field="purchasePrice" /></th>
-                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('wattage')}>Wattage<SortIndicator field="wattage" /></th>
-                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('nozzleCost')}>Nozzle<SortIndicator field="nozzleCost" /></th>
-                <th className="pb-2 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/50">
-              {paginatedAssets.map(asset => (
-                <tr key={asset.id} className="text-slate-300">
-                  <td className="py-2">
-                    <div>{asset.name}</div>
-                    {asset.notes && (
-                      <div className="text-xs text-slate-500">{asset.notes}</div>
-                    )}
-                    {asset.tags && asset.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {asset.tags.map(tag => (
-                          <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-2 text-slate-400">
-                    {asset.brand || '-'}
-                  </td>
-                  <td className="py-2">
-                    <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
-                      {getCategoryLabel(asset.category)}
-                    </span>
-                  </td>
-                  <td className="py-2 text-right font-mono">
-                    ${asset.purchasePrice?.toFixed(2) || '0.00'}
-                  </td>
-                  <td className="py-2 text-right font-mono">
-                    {asset.wattage || 0}W
-                  </td>
-                  <td className="py-2 text-right font-mono text-slate-400">
-                    ${asset.nozzleCost?.toFixed(2) || '0.00'}
-                  </td>
-                  <td className="py-2 text-right">
-                    <Button
-                      variant="ghost"
-                      btnSize="sm"
-                      onClick={() => startEdit(asset)}
-                      className="text-blue-400 hover:text-blue-300 mr-2"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      btnSize="sm"
-                      onClick={() => onDeleteAsset(asset.id)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          /* Printer Table — 7 columns */
+          <div className="w-full text-sm">
+            {/* Header (was <thead><tr>) */}
+            <div role="row" className="grid grid-cols-7 gap-x-4 text-slate-400 text-left border-b border-slate-700">
+              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('name')}>Printer<SortIndicator field="name" /></div>
+              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></div>
+              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></div>
+              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('purchasePrice')}>Price<SortIndicator field="purchasePrice" /></div>
+              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('wattage')}>Wattage<SortIndicator field="wattage" /></div>
+              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('nozzleCost')}>Nozzle<SortIndicator field="nozzleCost" /></div>
+              <div role="columnheader" className="pb-2 font-medium text-right">Actions</div>
+            </div>
+            {/* Body (was <tbody>) */}
+            {effectiveItemsPerPage > 50 ? (
+              <List
+                rowComponent={PrinterRowAdapter}
+                rowCount={paginatedAssets.length}
+                rowHeight={56}
+                rowProps={{ assets: paginatedAssets }}
+                defaultHeight={56 * Math.min(paginatedAssets.length, 12)}
+                overscanCount={5}
+                style={{ height: '60vh' }}
+              />
+            ) : (
+              <div>
+                {paginatedAssets.map(asset => (
+                  <PrinterRow key={asset.id} asset={asset} />
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
-          /* Materials Table */
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-slate-400 text-left border-b border-slate-700">
-                <th className={sortHeaderClass} onClick={() => toggleSort('name')}>Material<SortIndicator field="name" /></th>
-                <th className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></th>
-                <th className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></th>
-                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('costPerUnit')}>Cost/Unit<SortIndicator field="costPerUnit" /></th>
-                <th className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('packageCost')}>Package<SortIndicator field="packageCost" /></th>
-                <th className="pb-2 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/50">
-              {paginatedAssets.map(asset => (
-                <tr key={asset.id} className="text-slate-300">
-                  <td className="py-2">
-                    <div>{asset.name}</div>
-                    {asset.notes && (
-                      <div className="text-xs text-slate-500">{asset.notes}</div>
-                    )}
-                    {asset.tags && asset.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {asset.tags.map(tag => (
-                          <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-2 text-slate-400">
-                    {asset.brand || '-'}
-                  </td>
-                  <td className="py-2">
-                    {asset.category === 'filament' && asset.filamentType ? (
-                      <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                        {asset.filamentType}
-                      </span>
-                    ) : (
-                      <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
-                        {getCategoryLabel(asset.category)}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 text-right font-mono">
-                    {asset.currency || '$'} {(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
-                  </td>
-                  <td className="py-2 text-right font-mono text-slate-400">
-                    {asset.currency || '$'} {(asset.packageCost ?? 0).toFixed(2)}
-                  </td>
-                  <td className="py-2 text-right">
-                    <Button
-                      variant="ghost"
-                      btnSize="sm"
-                      onClick={() => startEdit(asset)}
-                      className="text-blue-400 hover:text-blue-300 mr-2"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      btnSize="sm"
-                      onClick={() => onDeleteAsset(asset.id)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          /* Materials Table — 6 columns */
+          <div className="w-full text-sm">
+            {/* Header (was <thead><tr>) */}
+            <div role="row" className="grid grid-cols-6 gap-x-4 text-slate-400 text-left border-b border-slate-700">
+              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('name')}>Material<SortIndicator field="name" /></div>
+              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></div>
+              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></div>
+              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('costPerUnit')}>Cost/Unit<SortIndicator field="costPerUnit" /></div>
+              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('packageCost')}>Package<SortIndicator field="packageCost" /></div>
+              <div role="columnheader" className="pb-2 font-medium text-right">Actions</div>
+            </div>
+            {/* Body (was <tbody>) */}
+            {effectiveItemsPerPage > 50 ? (
+              <List
+                rowComponent={MaterialRowAdapter}
+                rowCount={paginatedAssets.length}
+                rowHeight={56}
+                rowProps={{ assets: paginatedAssets }}
+                defaultHeight={56 * Math.min(paginatedAssets.length, 12)}
+                overscanCount={5}
+                style={{ height: '60vh' }}
+              />
+            ) : (
+              <div>
+                {paginatedAssets.map(asset => (
+                  <MaterialRow key={asset.id} asset={asset} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
         {filteredAssets.length === 0 && (
           <p className="text-center text-slate-500 py-4">No {filterCategory === 'printer' ? 'printers' : 'materials'} found</p>
