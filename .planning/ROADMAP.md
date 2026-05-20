@@ -18,7 +18,7 @@
 
 - [x] **Phase 7: Styling Primitives Pass** — Replace raw HTML form elements in main components with shared ui/ primitives (completed 2026-05-19)
 - [x] **Phase 8: Empty States with CTAs** — Every blank screen guides users with an empty-state component (completed 2026-05-19)
-- [ ] **Phase 9: Skeleton Loading States** — Skeleton shapes replace plain "Loading..." text during IndexedDB load
+- [x] **Phase 9: Skeleton Loading States** — Skeleton shapes replace plain "Loading..." text during IndexedDB load (completed 2026-05-20)
 - [ ] **Phase 10: Cost-Calculation Unit Tests** — Full vitest coverage of cost-calc logic, runs on every CI build
 - [ ] **Phase 11: Performance Optimization** — manualChunks vendor split + list virtualization for jobs and assets
 
@@ -69,7 +69,7 @@
 **Plans**: 2 plans
 **Plans**:
 - [x] 09-01-PLAN.md — Wave 1: Create Skeleton primitive (variants line/card/circle, animate-pulse, role=status) with RED→GREEN unit tests; update src/components/ui/index.ts to export Skeleton + re-export shouldShowEmptyState
-- [ ] 09-02-PLAN.md — Wave 2: Remove App.tsx global isLoading gate + prune 5 unused destructurings + drill 3 isLoading props; wire AssetListSkeleton (mobile+desktop), JobsListSkeleton (single-return refactor), PrinterListSkeleton co-located in consumers; D-10 ternary order; manual UAT checkpoint
+- [x] 09-02-PLAN.md — Wave 2: Remove App.tsx global isLoading gate + prune 5 unused destructurings + drill 3 isLoading props; wire AssetListSkeleton (mobile+desktop), JobsListSkeleton (single-return refactor), PrinterListSkeleton co-located in consumers; D-10 ternary order; manual UAT checkpoint
 **UI hint**: yes
 
 ### Phase 10: Cost-Calculation Unit Tests
@@ -102,7 +102,7 @@
 |-------|----------------|--------|-----------|
 | 7. Styling Primitives Pass | 3/3 | Complete    | 2026-05-19 |
 | 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
-| 9. Skeleton Loading States | 1/2 | In Progress|  |
+| 9. Skeleton Loading States | 2/2 | Complete   | 2026-05-20 |
 | 10. Cost-Calculation Unit Tests | 0/TBD | Not started | - |
 | 11. Performance Optimization | 0/TBD | Not started | - |
 
