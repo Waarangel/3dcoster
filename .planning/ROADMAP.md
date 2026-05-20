@@ -99,11 +99,11 @@
   4. Lists with fewer than 100 items render identically to pre-Phase-12 — no regressions for the common case
 **Plans**: 6 plans
 **Plans**:
-- [ ] 11-01-PLAN.md — Wave 1: Install react-window@^2 (runtime dep) and rollup-plugin-visualizer@^5 (devDep); add `scripts.analyze`. Gated behind a blocking package-legitimacy human checkpoint (T-11-SC mitigation)
-- [ ] 11-02-PLAN.md — Wave 2: vite.config.ts manualChunks (react-vendor / dexie-vendor / vendor) per D-01; conditional visualizer plugin gated on `mode === 'analyze'` per D-10
-- [ ] 11-03-PLAN.md — Wave 2: Create scripts/assert-bundle-size.mjs (300 KB gzipped gate per D-09 / D-11) and append it LAST in `scripts.build`
-- [ ] 11-04-PLAN.md — Wave 3: JobsManager virtualization above 100 jobs using react-window v2 `<List>` + `useDynamicRowHeight` (design Q2 resolution: bimodal collapsed/expanded heights handled via cache + selection-driven reset)
-- [ ] 11-05-PLAN.md — Wave 3: AssetLibrary virtualization at three call sites above 50 items/page (design Q1 resolution: `tagName="tbody"` primary path for desktop tables, div-grid fallback if breakage)
+- [x] 11-01-PLAN.md — Wave 1: Install react-window@^2 (runtime dep) and rollup-plugin-visualizer@^5 (devDep); add `scripts.analyze`. Gated behind a blocking package-legitimacy human checkpoint (T-11-SC mitigation)
+- [x] 11-02-PLAN.md — Wave 2: vite.config.ts manualChunks (react-vendor / dexie-vendor / vendor) per D-01; conditional visualizer plugin gated on `mode === 'analyze'` per D-10
+- [x] 11-03-PLAN.md — Wave 2: Create scripts/assert-bundle-size.mjs (300 KB gzipped gate per D-09 / D-11) and append it LAST in `scripts.build`
+- [x] 11-04-PLAN.md — Wave 3: JobsManager virtualization above 100 jobs using react-window v2 `<List>` + `useDynamicRowHeight` (design Q2 resolution: bimodal collapsed/expanded heights handled via cache + selection-driven reset)
+- [x] 11-05-PLAN.md — Wave 3: AssetLibrary virtualization at three call sites above 50 items/page (design Q1 resolution: `tagName="tbody"` primary path for desktop tables, div-grid fallback if breakage)
 - [ ] 11-06-PLAN.md — Wave 4: Manual UAT (500-job scroll under 4× CPU throttle, expand/collapse correctness, AssetLibrary 100/page smoothness) + Phase SUMMARY (design Q3 resolution: DevTools console snippets documented in SUMMARY — no script file)
 **Note**: Infrastructure phase — no user-visible feature, no NEW badge. Ships bundled with v1.2 release per CONTEXT.md (no standalone `v*` tag push for Phase 11 alone).
 
@@ -117,7 +117,7 @@
 | 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
 | 9. Skeleton Loading States | 2/2 | Complete   | 2026-05-20 |
 | 10. Cost-Calculation Unit Tests | 4/4 | Complete   | 2026-05-20 |
-| 11. Performance Optimization | 0/6 | Not started | - |
+| 11. Performance Optimization | 5/6 | In Progress|  |
 
 ---
 
