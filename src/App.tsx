@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees } from './hooks/useDatabase';
 import type { PrintJob } from './types';
@@ -53,8 +53,17 @@ function App() {
     resetPrintersOnly,
   } = useAssets();
 
-  // Filter materials (non-printer assets) for components that need them
-  const materials = assets.filter(a => a.category !== 'printer');
+  // Filter materials (non-printer assets) for components that need them.
+  // IN-05: useMemo'd to stabilize the array reference across renders. Without
+  // the memo, every App render produces a fresh `materials` reference and
+  // passes it to CostCalculator, JobsManager, and AssetLibrary, invalidating
+  // any downstream memoization that takes `materials` in a deps array. Phase 9
+  // removed the global loading gate, so App now renders more frequently —
+  // this is hot enough to be worth stabilizing.
+  const materials = useMemo(
+    () => assets.filter(a => a.category !== 'printer'),
+    [assets]
+  );
 
   const {
     electricity,
