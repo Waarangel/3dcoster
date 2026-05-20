@@ -81,7 +81,12 @@
   2. A named pending/skipped test for the tax/VAT factor is included with a note that it activates when v1.2 lands — the suite is extensible without rework
   3. `npm test` exits with code 0 on a clean codebase; the test suite is integrated so CI fails the build if any test fails
   4. All tests are deterministic: no IndexedDB dependency, no browser API dependency, no network calls
-**Plans**: TBD
+**Plans**: 4 plans
+**Plans**:
+- [ ] 10-01-PLAN.md — Wave 1: Extract cost-math useMemo into pure src/utils/costCalc.ts (CalcInput interface + 6 sub-helpers + calculateCost entrypoint with inline failure-rate clamp)
+- [ ] 10-02-PLAN.md — Wave 2: Refactor CostCalculator.tsx:374 useMemo to import and call calculateCost (byte-for-byte math preservation, dependency array unchanged)
+- [ ] 10-03-PLAN.md — Wave 2: Write src/utils/costCalc.test.ts with all D-13 edge cases (1/2/16 filament rows, failure-rate clamp boundaries, per-material density smoke tests) plus tax/VAT it.todo placeholder per D-12
+- [ ] 10-04-PLAN.md — Wave 3: Wire vitest.config.ts coverage block (provider v8, scoped to costCalc.ts, thresholds 95/100/90) + update package.json scripts.build chain (lint-html → vitest+coverage → tsc → vite) + add test:watch
 
 ### Phase 11: Performance Optimization
 **Goal**: Vite produces explicit vendor chunks that keep the main app bundle under 300 KB gzipped; jobs and asset lists use virtualization for lists exceeding 100 items and remain smooth under 4× CPU throttle
@@ -103,7 +108,7 @@
 | 7. Styling Primitives Pass | 3/3 | Complete    | 2026-05-19 |
 | 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
 | 9. Skeleton Loading States | 2/2 | Complete   | 2026-05-20 |
-| 10. Cost-Calculation Unit Tests | 0/TBD | Not started | - |
+| 10. Cost-Calculation Unit Tests | 0/4 | Planned | - |
 | 11. Performance Optimization | 0/TBD | Not started | - |
 
 ---
