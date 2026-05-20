@@ -265,10 +265,10 @@ export function SettingsModal({
           {/* Delivery Tab — local pickup/dropoff + carrier base rates merged */}
           {activeTab === 'delivery' && (
             <div className="space-y-6">
-              {/* Local Delivery Settings — single row of 3 narrow fields */}
+              {/* Local Delivery Settings — flex-wrap so chunks tight-pack */}
               <div>
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Local Pickup & Dropoff</h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-wrap gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Max Radius ({distanceUnit})</label>
                     <Input
@@ -316,7 +316,7 @@ export function SettingsModal({
               <div className="pt-4 border-t border-slate-700">
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Typical Carrier Costs</h3>
                 <p className="text-xs text-slate-500 mb-3">These auto-fill in the calculator. Override per-order as needed.</p>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-wrap gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">UPS ({currencySymbol})</label>
                     <Input
