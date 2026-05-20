@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Currency, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
+import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
-import { NewBadge } from './NewBadge';
 import { Button, Input } from './ui';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  electricity: ElectricityConfig;
   shippingConfig: ShippingConfig;
   marketplaceFees: MarketplaceFees;
   userCurrency: Currency;
   userProfile: UserProfile;
+  onElectricityChange: (config: ElectricityConfig) => void;
   onShippingChange: (config: ShippingConfig) => void;
   onMarketplaceFeesChange: (fees: MarketplaceFees) => void;
   onResetMarketplaceFees: () => void;
@@ -20,10 +21,12 @@ interface SettingsModalProps {
 export function SettingsModal({
   isOpen,
   onClose,
+  electricity,
   shippingConfig,
   marketplaceFees,
   userCurrency,
   userProfile,
+  onElectricityChange,
   onShippingChange,
   onMarketplaceFeesChange,
   onResetMarketplaceFees,
@@ -34,8 +37,8 @@ export function SettingsModal({
   const distanceUnit = getDistanceUnit(userCurrency);
   const fuelUnit = getFuelUnit(userCurrency);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'pricing' | 'shipping' | 'carriers' | 'marketplaces'>('pricing');
+  // Tab state — 3-tab IA: Costs & Rates (all cost inputs), Delivery (local + carriers), Marketplaces
+  const [activeTab, setActiveTab] = useState<'costs' | 'delivery' | 'marketplaces'>('costs');
 
   // Custom carrier form state
   const [newCarrierName, setNewCarrierName] = useState('');
@@ -142,10 +145,9 @@ export function SettingsModal({
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'pricing' as const, label: 'Pricing', feature: 'default-profit-margin' },
-    { id: 'shipping' as const, label: 'Delivery & Fuel', feature: null },
-    { id: 'carriers' as const, label: 'Carriers', feature: 'custom-carriers' },
-    { id: 'marketplaces' as const, label: 'Marketplaces', feature: 'configurable-marketplace-fees' },
+    { id: 'costs' as const, label: 'Costs & Rates' },
+    { id: 'delivery' as const, label: 'Delivery' },
+    { id: 'marketplaces' as const, label: 'Marketplaces' },
   ];
 
   return (
@@ -187,17 +189,49 @@ export function SettingsModal({
               }`}
             >
               {tab.label}
-              {tab.feature && <NewBadge feature={tab.feature} className="absolute -top-1 -right-1 pointer-events-none" />}
             </button>
           ))}
         </div>
 
         {/* Content */}
         <div className="p-4">
-          {/* Pricing Tab */}
-          {activeTab === 'pricing' && (
+          {/* Costs & Rates Tab — all global cost inputs that feed job math */}
+          {activeTab === 'costs' && (
             <div className="space-y-6">
               <div>
+                <h3 className="text-sm font-medium text-slate-300 mb-3">Electricity</h3>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Cost per kWh ({currencySymbol})</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={electricity.costPerKwh}
+                    onChange={e => onElectricityChange({ costPerKwh: parseFloat(e.target.value) || 0 })}
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Used to calculate the electricity cost of every print, based on each printer's wattage and your print time.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-700">
+                <h3 className="text-sm font-medium text-slate-300 mb-3">Your Hourly Rate</h3>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Hourly Rate ({currencySymbol})</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={userProfile.laborHourlyRate || ''}
+                    onChange={e => onUserProfileChange({ ...userProfile, laborHourlyRate: parseFloat(e.target.value) || 0 })}
+                    placeholder="20"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Value your time! Applied to prep, monitoring, and post-processing minutes you log on each job.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-700">
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Default Profit Margin</h3>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Profit Margin (%)</label>
@@ -221,8 +255,8 @@ export function SettingsModal({
             </div>
           )}
 
-          {/* Delivery & Fuel Tab */}
-          {activeTab === 'shipping' && (
+          {/* Delivery Tab — local pickup/dropoff + carrier base rates merged */}
+          {activeTab === 'delivery' && (
             <div className="space-y-6">
               {/* Local Delivery Settings */}
               <div>
@@ -269,14 +303,9 @@ export function SettingsModal({
                   </p>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Carriers Tab */}
-          {activeTab === 'carriers' && (
-            <div className="space-y-6">
-              {/* Built-in Carriers */}
-              <div>
+              {/* Built-in Carriers — merged from former Carriers tab */}
+              <div className="pt-4 border-t border-slate-700">
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Typical Carrier Costs</h3>
                 <p className="text-xs text-slate-500 mb-3">These auto-fill in the calculator. Override per-order as needed.</p>
                 <div className="grid grid-cols-2 gap-3">

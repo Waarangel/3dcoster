@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
-import { CURRENCY_CONFIG, getCurrencySymbol } from '../utils/currency';
+import { CURRENCY_CONFIG } from '../utils/currency';
 import { NewBadge } from './NewBadge';
 import { Button, Input, Select } from './ui';
 
@@ -20,7 +20,6 @@ export function UserProfileModal({
 }: UserProfileModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const userCurrency = userProfile.currency;
-  const currencySymbol = getCurrencySymbol(userCurrency);
 
   // Close on escape key
   useEffect(() => {
@@ -51,7 +50,7 @@ export function UserProfileModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <h2 className="text-lg font-semibold text-white">User Settings</h2>
+          <h2 className="text-lg font-semibold text-white">Profile</h2>
           <Button variant="ghost" btnSize="sm" onClick={onClose}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -102,19 +101,6 @@ export function UserProfileModal({
                 </Select>
                 <p className="text-xs text-slate-500 mt-1">
                   Filament prices will show only your currency.
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Your Hourly Rate ({currencySymbol})</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={userProfile.laborHourlyRate || ''}
-                  onChange={e => onProfileChange({ ...userProfile, laborHourlyRate: parseFloat(e.target.value) || 0 })}
-                  placeholder="20"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Value your time! Includes prep, monitoring, and post-processing.
                 </p>
               </div>
             </div>

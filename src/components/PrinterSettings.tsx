@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { PrinterConfig, PrinterInstance, ElectricityConfig, PrintJob } from '../types';
+import type { PrinterConfig, PrinterInstance, PrintJob } from '../types';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { PrinterIcon } from './ui/icons';
 
@@ -8,11 +8,9 @@ interface PrinterSettingsProps {
   printerInstances: PrinterInstance[];
   isLoading: boolean;
   jobs: PrintJob[];
-  electricity: ElectricityConfig;
   onAddInstance: (instance: PrinterInstance) => void;
   onUpdateInstance: (instance: PrinterInstance) => void;
   onDeleteInstance: (id: string) => void;
-  onElectricityChange: (config: ElectricityConfig) => void;
 }
 
 function PrinterListSkeleton() {
@@ -45,11 +43,9 @@ export function PrinterSettings({
   printerInstances,
   isLoading,
   jobs,
-  electricity,
   onAddInstance,
   onUpdateInstance,
   onDeleteInstance,
-  onElectricityChange,
 }: PrinterSettingsProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newInstanceNickname, setNewInstanceNickname] = useState('');
@@ -380,21 +376,6 @@ export function PrinterSettings({
             })}
           </div>
         )}
-      </div>
-
-      {/* Electricity */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold text-white mb-4">Electricity</h2>
-        <div>
-          <label className="block text-xs text-slate-400 mb-1">Cost per kWh ($)</label>
-          <Input
-            type="number"
-            step="0.01"
-            value={electricity.costPerKwh}
-            onChange={e => onElectricityChange({ costPerKwh: parseFloat(e.target.value) || 0 })}
-            className="max-w-xs"
-          />
-        </div>
       </div>
     </div>
   );

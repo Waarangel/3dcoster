@@ -5,11 +5,11 @@
 export const featureReleases: Record<string, Date> = {
   'per-unit-licensing': new Date('2026-01-24'),
   'author-min-price': new Date('2026-01-24'),
-  'settings-modal': new Date('2026-01-25'),
   'configurable-marketplace-fees': new Date('2026-01-25'),
   'custom-carriers': new Date('2026-01-25'),
   'multi-currency': new Date('2026-01-25'),
   'packaging-materials': new Date('2026-01-25'),
+  'settings-reorg': new Date('2026-05-20'),
   'csv-import': new Date('2026-02-14'),
   'gcode-import': new Date('2026-02-14'),
   '3mf-import': new Date('2026-04-15'),
