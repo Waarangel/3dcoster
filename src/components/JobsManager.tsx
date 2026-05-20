@@ -138,10 +138,21 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
 
     // Break-even copies uses actual avg profit if sales exist, otherwise theoretical
     const effectiveProfitPerUnit = job.copiesSold > 0 ? actualProfitPerUnit : theoreticalProfitPerUnit;
-    const breakEvenCopies = effectiveProfitPerUnit > 0
+    // WR-04: normalize non-finite break-even results to null so the UI can
+    // render a "cannot be computed" fallback instead of leaking 'Infinity' /
+    // 'NaN' into copy ("0 / Infinity copies", "Infinity more to break even").
+    // Pre-existing logic: when effectiveProfitPerUnit <= 0 and modelCost > 0
+    // the raw computation yields Infinity; when modelCost === 0 and
+    // effectiveProfitPerUnit <= 0 it yields 0 (already break-even, valid).
+    const breakEvenCopiesRaw = effectiveProfitPerUnit > 0
       ? Math.ceil(job.modelCost / effectiveProfitPerUnit)
       : job.modelCost > 0 ? Infinity : 0;
-    const remainingToBreakEven = Math.max(0, breakEvenCopies - job.copiesSold);
+    const breakEvenCopies: number | null = Number.isFinite(breakEvenCopiesRaw)
+      ? breakEvenCopiesRaw
+      : null;
+    const remainingToBreakEven: number | null = breakEvenCopies === null
+      ? null
+      : Math.max(0, breakEvenCopies - job.copiesSold);
 
     return {
       revenueEarned: actualRevenue,
@@ -245,6 +256,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                         <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
                           Break-even reached
                         </span>
+                      ) : info.remainingToBreakEven === null ? (
+                        // WR-04: profit-per-unit <= 0 with positive modelCost means
+                        // break-even is unreachable at the current sell price.
+                        <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                          Break-even not reachable at current price
+                        </span>
                       ) : (
                         <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                           {info.remainingToBreakEven} more to break even
@@ -291,17 +308,33 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                     </div>
 
                     {/* Break-even progress bar */}
+                    {/* WR-04: skip the progress bar entirely when break-even is
+                        not computable (e.g., sell price <= cost with a positive
+                        model cost). Show an informational line instead so the
+                        UI never emits 'Infinity' / 'NaN'. */}
                     <div className="mb-4">
-                      <div className="flex justify-between text-xs text-slate-400 mb-1">
-                        <span>Break-even Progress</span>
-                        <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
-                      </div>
-                      <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
-                          style={{ width: `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%` }}
-                        />
-                      </div>
+                      {info.breakEvenCopies === null ? (
+                        <div className="text-xs text-slate-400">
+                          Break-even progress unavailable — sell price does not exceed cost per unit.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between text-xs text-slate-400 mb-1">
+                            <span>Break-even Progress</span>
+                            <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
+                          </div>
+                          <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
+                              style={{
+                                width: info.breakEvenCopies === 0
+                                  ? '100%'
+                                  : `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Actions */}
