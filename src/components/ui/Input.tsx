@@ -6,6 +6,9 @@ type InputSize = 'sm' | 'md' | 'lg';
 interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   inputSize?: InputSize;
   error?: boolean;
+  // Caps the input at 7rem (112px) — use for currency, percentages, and other
+  // small numeric values so they don't stretch in wide containers.
+  compact?: boolean;
 }
 
 const sizeStyles: Record<InputSize, string> = {
@@ -15,8 +18,9 @@ const sizeStyles: Record<InputSize, string> = {
 };
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ inputSize = 'md', error = false, className = '', disabled, ...props }, ref) => {
+  ({ inputSize = 'md', error = false, compact = false, className = '', disabled, ...props }, ref) => {
     const baseStyles = 'w-full bg-slate-700 text-white rounded-lg border-0 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500';
+    const compactStyles = compact ? 'max-w-28' : '';
     const errorStyles = error ? 'ring-2 ring-red-500' : '';
     const disabledStyles = disabled ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : '';
 
@@ -24,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <input
         ref={ref}
         disabled={disabled}
-        className={`${baseStyles} ${sizeStyles[inputSize]} ${errorStyles} ${disabledStyles} ${className}`}
+        className={`${baseStyles} ${sizeStyles[inputSize]} ${compactStyles} ${errorStyles} ${disabledStyles} ${className}`}
         {...props}
       />
     );

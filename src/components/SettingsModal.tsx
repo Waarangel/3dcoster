@@ -205,6 +205,7 @@ export function SettingsModal({
                   <Input
                     type="number"
                     step="0.01"
+                    compact
                     value={electricity.costPerKwh}
                     onChange={e => onElectricityChange({ costPerKwh: parseFloat(e.target.value) || 0 })}
                   />
@@ -221,6 +222,7 @@ export function SettingsModal({
                   <Input
                     type="number"
                     step="0.01"
+                    compact
                     value={userProfile.laborHourlyRate || ''}
                     onChange={e => onUserProfileChange({ ...userProfile, laborHourlyRate: parseFloat(e.target.value) || 0 })}
                     placeholder="20"
@@ -240,6 +242,7 @@ export function SettingsModal({
                     step="0.1"
                     min="0"
                     max="99.9"
+                    compact
                     value={userProfile.defaultProfitMargin ?? 30}
                     onChange={e => {
                       const parsed = parseFloat(e.target.value);
@@ -258,14 +261,15 @@ export function SettingsModal({
           {/* Delivery Tab — local pickup/dropoff + carrier base rates merged */}
           {activeTab === 'delivery' && (
             <div className="space-y-6">
-              {/* Local Delivery Settings */}
+              {/* Local Delivery Settings — single row of 3 narrow fields */}
               <div>
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Local Pickup & Dropoff</h3>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Max Delivery Radius ({distanceUnit})</label>
+                    <label className="block text-xs text-slate-400 mb-1">Max Radius ({distanceUnit})</label>
                     <Input
                       type="number"
+                      compact
                       value={distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm).toFixed(1) : shippingConfig.maxDeliveryRadiusKm}
                       onChange={e => {
                         const inputVal = parseFloat(e.target.value) || 0;
@@ -273,47 +277,48 @@ export function SettingsModal({
                       }}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Fuel Price ({currencySymbol}/{fuelUnit})</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={shippingConfig.gasPricePerLiter}
-                        onChange={e => onShippingChange({ ...shippingConfig, gasPricePerLiter: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">{fuelUnit === 'gal' ? 'Fuel Economy (MPG)' : 'Fuel (L/100km)'}</label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={fuelUnit === 'gal' ? litersPer100KmToMpg(shippingConfig.vehicleFuelEfficiency).toFixed(1) : shippingConfig.vehicleFuelEfficiency}
-                        onChange={e => {
-                          const inputVal = parseFloat(e.target.value) || 0;
-                          onShippingChange({ ...shippingConfig, vehicleFuelEfficiency: fuelUnit === 'gal' ? mpgToLitersPer100Km(inputVal) : inputVal });
-                        }}
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Fuel Price ({currencySymbol}/{fuelUnit})</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      compact
+                      value={shippingConfig.gasPricePerLiter}
+                      onChange={e => onShippingChange({ ...shippingConfig, gasPricePerLiter: parseFloat(e.target.value) || 0 })}
+                    />
                   </div>
-                  <p className="text-xs text-slate-500">
-                    {fuelUnit === 'gal'
-                      ? 'Dropoff cost = (distance × 2) ÷ MPG × fuel price'
-                      : 'Dropoff cost = (distance × 2) × (L/100km ÷ 100) × fuel price'}
-                  </p>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">{fuelUnit === 'gal' ? 'MPG' : 'L/100km'}</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      compact
+                      value={fuelUnit === 'gal' ? litersPer100KmToMpg(shippingConfig.vehicleFuelEfficiency).toFixed(1) : shippingConfig.vehicleFuelEfficiency}
+                      onChange={e => {
+                        const inputVal = parseFloat(e.target.value) || 0;
+                        onShippingChange({ ...shippingConfig, vehicleFuelEfficiency: fuelUnit === 'gal' ? mpgToLitersPer100Km(inputVal) : inputVal });
+                      }}
+                    />
+                  </div>
                 </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  {fuelUnit === 'gal'
+                    ? 'Dropoff cost = (distance × 2) ÷ MPG × fuel price'
+                    : 'Dropoff cost = (distance × 2) × (L/100km ÷ 100) × fuel price'}
+                </p>
               </div>
 
               {/* Built-in Carriers — merged from former Carriers tab */}
               <div className="pt-4 border-t border-slate-700">
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Typical Carrier Costs</h3>
                 <p className="text-xs text-slate-500 mb-3">These auto-fill in the calculator. Override per-order as needed.</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">UPS ({currencySymbol})</label>
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={shippingConfig.upsBaseCost}
                       onChange={e => onShippingChange({ ...shippingConfig, upsBaseCost: parseFloat(e.target.value) || 0 })}
                     />
@@ -323,6 +328,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={shippingConfig.fedexBaseCost}
                       onChange={e => onShippingChange({ ...shippingConfig, fedexBaseCost: parseFloat(e.target.value) || 0 })}
                     />
@@ -332,6 +338,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={shippingConfig.dhlBaseCost}
                       onChange={e => onShippingChange({ ...shippingConfig, dhlBaseCost: parseFloat(e.target.value) || 0 })}
                     />
@@ -343,6 +350,7 @@ export function SettingsModal({
                         <Input
                           type="number"
                           step="0.01"
+                          compact
                           value={shippingConfig.canadaPostBaseCost}
                           onChange={e => onShippingChange({ ...shippingConfig, canadaPostBaseCost: parseFloat(e.target.value) || 0 })}
                         />
@@ -352,6 +360,7 @@ export function SettingsModal({
                         <Input
                           type="number"
                           step="0.01"
+                          compact
                           value={shippingConfig.purolatorBaseCost}
                           onChange={e => onShippingChange({ ...shippingConfig, purolatorBaseCost: parseFloat(e.target.value) || 0 })}
                         />
@@ -364,6 +373,7 @@ export function SettingsModal({
                       <Input
                         type="number"
                         step="0.01"
+                        compact
                         value={shippingConfig.uspsBaseCost}
                         onChange={e => onShippingChange({ ...shippingConfig, uspsBaseCost: parseFloat(e.target.value) || 0 })}
                       />
@@ -375,6 +385,7 @@ export function SettingsModal({
                       <Input
                         type="number"
                         step="0.01"
+                        compact
                         value={shippingConfig.royalMailBaseCost}
                         onChange={e => onShippingChange({ ...shippingConfig, royalMailBaseCost: parseFloat(e.target.value) || 0 })}
                       />
@@ -386,6 +397,7 @@ export function SettingsModal({
                       <Input
                         type="number"
                         step="0.01"
+                        compact
                         value={shippingConfig.australiaPostBaseCost}
                         onChange={e => onShippingChange({ ...shippingConfig, australiaPostBaseCost: parseFloat(e.target.value) || 0 })}
                       />
@@ -416,9 +428,10 @@ export function SettingsModal({
                               type="number"
                               step="0.01"
                               min="0"
+                              compact
                               value={carrier.defaultCost}
                               onChange={e => handleUpdateCarrier(carrier.id, 'defaultCost', Math.max(0, parseFloat(e.target.value) || 0))}
-                              className="w-20 text-right"
+                              className="text-right"
                             />
                             <Button
                               variant="ghost"
@@ -506,6 +519,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.1"
+                      compact
                       value={marketplaceFees.facebookShippedPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, facebookShippedPercent: parseFloat(e.target.value) || 0 })}
                     />
@@ -515,6 +529,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={marketplaceFees.facebookMinFee}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, facebookMinFee: parseFloat(e.target.value) || 0 })}
                     />
@@ -524,6 +539,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.1"
+                      compact
                       value={marketplaceFees.facebookProcessingPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, facebookProcessingPercent: parseFloat(e.target.value) || 0 })}
                     />
@@ -540,6 +556,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.1"
+                      compact
                       value={marketplaceFees.etsyTransactionPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyTransactionPercent: parseFloat(e.target.value) || 0 })}
                     />
@@ -549,6 +566,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.1"
+                      compact
                       value={marketplaceFees.etsyPaymentPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyPaymentPercent: parseFloat(e.target.value) || 0 })}
                     />
@@ -558,6 +576,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={marketplaceFees.etsyPaymentFixed}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyPaymentFixed: parseFloat(e.target.value) || 0 })}
                     />
@@ -567,6 +586,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={marketplaceFees.etsyListingFee}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyListingFee: parseFloat(e.target.value) || 0 })}
                     />
@@ -576,6 +596,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.1"
+                      compact
                       value={marketplaceFees.etsyOffsiteAdPercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyOffsiteAdPercent: parseFloat(e.target.value) || 0 })}
                     />
@@ -592,6 +613,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.1"
+                      compact
                       value={marketplaceFees.ebayFinalValuePercent}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, ebayFinalValuePercent: parseFloat(e.target.value) || 0 })}
                     />
@@ -601,6 +623,7 @@ export function SettingsModal({
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={marketplaceFees.ebayFixedFee}
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, ebayFixedFee: parseFloat(e.target.value) || 0 })}
                     />
@@ -616,6 +639,7 @@ export function SettingsModal({
                   <Input
                     type="number"
                     step="0.1"
+                    compact
                     value={marketplaceFees.amazonHandmadePercent}
                     onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, amazonHandmadePercent: parseFloat(e.target.value) || 0 })}
                   />
@@ -645,19 +669,21 @@ export function SettingsModal({
                               type="number"
                               step="0.1"
                               min="0"
+                              compact
                               value={mp.feePercent}
                               onChange={e => handleUpdateMarketplace(mp.id, 'feePercent', Math.max(0, parseFloat(e.target.value) || 0))}
                               placeholder="%"
-                              className="w-16 text-right"
+                              className="text-right"
                             />
                             <Input
                               type="number"
                               step="0.01"
                               min="0"
+                              compact
                               value={mp.fixedFee}
                               onChange={e => handleUpdateMarketplace(mp.id, 'fixedFee', Math.max(0, parseFloat(e.target.value) || 0))}
                               placeholder="Fixed"
-                              className="w-16 text-right"
+                              className="text-right"
                             />
                             <Button
                               variant="ghost"
@@ -699,32 +725,29 @@ export function SettingsModal({
                   </div>
                 )}
 
-                {/* Add new marketplace */}
-                <div className="flex gap-2">
+                {/* Add new marketplace — grid template keeps name wide and numerics narrow */}
+                <div className="grid grid-cols-[1fr_4rem_4rem_auto] gap-2">
                   <Input
                     type="text"
                     placeholder="Marketplace name"
                     value={newMarketplaceName}
                     onChange={e => setNewMarketplaceName(e.target.value)}
-                    className="flex-1"
                   />
                   <Input
                     type="number"
                     step="0.1"
                     min="0"
-                    placeholder="Fee %"
+                    placeholder="%"
                     value={newMarketplacePercent}
                     onChange={e => setNewMarketplacePercent(e.target.value)}
-                    className="w-16"
                   />
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={`Fixed (${currencySymbol})`}
+                    placeholder={currencySymbol}
                     value={newMarketplaceFixed}
                     onChange={e => setNewMarketplaceFixed(e.target.value)}
-                    className="w-20"
                   />
                   <Button
                     onClick={handleAddMarketplace}
