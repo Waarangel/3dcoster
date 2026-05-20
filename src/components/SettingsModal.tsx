@@ -513,7 +513,7 @@ export function SettingsModal({
               {/* Facebook Marketplace */}
               <div>
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Facebook Marketplace</h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-wrap gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Selling Fee (%)</label>
                     <Input
@@ -550,7 +550,7 @@ export function SettingsModal({
               {/* Etsy */}
               <div className="pt-4 border-t border-slate-700">
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Etsy</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-wrap gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Transaction Fee (%)</label>
                     <Input
@@ -591,7 +591,7 @@ export function SettingsModal({
                       onChange={e => onMarketplaceFeesChange({ ...marketplaceFees, etsyListingFee: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <label className="block text-xs text-slate-400 mb-1">Offsite Ads Fee (%)</label>
                     <Input
                       type="number"
@@ -607,7 +607,7 @@ export function SettingsModal({
               {/* eBay */}
               <div className="pt-4 border-t border-slate-700">
                 <h3 className="text-sm font-medium text-slate-300 mb-3">eBay</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-wrap gap-3">
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Final Value Fee (%)</label>
                     <Input
