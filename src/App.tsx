@@ -276,8 +276,6 @@ function App() {
             jobs={jobs}
             isLoading={jobsLoading}
             materials={materials}
-            printers={printers}
-            printerInstances={printerInstances}
             shippingConfig={shippingConfig}
             userCurrency={userProfile.currency}
             onDeleteJob={deleteJob}

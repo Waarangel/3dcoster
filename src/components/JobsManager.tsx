@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import type { PrintJob, Material, PrinterConfig, PrinterInstance, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
@@ -8,8 +8,6 @@ interface JobsManagerProps {
   jobs: PrintJob[];
   isLoading: boolean;
   materials: Material[];
-  printers: PrinterConfig[];
-  printerInstances: PrinterInstance[];
   shippingConfig: ShippingConfig;
   userCurrency: Currency;
   onDeleteJob: (id: string) => Promise<void>;
@@ -41,7 +39,7 @@ function JobsListSkeleton() {
   );
 }
 
-export function JobsManager({ jobs, isLoading, materials, printers, printerInstances, shippingConfig, userCurrency, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState(1);
@@ -207,15 +205,6 @@ export function JobsManager({ jobs, isLoading, materials, printers, printerInsta
     const filament = materials.find(m => m.id === filamentId);
     return filament ? `${filament.brand || ''} ${filament.filamentType || filament.name}`.trim() : 'Unknown';
   };
-
-  // Helper function for potential future use
-  const _getPrinterName = (printerInstanceId: string) => {
-    const instance = printerInstances.find(p => p.id === printerInstanceId);
-    if (!instance) return 'Unknown';
-    const config = printers.find(p => p.id === instance.printerConfigId);
-    return `${instance.nickname} (${config?.name || 'Unknown'})`;
-  };
-  void _getPrinterName; // Silence unused warning
 
   return (
     <div className="space-y-6">
