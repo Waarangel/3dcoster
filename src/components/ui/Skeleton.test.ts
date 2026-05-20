@@ -50,4 +50,18 @@ describe('Skeleton', () => {
     const html = renderToStaticMarkup(React.createElement(Skeleton, { className: 'my-custom-class' }));
     expect(html).toContain('my-custom-class');
   });
+
+  // --- WR-01 contract guarantee: consumer overrides REPLACE variant defaults,
+  // they do not ride alongside them. A `card` variant with `width="w-12"` must
+  // NOT also emit the variant's default `w-full`, and `rounded="rounded-full"`
+  // must NOT also emit the variant's default `rounded-xl`.
+  it('Test 8 (WR-01 override replacement): width/rounded overrides replace variant defaults', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(Skeleton, { variant: 'card', width: 'w-12', rounded: 'rounded-full' })
+    );
+    expect(html).toContain('w-12');
+    expect(html).toContain('rounded-full');
+    expect(html).not.toContain('w-full');
+    expect(html).not.toContain('rounded-xl');
+  });
 });
