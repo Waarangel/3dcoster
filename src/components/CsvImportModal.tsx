@@ -150,7 +150,7 @@ export function CsvImportModal({ isOpen, onClose, existingAssets, onImportAssets
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-3xl max-h-[85vh] flex flex-col shadow-xl">
