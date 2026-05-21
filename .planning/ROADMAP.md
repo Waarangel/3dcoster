@@ -64,7 +64,13 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
   4. A "Tax (X%)" line appears in the cost breakdown after `sellingPrice`; the total displayed is `sellingPrice + taxAmount`; the tax row is hidden when rate is 0%
   5. The `calculateTax` unit tests in `costCalc.test.ts` pass: rate=0, EU/UK/AU rates, `rate=0.23 price=12.50 → taxAmount=2.88` (centime-rounding test), and the order-of-operations guard that asserts `taxAmount !== subtotal × rate` when depreciation > 0 — the existing `it.todo` is activated (not skipped)
   6. All currency, percentage, and numeric inputs in CostCalculator, AssetLibrary, JobsManager, PrinterSettings, and import modals use the `compact` prop on `<Input>`; descriptive placeholder text is replaced with `<InfoTooltip>` next to the label, with placeholders showing example values only
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 13-01-PLAN.md — Create taxRates data + taxResolution util + tests (Wave 1, autonomous)
+- [ ] 13-02-PLAN.md — Append calculateTax + activate it.todo (Wave 1, autonomous)
+- [ ] 13-03-PLAN.md — SettingsModal Default Tax Rate field + InfoTooltip migrations + compact sweep (Wave 1, autonomous)
+- [ ] 13-04-PLAN.md — AssetLibrary + JobsManager + PrinterSettings UI sweep + AssetLibrary NewBadge cleanup (Wave 1, autonomous)
+- [ ] 13-05-PLAN.md — CostCalculator per-job Tax UI + Tax row + persistence + sweep + NewBadge cleanup (Wave 2, autonomous; depends on 13-01, 13-02)
+- [ ] 13-06-PLAN.md — UI-10 final cleanup: UserProfileModal + GcodeImport NewBadge removal + features.ts registry prune (Wave 3, autonomous; depends on 13-03, 13-04, 13-05)
 **UI hint**: yes
 
 ### Phase 14: Customer Details + Etsy Helper
@@ -113,7 +119,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
-| 13. Tax Model + UI Sweep | 0/? | Not started | — |
+| 13. Tax Model + UI Sweep | 0/6 | Not started | — |
 | 14. Customer Details + Etsy Helper | 0/? | Not started | — |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 16. Printable PDF Quote | 0/? | Not started | — |
