@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PrinterConfig, PrinterInstance, PrintJob } from '../types';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
+import { InfoTooltip } from './ui/InfoTooltip';
 import { PrinterIcon } from './ui/icons';
 
 interface PrinterSettingsProps {
@@ -134,6 +135,7 @@ export function PrinterSettings({
                 <label className="block text-xs text-slate-400 mb-1">Starting Hours</label>
                 <Input
                   type="number"
+                  compact
                   value={newInstanceHours}
                   onChange={e => setNewInstanceHours(parseFloat(e.target.value) || 0)}
                   placeholder="0"
@@ -146,17 +148,23 @@ export function PrinterSettings({
               <h4 className="text-xs font-medium text-slate-300 mb-3">Cost Recovery (Break-Even)</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Purchase Price ($)</span>
+                    <InfoTooltip text="What you paid (may differ from MSRP)" />
+                  </label>
                   <Input
                     type="number"
+                    compact
                     value={newInstancePurchasePrice ?? selectedPrinterConfig?.purchasePrice ?? ''}
                     onChange={e => setNewInstancePurchasePrice(e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder={selectedPrinterConfig?.purchasePrice?.toString() || '0'}
                   />
-                  <p className="text-xs text-slate-500 mt-1">What you paid</p>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Recovery Period</label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Recovery Period</span>
+                    <InfoTooltip text="Target months to recover your investment via printed-job sales" />
+                  </label>
                   <Select
                     value={newInstanceRecoveryMonths}
                     onChange={e => setNewInstanceRecoveryMonths(parseInt(e.target.value))}
@@ -168,17 +176,19 @@ export function PrinterSettings({
                     <option value={24}>24 months (2 years)</option>
                     <option value={36}>36 months (3 years)</option>
                   </Select>
-                  <p className="text-xs text-slate-500 mt-1">Target to break even</p>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Monthly Print Hours</label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Monthly Print Hours</span>
+                    <InfoTooltip text="Expected hours/month — used to estimate cost recovery" />
+                  </label>
                   <Input
                     type="number"
+                    compact
                     value={newInstanceMonthlyHours}
                     onChange={e => setNewInstanceMonthlyHours(parseFloat(e.target.value) || 0)}
                     placeholder="40"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Expected usage</p>
                 </div>
               </div>
               {/* Show calculated depreciation */}
@@ -275,6 +285,7 @@ export function PrinterSettings({
                           <label className="block text-xs text-slate-400 mb-1">Print Hours</label>
                           <Input
                             type="number"
+                            compact
                             value={instance.printHours}
                             onChange={e => onUpdateInstance({ ...instance, printHours: parseFloat(e.target.value) || 0 })}
                           />
@@ -283,6 +294,7 @@ export function PrinterSettings({
                           <label className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
                           <Input
                             type="number"
+                            compact
                             value={instance.actualPurchasePrice ?? config?.purchasePrice ?? ''}
                             onChange={e => onUpdateInstance({ ...instance, actualPurchasePrice: e.target.value ? parseFloat(e.target.value) : undefined })}
                           />
@@ -307,6 +319,7 @@ export function PrinterSettings({
                           <label className="block text-xs text-slate-400 mb-1">Monthly Print Hours</label>
                           <Input
                             type="number"
+                            compact
                             value={instance.estimatedMonthlyPrintHours ?? 40}
                             onChange={e => onUpdateInstance({ ...instance, estimatedMonthlyPrintHours: parseFloat(e.target.value) || 0 })}
                           />
