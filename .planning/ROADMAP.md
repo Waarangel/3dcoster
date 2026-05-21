@@ -28,7 +28,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 
 ## Phases
 
-- [ ] **Phase 12: Schema Foundation** — Dexie v5→v6 migration adds v1.2 fields and wires the multi-tab reload guard
+- [x] **Phase 12: Schema Foundation** — Dexie v5→v6 migration adds v1.2 fields and wires the multi-tab reload guard (completed 2026-05-21)
 - [ ] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms
 - [ ] **Phase 14: Customer Details + Etsy Helper** — Customer fields on jobs, display in JobsManager, Etsy ToS collapsible checklist, and features.ts dead-badge cleanup
 - [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset
@@ -51,7 +51,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 - [x] 12-01-PLAN.md — Extend `src/types.ts` with `JobCustomer` interface, 5 new `PrintJob` optional fields, and 2 new `UserProfile` optional fields (Wave 1, autonomous)
 - [x] 12-02-PLAN.md — Extract `backfillTagsOnJob` pure helper into `src/db/backfill.ts` and unit-test it under jsdom (Wave 1, autonomous)
 - [x] 12-03-PLAN.md — Add the Dexie v6 migration block and `db.on('versionchange', ...)` reload handler in `src/db/database.ts` (Wave 2, autonomous; depends on 12-02)
-- [ ] 12-04-PLAN.md — `npm run build` gate + real-browser UAT for v5→v6 migration and multi-tab reload (Wave 3, has checkpoint:human-verify; depends on 12-01, 12-02, 12-03)
+- [x] 12-04-PLAN.md — `npm run build` gate + real-browser UAT for v5→v6 migration and multi-tab reload (Wave 3, has checkpoint:human-verify; depends on 12-01, 12-02, 12-03)
 
 ### Phase 13: Tax Model + UI Sweep
 **Goal**: Users can set, override, and see a tax rate on every job with correct rounding and order-of-operations, backed by a region default — and all currency/numeric inputs across touched forms use the compact/InfoTooltip pattern in one pass
@@ -112,7 +112,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Schema Foundation | 3/4 | In Progress|  |
+| 12. Schema Foundation | 4/4 | Complete   | 2026-05-21 |
 | 13. Tax Model + UI Sweep | 0/? | Not started | — |
 | 14. Customer Details + Etsy Helper | 0/? | Not started | — |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
