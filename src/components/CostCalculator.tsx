@@ -730,19 +730,23 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
                 placeholder="0"
               />
-              {modelCost > 0 && (
-                <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                  {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
-                  <input
-                    type="checkbox"
-                    checked={modelCostPerUnit}
-                    onChange={e => setModelCostPerUnit(e.target.checked)}
-                    className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
-                  />
-                  <span className="text-xs text-slate-400">Per-unit license</span>
-                  <NewBadge feature="per-unit-licensing" />
-                </label>
-              )}
+              {/* Per-unit toggle slot — reserved at all times so the row never shifts.
+                  Visibility (not display) is toggled so the label still occupies its space. */}
+              <label
+                className={`flex items-center gap-2 mt-2 cursor-pointer ${modelCost > 0 ? '' : 'invisible'}`}
+                aria-hidden={modelCost > 0 ? undefined : true}
+              >
+                {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
+                <input
+                  type="checkbox"
+                  checked={modelCostPerUnit}
+                  onChange={e => setModelCostPerUnit(e.target.checked)}
+                  tabIndex={modelCost > 0 ? 0 : -1}
+                  className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
+                />
+                <span className="text-xs text-slate-400">Per-unit license</span>
+                <NewBadge feature="per-unit-licensing" />
+              </label>
             </div>
 
             <div>
