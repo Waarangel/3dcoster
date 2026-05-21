@@ -189,6 +189,16 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setFailureRate(editingJob.failureRate);
       setMaterialsUsed(editingJob.materialsUsed);
       setSellingPrice(editingJob.sellingPrice);
+      // Seed profit margin + target profit from the saved cost basis so the
+      // user sees the historical margin immediately, not the user-profile default.
+      // The derive-from-price effect rebases these against current trueCost once
+      // filaments and materials reconcile, so changed asset prices still surface.
+      if (editingJob.sellingPrice > 0 && editingJob.costPerUnit > 0) {
+        const savedProfit = editingJob.sellingPrice - editingJob.costPerUnit;
+        const savedMargin = (savedProfit / editingJob.sellingPrice) * 100;
+        setTargetProfit(parseFloat(savedProfit.toFixed(2)));
+        setProfitMarginPercent(parseFloat(savedMargin.toFixed(1)));
+      }
       setLastEdited('price');
 
       // Restore filament rows from FilamentUsage[] (new multi-filament data model)
