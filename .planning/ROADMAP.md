@@ -47,7 +47,11 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
   2. The v6 upgrade callback in `database.ts` sets `tags = []` on all existing job records; accessing `job.tags` on any loaded job never throws `TypeError: Cannot read properties of undefined`
   3. Opening the app in a second browser tab after one tab has triggered the v6 migration causes the second tab to reload automatically rather than displaying a blank white screen — `db.on('versionchange', () => window.location.reload())` is present in `database.ts`
   4. TypeScript types reflect all new optional fields on `PrintJob` (`tags?: string[]`, `customer?: JobCustomer`, `taxRate?: number`, `taxAmount?: number`) and `UserProfile` (`defaultTaxRate?: number`, `nextQuoteNumber?: number`) with no compilation errors
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 12-01-PLAN.md — Extend `src/types.ts` with `JobCustomer` interface, 5 new `PrintJob` optional fields, and 2 new `UserProfile` optional fields (Wave 1, autonomous)
+- [ ] 12-02-PLAN.md — Extract `backfillTagsOnJob` pure helper into `src/db/backfill.ts` and unit-test it under jsdom (Wave 1, autonomous)
+- [ ] 12-03-PLAN.md — Add the Dexie v6 migration block and `db.on('versionchange', ...)` reload handler in `src/db/database.ts` (Wave 2, autonomous; depends on 12-02)
+- [ ] 12-04-PLAN.md — `npm run build` gate + real-browser UAT for v5→v6 migration and multi-tab reload (Wave 3, has checkpoint:human-verify; depends on 12-01, 12-02, 12-03)
 
 ### Phase 13: Tax Model + UI Sweep
 **Goal**: Users can set, override, and see a tax rate on every job with correct rounding and order-of-operations, backed by a region default — and all currency/numeric inputs across touched forms use the compact/InfoTooltip pattern in one pass
@@ -108,7 +112,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Schema Foundation | 0/? | Not started | — |
+| 12. Schema Foundation | 0/4 | Planned — ready for execute | — |
 | 13. Tax Model + UI Sweep | 0/? | Not started | — |
 | 14. Customer Details + Etsy Helper | 0/? | Not started | — |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
@@ -168,5 +172,6 @@ Phase 13 + Phase 14 both merged → required before:
 ---
 
 *Roadmap created: 2026-05-20*
+*Phase 12 plans created: 2026-05-21*
 *Replaces: v1.1 Polish & Foundation roadmap (Phases 7–11, completed 2026-05-20)*
 *Phase numbering continues from v1.1 — v1.2 phases start at Phase 12*
