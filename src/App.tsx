@@ -271,6 +271,7 @@ function App() {
             laborHourlyRate={userProfile.laborHourlyRate}
             defaultProfitMargin={userProfile.defaultProfitMargin ?? 30}
             userCurrency={userProfile.currency}
+            userProfile={userProfile}
             shippingConfig={shippingConfig}
             onSaveJob={handleSaveJob}
             onUpdateJob={updateJob}
