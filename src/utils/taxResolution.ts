@@ -16,7 +16,7 @@ const US_NOTE = US_MARKETPLACE_FACILITATOR_NOTE;
 export type TaxRateSource =
   | { kind: 'override'; rate: number }
   | { kind: 'settings'; rate: number }
-  | { kind: 'region'; rate: number; region: string; rateAsOf: string; note?: string }
+  | { kind: 'region'; rate: number; region: string; rateAsOf: string; lastVerified: string; note?: string }
   | { kind: 'eu-average'; rate: number; note: string }
   | { kind: 'manual'; rate: 0 };
 
@@ -58,20 +58,25 @@ export function resolveTaxRate(input: ResolveTaxRateInput): TaxRateSource {
       rate: row.rate,
       region: row.region,
       rateAsOf: row.rateAsOf,
+      lastVerified: row.lastVerified,
       note: row.note,
     };
   }
   return { kind: 'manual', rate: 0 };
 }
 
-// D-03 staleness: returns true when rateAsOf is more than 18 months before `now`.
-// Uses 30.44 days/month (average) to dodge Pitfall 5 (timezone-dependent parsing
-// flakiness at the boundary). Returns false for invalid date strings — defensive
-// no-throw idiom matching the rest of the util layer.
-export function isRateStale(rateAsOf: string, now: Date = new Date()): boolean {
-  const asOf = new Date(rateAsOf);
-  if (Number.isNaN(asOf.getTime())) return false;
-  const ageMs = now.getTime() - asOf.getTime();
+// D-03 staleness: returns true when the input date is more than 18 months
+// before `now`. Intended to be called against `lastVerified` (the date
+// 3DCoster checked the row) — NOT `rateAsOf` (the statutory effective date).
+// Sweden's 25% has been in force since 1996-01-01 and that's still correct
+// today; what matters is "did anyone check recently".
+// Uses 30.44 days/month (average) to dodge Pitfall 5 (timezone-dependent
+// parsing flakiness at the boundary). Returns false for invalid date strings
+// — defensive no-throw idiom matching the rest of the util layer.
+export function isRateStale(date: string, now: Date = new Date()): boolean {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const ageMs = now.getTime() - parsed.getTime();
   const monthsApprox = ageMs / (1000 * 60 * 60 * 24 * 30.44);
   return monthsApprox > 18;
 }
@@ -91,11 +96,14 @@ export function tooltipForSource(source: TaxRateSource, userCurrency: Currency):
       base = `From Settings default — ${source.rate}%`;
       break;
     case 'region': {
-      const stale = isRateStale(source.rateAsOf)
-        ? ' — rate may be stale, verify locally'
+      // Staleness is judged on `lastVerified` (when 3DCoster checked the row),
+      // NOT `rateAsOf` (the statutory effective date). A 1996 rate that's still
+      // correct today is not stale — it just hasn't changed in 30 years.
+      const stale = isRateStale(source.lastVerified)
+        ? ' — verify locally, may be out of date'
         : '';
       const note = source.note ? `\n${source.note}` : '';
-      base = `From your region (${source.region}, as of ${source.rateAsOf}${stale}).${note}`;
+      base = `From your region (${source.region} — ${source.rate}%, effective since ${source.rateAsOf}; verified by 3DCoster ${source.lastVerified}${stale}).${note}`;
       break;
     }
     case 'eu-average':

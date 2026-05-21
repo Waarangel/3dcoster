@@ -60,12 +60,12 @@ describe('resolveTaxRate', () => {
 // ---------------------------------------------------------------------------
 
 describe('isRateStale', () => {
-  it('is stale when rateAsOf is more than 18 months before now', () => {
+  it('is stale when lastVerified is more than 18 months before now', () => {
     // 2024-01-01 to 2026-05-21 ≈ 28.5 months — well past the 18-month cutoff
     expect(isRateStale('2024-01-01', new Date('2026-05-21'))).toBe(true);
   });
 
-  it('is fresh when rateAsOf is within 18 months of now', () => {
+  it('is fresh when lastVerified is within 18 months of now', () => {
     // 2025-08-01 to 2026-05-21 ≈ 9.7 months — well inside the 18-month cutoff
     expect(isRateStale('2025-08-01', new Date('2026-05-21'))).toBe(false);
   });
@@ -109,7 +109,13 @@ describe('tooltipForSource', () => {
   });
 
   it('region + non-USD (GBP): contains region text and NOT the marketplace note', () => {
-    const source: TaxRateSource = { kind: 'region', rate: 20, region: 'GB', rateAsOf: '2011-01-04' };
+    const source: TaxRateSource = {
+      kind: 'region',
+      rate: 20,
+      region: 'GB',
+      rateAsOf: '2011-01-04',
+      lastVerified: '2026-05-21',
+    };
     const result = tooltipForSource(source, 'GBP');
     expect(result).toContain('From your region (GB');
     expect(result).not.toContain('marketplaces');
@@ -121,6 +127,7 @@ describe('tooltipForSource', () => {
       rate: 0,
       region: 'US',
       rateAsOf: '2025-01-01',
+      lastVerified: '2026-05-21',
       note: US_NOTE_FIXTURE,
     };
     const result = tooltipForSource(source, 'USD');
