@@ -22,8 +22,8 @@ Requirements for milestone v1.1. Each maps to exactly one roadmap phase. All req
 
 ### Performance
 
-- [ ] **PERF-01**: `vite.config.ts` defines `build.rollupOptions.output.manualChunks` that splits at minimum the React runtime and Dexie into separate vendor chunks; main app chunk is under 300 KB gzipped (currently ~189 KB gzipped pre-split, but the largest dep mix will benefit from explicit split)
-- [ ] **PERF-02**: JobsManager and Asset library lists use virtualization (react-window or react-virtual) when the list exceeds 100 items; lists of any size remain smooth on a low-end device equivalent (CPU 4× slowdown in DevTools)
+- [x] **PERF-01**: `vite.config.ts` defines `build.rollupOptions.output.manualChunks` that splits at minimum the React runtime and Dexie into separate vendor chunks; main app chunk is under 300 KB gzipped (currently ~189 KB gzipped pre-split, but the largest dep mix will benefit from explicit split)
+- [x] **PERF-02**: JobsManager and Asset library lists use virtualization (react-window or react-virtual) when the list exceeds 100 items; lists of any size remain smooth on a low-end device equivalent (CPU 4× slowdown in DevTools)
 
 ## v2 / Future Requirements
 
@@ -65,8 +65,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-05 | Phase 9 | Pending |
 | TEST-01 | Phase 10 | Validated |
 | TEST-02 | Phase 10 | Validated |
-| PERF-01 | Phase 11 | Pending |
-| PERF-02 | Phase 11 | Pending |
+| PERF-01 | Phase 11 | Complete |
+| PERF-02 | Phase 11 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 9 total
