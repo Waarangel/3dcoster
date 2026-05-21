@@ -119,6 +119,22 @@ export function calculateAmortization(): number {
   return 0;
 }
 
+// Tax: Math.round(sellingPrice * ratePercent) / 100 — half-away-from-zero rounding to 2 decimals.
+// TAX-05 lock: tax applies to sellingPrice (not subtotal); see costCalc.test.ts order-of-operations guard.
+export function calculateTax(
+  sellingPrice: number,
+  ratePercent: number,
+): { taxAmount: number; ratePercent: number } {
+  if (!Number.isFinite(ratePercent) || ratePercent <= 0) {
+    return { taxAmount: 0, ratePercent: 0 };
+  }
+  if (!Number.isFinite(sellingPrice) || sellingPrice <= 0) {
+    return { taxAmount: 0, ratePercent };
+  }
+  const taxAmount = Math.round(sellingPrice * ratePercent) / 100;
+  return { taxAmount, ratePercent };
+}
+
 // Orchestrator. Returns the full 12-field CostBreakdown contract,
 // byte-for-byte identical to the useMemo at CostCalculator.tsx:374-446.
 export function calculateCost(input: CalcInput): CostBreakdown {
