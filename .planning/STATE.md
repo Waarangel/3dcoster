@@ -4,8 +4,8 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 13 UI-SPEC approved
-last_updated: "2026-05-21T14:51:34.530Z"
-last_activity: 2026-05-21 -- Phase 13 planning complete
+last_updated: "2026-05-21T14:59:44.118Z"
+last_activity: 2026-05-21 -- Phase 13 execution started
 progress:
   total_phases: 5
   completed_phases: 1
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 13 — tax model + ui sweep
+**Current focus:** Phase 13 — tax-model-ui-sweep
 
 ## Current Position
 
-Phase: 13
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-05-21 -- Phase 13 planning complete
+Phase: 13 (tax-model-ui-sweep) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 13
+Last activity: 2026-05-21 -- Phase 13 execution started
 
 ## Performance Metrics
 
