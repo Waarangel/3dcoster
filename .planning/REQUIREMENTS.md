@@ -9,8 +9,8 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 ### Schema (Dexie v5 → v6 foundation)
 
-- [ ] **SCHEMA-01**: Dexie v5→v6 migration adds optional fields to `PrintJob` (`tags?: string[]`, `customer?: JobCustomer`, `taxRate?: number`, `taxAmount?: number`) and to `UserProfile` (`defaultTaxRate?: number`, `nextQuoteNumber?: number`); existing v1.0/v1.1 jobs load without error (upgrade callback backfills `tags = []`)
-- [ ] **SCHEMA-02**: A `versionchange` handler (`db.on('versionchange', () => window.location.reload())`) is wired in `database.ts`; opening a second tab after a schema upgrade reloads the first tab cleanly instead of throwing the white-screen crash
+- [x] **SCHEMA-01**: Dexie v5→v6 migration adds optional fields to `PrintJob` (`tags?: string[]`, `customer?: JobCustomer`, `taxRate?: number`, `taxAmount?: number`) and to `UserProfile` (`defaultTaxRate?: number`, `nextQuoteNumber?: number`); existing v1.0/v1.1 jobs load without error (upgrade callback backfills `tags = []`)
+- [x] **SCHEMA-02**: A `versionchange` handler (`db.on('versionchange', () => window.location.reload())`) is wired in `database.ts`; opening a second tab after a schema upgrade reloads the first tab cleanly instead of throwing the white-screen crash
 
 ### Tax (three-layer model: region → Settings → per-job)
 
@@ -112,8 +112,8 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHEMA-01 | Phase 12 | Pending |
-| SCHEMA-02 | Phase 12 | Pending |
+| SCHEMA-01 | Phase 12 | Complete |
+| SCHEMA-02 | Phase 12 | Complete |
 | TAX-01 | Phase 13 | Pending |
 | TAX-02 | Phase 13 | Pending |
 | TAX-03 | Phase 13 | Pending |
