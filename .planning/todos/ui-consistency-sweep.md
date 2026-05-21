@@ -1,3 +1,19 @@
+---
+created: 2026-05-20
+title: UI Consistency Sweep — Apply rules everywhere
+area: ui
+resolves_phase: [13, 14]
+files:
+  - src/components/CostCalculator.tsx
+  - src/components/AssetLibrary.tsx
+  - src/components/JobsManager.tsx
+  - src/components/PrinterSettings.tsx
+  - src/components/CsvImportModal.tsx
+  - src/components/BambuImport.tsx
+  - src/components/GcodeImport.tsx
+  - src/features.ts
+---
+
 # UI Consistency Sweep — Apply rules everywhere
 
 These items extend the rules we codified in MEMORY:
