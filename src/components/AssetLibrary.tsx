@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { List, type RowComponentProps } from 'react-window';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
 import { NewBadge } from './NewBadge';
 import { CsvImportModal } from './CsvImportModal';
@@ -130,6 +130,291 @@ function getCategoryColor(category: AssetCategory): string {
   }
   return customCategoryColor;
 }
+
+// ---------------------------------------------------------------------------
+// Module-scope row components (CR-01 fix). Stable identity across parent
+// renders so react-window's internal memo wrapper caches correctly and rows
+// only re-render when their own props change. Closures (onEdit, onDelete)
+// are passed in via rowProps for the virtualized branch and as direct props
+// for the small-list branch.
+// ---------------------------------------------------------------------------
+
+type AssetRowCallbacks = {
+  onEdit: (asset: Asset) => void;
+  onDelete: (id: string) => void;
+};
+
+type AssetRowPropsForList = {
+  assets: Asset[];
+} & AssetRowCallbacks;
+
+// --- Mobile card (Asset) ---
+const MobileCardItem = memo(function MobileCardItem({
+  asset,
+  style,
+  onEdit,
+  onDelete,
+}: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
+  return (
+    <div
+      style={style}
+      className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <span className="text-base font-medium text-white truncate">
+            {asset.name}
+          </span>
+          {asset.category === 'printer' ? (
+            <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
+              {getCategoryLabel(asset.category)}
+            </span>
+          ) : asset.category === 'filament' && asset.filamentType ? (
+            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">
+              {asset.filamentType}
+            </span>
+          ) : (
+            <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
+              {getCategoryLabel(asset.category)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {asset.brand && (
+        <div className="text-sm text-slate-400 mb-1">{asset.brand}</div>
+      )}
+
+      {asset.notes && (
+        <div className="text-sm text-slate-400 mb-2">{asset.notes}</div>
+      )}
+
+      {asset.tags && asset.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {asset.tags.map(tag => (
+            <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {asset.category === 'printer' ? (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3 pt-2 border-t border-slate-700/50">
+          <div className="text-slate-400">Price</div>
+          <div className="text-right font-mono text-white">
+            ${asset.purchasePrice?.toFixed(2) || '0.00'}
+          </div>
+          <div className="text-slate-400">Wattage</div>
+          <div className="text-right font-mono text-white">
+            {asset.wattage || 0}W
+          </div>
+          <div className="text-slate-400">Nozzle Cost</div>
+          <div className="text-right font-mono text-slate-400">
+            ${asset.nozzleCost?.toFixed(2) || '0.00'}
+          </div>
+          {asset.expectedLifespanHours && (
+            <>
+              <div className="text-slate-400">Lifespan</div>
+              <div className="text-right font-mono text-slate-400">
+                {asset.expectedLifespanHours.toLocaleString()}h
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="pt-2 border-t border-slate-700/50 mb-3">
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-sm text-slate-400">Cost/Unit</span>
+            <span className="text-base font-mono font-medium text-white">
+              {asset.currency || '$'}{(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
+            </span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-slate-400">Package</span>
+            <span className="text-sm font-mono text-slate-400">
+              {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)}
+            </span>
+          </div>
+          {asset.lifespanUnits && (
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="text-sm text-slate-400">Lifespan</span>
+              <span className="text-sm font-mono text-slate-400">
+                {asset.lifespanUnits.toLocaleString()} uses
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2 pt-2 border-t border-slate-700/50">
+        <Button
+          variant="secondary"
+          onClick={() => onEdit(asset)}
+          className="flex-1 text-blue-400"
+        >
+          Edit
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => onDelete(asset.id)}
+          className="flex-1 text-red-400"
+        >
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+});
+
+const MobileCardRow = ({ index, style, assets, onEdit, onDelete }: RowComponentProps<AssetRowPropsForList>) => (
+  <MobileCardItem asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} />
+);
+
+// --- Printer row (div-grid; 7 columns) ---
+const PrinterRow = memo(function PrinterRow({
+  asset,
+  style,
+  onEdit,
+  onDelete,
+}: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
+  return (
+    <div
+      role="row"
+      style={style}
+      className="grid grid-cols-7 gap-x-4 py-2 text-slate-300 border-b border-slate-700/50 items-start"
+    >
+      <div role="cell">
+        <div>{asset.name}</div>
+        {asset.notes && (
+          <div className="text-xs text-slate-500">{asset.notes}</div>
+        )}
+        {asset.tags && asset.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {asset.tags.map(tag => (
+              <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div role="cell" className="text-slate-400">
+        {asset.brand || '-'}
+      </div>
+      <div role="cell">
+        <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
+          {getCategoryLabel(asset.category)}
+        </span>
+      </div>
+      <div role="cell" className="text-right font-mono">
+        ${asset.purchasePrice?.toFixed(2) || '0.00'}
+      </div>
+      <div role="cell" className="text-right font-mono">
+        {asset.wattage || 0}W
+      </div>
+      <div role="cell" className="text-right font-mono text-slate-400">
+        ${asset.nozzleCost?.toFixed(2) || '0.00'}
+      </div>
+      <div role="cell" className="text-right">
+        <Button
+          variant="ghost"
+          btnSize="sm"
+          onClick={() => onEdit(asset)}
+          className="text-blue-400 hover:text-blue-300 mr-2"
+        >
+          Edit
+        </Button>
+        <Button
+          variant="ghost"
+          btnSize="sm"
+          onClick={() => onDelete(asset.id)}
+          className="text-red-400 hover:text-red-300"
+        >
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+});
+
+const PrinterRowAdapter = ({ index, style, assets, onEdit, onDelete }: RowComponentProps<AssetRowPropsForList>) => (
+  <PrinterRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} />
+);
+
+// --- Material row (div-grid; 6 columns) ---
+const MaterialRow = memo(function MaterialRow({
+  asset,
+  style,
+  onEdit,
+  onDelete,
+}: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
+  return (
+    <div
+      role="row"
+      style={style}
+      className="grid grid-cols-6 gap-x-4 py-2 text-slate-300 border-b border-slate-700/50 items-start"
+    >
+      <div role="cell">
+        <div>{asset.name}</div>
+        {asset.notes && (
+          <div className="text-xs text-slate-500">{asset.notes}</div>
+        )}
+        {asset.tags && asset.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {asset.tags.map(tag => (
+              <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div role="cell" className="text-slate-400">
+        {asset.brand || '-'}
+      </div>
+      <div role="cell">
+        {asset.category === 'filament' && asset.filamentType ? (
+          <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+            {asset.filamentType}
+          </span>
+        ) : (
+          <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
+            {getCategoryLabel(asset.category)}
+          </span>
+        )}
+      </div>
+      <div role="cell" className="text-right font-mono">
+        {asset.currency || '$'} {(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
+      </div>
+      <div role="cell" className="text-right font-mono text-slate-400">
+        {asset.currency || '$'} {(asset.packageCost ?? 0).toFixed(2)}
+      </div>
+      <div role="cell" className="text-right">
+        <Button
+          variant="ghost"
+          btnSize="sm"
+          onClick={() => onEdit(asset)}
+          className="text-blue-400 hover:text-blue-300 mr-2"
+        >
+          Edit
+        </Button>
+        <Button
+          variant="ghost"
+          btnSize="sm"
+          onClick={() => onDelete(asset.id)}
+          className="text-red-400 hover:text-red-300"
+        >
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+});
+
+const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete }: RowComponentProps<AssetRowPropsForList>) => (
+  <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} />
+);
 
 export function AssetLibrary({
   assets,
@@ -359,16 +644,16 @@ export function AssetLibrary({
     setIsAdding(false);
   };
 
-  const startEdit = (asset: Asset) => {
+  // Stable identity so React.memo on the row components can skip unchanged rows.
+  const startEdit = useCallback((asset: Asset) => {
     setFormData(asset);
     setEditingId(asset.id);
     setIsAdding(true);
-    // Check if editing a custom category
     if (!builtInCategories.includes(asset.category as BuiltInCategory)) {
       setShowCustomCategory(true);
       setCustomCategoryInput(asset.category);
     }
-  };
+  }, []);
 
   const addTag = () => {
     if (!tagInput.trim()) return;
@@ -441,272 +726,20 @@ export function AssetLibrary({
 
   const sortHeaderClass = 'pb-2 font-medium cursor-pointer hover:text-slate-200 transition-colors select-none';
 
-  // ---------------------------------------------------------------------------
-  // Virtualization sub-components (Phase 11-05 / PERF-02 / D-07).
-  // Three plain Row components are used in BOTH branches — the small-list direct
-  // render (no `style`) and the virtualized List slot (with `style`). Three thin
-  // adapters bridge react-window v2's RowComponentProps shape into the plain
-  // components for the `<List rowComponent>` slot.
-  // Adapters are typed via direct-param `RowComponentProps<...>` (NOT
-  // `React.FC<...>`) because v2's `rowComponent` slot requires a function
-  // returning `ReactElement | null`, not `ReactNode` — same pattern as
-  // JobsManager's JobRow adapter post-11-04.
-  // ---------------------------------------------------------------------------
+  // Dynamic row-height caches (CR-02 fix). Numeric rowHeight clipped rows
+  // with notes/tags/lifespan content; useDynamicRowHeight measures the
+  // actual rendered height per row. defaultRowHeight values match the
+  // observed common case so initial render before measurement is close.
+  const mobileCardHeightCache = useDynamicRowHeight({ defaultRowHeight: 240 });
+  const printerRowHeightCache = useDynamicRowHeight({ defaultRowHeight: 64 });
+  const materialRowHeightCache = useDynamicRowHeight({ defaultRowHeight: 64 });
 
-  // --- Mobile card (Asset) ---
-  function MobileCardItem({ asset, style }: { asset: Asset; style?: React.CSSProperties }) {
-    return (
-      <div
-        style={style}
-        className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"
-      >
-        {/* Header: Name + Type badge */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <span className="text-base font-medium text-white truncate">
-              {asset.name}
-            </span>
-            {asset.category === 'printer' ? (
-              <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
-                {getCategoryLabel(asset.category)}
-              </span>
-            ) : asset.category === 'filament' && asset.filamentType ? (
-              <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">
-                {asset.filamentType}
-              </span>
-            ) : (
-              <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${getCategoryColor(asset.category)}`}>
-                {getCategoryLabel(asset.category)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Brand */}
-        {asset.brand && (
-          <div className="text-sm text-slate-400 mb-1">{asset.brand}</div>
-        )}
-
-        {/* Notes */}
-        {asset.notes && (
-          <div className="text-sm text-slate-400 mb-2">{asset.notes}</div>
-        )}
-
-        {/* Tags */}
-        {asset.tags && asset.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {asset.tags.map(tag => (
-              <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Cost details - differs by asset type */}
-        {asset.category === 'printer' ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3 pt-2 border-t border-slate-700/50">
-            <div className="text-slate-400">Price</div>
-            <div className="text-right font-mono text-white">
-              ${asset.purchasePrice?.toFixed(2) || '0.00'}
-            </div>
-            <div className="text-slate-400">Wattage</div>
-            <div className="text-right font-mono text-white">
-              {asset.wattage || 0}W
-            </div>
-            <div className="text-slate-400">Nozzle Cost</div>
-            <div className="text-right font-mono text-slate-400">
-              ${asset.nozzleCost?.toFixed(2) || '0.00'}
-            </div>
-            {asset.expectedLifespanHours && (
-              <>
-                <div className="text-slate-400">Lifespan</div>
-                <div className="text-right font-mono text-slate-400">
-                  {asset.expectedLifespanHours.toLocaleString()}h
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="pt-2 border-t border-slate-700/50 mb-3">
-            <div className="flex items-baseline justify-between mb-1">
-              <span className="text-sm text-slate-400">Cost/Unit</span>
-              <span className="text-base font-mono font-medium text-white">
-                {asset.currency || '$'}{(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm text-slate-400">Package</span>
-              <span className="text-sm font-mono text-slate-400">
-                {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)}
-              </span>
-            </div>
-            {asset.lifespanUnits && (
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-sm text-slate-400">Lifespan</span>
-                <span className="text-sm font-mono text-slate-400">
-                  {asset.lifespanUnits.toLocaleString()} uses
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex gap-2 pt-2 border-t border-slate-700/50">
-          <Button
-            variant="secondary"
-            onClick={() => startEdit(asset)}
-            className="flex-1 text-blue-400"
-          >
-            Edit
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => onDeleteAsset(asset.id)}
-            className="flex-1 text-red-400"
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  const MobileCardRow = ({ index, style, assets }: RowComponentProps<{ assets: Asset[] }>) => (
-    <MobileCardItem asset={assets[index]} style={style} />
-  );
-
-  // --- Printer row (div-grid; 7 columns) ---
-  function PrinterRow({ asset, style }: { asset: Asset; style?: React.CSSProperties }) {
-    return (
-      <div
-        role="row"
-        style={style}
-        className="grid grid-cols-7 gap-x-4 py-2 text-slate-300 border-b border-slate-700/50 items-start"
-      >
-        <div role="cell">
-          <div>{asset.name}</div>
-          {asset.notes && (
-            <div className="text-xs text-slate-500">{asset.notes}</div>
-          )}
-          {asset.tags && asset.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {asset.tags.map(tag => (
-                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        <div role="cell" className="text-slate-400">
-          {asset.brand || '-'}
-        </div>
-        <div role="cell">
-          <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
-            {getCategoryLabel(asset.category)}
-          </span>
-        </div>
-        <div role="cell" className="text-right font-mono">
-          ${asset.purchasePrice?.toFixed(2) || '0.00'}
-        </div>
-        <div role="cell" className="text-right font-mono">
-          {asset.wattage || 0}W
-        </div>
-        <div role="cell" className="text-right font-mono text-slate-400">
-          ${asset.nozzleCost?.toFixed(2) || '0.00'}
-        </div>
-        <div role="cell" className="text-right">
-          <Button
-            variant="ghost"
-            btnSize="sm"
-            onClick={() => startEdit(asset)}
-            className="text-blue-400 hover:text-blue-300 mr-2"
-          >
-            Edit
-          </Button>
-          <Button
-            variant="ghost"
-            btnSize="sm"
-            onClick={() => onDeleteAsset(asset.id)}
-            className="text-red-400 hover:text-red-300"
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  const PrinterRowAdapter = ({ index, style, assets }: RowComponentProps<{ assets: Asset[] }>) => (
-    <PrinterRow asset={assets[index]} style={style} />
-  );
-
-  // --- Material row (div-grid; 6 columns) ---
-  function MaterialRow({ asset, style }: { asset: Asset; style?: React.CSSProperties }) {
-    return (
-      <div
-        role="row"
-        style={style}
-        className="grid grid-cols-6 gap-x-4 py-2 text-slate-300 border-b border-slate-700/50 items-start"
-      >
-        <div role="cell">
-          <div>{asset.name}</div>
-          {asset.notes && (
-            <div className="text-xs text-slate-500">{asset.notes}</div>
-          )}
-          {asset.tags && asset.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {asset.tags.map(tag => (
-                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        <div role="cell" className="text-slate-400">
-          {asset.brand || '-'}
-        </div>
-        <div role="cell">
-          {asset.category === 'filament' && asset.filamentType ? (
-            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
-              {asset.filamentType}
-            </span>
-          ) : (
-            <span className={`text-xs px-2 py-0.5 rounded border ${getCategoryColor(asset.category)}`}>
-              {getCategoryLabel(asset.category)}
-            </span>
-          )}
-        </div>
-        <div role="cell" className="text-right font-mono">
-          {asset.currency || '$'} {(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
-        </div>
-        <div role="cell" className="text-right font-mono text-slate-400">
-          {asset.currency || '$'} {(asset.packageCost ?? 0).toFixed(2)}
-        </div>
-        <div role="cell" className="text-right">
-          <Button
-            variant="ghost"
-            btnSize="sm"
-            onClick={() => startEdit(asset)}
-            className="text-blue-400 hover:text-blue-300 mr-2"
-          >
-            Edit
-          </Button>
-          <Button
-            variant="ghost"
-            btnSize="sm"
-            onClick={() => onDeleteAsset(asset.id)}
-            className="text-red-400 hover:text-red-300"
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  const MaterialRowAdapter = ({ index, style, assets }: RowComponentProps<{ assets: Asset[] }>) => (
-    <MaterialRow asset={assets[index]} style={style} />
+  // Stable rowProps for each List so react-window's shallow comparison can
+  // skip unchanged rows. Same object shape feeds all three lists; only the
+  // identity changes when paginatedAssets/startEdit/onDeleteAsset rotate.
+  const listRowProps = useMemo<AssetRowPropsForList>(
+    () => ({ assets: paginatedAssets, onEdit: startEdit, onDelete: onDeleteAsset }),
+    [paginatedAssets, startEdit, onDeleteAsset]
   );
 
   return (
@@ -1117,16 +1150,15 @@ export function AssetLibrary({
             <List
               rowComponent={MobileCardRow}
               rowCount={paginatedAssets.length}
-              rowHeight={280}
-              rowProps={{ assets: paginatedAssets }}
-              defaultHeight={280}
+              rowHeight={mobileCardHeightCache}
+              rowProps={listRowProps}
               overscanCount={3}
               style={{ height: '70vh' }}
             />
           ) : (
             <div className="flex flex-col gap-3">
               {paginatedAssets.map(asset => (
-                <MobileCardItem key={asset.id} asset={asset} />
+                <MobileCardItem key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} />
               ))}
             </div>
           )
@@ -1159,16 +1191,15 @@ export function AssetLibrary({
               <List
                 rowComponent={PrinterRowAdapter}
                 rowCount={paginatedAssets.length}
-                rowHeight={56}
-                rowProps={{ assets: paginatedAssets }}
-                defaultHeight={56 * Math.min(paginatedAssets.length, 12)}
+                rowHeight={printerRowHeightCache}
+                rowProps={listRowProps}
                 overscanCount={5}
                 style={{ height: '60vh' }}
               />
             ) : (
               <div>
                 {paginatedAssets.map(asset => (
-                  <PrinterRow key={asset.id} asset={asset} />
+                  <PrinterRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} />
                 ))}
               </div>
             )}
@@ -1190,16 +1221,15 @@ export function AssetLibrary({
               <List
                 rowComponent={MaterialRowAdapter}
                 rowCount={paginatedAssets.length}
-                rowHeight={56}
-                rowProps={{ assets: paginatedAssets }}
-                defaultHeight={56 * Math.min(paginatedAssets.length, 12)}
+                rowHeight={materialRowHeightCache}
+                rowProps={listRowProps}
                 overscanCount={5}
                 style={{ height: '60vh' }}
               />
             ) : (
               <div>
                 {paginatedAssets.map(asset => (
-                  <MaterialRow key={asset.id} asset={asset} />
+                  <MaterialRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} />
                 ))}
               </div>
             )}

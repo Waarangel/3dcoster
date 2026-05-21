@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
@@ -15,6 +15,244 @@ interface JobsManagerProps {
   onEditJob: (job: PrintJob) => void;
   onSwitchTab: (tab: 'calculator' | 'jobs' | 'materials' | 'settings') => void;
 }
+
+type BreakEvenInfo = {
+  revenueEarned: number;
+  profitPerUnit: number;
+  breakEvenCopies: number | null;
+  remainingToBreakEven: number | null;
+  isBreakEven: boolean;
+};
+
+// Props for the module-scope JobCard. Everything is passed in explicitly so
+// React.memo can compare props shallowly and skip re-renders when nothing
+// relevant for THIS row changed (CR-01 + CR-03 fix).
+type JobCardProps = {
+  job: PrintJob;
+  isSelected: boolean;
+  info: BreakEvenInfo;
+  recentSales?: Sale[];
+  getFilamentName: (id: string) => string;
+  onToggleSelect: (id: string) => void;
+  onOpenSaleForm: (job: PrintJob) => void;
+  onEdit: (job: PrintJob) => void;
+  onDelete: (id: string) => void;
+  style?: React.CSSProperties;
+};
+
+// Module-scope, memoized job card. CR-01 fix: row component identity is now
+// stable across parent renders, so react-window's internal memo wrapper
+// caches correctly and rows only re-render when their props change.
+const JobCard = memo(function JobCard({
+  job,
+  isSelected,
+  info,
+  recentSales,
+  getFilamentName,
+  onToggleSelect,
+  onOpenSaleForm,
+  onEdit,
+  onDelete,
+  style,
+}: JobCardProps) {
+  return (
+    <div
+      style={style}
+      onClick={() => onToggleSelect(job.id)}
+      className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+        isSelected
+          ? 'bg-slate-700 border-blue-500'
+          : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+      }`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h3 className="font-medium text-white">{job.name}</h3>
+            {info.isBreakEven ? (
+              <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+                Break-even reached
+              </span>
+            ) : info.remainingToBreakEven === null ? (
+              <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                Break-even not reachable at current price
+              </span>
+            ) : (
+              <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                {info.remainingToBreakEven} more to break even
+              </span>
+            )}
+          </div>
+          <div className="mt-1 text-sm text-slate-400">
+            {job.filaments && job.filaments.length > 0 ? (
+              job.filaments.map((f, i) => (
+                <span key={i}>
+                  {i > 0 && ' + '}
+                  {getFilamentName(f.filamentId ?? '')}{f.grams ? ` ${f.grams}g` : ''}
+                </span>
+              ))
+            ) : (
+              <span className="text-slate-500 italic">No filament data</span>
+            )} | {job.printTimeHours}h
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
+          <div className="text-xs text-slate-500">
+            {job.copiesSold} sold
+          </div>
+        </div>
+      </div>
+
+      {isSelected && (
+        <div className="mt-4 pt-4 border-t border-slate-600">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <div className="text-xs text-slate-500">Cost/Unit</div>
+              <div className="font-mono text-slate-300">${job.costPerUnit.toFixed(2)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-slate-500">Profit/Unit</div>
+              <div className="font-mono text-green-400">${info.profitPerUnit.toFixed(2)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-slate-500">Unit Sell Price</div>
+              <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
+            </div>
+          </div>
+
+          {job.modelUrl && (
+            <div className="mb-4 text-sm">
+              <span className="text-slate-500">Model source: </span>
+              <a
+                href={job.modelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-blue-400 hover:text-blue-300 underline break-all"
+              >
+                {job.modelUrl}
+              </a>
+            </div>
+          )}
+
+          <div className="mb-4">
+            {info.breakEvenCopies === null ? (
+              <div className="text-xs text-slate-400">
+                Break-even progress unavailable — sell price does not exceed cost per unit.
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>Break-even Progress</span>
+                  <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
+                </div>
+                <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
+                    style={{
+                      width: info.breakEvenCopies === 0
+                        ? '100%'
+                        : `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="success"
+              btnSize="sm"
+              onClick={(e) => { e.stopPropagation(); onOpenSaleForm(job); }}
+            >
+              Record Sale
+            </Button>
+            <Button
+              btnSize="sm"
+              onClick={(e) => { e.stopPropagation(); onEdit(job); }}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="danger"
+              btnSize="sm"
+              onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}
+            >
+              Delete
+            </Button>
+          </div>
+
+          {recentSales && recentSales.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-slate-300 mb-2">Recent Sales</h4>
+              <div className="space-y-1">
+                {recentSales.slice(0, 5).map(sale => (
+                  <div key={sale.id} className="flex justify-between text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded">
+                    <span>
+                      {sale.quantity}x @ ${sale.unitPrice.toFixed(2)}
+                      {sale.customerName && <span className="text-slate-500 ml-2">({sale.customerName})</span>}
+                    </span>
+                    <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
+
+// Module-scope adapter for react-window's <List rowComponent>. Receives the
+// values for THIS row via rowProps, computes per-row derived state, and
+// forwards them to JobCard. The adapter is intentionally not React.FC —
+// react-window v2 requires the row component to return ReactElement | null,
+// not ReactNode.
+type JobRowProps = {
+  jobs: PrintJob[];
+  selectedJobId: string | null;
+  selectedSales: Sale[];
+  getFilamentName: (id: string) => string;
+  getBreakEvenInfo: (job: PrintJob) => BreakEvenInfo;
+  onToggleSelect: (id: string) => void;
+  onOpenSaleForm: (job: PrintJob) => void;
+  onEdit: (job: PrintJob) => void;
+  onDelete: (id: string) => void;
+};
+
+const JobRow = ({
+  index,
+  style,
+  jobs,
+  selectedJobId,
+  selectedSales,
+  getFilamentName,
+  getBreakEvenInfo,
+  onToggleSelect,
+  onOpenSaleForm,
+  onEdit,
+  onDelete,
+}: RowComponentProps<JobRowProps>) => {
+  const job = jobs[index];
+  const isSelected = selectedJobId === job.id;
+  return (
+    <JobCard
+      job={job}
+      isSelected={isSelected}
+      info={getBreakEvenInfo(job)}
+      recentSales={isSelected ? selectedSales : undefined}
+      getFilamentName={getFilamentName}
+      onToggleSelect={onToggleSelect}
+      onOpenSaleForm={onOpenSaleForm}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      style={style}
+    />
+  );
+};
 
 function JobsListSkeleton() {
   return (
@@ -123,28 +361,21 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   };
 
   // Calculate break-even info for a job using actual sale revenue
-  const getBreakEvenInfo = useCallback((job: PrintJob) => {
+  const getBreakEvenInfo = useCallback((job: PrintJob): BreakEvenInfo => {
     const jobSales = salesByJob.get(job.id) ?? [];
     const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue, 0);
     const totalCost = job.costPerUnit * job.copiesSold + job.modelCost;
     const actualProfit = actualRevenue - totalCost;
 
-    // Theoretical profit per unit at listed sell price
     const theoreticalProfitPerUnit = job.sellingPrice - job.costPerUnit;
-
-    // Actual average profit per unit from real sales
     const actualProfitPerUnit = job.copiesSold > 0
       ? (actualRevenue - job.costPerUnit * job.copiesSold) / job.copiesSold
       : theoreticalProfitPerUnit;
 
-    // Break-even copies uses actual avg profit if sales exist, otherwise theoretical
     const effectiveProfitPerUnit = job.copiesSold > 0 ? actualProfitPerUnit : theoreticalProfitPerUnit;
     // WR-04: normalize non-finite break-even results to null so the UI can
     // render a "cannot be computed" fallback instead of leaking 'Infinity' /
-    // 'NaN' into copy ("0 / Infinity copies", "Infinity more to break even").
-    // Pre-existing logic: when effectiveProfitPerUnit <= 0 and modelCost > 0
-    // the raw computation yields Infinity; when modelCost === 0 and
-    // effectiveProfitPerUnit <= 0 it yields 0 (already break-even, valid).
+    // 'NaN' into copy.
     const breakEvenCopiesRaw = effectiveProfitPerUnit > 0
       ? Math.ceil(job.modelCost / effectiveProfitPerUnit)
       : job.modelCost > 0 ? Infinity : 0;
@@ -194,15 +425,22 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setSaleMarketplace('facebook_local');
   };
 
-  // Handle edit job - load in Cost Calculator
-  const handleEditJob = () => {
-    if (!selectedJob) return;
-    onEditJob(selectedJob);
-  };
+  // Stable callbacks so React.memo on JobCard can skip rows whose data
+  // didn't change. State setters are already stable; only derived handlers
+  // need useCallback wrapping.
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedJobId(prev => prev === id ? null : id);
+  }, []);
 
-  const handleDeleteJob = (id: string) => {
+  const handleOpenSaleForm = useCallback((job: PrintJob) => {
+    setSelectedJobId(job.id);
+    setShowSaleForm(true);
+    setSalePrice(job.sellingPrice);
+  }, []);
+
+  const handleDeleteJob = useCallback((id: string) => {
     setDeleteConfirmJobId(id);
-  };
+  }, []);
 
   const confirmDeleteJob = async () => {
     if (!deleteConfirmJobId) return;
@@ -213,202 +451,39 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setDeleteConfirmJobId(null);
   };
 
-  const getFilamentName = (filamentId: string) => {
+  const getFilamentName = useCallback((filamentId: string) => {
     const filament = materials.find(m => m.id === filamentId);
     return filament ? `${filament.brand || ''} ${filament.filamentType || filament.name}`.trim() : 'Unknown';
-  };
+  }, [materials]);
 
-  // Dynamic row-height cache for virtualized rendering (D-06, design Q2).
-  // The `key` arg invalidates the cache whenever selection changes, so the
-  // previously-expanded row collapses back to ~88px and the newly-selected
-  // row grows to its measured ~400px height. defaultRowHeight: 88 honors
-  // D-08's bias toward fixed sizing for the pre-measurement initial render.
+  // Dynamic row-height cache for virtualized rendering. The `key` arg
+  // invalidates the cache whenever selection changes, so the previously-
+  // expanded row collapses back to ~88px and the newly-selected row grows
+  // to its measured height. defaultRowHeight: 88 honors D-08's bias toward
+  // fixed sizing for the pre-measurement initial render.
   const rowHeightCache = useDynamicRowHeight({
     defaultRowHeight: 88,
     key: selectedJobId ?? '',
   });
 
-  // Plain card component (NO react-window typing). Used in BOTH branches:
-  // small-list direct render (no `style`) and virtualized List slot (with `style`).
-  function JobCard({ job, style }: { job: PrintJob; style?: React.CSSProperties }) {
-    const info = getBreakEvenInfo(job);
-    const isSelected = selectedJobId === job.id;
-
-    return (
-      <div
-        style={style}
-        onClick={() => setSelectedJobId(isSelected ? null : job.id)}
-        className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-          isSelected
-            ? 'bg-slate-700 border-blue-500'
-            : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-        }`}
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h3 className="font-medium text-white">{job.name}</h3>
-              {info.isBreakEven ? (
-                <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-                  Break-even reached
-                </span>
-              ) : info.remainingToBreakEven === null ? (
-                // WR-04: profit-per-unit <= 0 with positive modelCost means
-                // break-even is unreachable at the current sell price.
-                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                  Break-even not reachable at current price
-                </span>
-              ) : (
-                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                  {info.remainingToBreakEven} more to break even
-                </span>
-              )}
-            </div>
-            <div className="mt-1 text-sm text-slate-400">
-              {job.filaments && job.filaments.length > 0 ? (
-                job.filaments.map((f, i) => (
-                  <span key={i}>
-                    {i > 0 && ' + '}
-                    {getFilamentName(f.filamentId ?? '')}{f.grams ? ` ${f.grams}g` : ''}
-                  </span>
-                ))
-              ) : (
-                <span className="text-slate-500 italic">No filament data</span>
-              )} | {job.printTimeHours}h
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
-            <div className="text-xs text-slate-500">
-              {job.copiesSold} sold
-            </div>
-          </div>
-        </div>
-
-        {/* Expanded details */}
-        {isSelected && (
-          <div className="mt-4 pt-4 border-t border-slate-600">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <div className="text-xs text-slate-500">Cost/Unit</div>
-                <div className="font-mono text-slate-300">${job.costPerUnit.toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500">Profit/Unit</div>
-                <div className="font-mono text-green-400">${info.profitPerUnit.toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500">Unit Sell Price</div>
-                <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
-              </div>
-            </div>
-
-            {/* Model source URL */}
-            {job.modelUrl && (
-              <div className="mb-4 text-sm">
-                <span className="text-slate-500">Model source: </span>
-                <a
-                  href={job.modelUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-blue-400 hover:text-blue-300 underline break-all"
-                >
-                  {job.modelUrl}
-                </a>
-              </div>
-            )}
-
-            {/* Break-even progress bar */}
-            {/* WR-04: skip the progress bar entirely when break-even is
-                not computable (e.g., sell price <= cost with a positive
-                model cost). Show an informational line instead so the
-                UI never emits 'Infinity' / 'NaN'. */}
-            <div className="mb-4">
-              {info.breakEvenCopies === null ? (
-                <div className="text-xs text-slate-400">
-                  Break-even progress unavailable — sell price does not exceed cost per unit.
-                </div>
-              ) : (
-                <>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                    <span>Break-even Progress</span>
-                    <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
-                  </div>
-                  <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{
-                        width: info.breakEvenCopies === 0
-                          ? '100%'
-                          : `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <Button
-                variant="success"
-                btnSize="sm"
-                onClick={(e) => { e.stopPropagation(); setShowSaleForm(true); setSalePrice(job.sellingPrice); }}
-              >
-                Record Sale
-              </Button>
-              <Button
-                btnSize="sm"
-                onClick={(e) => { e.stopPropagation(); handleEditJob(); }}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="danger"
-                btnSize="sm"
-                onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }}
-              >
-                Delete
-              </Button>
-            </div>
-
-            {/* Recent sales */}
-            {sales.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-slate-300 mb-2">Recent Sales</h4>
-                <div className="space-y-1">
-                  {sales.slice(0, 5).map(sale => (
-                    <div key={sale.id} className="flex justify-between text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded">
-                      <span>
-                        {sale.quantity}x @ ${sale.unitPrice.toFixed(2)}
-                        {sale.customerName && <span className="text-slate-500 ml-2">({sale.customerName})</span>}
-                      </span>
-                      <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Thin adapter: bridges react-window v2's RowComponentProps shape into the
-  // plain JobCard. The `ariaAttributes` requirement is satisfied implicitly
-  // via the RowComponentProps type — JobRow never reads or forwards it.
-  // Note: NOT typed as React.FC — react-window v2's rowComponent expects a
-  // function returning ReactElement | null (not ReactNode), so a direct
-  // function expression with RowComponentProps on the param is the right shape.
-  const JobRow = ({ index, style, jobs }: RowComponentProps<{ jobs: PrintJob[] }>) => (
-    <JobCard job={jobs[index]} style={style} />
-  );
+  // Bundle everything the row needs through rowProps. react-window v2 does
+  // a shallow comparison and re-renders rows when these values change —
+  // selecting a different job updates selectedJobId, which flips isSelected
+  // for the two affected rows and leaves the rest memoized (CR-03 fix).
+  const rowProps = useMemo<JobRowProps>(() => ({
+    jobs,
+    selectedJobId,
+    selectedSales: sales,
+    getFilamentName,
+    getBreakEvenInfo,
+    onToggleSelect: handleToggleSelect,
+    onOpenSaleForm: handleOpenSaleForm,
+    onEdit: onEditJob,
+    onDelete: handleDeleteJob,
+  }), [jobs, selectedJobId, sales, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob]);
 
   return (
     <div className="space-y-6">
-      {/* Jobs List */}
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <h2 className="text-lg font-semibold text-white mb-4">My Print Jobs</h2>
 
@@ -426,21 +501,34 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
             rowComponent={JobRow}
             rowCount={jobs.length}
             rowHeight={rowHeightCache}
-            rowProps={{ jobs }}
+            rowProps={rowProps}
             overscanCount={4}
             style={{ height: '70vh' }}
             className="space-y-0"
           />
         ) : (
           <div className="space-y-3">
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
+            {jobs.map((job) => {
+              const isSelected = selectedJobId === job.id;
+              return (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  isSelected={isSelected}
+                  info={getBreakEvenInfo(job)}
+                  recentSales={isSelected ? sales : undefined}
+                  getFilamentName={getFilamentName}
+                  onToggleSelect={handleToggleSelect}
+                  onOpenSaleForm={handleOpenSaleForm}
+                  onEdit={onEditJob}
+                  onDelete={handleDeleteJob}
+                />
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Sale Form Modal */}
       {showSaleForm && selectedJob && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowSaleForm(false)}>
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -478,7 +566,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 />
               </div>
 
-              {/* Shipping for this sale */}
               <div className="pt-3 border-t border-slate-700">
                 <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Shipping</div>
                 <div className="grid grid-cols-2 gap-3">
@@ -509,7 +596,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 </div>
               </div>
 
-              {/* Marketplace for this sale */}
               <div>
                 <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Marketplace</div>
                 <Select
@@ -522,7 +608,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 </Select>
               </div>
 
-              {/* Summary */}
               <div className="pt-3 border-t border-slate-700 space-y-2">
                 <div className="flex justify-between text-sm text-slate-400">
                   <span>Sale Total</span>
@@ -568,7 +653,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deleteConfirmJobId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteConfirmJobId(null)}>
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
