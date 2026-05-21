@@ -3,18 +3,10 @@
 // 1. The feature must have been released within NEW_FEATURE_MAX_AGE_DAYS
 // 2. The user must have first seen it within NEW_FEATURE_SEEN_HOURS
 export const featureReleases: Record<string, Date> = {
-  'per-unit-licensing': new Date('2026-01-24'),
-  'author-min-price': new Date('2026-01-24'),
-  'configurable-marketplace-fees': new Date('2026-01-25'),
-  'custom-carriers': new Date('2026-01-25'),
-  'multi-currency': new Date('2026-01-25'),
-  'packaging-materials': new Date('2026-01-25'),
   'settings-reorg': new Date('2026-05-20'),
-  'csv-import': new Date('2026-02-14'),
-  'gcode-import': new Date('2026-02-14'),
-  '3mf-import': new Date('2026-04-15'),
   'default-profit-margin': new Date('2026-05-18'),
   'model-url': new Date('2026-05-20'),
+  'default-tax-rate': new Date('2026-05-21'),
   // Add new features here with their release date
 };
 
