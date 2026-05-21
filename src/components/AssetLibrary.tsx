@@ -1,9 +1,9 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { Asset, AssetCategory, BuiltInCategory } from '../types';
-import { NewBadge } from './NewBadge';
 import { CsvImportModal } from './CsvImportModal';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
+import { InfoTooltip } from './ui/InfoTooltip';
 import { PackageIcon } from './ui/icons';
 
 interface AssetLibraryProps {
@@ -760,7 +760,6 @@ export function AssetLibrary({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
                 <span className="hidden sm:inline">Import CSV</span>
-                <NewBadge feature="csv-import" className="absolute -top-3 -right-3" />
               </Button>
               {assets.length > 0 && (
                 <Button
@@ -842,7 +841,6 @@ export function AssetLibrary({
             }`}
           >
             {getCategoryLabel(cat)}
-            {cat === 'packaging' && <NewBadge feature="packaging-materials" />}
           </button>
         ))}
         <div className="relative ml-auto w-full sm:w-56">
@@ -952,6 +950,7 @@ export function AssetLibrary({
                   <Input
                     type="number"
                     step="0.01"
+                    compact
                     value={formData.purchasePrice || ''}
                     onChange={e => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) })}
                     placeholder="299"
@@ -962,6 +961,7 @@ export function AssetLibrary({
                   <label className="block text-xs text-slate-400 mb-1">Wattage (avg during print)</label>
                   <Input
                     type="number"
+                    compact
                     value={formData.wattage || ''}
                     onChange={e => setFormData({ ...formData, wattage: parseFloat(e.target.value) })}
                     placeholder="100"
@@ -972,6 +972,7 @@ export function AssetLibrary({
                   <label className="block text-xs text-slate-400 mb-1">Expected Lifespan (hours)</label>
                   <Input
                     type="number"
+                    compact
                     value={formData.expectedLifespanHours || ''}
                     onChange={e => setFormData({ ...formData, expectedLifespanHours: parseFloat(e.target.value) })}
                     placeholder="5000"
@@ -982,6 +983,7 @@ export function AssetLibrary({
                   <Input
                     type="number"
                     step="0.01"
+                    compact
                     value={formData.nozzleCost || ''}
                     onChange={e => setFormData({ ...formData, nozzleCost: parseFloat(e.target.value) })}
                     placeholder="10"
@@ -991,6 +993,7 @@ export function AssetLibrary({
                   <label className="block text-xs text-slate-400 mb-1">Nozzle Lifespan (cm³)</label>
                   <Input
                     type="number"
+                    compact
                     value={formData.nozzleLifespanCm3 || ''}
                     onChange={e => setFormData({ ...formData, nozzleLifespanCm3: parseFloat(e.target.value) })}
                     placeholder="15000"
@@ -1015,6 +1018,7 @@ export function AssetLibrary({
                   <Input
                     type="number"
                     step="0.01"
+                    compact
                     value={formData.packageCost || ''}
                     onChange={e => setFormData({ ...formData, packageCost: parseFloat(e.target.value) })}
                     placeholder="20.00"
@@ -1025,6 +1029,7 @@ export function AssetLibrary({
                   <label className="block text-xs text-slate-400 mb-1">Units per Package</label>
                   <Input
                     type="number"
+                    compact
                     value={formData.unitsPerPackage || ''}
                     onChange={e => setFormData({ ...formData, unitsPerPackage: parseInt(e.target.value) })}
                     placeholder="1000"
@@ -1032,12 +1037,16 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Lifespan (uses, optional)</label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Lifespan (uses, optional)</span>
+                    <InfoTooltip text="For items that get reused (e.g., a brush)" />
+                  </label>
                   <Input
                     type="number"
+                    compact
                     value={formData.lifespanUnits || ''}
                     onChange={e => setFormData({ ...formData, lifespanUnits: parseInt(e.target.value) || undefined })}
-                    placeholder="For reusable items"
+                    placeholder=""
                   />
                 </div>
               </>
