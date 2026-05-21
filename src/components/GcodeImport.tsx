@@ -2,7 +2,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Asset } from '../types';
 import { parseGcode, matchFilamentType, findBestFilamentMatch, readGcodeFile } from '../utils/gcodeParser';
 import { parseThreeMf } from '../utils/threeMfParser';
-import { NewBadge } from './NewBadge';
 import { Button } from './ui';
 
 interface GcodeImportProps {
@@ -277,10 +276,8 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
           <svg className="w-6 h-6 mx-auto mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <p className="text-sm flex items-center justify-center gap-1.5">
+          <p className="text-sm">
             Drop .gcode or .3mf file here or click to browse
-            <NewBadge feature="gcode-import" />
-            <NewBadge feature="3mf-import" />
           </p>
           <p className="text-xs text-slate-500 mt-1">Supports Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, SuperSlicer, IdeaMaker + Bambu/Orca 3MF projects</p>
           {/* allow-raw-html: hidden file picker — primitive base styles would bleed through `hidden` */}

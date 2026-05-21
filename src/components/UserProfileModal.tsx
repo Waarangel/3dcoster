@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG } from '../utils/currency';
-import { NewBadge } from './NewBadge';
 import { Button, Input, Select } from './ui';
 
 interface UserProfileModalProps {
@@ -74,10 +73,7 @@ export function UserProfileModal({
                 />
               </div>
               <div>
-                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                  <span>Currency</span>
-                  <NewBadge feature="multi-currency" />
-                </label>
+                <label className="block text-xs text-slate-400 mb-1">Currency</label>
                 <Select
                   value={userCurrency}
                   onChange={e => {
