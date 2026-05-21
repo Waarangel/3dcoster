@@ -203,7 +203,10 @@ export function SettingsModal({
               <div>
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Electricity</h3>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Cost per kWh ({currencySymbol})</label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Cost per kWh ({currencySymbol})</span>
+                    <InfoTooltip text="Used to calculate the electricity cost of every print, based on each printer's wattage and your print time." />
+                  </label>
                   <Input
                     type="number"
                     step="0.01"
@@ -211,16 +214,16 @@ export function SettingsModal({
                     value={electricity.costPerKwh}
                     onChange={e => onElectricityChange({ costPerKwh: parseFloat(e.target.value) || 0 })}
                   />
-                  <p className="text-xs text-slate-500 mt-2">
-                    Used to calculate the electricity cost of every print, based on each printer's wattage and your print time.
-                  </p>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-slate-700">
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Your Hourly Rate</h3>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Hourly Rate ({currencySymbol})</label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Hourly Rate ({currencySymbol})</span>
+                    <InfoTooltip text="Value your time! Applied to prep, monitoring, and post-processing minutes you log on each job." />
+                  </label>
                   <Input
                     type="number"
                     step="0.01"
@@ -229,9 +232,6 @@ export function SettingsModal({
                     onChange={e => onUserProfileChange({ ...userProfile, laborHourlyRate: parseFloat(e.target.value) || 0 })}
                     placeholder="20"
                   />
-                  <p className="text-xs text-slate-500 mt-2">
-                    Value your time! Applied to prep, monitoring, and post-processing minutes you log on each job.
-                  </p>
                 </div>
               </div>
 
@@ -241,7 +241,10 @@ export function SettingsModal({
                   <NewBadge feature="default-profit-margin" className="absolute top-0 left-full ml-2 pointer-events-none" />
                 </h3>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Profit Margin (%)</label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Profit Margin (%)</span>
+                    <InfoTooltip text="Applied to new jobs and when the form is cleared or a job is saved. You can still adjust the margin per job in the calculator." />
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -255,9 +258,6 @@ export function SettingsModal({
                       onUserProfileChange({ ...userProfile, defaultProfitMargin: next });
                     }}
                   />
-                  <p className="text-xs text-slate-500 mt-2">
-                    Applied to new jobs and when the form is cleared or a job is saved. You can still adjust the margin per job in the calculator.
-                  </p>
                 </div>
               </div>
 
@@ -529,6 +529,7 @@ export function SettingsModal({
                     type="number"
                     step="0.01"
                     min="0"
+                    compact
                     placeholder={currencySymbol}
                     value={newCarrierCost}
                     onChange={e => setNewCarrierCost(e.target.value)}
@@ -781,6 +782,7 @@ export function SettingsModal({
                     type="number"
                     step="0.1"
                     min="0"
+                    compact
                     placeholder="%"
                     value={newMarketplacePercent}
                     onChange={e => setNewMarketplacePercent(e.target.value)}
@@ -789,6 +791,7 @@ export function SettingsModal({
                     type="number"
                     step="0.01"
                     min="0"
+                    compact
                     placeholder={currencySymbol}
                     value={newMarketplaceFixed}
                     onChange={e => setNewMarketplaceFixed(e.target.value)}
