@@ -7,6 +7,7 @@ import {
   calculateNozzleWear,
   calculateLabor,
   calculateAmortization,
+  calculateTax,
 } from './costCalc';
 import { getMaterialDensity } from './gcodeParser';
 import type {
@@ -441,5 +442,47 @@ describe('calculateCost (integration)', () => {
     expect(result.failureAdjusted).toBeCloseTo(4, 2);
   });
 
-  it.todo('tax/VAT applies after subtotal — activates in v1.2');
+});
+
+describe('calculateTax', () => {
+  it('returns 0 when rate is 0', () => {
+    expect(calculateTax(50, 0)).toEqual({ taxAmount: 0, ratePercent: 0 });
+  });
+
+  it('UK 20% on 50.00 returns taxAmount 10', () => {
+    expect(calculateTax(50, 20)).toEqual({ taxAmount: 10, ratePercent: 20 });
+  });
+
+  it('AU 10% on 25.00 returns taxAmount 2.50', () => {
+    expect(calculateTax(25, 10)).toEqual({ taxAmount: 2.5, ratePercent: 10 });
+  });
+
+  it('EU-average 21% on 100.00 returns taxAmount 21.00', () => {
+    expect(calculateTax(100, 21)).toEqual({ taxAmount: 21, ratePercent: 21 });
+  });
+
+  it('23% on 12.50 returns 2.88 (centime rounding, half-away-from-zero)', () => {
+    // Math.round(12.50 * 23) = Math.round(287.5) = 288 → 288 / 100 = 2.88
+    // toBe (not toBeCloseTo) — rounding is contract-locked per PATTERNS.md S6
+    expect(calculateTax(12.5, 23).taxAmount).toBe(2.88);
+  });
+
+  it('returns 0 when sellingPrice is 0 or negative (guard)', () => {
+    expect(calculateTax(0, 20).taxAmount).toBe(0);
+    expect(calculateTax(-5, 20).taxAmount).toBe(0);
+  });
+
+  it('order-of-operations guard — tax uses sellingPrice, not subtotal', () => {
+    // Synthetic case: subtotal=10, sellingPrice=25, rate=20%.
+    // If tax incorrectly used subtotal: 10 × 20% = 2.00.
+    // Tax correctly uses sellingPrice: 25 × 20% = 5.00.
+    const subtotal = 10;
+    const sellingPrice = 25;
+    const rate = 20;
+    const taxOnSellingPrice = calculateTax(sellingPrice, rate).taxAmount;
+    const taxOnSubtotal = calculateTax(subtotal, rate).taxAmount;
+    expect(taxOnSellingPrice).toBe(5);
+    expect(taxOnSubtotal).toBe(2);
+    expect(taxOnSellingPrice).not.toBe(taxOnSubtotal);
+  });
 });
