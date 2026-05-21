@@ -119,7 +119,9 @@ export function calculateAmortization(): number {
   return 0;
 }
 
-// Tax: Math.round(sellingPrice * ratePercent) / 100 — half-away-from-zero rounding to 2 decimals.
+// Tax: Math.round(sellingPrice * ratePercent) / 100 — JS Math.round uses
+// half-to-positive-infinity rounding (Math.round(0.5) === 1, Math.round(-0.5) === 0).
+// sellingPrice <= 0 short-circuits to 0 so negative rounding semantics are unreachable.
 // TAX-05 lock: tax applies to sellingPrice (not subtotal); see costCalc.test.ts order-of-operations guard.
 export function calculateTax(
   sellingPrice: number,

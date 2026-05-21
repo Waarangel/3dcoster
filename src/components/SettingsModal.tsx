@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
 import { resolveTaxRate } from '../utils/taxResolution';
+import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { Button, Input } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
@@ -285,7 +286,7 @@ export function SettingsModal({
                     <InfoTooltip
                       text={
                         userCurrency === 'USD'
-                          ? 'Most US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.'
+                          ? US_MARKETPLACE_FACILITATOR_NOTE
                           : 'Default tax rate applied to new jobs. Override per-job in the calculator.'
                       }
                     />

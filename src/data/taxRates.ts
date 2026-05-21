@@ -21,10 +21,17 @@ export interface TaxRateEntry {
 // the discussion — keep it. See RESEARCH Discrepancy 2.
 export const EU_AVERAGE_RATE = 21;
 
+// D-11 / D-12 / D-13 locked string — appended to USD tooltips wherever the
+// active TaxRateSource doesn't already carry it inline. Single source of truth
+// so the de-dup guard in tooltipForSource compares against THIS constant, not
+// a duplicated copy that can silently drift.
+export const US_MARKETPLACE_FACILITATOR_NOTE =
+  'Most US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.';
+
 export const TAX_RATES: readonly TaxRateEntry[] = [
   // ─── Currency-keyed lookup rows (the ones the resolveTaxRate chain actually hits today) ───
   { currency: 'USD', region: 'US', label: 'United States', rate: 0, rateAsOf: '2025-01-01',
-    note: 'Most US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.' },
+    note: US_MARKETPLACE_FACILITATOR_NOTE },
   { currency: 'GBP', region: 'GB', label: 'United Kingdom', rate: 20, rateAsOf: '2011-01-04' },
   { currency: 'AUD', region: 'AU', label: 'Australia', rate: 10, rateAsOf: '2000-07-01' },
   { currency: 'CAD', region: 'CA', label: 'Canada (federal GST)', rate: 5, rateAsOf: '2008-01-01',

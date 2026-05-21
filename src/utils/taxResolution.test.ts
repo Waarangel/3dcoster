@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { resolveTaxRate, isRateStale, tooltipForSource } from './taxResolution';
 import type { TaxRateSource } from './taxResolution';
+import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 
-// Locked D-11 US marketplace-facilitator string — duplicated here so the
-// de-dup guard test can pass the exact source.note that the data file ships.
-const US_NOTE_FIXTURE =
-  'Most US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.';
+// Single source of truth — same constant the data file ships in the US row's
+// `note` field and the resolver appends for USD users. Importing here ensures
+// the de-dup test catches drift instead of duplicating it.
+const US_NOTE_FIXTURE = US_MARKETPLACE_FACILITATOR_NOTE;
 
 // ---------------------------------------------------------------------------
 // resolveTaxRate — fallback chain

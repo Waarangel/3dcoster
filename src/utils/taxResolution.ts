@@ -3,14 +3,13 @@
 // SettingsModal Default Tax Rate field and CostCalculator Tax row.
 
 import type { Currency } from '../types';
-import { TAX_RATES, EU_AVERAGE_RATE } from '../data/taxRates';
+import { TAX_RATES, EU_AVERAGE_RATE, US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 
-// Locked D-11 US marketplace-facilitator note. Appended to tooltipForSource
-// output for ALL source.kind values when userCurrency === 'USD' (implements
-// D-12 + D-13). The de-dup guard in tooltipForSource prevents double-append
-// for the `region` US row, whose source.note already contains this string.
-const US_NOTE =
-  'Most US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.';
+// Re-export under the local name used by the tooltip de-dup guard. Single
+// source of truth lives in taxRates.ts — the US row's `note` field uses the
+// same constant by reference, so the includes() check below is back-stopped
+// by reference equality, not byte-equality.
+const US_NOTE = US_MARKETPLACE_FACILITATOR_NOTE;
 
 // Discriminated provenance for the resolved rate. Five variants — never extend
 // without also extending tooltipForSource and the consumer call sites.

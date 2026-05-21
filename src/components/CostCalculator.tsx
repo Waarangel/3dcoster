@@ -242,7 +242,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   // Get the selected printer instance and its config
   const selectedInstance = printerInstances.find(p => p.id === selectedInstanceId);
-  const selectedPrinter = printers.find(p => p.id === selectedInstance?.printerConfigId) || printers[0] || null;
+  // Falls back to undefined (not null) so the type matches CalcInput.selectedPrinter
+  // and downstream `selectedPrinter?.foo` / `selectedPrinter !== undefined` checks
+  // behave correctly. `|| undefined` (not `??`) so empty-string printer ids also fall through.
+  const selectedPrinter = printers.find(p => p.id === selectedInstance?.printerConfigId) || printers[0] || undefined;
 
   const nonFilaments = materials.filter(m => m.category !== 'filament');
   // Filter for packaging dropdown - prioritize packaging items first, then consumables
@@ -1386,8 +1389,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
           </div>
 
-          {/* Tax row (TAX-04 — hides at 0%; total uses sellingPrice + taxAmount per TAX-05) */}
-          {tax.ratePercent > 0 && (
+          {/* Tax row (TAX-04 — hides at 0%; total uses sellingPrice + taxAmount per TAX-05).
+              Also requires sellingPrice > 0 so we don't render "Tax (20%) — $0.00 / Total — $0.00"
+              when the user has set a rate but not yet a price. */}
+          {tax.ratePercent > 0 && sellingPrice > 0 && (
             <div className="border-t border-slate-700 pt-2 mt-2">
               <div className="flex justify-between text-slate-300">
                 <span className="flex items-center gap-1.5">

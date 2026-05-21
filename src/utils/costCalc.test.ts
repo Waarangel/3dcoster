@@ -461,8 +461,9 @@ describe('calculateTax', () => {
     expect(calculateTax(100, 21)).toEqual({ taxAmount: 21, ratePercent: 21 });
   });
 
-  it('23% on 12.50 returns 2.88 (centime rounding, half-away-from-zero)', () => {
+  it('23% on 12.50 returns 2.88 (centime rounding via JS Math.round)', () => {
     // Math.round(12.50 * 23) = Math.round(287.5) = 288 → 288 / 100 = 2.88
+    // JS Math.round is half-to-positive-infinity (NOT half-away-from-zero).
     // toBe (not toBeCloseTo) — rounding is contract-locked per PATTERNS.md S6
     expect(calculateTax(12.5, 23).taxAmount).toBe(2.88);
   });
