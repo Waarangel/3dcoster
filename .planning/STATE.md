@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
-status: ready_to_plan
-stopped_at: Phase 13 complete (6/6) — ready to discuss Phase 14
-last_updated: 2026-05-21T17:52:33.551Z
+status: planning
+stopped_at: Phase 14 context gathered
+last_updated: "2026-05-21T19:02:39.757Z"
 last_activity: 2026-05-21
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 10
-  completed_plans: 36
+  completed_plans: 10
   percent: 40
 ---
 
@@ -118,6 +118,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-21T17:23:48.565Z
-Stopped at: Phase 13 UI-SPEC approved
-Resume file: None
+Last session: 2026-05-21T19:02:39.751Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-customer-details-etsy-helper/14-CONTEXT.md
