@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
-status: executing
-stopped_at: Phase 13 UI-SPEC approved
-last_updated: "2026-05-21T17:24:11.773Z"
+status: ready_to_plan
+stopped_at: Phase 13 complete (6/6) — ready to discuss Phase 14
+last_updated: 2026-05-21T17:52:33.551Z
 last_activity: 2026-05-21
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 10
-  completed_plans: 10
+  completed_plans: 36
   percent: 40
 ---
 
@@ -21,20 +21,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 13 — tax-model-ui-sweep
+**Current focus:** Phase 14 — customer details + etsy helper
 
 ## Current Position
 
-Phase: 13 (tax-model-ui-sweep) — EXECUTING
-Plan: 2 of 6
-Status: Ready to execute
+Phase: 14
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-05-21
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 15
+- Total plans completed: 21
 - Average duration: —
 - Total execution time: —
 
@@ -46,6 +46,7 @@ Last activity: 2026-05-21
 | 09 | 2 | - | - |
 | 11 | 6 | - | - |
 | 12 | 4 | - | - |
+| 13 | 6 | - | - |
 
 **Recent Trend:**
 

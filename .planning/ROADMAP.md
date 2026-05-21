@@ -119,7 +119,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
-| 13. Tax Model + UI Sweep | 6/6 | Complete   | 2026-05-21 |
+| 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 0/? | Not started | — |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 16. Printable PDF Quote | 0/? | Not started | — |

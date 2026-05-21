@@ -14,11 +14,11 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 ### Tax (three-layer model: region → Settings → per-job)
 
-- [ ] **TAX-01**: User can set a default tax rate in Settings (Pricing tab) as a percentage; this rate seeds the tax row on new jobs
-- [ ] **TAX-02**: User can override the tax rate per job in the cost calculator; the override persists with the saved job
-- [ ] **TAX-03**: When the user has no Settings default and no per-job override, the tax rate is read from `src/data/taxRates.ts` (static region lookup keyed off the user's currency/region) — including each country's `rateAsOf` date for stale-data signaling; US defaults to 0% with a marketplace-facilitator note
-- [ ] **TAX-04**: A "Tax (X%)" line appears in the cost breakdown after `sellingPrice`; total = `sellingPrice + taxAmount`. Tax row hides at 0%
-- [ ] **TAX-05**: `calculateTax(sellingPrice, ratePercent)` is unit-tested for rate=0, EU/UK/AU rates, two-decimal rounding (rate=23%, price=12.50 → 2.88), and the order-of-operations guard (tax computed on `sellingPrice`, not `subtotal` — assertion fails if depreciation > 0 and `taxAmount === subtotal × rate`). Activates the existing `it.todo` in `costCalc.test.ts`
+- [x] **TAX-01**: User can set a default tax rate in Settings (Pricing tab) as a percentage; this rate seeds the tax row on new jobs
+- [x] **TAX-02**: User can override the tax rate per job in the cost calculator; the override persists with the saved job
+- [x] **TAX-03**: When the user has no Settings default and no per-job override, the tax rate is read from `src/data/taxRates.ts` (static region lookup keyed off the user's currency/region) — including each country's `rateAsOf` date for stale-data signaling; US defaults to 0% with a marketplace-facilitator note
+- [x] **TAX-04**: A "Tax (X%)" line appears in the cost breakdown after `sellingPrice`; total = `sellingPrice + taxAmount`. Tax row hides at 0%
+- [x] **TAX-05**: `calculateTax(sellingPrice, ratePercent)` is unit-tested for rate=0, EU/UK/AU rates, two-decimal rounding (rate=23%, price=12.50 → 2.88), and the order-of-operations guard (tax computed on `sellingPrice`, not `subtotal` — assertion fails if depreciation > 0 and `taxAmount === subtotal × rate`). Activates the existing `it.todo` in `costCalc.test.ts`
 
 ### Customer details
 
@@ -52,8 +52,8 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 ### UI consistency sweep (continues UI-XX from v1.1)
 
-- [ ] **UI-08**: Currency / numeric / percentage inputs across CostCalculator, AssetLibrary, JobsManager, PrinterSettings, and import modals use the `compact` prop on the shared `<Input>` primitive (max-w-28)
-- [ ] **UI-09**: Descriptive placeholder text is replaced with `<InfoTooltip text="..." />` next to the label across the same forms; placeholders show example values only
+- [x] **UI-08**: Currency / numeric / percentage inputs across CostCalculator, AssetLibrary, JobsManager, PrinterSettings, and import modals use the `compact` prop on the shared `<Input>` primitive (max-w-28)
+- [x] **UI-09**: Descriptive placeholder text is replaced with `<InfoTooltip text="..." />` next to the label across the same forms; placeholders show example values only
 - [x] **UI-10**: `src/features.ts` is audited — stale `<NewBadge>` JSX consumers past `NEW_FEATURE_MAX_AGE_DAYS` are removed; entries with zero JSX hits are pruned from the registry
 
 ## v2 / Future Requirements
@@ -114,13 +114,13 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 |-------------|-------|--------|
 | SCHEMA-01 | Phase 12 | Complete |
 | SCHEMA-02 | Phase 12 | Complete |
-| TAX-01 | Phase 13 | Pending |
-| TAX-02 | Phase 13 | Pending |
-| TAX-03 | Phase 13 | Pending |
-| TAX-04 | Phase 13 | Pending |
-| TAX-05 | Phase 13 | Pending |
-| UI-08 | Phase 13 | Pending |
-| UI-09 | Phase 13 | Pending |
+| TAX-01 | Phase 13 | Complete |
+| TAX-02 | Phase 13 | Complete |
+| TAX-03 | Phase 13 | Complete |
+| TAX-04 | Phase 13 | Complete |
+| TAX-05 | Phase 13 | Complete |
+| UI-08 | Phase 13 | Complete |
+| UI-09 | Phase 13 | Complete |
 | CUST-01 | Phase 14 | Pending |
 | CUST-02 | Phase 14 | Pending |
 | ETSY-01 | Phase 14 | Pending |
