@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage, UserProfile } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
 import { Button, Input, Select, InfoTooltip } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
-import { calculateCost } from '../utils/costCalc';
+import { calculateCost, calculateTax } from '../utils/costCalc';
+import { resolveTaxRate, tooltipForSource } from '../utils/taxResolution';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -19,6 +20,7 @@ interface CostCalculatorProps {
   laborHourlyRate: number;
   defaultProfitMargin: number;
   userCurrency: Currency;
+  userProfile: UserProfile;
   shippingConfig: ShippingConfig;
   onSaveJob: (job: PrintJob, printHours: number) => void;
   onUpdateJob: (job: PrintJob) => void;
@@ -51,7 +53,7 @@ interface FilamentRow {
   editedCurrency: Currency;
 }
 
-export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
+export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
@@ -123,6 +125,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [sellingPrice, setSellingPrice] = useState(() => getStoredValue('sellingPrice', 0));
   const [lastEdited, setLastEdited] = useState<'margin' | 'profit' | 'price'>(() => getStoredValue('lastEdited', 'margin'));
 
+  // Per-job Tax Rate override (Phase 13). Undefined ⇒ chain falls back to Settings default → region → manual.
+  const [taxRateOverride, setTaxRateOverride] = useState<number | undefined>(() => editingJob?.taxRate);
+
   // Shipping
   const [shippingMethod, setShippingMethod] = useState<ShippingMethodType>(() => getStoredValue('shippingMethod', 'local_pickup'));
   const [shippingDistanceKm, setShippingDistanceKm] = useState(() => getStoredValue('shippingDistanceKm', 0));
@@ -189,6 +194,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setFailureRate(editingJob.failureRate);
       setMaterialsUsed(editingJob.materialsUsed);
       setSellingPrice(editingJob.sellingPrice);
+      setTaxRateOverride(editingJob.taxRate);
       // Seed profit margin + target profit from the saved cost basis so the
       // user sees the historical margin immediately, not the user-profile default.
       // The derive-from-price effect rebases these against current trueCost once
@@ -445,6 +451,23 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     };
   }, [trueCost, sellingPrice, fixedCosts]);
 
+  // Phase 13: tax-rate provenance chain (override → settings → eu-average → region → manual).
+  // Reads `taxRateOverride` local state so in-progress edits flow through `resolveTaxRate`.
+  // When the user clears the override, the chain falls back to Settings default → region → manual.
+  const taxSource = useMemo(
+    () => resolveTaxRate({
+      jobOverride: taxRateOverride,
+      settingsDefault: userProfile.defaultTaxRate,
+      currency: userCurrency,
+    }),
+    [taxRateOverride, userProfile.defaultTaxRate, userCurrency]
+  );
+  // Phase 13: tax math (TAX-05 lock — applied to sellingPrice, NOT subtotal).
+  const tax = useMemo(
+    () => calculateTax(sellingPrice, taxSource.rate),
+    [sellingPrice, taxSource.rate]
+  );
+
   // Clear form handler
   const clearForm = () => {
     setPrintName('');
@@ -462,6 +485,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     setSellingPrice(0);
     setTargetProfit(0);
     setProfitMarginPercent(defaultProfitMargin);
+    setTaxRateOverride(undefined);
     setLastEdited('margin');
     setShippingMethod('local_pickup');
     setShippingDistanceKm(0);
@@ -522,6 +546,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         failureRate,
         costPerUnit: trueCost,
         sellingPrice,
+        taxRate: taxRateOverride,
+        taxAmount: tax.taxAmount,
       };
 
       onUpdateJob(updatedJob);
@@ -549,6 +575,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         failureRate,
         costPerUnit: trueCost,
         sellingPrice,
+        taxRate: taxRateOverride,
+        taxAmount: tax.taxAmount,
         copiesSold: 0,
       };
 
@@ -745,7 +773,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
                 />
                 <span className="text-xs text-slate-400">Per-unit license</span>
-                <NewBadge feature="per-unit-licensing" />
               </label>
             </div>
 
@@ -753,7 +780,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Author Min Price ({currencySymbol})</span>
                 <InfoTooltip text="Warn if selling below this" />
-                <NewBadge feature="author-min-price" />
               </label>
               <Input
                 type="number"
@@ -922,9 +948,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     <Input
                       type="number"
                       step="0.1"
+                      compact
                       value={usage.quantity}
                       onChange={e => updateMaterialUsage(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="w-20 text-right"
+                      className="text-right"
                     />
                     <span className="text-slate-400 text-sm w-12">{material?.unit || ''}</span>
                   </div>
@@ -967,9 +994,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           {shippingMethod === 'dropoff' && (
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Distance ({distanceUnit})</label>
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Distance ({distanceUnit})</span>
+                <InfoTooltip text="Round-trip distance" />
+              </label>
               <Input
                 type="number"
+                compact
                 value={distanceUnit === 'mi' ? (shippingDistanceKm > 0 ? kmToMiles(shippingDistanceKm).toFixed(1) : '') : (shippingDistanceKm || '')}
                 onChange={e => {
                   const inputVal = parseFloat(e.target.value) || 0;
@@ -990,6 +1021,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             <Input
               type="number"
               step="0.01"
+              compact
               value={shippingOverrideCost !== null ? shippingOverrideCost : shippingCost}
               onChange={e => setShippingOverrideCost(parseFloat(e.target.value) || 0)}
               placeholder={shippingCost.toFixed(2)}
@@ -1013,7 +1045,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             <div>
               <h3 className="flex items-center gap-2 text-sm font-medium text-white">
                 <span>Packaging Materials</span>
-                <NewBadge feature="packaging-materials" />
               </h3>
               <p className="text-xs text-slate-500">Boxes, bubble wrap, tape, etc.</p>
             </div>
@@ -1147,7 +1178,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         <h2 className="text-lg font-semibold text-white mb-4">Set Financial Targets</h2>
         <p className="text-slate-400 text-sm mb-4">Set targets and keep track of profitability throughout your project</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-4">
           <div>
             <label className="block text-sm font-medium text-white mb-1">Profit Margin</label>
             <div className="relative">
@@ -1194,6 +1225,32 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   setLastEdited('price');
                 }}
                 className="pl-8"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-1">Tax Rate</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
+              <Input
+                type="number"
+                min="0"
+                max="99.9"
+                step="0.1"
+                className="pl-8"
+                value={taxRateOverride ?? ''}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') {
+                    setTaxRateOverride(undefined);
+                  } else {
+                    const parsed = parseFloat(v);
+                    if (Number.isFinite(parsed)) {
+                      setTaxRateOverride(Math.min(Math.max(parsed, 0), 99.9));
+                    }
+                  }
+                }}
               />
             </div>
           </div>
@@ -1311,6 +1368,23 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               This is what you spend each time you print this item
             </div>
           </div>
+
+          {/* Tax row (TAX-04 — hides at 0%; total uses sellingPrice + taxAmount per TAX-05) */}
+          {tax.ratePercent > 0 && (
+            <div className="border-t border-slate-700 pt-2 mt-2">
+              <div className="flex justify-between text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <span>Tax ({tax.ratePercent.toFixed(1)}%)</span>
+                  <InfoTooltip text={tooltipForSource(taxSource, userCurrency)} />
+                </span>
+                <span className="font-mono">{currencySymbol}{tax.taxAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-white font-semibold mt-1">
+                <span>Total (with Tax)</span>
+                <span className="font-mono">{currencySymbol}{(sellingPrice + tax.taxAmount).toFixed(2)}</span>
+              </div>
+            </div>
+          )}
 
           {/* Marketplace Fee Note */}
           {marketplaceFee > 0 && sellingPrice > 0 && (
