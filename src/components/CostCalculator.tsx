@@ -669,56 +669,106 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           }}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-4">
-          <div className="lg:col-span-2">
-            <label className="block text-xs text-slate-400 mb-1">Print Name *</label>
-            <Input
-              type="text"
-              value={printName}
-              onChange={e => setPrintName(e.target.value)}
-              placeholder="e.g., Dragon Figurine"
-            />
+        <div className="space-y-4">
+          {/* Identity row — Print Name takes 2/3, Printer takes 1/3 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
+            <div className="md:col-span-2">
+              <label className="block text-xs text-slate-400 mb-1">Print Name *</label>
+              <Input
+                type="text"
+                value={printName}
+                onChange={e => setPrintName(e.target.value)}
+                placeholder="e.g., Dragon Figurine"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Printer</label>
+              {printerInstances.length === 0 ? (
+                <p className="text-yellow-400 text-sm">No printers set up. Go to Printer Settings to add one.</p>
+              ) : (
+                <Select
+                  value={selectedInstanceId}
+                  onChange={e => setSelectedInstanceId(e.target.value)}
+                >
+                  {printerInstances.map(instance => {
+                    const config = printers.find(p => p.id === instance.printerConfigId);
+                    return (
+                      <option key={instance.id} value={instance.id}>
+                        {instance.nickname} ({config?.name || 'Unknown'}) - {instance.printHours.toFixed(1)}h
+                      </option>
+                    );
+                  })}
+                </Select>
+              )}
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Printer</label>
-            {printerInstances.length === 0 ? (
-              <p className="text-yellow-400 text-sm">No printers set up. Go to Printer Settings to add one.</p>
-            ) : (
-              <Select
-                value={selectedInstanceId}
-                onChange={e => setSelectedInstanceId(e.target.value)}
-              >
-                {printerInstances.map(instance => {
-                  const config = printers.find(p => p.id === instance.printerConfigId);
-                  return (
-                    <option key={instance.id} value={instance.id}>
-                      {instance.nickname} ({config?.name || 'Unknown'}) - {instance.printHours.toFixed(1)}h
-                    </option>
-                  );
-                })}
-              </Select>
-            )}
-          </div>
+          {/* Model context row — URL flexes to fill, Cost + Author Min are compact. Wraps on narrow viewports. */}
+          <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+            <div className="flex-1 min-w-[220px] max-w-md">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Model URL</span>
+                <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
+                <NewBadge feature="model-url" />
+              </label>
+              <Input
+                type="url"
+                value={modelUrl}
+                onChange={e => setModelUrl(e.target.value)}
+                placeholder="https://makerworld.com/..."
+              />
+            </div>
 
-          {/* Model URL — under Print Name / Printer, ahead of Filaments. Narrow input keeps the row visually light. */}
-          <div className="lg:col-span-3">
-            <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-              <span>Model URL</span>
-              <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
-              <NewBadge feature="model-url" />
-            </label>
-            <Input
-              type="url"
-              value={modelUrl}
-              onChange={e => setModelUrl(e.target.value)}
-              placeholder="https://makerworld.com/..."
-              className="max-w-md"
-            />
+            <div>
+              <label className="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                <span>Model Cost ({currencySymbol})</span>
+                {modelCost > 0 && (
+                  <>
+                    <span className="text-slate-600" aria-hidden="true">·</span>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
+                      <input
+                        type="checkbox"
+                        checked={modelCostPerUnit}
+                        onChange={e => setModelCostPerUnit(e.target.checked)}
+                        className="w-3.5 h-3.5 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
+                      />
+                      <span>per-unit</span>
+                    </label>
+                    <NewBadge feature="per-unit-licensing" />
+                  </>
+                )}
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                compact
+                value={modelCost || ''}
+                onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Author Min Price ({currencySymbol})</span>
+                <InfoTooltip text="Warn if selling below this" />
+                <NewBadge feature="author-min-price" />
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                compact
+                value={authorMinPrice || ''}
+                onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
           </div>
 
           {/* Multi-Filament Rows */}
-          <div className="lg:col-span-3 space-y-3">
+          <div className="space-y-3">
             <label className="block text-xs text-slate-400">Filaments *</label>
 
             {filamentRows.map((row, index) => (
@@ -781,8 +831,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             ))}
           </div>
 
-          {/* Print parameters — guaranteed 4-on-a-row at lg+; wraps on narrow screens. */}
-          <div className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3">
+          {/* Print parameters — flex-wrap so compact inputs pack tightly left-to-right (matches SettingsModal pattern). */}
+          <div className="flex flex-wrap gap-x-4 gap-y-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
               <Input
@@ -832,51 +882,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 compact
                 value={postProcessingMinutes || ''}
                 onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-          </div>
-
-          {/* Model Cost + Author Min Price — always visible side-by-side; the per-unit checkbox
-              only adds vertical space under Cost, never shifts the row. */}
-          <div className="lg:col-span-3 grid grid-cols-2 gap-x-4 gap-y-3 max-w-md">
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Model Cost ({currencySymbol})</label>
-              <Input
-                type="number"
-                step="0.01"
-                compact
-                value={modelCost || ''}
-                onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
-                placeholder="0"
-              />
-              {modelCost > 0 && (
-                <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                  {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
-                  <input
-                    type="checkbox"
-                    checked={modelCostPerUnit}
-                    onChange={e => setModelCostPerUnit(e.target.checked)}
-                    className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
-                  />
-                  <span className="text-xs text-slate-400">Per-unit license</span>
-                  <NewBadge feature="per-unit-licensing" />
-                </label>
-              )}
-            </div>
-
-            <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Author Min Price ({currencySymbol})</span>
-                <InfoTooltip text="Warn if selling below this" />
-                <NewBadge feature="author-min-price" />
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                compact
-                value={authorMinPrice || ''}
-                onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
                 placeholder="0"
               />
             </div>
