@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
+import { resolveTaxRate } from '../utils/taxResolution';
 import { NewBadge } from './NewBadge';
 import { Button, Input } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
@@ -38,6 +39,18 @@ export function SettingsModal({
   const currencySymbol = CURRENCY_CONFIG[userCurrency].symbol;
   const distanceUnit = getDistanceUnit(userCurrency);
   const fuelUnit = getFuelUnit(userCurrency);
+
+  // Default Tax Rate placeholder — shows the region default that would apply
+  // if the user leaves Settings empty. Makes the fallback visible at the input
+  // surface instead of requiring users to discover it via the per-job tooltip.
+  const regionTaxRate = useMemo(
+    () => resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: userCurrency,
+    }).rate,
+    [userCurrency]
+  );
 
   // Tab state — 3-tab IA: Costs & Rates (all cost inputs), Delivery (local + carriers), Marketplaces
   const [activeTab, setActiveTab] = useState<'costs' | 'delivery' | 'marketplaces'>('costs');
@@ -283,7 +296,7 @@ export function SettingsModal({
                     min="0"
                     max="99.9"
                     compact
-                    placeholder="e.g., 20"
+                    placeholder={regionTaxRate > 0 ? String(regionTaxRate) : 'e.g., 20'}
                     value={userProfile.defaultTaxRate ?? ''}
                     onChange={e => {
                       const v = e.target.value;
@@ -297,6 +310,11 @@ export function SettingsModal({
                       }
                     }}
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    {regionTaxRate > 0
+                      ? `Region default: ${regionTaxRate}% — leave blank to inherit.`
+                      : 'No region default for your currency. Enter manually.'}
+                  </p>
                 </div>
               </div>
             </div>

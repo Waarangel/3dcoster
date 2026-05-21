@@ -114,3 +114,16 @@ export function tooltipForSource(source: TaxRateSource, userCurrency: Currency):
   }
   return base;
 }
+
+// Compact provenance label shown inline next to the Tax row rate, so the
+// fallback-chain source is visible without hovering the InfoTooltip.
+// Pairs with tooltipForSource — same source kinds, terser form.
+export function labelForSource(source: TaxRateSource): string {
+  switch (source.kind) {
+    case 'override': return 'per-job override';
+    case 'settings': return 'Settings default';
+    case 'region': return `${source.region} region`;
+    case 'eu-average': return 'EU midpoint';
+    case 'manual': return 'manual';
+  }
+}

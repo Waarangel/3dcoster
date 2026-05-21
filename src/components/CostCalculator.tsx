@@ -6,7 +6,7 @@ import { NewBadge } from './NewBadge';
 import { Button, Input, Select, InfoTooltip } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { calculateCost, calculateTax } from '../utils/costCalc';
-import { resolveTaxRate, tooltipForSource } from '../utils/taxResolution';
+import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -126,7 +126,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [lastEdited, setLastEdited] = useState<'margin' | 'profit' | 'price'>(() => getStoredValue('lastEdited', 'margin'));
 
   // Per-job Tax Rate override (Phase 13). Undefined ⇒ chain falls back to Settings default → region → manual.
-  const [taxRateOverride, setTaxRateOverride] = useState<number | undefined>(() => editingJob?.taxRate);
+  // editingJob takes precedence over sessionStorage (resumed-job-edit case).
+  const [taxRateOverride, setTaxRateOverride] = useState<number | undefined>(
+    () => editingJob?.taxRate ?? getStoredValue<number | undefined>('taxRateOverride', undefined)
+  );
 
   // Shipping
   const [shippingMethod, setShippingMethod] = useState<ShippingMethodType>(() => getStoredValue('shippingMethod', 'local_pickup'));
@@ -164,6 +167,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       profitMarginPercent,
       targetProfit,
       sellingPrice,
+      taxRateOverride,
       lastEdited,
       shippingMethod,
       shippingDistanceKm,
@@ -175,7 +179,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   }, [
     editingJob, printName, filamentRows,
     selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes, postProcessingMinutes,
-    failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, lastEdited,
+    failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, taxRateOverride, lastEdited,
     shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace
   ]);
 
@@ -219,7 +223,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       });
       setFilamentRows(restoredRows.length > 0 ? restoredRows : [makeDefaultRow(userCurrency)]);
     }
-  }, [editingJob, materials]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingJob]);
 
   // Auto-select first printer if none selected but printers exist
   // Also handles case where stored printer ID no longer exists or is empty
@@ -231,7 +236,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     const hasValidSelection = selectedInstanceId && selectedInstanceId.trim() !== '' && printerInstances.some(p => p.id === selectedInstanceId);
 
     if (!hasValidSelection) {
-      console.log('Auto-selecting printer:', printerInstances[0].id, 'from instances:', printerInstances.map(p => p.id));
       setSelectedInstanceId(printerInstances[0].id);
     }
   }, [printerInstances, selectedInstanceId, editingJob]);
@@ -466,6 +470,18 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const tax = useMemo(
     () => calculateTax(sellingPrice, taxSource.rate),
     [sellingPrice, taxSource.rate]
+  );
+
+  // Per-job Tax Rate input placeholder — resolves the chain WITHOUT the override
+  // so the user sees the inherited rate they'd get if they left the field blank.
+  // Blank input means "inherit"; the placeholder makes the inherited value visible.
+  const inheritedTaxRate = useMemo(
+    () => resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: userProfile.defaultTaxRate,
+      currency: userCurrency,
+    }).rate,
+    [userProfile.defaultTaxRate, userCurrency]
   );
 
   // Clear form handler
@@ -1240,6 +1256,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 step="0.1"
                 className="pl-8"
                 value={taxRateOverride ?? ''}
+                placeholder={inheritedTaxRate > 0 ? String(inheritedTaxRate) : 'e.g., 20'}
                 onChange={e => {
                   const v = e.target.value;
                   if (v === '') {
@@ -1375,6 +1392,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               <div className="flex justify-between text-slate-300">
                 <span className="flex items-center gap-1.5">
                   <span>Tax ({tax.ratePercent.toFixed(1)}%)</span>
+                  <span className="text-xs text-slate-500">· {labelForSource(taxSource)}</span>
                   <InfoTooltip text={tooltipForSource(taxSource, userCurrency)} />
                 </span>
                 <span className="font-mono">{currencySymbol}{tax.taxAmount.toFixed(2)}</span>
