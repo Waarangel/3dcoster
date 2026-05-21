@@ -83,7 +83,11 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
   3. A collapsible "Selling on Etsy?" section on the cost calculator displays the `EtsyToSHelper` checklist sourced from `src/data/etsyToS.ts`; each checklist item is checkable by the user for self-review purposes
   4. The Etsy section displays a `policySummaryAsOf` date and a live link to `https://www.etsy.com/legal/creativity/`; a prominent disclaimer reads "Etsy's policies change — this is a reminder, not legal advice"; the checklist items do NOT appear on the customer PDF
   5. UI-10 has been completed by Phase 13 (CONTEXT D-17 fold-in); Phase 14 verifies the audit holds — `src/features.ts` still contains only the 4 fresh entries Phase 13 left, and no new stale `<NewBadge>` JSX has been introduced in CUST/ETSY work. If Phase 13's audit was complete, this criterion is a no-op verification step.
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 14-01-PLAN.md — CollapsibleSection primitive + types.ts etsyChecks extension + features.ts 2 new entries (Wave 1, autonomous)
+- [ ] 14-02-PLAN.md — Etsy data file etsyToS.ts + Etsy CollapsibleSection card on CostCalculator + etsyChecks 6-site state wiring (Wave 2, autonomous; depends on 14-01)
+- [ ] 14-03-PLAN.md — Customer CollapsibleSection card on CostCalculator + JobsManager subline + expanded-panel Customer block + customer 6-site state wiring (Wave 3, autonomous; depends on 14-01, 14-02)
+- [ ] 14-04-PLAN.md — UAT + UI-10 audit + features.ts grep gate + verification record (Wave 4, has checkpoint:human-verify; depends on 14-01, 14-02, 14-03)
 **UI hint**: yes
 
 ### Phase 15: Tags, Search + Quick Duplicate

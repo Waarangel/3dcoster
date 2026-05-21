@@ -1,9 +1,9 @@
 ---
 phase: 14
 slug: customer-details-etsy-helper
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: ready
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-05-21
 ---
 
@@ -40,10 +40,15 @@ created: 2026-05-21
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | TBD | CUST-01 | — | N/A (UI form, no auth surface) | unit | `npm run test -- --run` | TBD | ⬜ pending |
-| TBD | TBD | TBD | CUST-02 | — | N/A (display-only) | unit | `npm run test -- --run` | TBD | ⬜ pending |
-| TBD | TBD | TBD | ETSY-01 | — | N/A (static data file) | unit | `npm run test -- --run` | TBD | ⬜ pending |
-| TBD | TBD | TBD | ETSY-02 | — | N/A (informational link) | unit | `npm run test -- --run` | TBD | ⬜ pending |
+| 14-01/T1 | 14-01 | 1 | CUST-01, ETSY-01 | — | N/A (UI primitive) | unit | `npm run test -- --run src/components/ui/CollapsibleSection.test.ts` | ❌ W0 (created by task) | ⬜ pending |
+| 14-01/T2 | 14-01 | 1 | CUST-01, ETSY-01 | — | N/A (type + registry additions) | static | `tsc -b && grep -c "^\s*{" src/features.ts` (= 6) | ✅ | ⬜ pending |
+| 14-02/T1 | 14-02 | 2 | ETSY-01, ETSY-02 | — | N/A (static data file) | unit | `npm run test -- --run src/data/etsyToS.test.ts` | ❌ W0 (created by task) | ⬜ pending |
+| 14-02/T2 | 14-02 | 2 | ETSY-01, ETSY-02 | — | N/A (CostCalculator Etsy section + 6-site etsyChecks wiring) | build+lint | `tsc -b && npm run build` (covers raw-html lint) | ✅ | ⬜ pending |
+| 14-03/T1 | 14-03 | 3 | CUST-01, CUST-02 | — | N/A (Customer card + 6-site customer wiring; clearForm is PII-leak guard) | build+lint | `tsc -b && npm run build && grep -E "setCustomer\\(\\{\\}\\)" src/components/CostCalculator.tsx` | ✅ | ⬜ pending |
+| 14-03/T2 | 14-03 | 3 | CUST-02 | — | N/A (JobsManager subline + expanded Customer block) | build | `tsc -b && npm run build` | ✅ | ⬜ pending |
+| 14-04/T1 | 14-04 | 4 | CUST-01, CUST-02, ETSY-01, ETSY-02 | — | N/A (static-audit gate: UI-10 grep, Dexie v6 integrity, date sync, lint/test/tsc/build) | static | scripted bash gate (see 14-04 PLAN) | ✅ | ⬜ pending |
+| 14-04/T2 | 14-04 | 4 | CUST-01, CUST-02, ETSY-01, ETSY-02 | — | N/A (8-scenario human UAT at port 4173) | manual | `checkpoint:human-verify` (npm run dev → port 4173) | n/a | ⬜ pending |
+| 14-04/T3 | 14-04 | 4 | all | — | N/A (write VERIFICATION.md / SUMMARY.md + close REQUIREMENTS+ROADMAP+STATE) | static | `gsd-sdk query state.complete-phase --phase 14` | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -71,11 +76,11 @@ created: 2026-05-21
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies (planner fills the table above)
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers `.test.ts` (not `.tsx`) scaffolding per vitest config quirk
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 60s
-- [ ] `nyquist_compliant: true` set in frontmatter once planner fills task map
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies (plan-checker Dim 8 PASS)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify (every task except the 14-04/T2 human checkpoint has an automated command)
+- [x] Wave 0 covers `.test.ts` (not `.tsx`) scaffolding per vitest config quirk (14-01/T1 + 14-02/T1 create the test files)
+- [x] No watch-mode flags (`--run` flag explicit in every vitest command)
+- [x] Feedback latency < 60s (vitest+tsc+build ≈ 60s on 3DCoster)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-05-21 by gsd-plan-checker (VERIFICATION PASSED)
