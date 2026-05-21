@@ -22,6 +22,26 @@ export interface TaxRateEntry {
   note?: string;
 }
 
+// Province / state level tax data. Currently only Canada — the only country
+// in our currency union where sub-national rates materially change the
+// total a local seller charges (federal GST is 5% but combined HST/PST/QST
+// goes up to 15%). US states are deferred (most US sellers are covered by
+// marketplace-facilitator laws — see US row's note); EU member states are
+// already covered by the country rows in TAX_RATES when address is known.
+export interface ProvincialTaxEntry {
+  countryCode: string;   // ISO 3166-1 alpha-2
+  provinceCode: string;  // ISO 3166-2 sub-code (no country prefix)
+  provinceName: string;  // Full name for display + alias matching
+  // Aliases the user might type into the freeform province field
+  // (case-insensitive; lowercase, no punctuation). Province code and full
+  // name are always accepted; this is for additional shorthand forms.
+  aliases?: readonly string[];
+  rate: number;          // Combined rate (federal + provincial)
+  rateAsOf: string;      // Provincial portion's effective date
+  lastVerified: string;
+  note?: string;
+}
+
 // Bumped on every release that re-verifies the rate table against an
 // authoritative source (Tax Foundation, EU Commission TEDB, gov.uk/HMRC,
 // ato.gov.au, canada.ca). Applied to every TAX_RATES row by default; rows
@@ -94,3 +114,61 @@ export const TAX_RATES: readonly TaxRateEntry[] = [
   { currency: 'EUR', region: 'ES', label: 'Spain',       rate: 21,   rateAsOf: '2012-09-01', lastVerified: V },
   { currency: 'SEK', region: 'SE', label: 'Sweden',      rate: 25,   rateAsOf: '1996-01-01', lastVerified: V },
 ];
+
+// Canadian provinces + territories. Rate is the combined federal+provincial
+// total a SELLER charges a buyer in the SAME province (the most common
+// case for a hobbyist / small-business 3D printing seller).
+//
+// Place-of-supply rules for inter-provincial sales are out of scope —
+// users selling cross-province should override per-job.
+//
+// Source: canada.ca/en/revenue-agency/services/forms-publications/publications/notice280
+// + each province's revenue ministry site, verified TAX_RATES_VERIFIED_AT.
+export const PROVINCIAL_TAX_RATES: readonly ProvincialTaxEntry[] = [
+  { countryCode: 'CA', provinceCode: 'AB', provinceName: 'Alberta',          rate: 5,      rateAsOf: '1991-01-01', lastVerified: V,
+    note: 'Federal GST only — Alberta has no provincial sales tax.' },
+  { countryCode: 'CA', provinceCode: 'BC', provinceName: 'British Columbia', aliases: ['b.c.'], rate: 12, rateAsOf: '2013-04-01', lastVerified: V,
+    note: '5% federal GST + 7% provincial PST.' },
+  { countryCode: 'CA', provinceCode: 'MB', provinceName: 'Manitoba',         rate: 12,     rateAsOf: '2019-07-01', lastVerified: V,
+    note: '5% federal GST + 7% provincial RST.' },
+  { countryCode: 'CA', provinceCode: 'NB', provinceName: 'New Brunswick',    rate: 15,     rateAsOf: '2016-07-01', lastVerified: V,
+    note: '15% Harmonized Sales Tax (HST) — combines federal + provincial.' },
+  { countryCode: 'CA', provinceCode: 'NL', provinceName: 'Newfoundland and Labrador', aliases: ['newfoundland', 'labrador'], rate: 15, rateAsOf: '2016-07-01', lastVerified: V,
+    note: '15% Harmonized Sales Tax (HST) — combines federal + provincial.' },
+  { countryCode: 'CA', provinceCode: 'NS', provinceName: 'Nova Scotia',      rate: 14,     rateAsOf: '2025-04-01', lastVerified: V,
+    note: '14% Harmonized Sales Tax (HST) — reduced from 15% on 2025-04-01.' },
+  { countryCode: 'CA', provinceCode: 'NT', provinceName: 'Northwest Territories', aliases: ['nwt'], rate: 5, rateAsOf: '1991-01-01', lastVerified: V,
+    note: 'Federal GST only — no territorial sales tax.' },
+  { countryCode: 'CA', provinceCode: 'NU', provinceName: 'Nunavut',          rate: 5,      rateAsOf: '1999-04-01', lastVerified: V,
+    note: 'Federal GST only — no territorial sales tax.' },
+  { countryCode: 'CA', provinceCode: 'ON', provinceName: 'Ontario',          aliases: ['ont'], rate: 13, rateAsOf: '2010-07-01', lastVerified: V,
+    note: '13% Harmonized Sales Tax (HST) — combines federal + provincial.' },
+  { countryCode: 'CA', provinceCode: 'PE', provinceName: 'Prince Edward Island', aliases: ['pei', 'p.e.i.'], rate: 15, rateAsOf: '2016-10-01', lastVerified: V,
+    note: '15% Harmonized Sales Tax (HST) — combines federal + provincial.' },
+  { countryCode: 'CA', provinceCode: 'QC', provinceName: 'Quebec',           aliases: ['québec', 'que'], rate: 14.975, rateAsOf: '2013-01-01', lastVerified: V,
+    note: '5% federal GST + 9.975% provincial QST. QST is calculated on the pre-GST price (the displayed total still reconciles).' },
+  { countryCode: 'CA', provinceCode: 'SK', provinceName: 'Saskatchewan',     rate: 11,     rateAsOf: '2017-03-23', lastVerified: V,
+    note: '5% federal GST + 6% provincial PST.' },
+  { countryCode: 'CA', provinceCode: 'YT', provinceName: 'Yukon',            rate: 5,      rateAsOf: '1991-01-01', lastVerified: V,
+    note: 'Federal GST only — no territorial sales tax.' },
+];
+
+// Normalize a user-entered freeform province string to a canonical
+// `${countryCode}-${provinceCode}` form. Returns undefined when no match.
+// Match priority: exact provinceCode → exact provinceName → alias list.
+// All comparisons lowercased + trimmed; punctuation in the input is collapsed.
+export function findProvincialEntry(
+  countryCode: string | undefined,
+  province: string | undefined,
+): ProvincialTaxEntry | undefined {
+  if (!countryCode || !province) return undefined;
+  const country = countryCode.trim().toUpperCase();
+  const needle = province.trim().toLowerCase().replace(/\./g, '');
+  if (!needle) return undefined;
+  return PROVINCIAL_TAX_RATES.find(p => {
+    if (p.countryCode !== country) return false;
+    if (p.provinceCode.toLowerCase() === needle) return true;
+    if (p.provinceName.toLowerCase() === needle) return true;
+    return p.aliases?.some(a => a.toLowerCase().replace(/\./g, '') === needle) ?? false;
+  });
+}

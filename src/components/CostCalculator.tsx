@@ -458,16 +458,18 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     };
   }, [trueCost, sellingPrice, fixedCosts]);
 
-  // Phase 13: tax-rate provenance chain (override → settings → eu-average → region → manual).
+  // Phase 13: tax-rate provenance chain (override → settings → province → region → eu-average → manual).
   // Reads `taxRateOverride` local state so in-progress edits flow through `resolveTaxRate`.
-  // When the user clears the override, the chain falls back to Settings default → region → manual.
+  // address takes precedence over currency-keyed default once filled (e.g., Ontario 13% HST
+  // beats the Canadian federal 5% GST default).
   const taxSource = useMemo(
     () => resolveTaxRate({
       jobOverride: taxRateOverride,
       settingsDefault: userProfile.defaultTaxRate,
       currency: userCurrency,
+      address: userProfile.address,
     }),
-    [taxRateOverride, userProfile.defaultTaxRate, userCurrency]
+    [taxRateOverride, userProfile.defaultTaxRate, userCurrency, userProfile.address]
   );
   // Phase 13: tax math (TAX-05 lock — applied to sellingPrice, NOT subtotal).
   const tax = useMemo(
@@ -483,8 +485,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       jobOverride: undefined,
       settingsDefault: userProfile.defaultTaxRate,
       currency: userCurrency,
+      address: userProfile.address,
     }).rate,
-    [userProfile.defaultTaxRate, userCurrency]
+    [userProfile.defaultTaxRate, userCurrency, userProfile.address]
   );
 
   // Clear form handler

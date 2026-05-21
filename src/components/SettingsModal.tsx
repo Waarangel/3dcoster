@@ -41,17 +41,27 @@ export function SettingsModal({
   const distanceUnit = getDistanceUnit(userCurrency);
   const fuelUnit = getFuelUnit(userCurrency);
 
-  // Default Tax Rate placeholder — shows the region default that would apply
-  // if the user leaves Settings empty. Makes the fallback visible at the input
-  // surface instead of requiring users to discover it via the per-job tooltip.
-  const regionTaxRate = useMemo(
+  // Default Tax Rate placeholder — shows the address-aware default that
+  // would apply if the user leaves Settings empty. Makes the fallback visible
+  // at the input surface instead of requiring users to discover it via the
+  // per-job tooltip. Includes provincial overlay when address.province is set.
+  const regionTaxResolved = useMemo(
     () => resolveTaxRate({
       jobOverride: undefined,
       settingsDefault: undefined,
       currency: userCurrency,
-    }).rate,
-    [userCurrency]
+      address: userProfile.address,
+    }),
+    [userCurrency, userProfile.address]
   );
+  const regionTaxRate = regionTaxResolved.rate;
+  // Distinct caption suffix when the resolved rate came from province lookup
+  // (so the user knows their address is the reason it's higher than the
+  // federal-only default they might expect).
+  const regionTaxSourceLabel =
+    regionTaxResolved.kind === 'province'
+      ? `${regionTaxResolved.provinceName}, ${regionTaxResolved.countryCode}`
+      : 'Region';
 
   // Tab state — 3-tab IA: Costs & Rates (all cost inputs), Delivery (local + carriers), Marketplaces
   const [activeTab, setActiveTab] = useState<'costs' | 'delivery' | 'marketplaces'>('costs');
@@ -313,8 +323,8 @@ export function SettingsModal({
                   />
                   <p className="text-xs text-slate-500 mt-1">
                     {regionTaxRate > 0
-                      ? `Region default: ${regionTaxRate}% — leave blank to inherit.`
-                      : 'No region default for your currency. Enter manually.'}
+                      ? `${regionTaxSourceLabel} default: ${regionTaxRate}% — leave blank to inherit.`
+                      : 'No region default for your currency. Enter manually (or fill your address for province-specific rates).'}
                   </p>
                 </div>
               </div>

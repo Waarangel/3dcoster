@@ -14,17 +14,17 @@ const US_NOTE_FIXTURE = US_MARKETPLACE_FACILITATOR_NOTE;
 
 describe('resolveTaxRate', () => {
   it('returns kind override when jobOverride is set (override wins over settings and region)', () => {
-    const result = resolveTaxRate({ jobOverride: 8, settingsDefault: 20, currency: 'USD' });
+    const result = resolveTaxRate({ jobOverride: 8, settingsDefault: 20, currency: 'USD', address: undefined });
     expect(result).toEqual({ kind: 'override', rate: 8 });
   });
 
   it('returns kind settings when only settingsDefault is set (settings wins over region)', () => {
-    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: 15, currency: 'GBP' });
+    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: 15, currency: 'GBP', address: undefined });
     expect(result).toEqual({ kind: 'settings', rate: 15 });
   });
 
   it('US region default returns kind region with rate 0 and marketplace-facilitator note', () => {
-    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'USD' });
+    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'USD', address: undefined });
     expect(result.kind).toBe('region');
     if (result.kind === 'region') {
       expect(result.rate).toBe(0);
@@ -35,23 +35,174 @@ describe('resolveTaxRate', () => {
   });
 
   it('EU average returns kind eu-average with rate 21 for EUR currency', () => {
-    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'EUR' });
+    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'EUR', address: undefined });
     expect(result.kind).toBe('eu-average');
     expect(result.rate).toBe(21);
   });
 
   it('manual (unknown region) returns kind manual rate 0 for currency not in TAX_RATES', () => {
-    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'ZAR' });
+    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'ZAR', address: undefined });
     expect(result).toEqual({ kind: 'manual', rate: 0 });
   });
 
   it('GBP region default returns kind region with rate 20', () => {
-    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'GBP' });
+    const result = resolveTaxRate({ jobOverride: undefined, settingsDefault: undefined, currency: 'GBP', address: undefined });
     expect(result.kind).toBe('region');
     if (result.kind === 'region') {
       expect(result.rate).toBe(20);
       expect(result.region).toBe('GB');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveTaxRate — address-aware (provincial + country)
+// ---------------------------------------------------------------------------
+
+describe('resolveTaxRate — address-aware lookup', () => {
+  it('CA + Ontario → kind province with 13% HST', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'CAD',
+      address: { country: 'CA', province: 'ON' },
+    });
+    expect(result.kind).toBe('province');
+    if (result.kind === 'province') {
+      expect(result.rate).toBe(13);
+      expect(result.provinceCode).toBe('ON');
+      expect(result.provinceName).toBe('Ontario');
+      expect(result.countryCode).toBe('CA');
+    }
+  });
+
+  it('CA + Quebec (with full name) → kind province with 14.975%', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'CAD',
+      address: { country: 'CA', province: 'Quebec' },
+    });
+    expect(result.kind).toBe('province');
+    if (result.kind === 'province') {
+      expect(result.rate).toBe(14.975);
+      expect(result.provinceCode).toBe('QC');
+    }
+  });
+
+  it('CA + B.C. (alias with punctuation) → matches British Columbia 12%', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'CAD',
+      address: { country: 'CA', province: 'B.C.' },
+    });
+    expect(result.kind).toBe('province');
+    if (result.kind === 'province') {
+      expect(result.rate).toBe(12);
+      expect(result.provinceCode).toBe('BC');
+    }
+  });
+
+  it('CA + Alberta → 5% GST-only with PST-absent note', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'CAD',
+      address: { country: 'CA', province: 'AB' },
+    });
+    expect(result.kind).toBe('province');
+    if (result.kind === 'province') {
+      expect(result.rate).toBe(5);
+      expect(result.note).toContain('no provincial sales tax');
+    }
+  });
+
+  it('CA + unknown province falls through to country (CA region, 5% federal)', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'CAD',
+      address: { country: 'CA', province: 'Made-up Province' },
+    });
+    expect(result.kind).toBe('region');
+    if (result.kind === 'region') {
+      expect(result.rate).toBe(5);
+      expect(result.region).toBe('CA');
+    }
+  });
+
+  it('CA address with no province falls through to country (CA region, 5% federal)', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'CAD',
+      address: { country: 'CA' },
+    });
+    expect(result.kind).toBe('region');
+    if (result.kind === 'region') {
+      expect(result.rate).toBe(5);
+      expect(result.region).toBe('CA');
+    }
+  });
+
+  it('EUR + address.country=FR → resolves France 20% (surfaces previously-dead EU row)', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'EUR',
+      address: { country: 'FR' },
+    });
+    expect(result.kind).toBe('region');
+    if (result.kind === 'region') {
+      expect(result.rate).toBe(20);
+      expect(result.region).toBe('FR');
+    }
+  });
+
+  it('EUR + address.country=DE → resolves Germany 19% (not the 21% EU midpoint)', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'EUR',
+      address: { country: 'DE' },
+    });
+    expect(result.kind).toBe('region');
+    if (result.kind === 'region') {
+      expect(result.rate).toBe(19);
+      expect(result.region).toBe('DE');
+    }
+  });
+
+  it('EUR with no address still uses EU-average midpoint (existing fallback)', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: undefined,
+      currency: 'EUR',
+      address: undefined,
+    });
+    expect(result.kind).toBe('eu-average');
+    expect(result.rate).toBe(21);
+  });
+
+  it('per-job override still wins over address-derived province rate', () => {
+    const result = resolveTaxRate({
+      jobOverride: 8,
+      settingsDefault: undefined,
+      currency: 'CAD',
+      address: { country: 'CA', province: 'ON' },
+    });
+    expect(result).toEqual({ kind: 'override', rate: 8 });
+  });
+
+  it('Settings default still wins over address-derived province rate', () => {
+    const result = resolveTaxRate({
+      jobOverride: undefined,
+      settingsDefault: 10,
+      currency: 'CAD',
+      address: { country: 'CA', province: 'ON' },
+    });
+    expect(result).toEqual({ kind: 'settings', rate: 10 });
   });
 });
 
