@@ -44,7 +44,7 @@ created: 2026-05-20
 | 12-01-01 | 01 | 1 | SCHEMA-01 | — | N/A | source assert + types | `tsc -b` and `grep -E "version\\(6\\)" src/db/database.ts` | ❌ W0 | ⬜ pending |
 | 12-01-02 | 01 | 1 | SCHEMA-01 | — | N/A | source assert + types | `tsc -b` and `grep -E "tags\\?:\\s*string\\[\\]" src/types.ts` | ❌ W0 | ⬜ pending |
 | 12-02-01 | 02 | 1 | SCHEMA-02 | — | N/A | source assert | `grep -E "versionchange" src/db/database.ts` | ❌ W0 | ⬜ pending |
-| 12-03-01 | 03 | 2 | SCHEMA-01 | — | tags backfilled idempotently on parsed records | unit (pure fn) | `npx vitest run src/db/__tests__/backfillTags.test.ts` | ❌ W0 | ⬜ pending |
+| 12-03-01 | 03 | 2 | SCHEMA-01 | — | tags backfilled idempotently on parsed records | unit (pure fn) | `npx vitest run src/db/backfill.test.ts` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -52,7 +52,7 @@ created: 2026-05-20
 
 ## Wave 0 Requirements
 
-- [ ] `src/db/__tests__/backfillTags.test.ts` — unit tests for the extracted `backfillTagsOnJob(job)` pure helper (idempotency, missing-tags, already-array, non-array-tags defensive guard). Required because jsdom doesn't support IndexedDB — the only way to unit-test the v6 row-mutation body is to extract it.
+- [ ] `src/db/backfill.test.ts` — unit tests for the extracted `backfillTagsOnJob(job)` pure helper (idempotency, missing-tags, already-array, non-array-tags defensive guard). Required because jsdom doesn't support IndexedDB — the only way to unit-test the v6 row-mutation body is to extract it. **Sibling-of-source convention** — repo has zero `__tests__/` folders (see `src/utils/costCalc.test.ts`).
 - [ ] No Vitest install needed — vitest + jsdom already present (see `vitest.config.ts`).
 
 *If the planner chooses NOT to extract `backfillTagsOnJob`, Wave 0 becomes empty and the migration body is covered only by manual UAT below — that path is acceptable but degrades automated coverage; flag it explicitly in PLAN.md.*
