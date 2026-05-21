@@ -48,9 +48,9 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
   3. Opening the app in a second browser tab after one tab has triggered the v6 migration causes the second tab to reload automatically rather than displaying a blank white screen — `db.on('versionchange', () => window.location.reload())` is present in `database.ts`
   4. TypeScript types reflect all new optional fields on `PrintJob` (`tags?: string[]`, `customer?: JobCustomer`, `taxRate?: number`, `taxAmount?: number`) and `UserProfile` (`defaultTaxRate?: number`, `nextQuoteNumber?: number`) with no compilation errors
 **Plans**: 4 plans
-- [ ] 12-01-PLAN.md — Extend `src/types.ts` with `JobCustomer` interface, 5 new `PrintJob` optional fields, and 2 new `UserProfile` optional fields (Wave 1, autonomous)
-- [ ] 12-02-PLAN.md — Extract `backfillTagsOnJob` pure helper into `src/db/backfill.ts` and unit-test it under jsdom (Wave 1, autonomous)
-- [ ] 12-03-PLAN.md — Add the Dexie v6 migration block and `db.on('versionchange', ...)` reload handler in `src/db/database.ts` (Wave 2, autonomous; depends on 12-02)
+- [x] 12-01-PLAN.md — Extend `src/types.ts` with `JobCustomer` interface, 5 new `PrintJob` optional fields, and 2 new `UserProfile` optional fields (Wave 1, autonomous)
+- [x] 12-02-PLAN.md — Extract `backfillTagsOnJob` pure helper into `src/db/backfill.ts` and unit-test it under jsdom (Wave 1, autonomous)
+- [x] 12-03-PLAN.md — Add the Dexie v6 migration block and `db.on('versionchange', ...)` reload handler in `src/db/database.ts` (Wave 2, autonomous; depends on 12-02)
 - [ ] 12-04-PLAN.md — `npm run build` gate + real-browser UAT for v5→v6 migration and multi-tab reload (Wave 3, has checkpoint:human-verify; depends on 12-01, 12-02, 12-03)
 
 ### Phase 13: Tax Model + UI Sweep
@@ -112,7 +112,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Schema Foundation | 0/4 | Planned — ready for execute | — |
+| 12. Schema Foundation | 3/4 | In Progress|  |
 | 13. Tax Model + UI Sweep | 0/? | Not started | — |
 | 14. Customer Details + Etsy Helper | 0/? | Not started | — |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |

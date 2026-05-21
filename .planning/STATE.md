@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 12 context gathered
-last_updated: "2026-05-21T01:48:03.191Z"
-last_activity: 2026-05-21 -- Phase 12 planning complete
+last_updated: "2026-05-21T12:46:51.746Z"
+last_activity: 2026-05-21
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 0
+  completed_plans: 3
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 12 — Schema Foundation (not yet started)
+**Current focus:** Phase 12 — schema-foundation
 
 ## Current Position
 
-Phase: Not started
-Plan: —
+Phase: 12 (schema-foundation) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-05-21 -- Phase 12 planning complete
+Last activity: 2026-05-21
 
 ## Performance Metrics
 
