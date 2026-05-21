@@ -135,12 +135,27 @@ export interface FilamentUsage {
   currency?: Currency;      // Currency for the price override
 }
 
+// Customer details for the job (Phase 14 writes/reads).
+// All fields optional; runtime validation lives in Phase 14's form (D-09).
+export interface JobCustomer {
+  name?: string;
+  email?: string;
+  address?: string;  // Freeform multi-line; PDF prints verbatim (D-08)
+  company?: string;
+}
+
 // A saved print job with break-even tracking
 export interface PrintJob {
   id: string;
   name: string;
   createdAt: Date;
   updatedAt: Date;
+
+  // Customer details (Phase 14)
+  customer?: JobCustomer;
+
+  // Tags (Phase 15)
+  tags?: string[];
 
   // Print parameters
   filaments: FilamentUsage[];
@@ -166,12 +181,17 @@ export interface PrintJob {
 
   // Pricing
   sellingPrice: number;
+  taxRate?: number;    // Phase 13: per-job override (percent)
+  taxAmount?: number;  // Phase 13: computed sellingPrice * taxRate
 
   // Break-even tracking
   copiesSold: number;
 
   // Notes
   notes?: string;
+
+  // Quote numbering (Phase 16) — assigned on first PDF gen, then reused (D-05)
+  quoteNumber?: number;
 }
 
 // Sales record for a print job
@@ -209,6 +229,12 @@ export interface UserProfile {
   };
   // UI preferences
   assetLibraryItemsPerPage?: number;
+
+  // Tax (Phase 13)
+  defaultTaxRate?: number;
+
+  // Quote numbering (Phase 16) — first quote is #1 (D-06); read via `?? 1`
+  nextQuoteNumber?: number;
 }
 
 // Built-in shipping carriers
