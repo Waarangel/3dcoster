@@ -2,589 +2,351 @@
 phase: 11-performance-optimization
 reviewed: 2026-05-20T00:00:00Z
 depth: standard
-files_reviewed: 5
+files_reviewed: 6
 files_reviewed_list:
-  - vite.config.ts
-  - scripts/assert-bundle-size.mjs
   - src/components/JobsManager.tsx
   - src/components/AssetLibrary.tsx
+  - src/components/CostCalculator.tsx
+  - vite.config.ts
+  - scripts/assert-bundle-size.mjs
   - package.json
 findings:
-  critical: 3
-  warning: 7
-  info: 4
-  total: 14
+  critical: 0
+  warning: 5
+  info: 3
+  total: 8
 status: issues_found
 ---
 
-# Phase 11: Code Review Report
+# Phase 11: Code Review Report (Post-Remediation)
 
 **Reviewed:** 2026-05-20
 **Depth:** standard
-**Files Reviewed:** 5
-**Status:** issues_found
+**Files Reviewed:** 6
+**Status:** issues_found (no Critical findings; Warning-level only)
 
 ## Summary
 
-Phase 11 ships virtualization for `JobsManager` and `AssetLibrary`, a `manualChunks` split,
-and a gzipped main-chunk budget enforced by `scripts/assert-bundle-size.mjs`. The build-gate
-script and chunk-split config are sound. The virtualization work, however, contains several
-**correctness** bugs that defeat the optimization or actively cause visual / behavioral
-regressions when the virtualized branch fires:
+This is the post-remediation re-review after commits `652941d` (CR-01/02/03 fixes) and
+`d77f940` (Print Job Details row-jump fix).
 
-1. **All row components are declared inside the parent function body.** Every parent render
-   creates fresh `JobCard` / `JobRow` / `MobileCardItem` / `PrinterRow` / `MaterialRow` (+ their
-   adapters). react-window v2 internally calls `React.memo(rowComponent)` — when the function
-   identity changes on every render, the memo wrapper is rebuilt, and **every visible row
-   remounts on every parent render**. This is the single most impactful bug in the phase: it
-   converts virtualization from a perf win into a perf regression for long lists. It also
-   blows away any per-row state (focus, in-flight transitions) on each unrelated parent
-   re-render.
-2. **Asset rows use fixed `rowHeight={56}` (desktop) and `rowHeight={280}` (mobile)** even
-   though the row content is dynamic: `notes` adds a second text line; `tags` wrap to N lines;
-   filament rows render an extra badge row. Tall rows will visually overlap or get clipped
-   against the following row, because the virtual layout reserves only the fixed height.
-3. **`JobCard` reads selection state, sales data, and handlers via closure**, but
-   `rowProps={{ jobs }}` only declares `jobs`. react-window v2 re-renders rows only when
-   `rowProps` shallow-changes, so changes to `selectedJobId`, `sales`, or callbacks would not
-   propagate through the documented channel. In practice the bug is masked because (a) every
-   render currently remounts the rows due to the identity bug above, and (b) the
-   `useDynamicRowHeight({ key: selectedJobId })` cache reset forces a re-measure. Once
-   findings 1 / Mason are fixed, this becomes a real staleness bug.
+**Resolution status for prior Critical findings:**
 
-Build-gate and chunk-split work are clean modulo small comment/scope nits called out below.
+- **CR-01 RESOLVED.** All row components are now at module scope. `JobsManager.tsx` declares
+  `JobCard` (memo-wrapped, lines 46–207) and `JobRow` (lines 226–255) outside the parent
+  function body. `AssetLibrary.tsx` declares `MobileCardItem` (152), `MobileCardRow` (270),
+  `PrinterRow` (275), `PrinterRowAdapter` (341), `MaterialRow` (346), and `MaterialRowAdapter`
+  (415) at module scope; the three plain row components are wrapped in `React.memo`. The
+  thin `*Adapter` components for `<List>` are not memoized, which is correct: react-window v2
+  internally wraps `rowComponent` in `React.memo`, so an extra wrap on the adapter would be
+  redundant.
+- **CR-02 RESOLVED.** AssetLibrary lines 733–735 replace the prior numeric `rowHeight` values
+  (`56` / `280`) with three `useDynamicRowHeight({ defaultRowHeight: ... })` caches: mobile
+  240, printer 64, material 64. Initial-render defaults are close enough to the common case
+  that the `ResizeObserver` correction is small.
+- **CR-03 RESOLVED.** `rowProps` (JobsManager.tsx lines 473–483) now contains every value the
+  row needs: `jobs`, `selectedJobId`, `selectedSales: sales`, `getFilamentName`,
+  `getBreakEvenInfo`, and the four handlers (`onToggleSelect`, `onOpenSaleForm`, `onEdit`,
+  `onDelete`). All handler callbacks that close over component state (`handleToggleSelect`,
+  `handleOpenSaleForm`, `handleDeleteJob`, `getFilamentName`) are wrapped in `useCallback`.
+  `rowProps` itself is memoized with the correct dependency array.
 
-The structural pattern (plain Row component + thin adapter) is a fine sidestep of v2's
-`RowComponentProps` constraint — but it must be applied at **module scope**, not inside the
-component, to retain the perf wins.
+**New bugs introduced by the refactor:** None at Critical level. The refactor is structurally
+sound. A minor data-flow note (IN-03) discusses why feeding `selectedSales` to every row is
+acceptable but worth documenting.
 
-## Critical Issues
+**Status of prior warnings:**
 
-### CR-01: Row components declared inside parent body — react-window memo identity churns every render, remounting all visible rows
+| Prior ID | Disposition |
+|----------|-------------|
+| WR-01 (`/dexie/` comment) | UNCHANGED — still incorrect. Re-listed as WR-01. |
+| WR-02 (vendor chunk gate) | UNCHANGED — still gates only `index-*.js`. Re-listed as WR-02. |
+| WR-03 (`key: selectedJobId` cache reset) | UNCHANGED — now more costly with CR-01 fixed. Re-listed as WR-03 (upgraded reasoning). |
+| WR-04 (`parseInt \|\| 1` etc.) | UNCHANGED — same patterns at lines 545, 554, 593. Not re-listed (out of refactor scope, pre-existing). |
+| WR-05 (`overflow-x-auto` wrapper) | UNCHANGED — line 1175 still wraps `<List>`. Re-listed as WR-04. |
+| WR-06 (dropoff cost) | UNCHANGED — `getDefaultShippingCost` (line 352) still has no `dropoff` case. Not re-listed (pre-existing, out of refactor scope). |
+| WR-07 (skeleton column count) | UNCHANGED — `AssetListSkeleton` (line 22) still takes no args and hard-codes 7 columns. Re-listed as WR-05. |
+| IN-01 (gzip level vs CDN) | UNCHANGED. Re-listed as IN-01. |
+| IN-02 (`<table>` skeleton vs grid real) | UNCHANGED. Re-listed as IN-02. |
+| IN-03 (eslint rule) | UNCHANGED. Not re-listed (configuration-only, no longer load-bearing now that CR-01 is fixed; track separately). |
 
-**File:** `src/components/JobsManager.tsx:233-407`, `src/components/AssetLibrary.tsx:457-710`
+**Three brand-new findings** flagged in this review that did not appear in the prior report:
+- WARNING: shared `mobileCardHeightCache` measures both printer and material cards (different
+  sizes) — see new WR-06 below.
+- INFO: `console.log` debug artifact in CostCalculator (pre-existing but in scope) — see new
+  IN-03 below.
 
-**Issue:**
-
-In `JobsManager`, `JobCard` (line 233) and `JobRow` (line 405) are declared inside the
-`JobsManager` function body. Same pattern in `AssetLibrary`: `MobileCardItem` (line 457),
-`MobileCardRow` (line 575), `PrinterRow` (line 580), `PrinterRowAdapter` (line 640),
-`MaterialRow` (line 645), `MaterialRowAdapter` (line 708). Every parent render produces new
-function instances.
-
-react-window v2's `<List>` internally wraps the `rowComponent` prop with `React.memo` and
-recomputes that memoized component with `useMemo(() => memo(f, ...), [f])` (verified in
-`node_modules/react-window/dist/react-window.js:725`). When `f` is a new function reference
-on every parent render, the memo wrapper is rebuilt and **every visible row unmounts and
-remounts on every parent render** — the worst possible outcome:
-
-- Throws away any local row state (in-progress focus, transitions, hover).
-- Re-runs `JobCard`'s `getBreakEvenInfo`, `getFilamentName`, etc. for every visible row even
-  when nothing relevant changed.
-- Defeats the entire purpose of virtualization. With 100 rows in the JobsManager, every
-  state change in the parent (e.g., typing in the sale-quantity input while the modal is
-  open) re-mounts ~20 visible rows.
-- Worse than no virtualization in many cases.
-
-The same identity-churn problem also breaks the small-list branch (`jobs.length <= 100` in
-JobsManager; mobile `<= 50` and desktop `<= 50` in AssetLibrary), where `<JobCard>` /
-`<MobileCardItem>` / `<PrinterRow>` / `<MaterialRow>` are rendered directly. Even with `key`
-props, React treats a new component type as a different component and remounts every card on
-every parent render. (Test: try typing in the sale-form quantity input — every visible job
-card will re-mount.)
-
-**Fix:**
-
-Move every Row / Adapter pair **out of the component function body** and into module scope,
-then pass the variable parts through `rowProps`:
-
-```tsx
-// At module scope (outside JobsManager):
-type JobCardProps = {
-  job: PrintJob;
-  isSelected: boolean;
-  info: BreakEvenInfo;
-  sales: Sale[];
-  onSelect: (id: string) => void;
-  onRecordSale: (job: PrintJob) => void;
-  onEdit: () => void;
-  onDelete: (id: string) => void;
-  getFilamentName: (id: string) => string;
-  style?: React.CSSProperties;
-};
-
-const JobCard = React.memo(function JobCard(props: JobCardProps) { /* ... */ });
-
-type JobRowProps = {
-  jobs: PrintJob[];
-  selectedJobId: string | null;
-  // ...all the closure-captured handlers/state
-};
-
-const JobRow = ({ index, style, jobs, selectedJobId, ...rest }: RowComponentProps<JobRowProps>) => (
-  <JobCard
-    job={jobs[index]}
-    isSelected={selectedJobId === jobs[index].id}
-    style={style}
-    {...rest}
-  />
-);
-```
-
-In JobsManager, pass everything the row needs through `rowProps`:
-
-```tsx
-<List
-  rowComponent={JobRow}
-  rowCount={jobs.length}
-  rowHeight={rowHeightCache}
-  rowProps={{
-    jobs,
-    selectedJobId,
-    salesByJob,
-    onSelect: setSelectedJobId,
-    onRecordSale: (job) => { setShowSaleForm(true); setSalePrice(job.sellingPrice); },
-    onEdit: handleEditJob,
-    onDelete: handleDeleteJob,
-    getFilamentName,
-    /* ...etc */
-  }}
-  /* ... */
-/>
-```
-
-Apply the same pattern to all five `AssetLibrary` row components. After this fix, the row
-function identity is stable across parent renders, `React.memo` actually memoizes, and
-react-window's `rowProps` shallow comparison drives re-render of only the rows whose data
-changed.
+Build verification per the phase context: `tsc -b` exit 0, main chunk 45.4 KB gz. Build-gate
+and chunk-split changes from prior review remain in scope (warnings unchanged).
 
 ---
-
-### CR-02: Fixed `rowHeight` for AssetLibrary rows clips/overlaps dynamic content
-
-**File:** `src/components/AssetLibrary.tsx:1120, 1162, 1193` (desktop `rowHeight={56}`; mobile `rowHeight={280}`)
-
-**Issue:**
-
-Desktop printer/material rows use `rowHeight={56}` and mobile cards use `rowHeight={280}`.
-The row content is dynamic:
-
-- `PrinterRow` (line 580) and `MaterialRow` (line 645) both render `asset.notes` as a second
-  text line when present, plus an N-row wrapping tag chip cluster (`flex flex-wrap gap-1
-  mt-1` at line 593/657). A row with `notes` plus three tags spread across two wrapped lines
-  is easily 80-100px tall. With `py-2` (16px vertical padding) plus the multi-line content
-  and `border-b`, exceeding 56px is the common case, not the edge case.
-- `MobileCardItem` (line 457) similarly varies dramatically: a plain consumable without notes
-  / tags / lifespan is ~180-200px; a printer with full lifespan + nozzle data + 5 tags +
-  notes is well over 280px (line 519-549 alone adds 4 grid rows plus action buttons).
-
-react-window v2 with a numeric `rowHeight` allocates exactly that height per row using
-absolute positioning. Content taller than the allocated height overflows into the next row's
-slot, producing visually overlapping text. Content shorter leaves a gap (less harmful but
-still ugly). The skeleton in `AssetListSkeleton` (line 22) even acknowledges that real cards
-have multi-line content with the IN-01 note about column counts — but the real virtualized
-branch ignores this.
-
-JobsManager handles this correctly via `useDynamicRowHeight` + the `key: selectedJobId` cache
-invalidation. AssetLibrary does not.
-
-**Fix:**
-
-Use `useDynamicRowHeight` (already imported and used in `JobsManager.tsx`) for the three
-asset list slots:
-
-```tsx
-const printerRowHeight = useDynamicRowHeight({ defaultRowHeight: 64 });
-const materialRowHeight = useDynamicRowHeight({ defaultRowHeight: 64 });
-const mobileCardHeight = useDynamicRowHeight({ defaultRowHeight: 240 });
-```
-
-Pass each cache as `rowHeight={...}` instead of the fixed number. Note that
-`useDynamicRowHeight` is documented as "not as efficient as predetermined sizes" — for the
-desktop tables this is the right trade-off because content height genuinely varies. If you
-want fixed heights for max perf, you must constrain the rendered content (e.g., truncate
-notes to a single line, hide tags in the virtualized slot, render no wrapping).
-
-Without this fix, any user with a populated library (notes or tags on assets) above the 50-
-or 100-row threshold will see visually broken rows.
-
----
-
-### CR-03: `JobCard` reads `selectedJobId`, `sales`, and handlers via closure but they are not in `rowProps`
-
-**File:** `src/components/JobsManager.tsx:233-397`, `429`
-
-**Issue:**
-
-`JobCard` reads from the surrounding `JobsManager` closure:
-
-- `selectedJobId` (lines 235, 240) — drives `isSelected` and the expanded-detail render.
-- `sales` (line 377) and the destructured `addSale` flow (indirectly through `setShowSaleForm`).
-- `setShowSaleForm`, `setSalePrice`, `handleEditJob`, `handleDeleteJob`, `getBreakEvenInfo`,
-  `getFilamentName` — all closed over.
-
-But `rowProps={{ jobs }}` (line 429) only declares `jobs`. From the v2 type declaration
-(`react-window.d.ts:412`): *"List will automatically re-render rows when values in this
-object change."* If `selectedJobId` changes and nothing in `rowProps` shallow-changed,
-react-window's memoized row will not re-render.
-
-This bug is currently masked by two unrelated things:
-1. CR-01 — every parent render rebuilds the memoized rowComponent, so every row re-renders
-   regardless of `rowProps`.
-2. The `useDynamicRowHeight({ key: selectedJobId ?? '' })` cache reset (line 228) — when
-   `selectedJobId` changes, the height cache key changes, the List re-measures everything,
-   and that forces a re-render path.
-
-Once CR-01 is fixed (rowComponent identity made stable), this becomes a real staleness bug:
-toggling selection will not visually update the rows because `selectedJobId` lives only in
-the closure, not in `rowProps`. The selection will appear "stuck" until something else
-triggers a re-render via `rowProps`.
-
-**Fix:**
-
-Pair this with CR-01: move all closure-captured state into `rowProps`:
-
-```tsx
-<List
-  rowComponent={JobRow}
-  rowCount={jobs.length}
-  rowHeight={rowHeightCache}
-  rowProps={{
-    jobs,
-    selectedJobId,           // <-- add
-    salesByJob,              // <-- pass map, not the single-row sales array
-    onToggleSelect: setSelectedJobId,
-    onRecordSale: handleOpenSaleForm,
-    onEdit: handleEditJob,
-    onDelete: handleDeleteJob,
-    getFilamentName,
-    getBreakEvenInfo,
-  }}
-  overscanCount={4}
-  style={{ height: '70vh' }}
-/>
-```
-
-Also note: `sales` from `useSales(selectedJobId)` (line 54) is the **filtered** list for the
-selected job only — feeding it to every `JobCard` makes only the selected row's
-"Recent Sales" panel correct; every other row would see the wrong job's sales if it tried to
-render them. Today only the selected card renders sales (gated by `{isSelected && ...}`), so
-this works by accident. Pass `salesByJob` instead and have the card pick its own entries —
-that makes the data flow explicit and matches `getBreakEvenInfo`'s usage.
 
 ## Warnings
 
 ### WR-01: `manualChunks` comment is incorrect — `/dexie/` does NOT match `/dexie-react-hooks/`
 
-**File:** `vite.config.ts:82-90`
+**File:** `vite.config.ts:82–88`
 
 **Issue:**
 
-The comment at lines 83-84 states *"the hooks package must be caught by its own substring
-match (NOT the shorter `/dexie/`, which would also match it via path prefix)."* This is
-factually wrong. `String.prototype.includes('/dexie/')` requires the literal substring
-`/dexie/` (with trailing slash), which is **not** present in `node_modules/dexie-react-hooks/...`.
-The longer match isn't needed for disambiguation — `/dexie/` and `/dexie-react-hooks/` are
-disjoint. The current code happens to be correct, but the rationale documented in the comment
-is wrong, which will confuse the next maintainer who tries to "simplify" by removing the
-second clause and verifies via the (false) comment instead of testing.
+The comment at lines 82–84 still states *"the hooks package must be caught by its own
+substring match (NOT the shorter `/dexie/`, which would also match it via path prefix)."*
+This is factually wrong. `String.prototype.includes('/dexie/')` requires the literal
+substring `/dexie/` (with trailing slash), which is **not** present in
+`node_modules/dexie-react-hooks/...` paths. The two clauses match disjoint directory names.
+The current code is functionally correct, but the stated rationale will mislead the next
+maintainer who tries to "simplify" by deleting one branch and trusting the false comment
+instead of testing.
 
-**Fix:** Either remove the misleading rationale or rewrite to reflect the real reason both
-clauses are present (they catch different but adjacent packages and both belong in the same
-chunk):
+**Fix:**
 
 ```ts
-// Both Dexie and its companion hooks package live in node_modules/. We catch
-// each path explicitly so a future refactor of dexie's directory layout
-// (e.g., subpath exports) can't silently drop one of them into the catch-all
-// vendor chunk.
+// Both Dexie and its companion hooks package are bundled as vendor code. We
+// catch each directory explicitly so a future refactor of dexie's layout
+// (e.g., subpath exports under /dexie/) can't silently drop one into the
+// catch-all vendor chunk.
 if (id.includes('/dexie/') || id.includes('/dexie-react-hooks/')) return 'dexie-vendor';
 ```
 
 ---
 
-### WR-02: `assert-bundle-size.mjs` only fails on `index-*.js` — vendor chunks can balloon undetected
+### WR-02: `assert-bundle-size.mjs` only gates `index-*.js` — vendor chunks can balloon undetected
 
-**File:** `scripts/assert-bundle-size.mjs:14, 16-18`
+**File:** `scripts/assert-bundle-size.mjs:14, 16–18`
 
 **Issue:**
 
-The regex `^index-[A-Za-z0-9_-]+\.js$` matches the entry chunk only. The new `manualChunks`
-config (vite.config.ts:85) emits `react-vendor`, `dexie-vendor`, and `vendor` chunks with
-hashed filenames like `react-vendor-AbCd1234.js` — none of these are gated by the budget. A
-runaway dependency that ends up in `vendor` (e.g., someone imports `papaparse` eagerly
-instead of behind a `React.lazy`) will inflate the total gzipped bytes shipped to the user
-without tripping the gate.
+The regex `^index-[A-Za-z0-9_-]+\.js$` matches the entry chunk only. The `manualChunks`
+config emits `react-vendor`, `dexie-vendor`, and `vendor` chunks (hashed filenames like
+`react-vendor-AbCd1234.js`) that are **not** gated. A future commit that eagerly imports a
+heavy dependency (e.g., `papaparse` not behind a `React.lazy`) will inflate the total
+initial-load payload without tripping the budget. The script header reads "Keeps the main app
+chunk under the PERF-01 budget," but PERF-01's stated intent is total eager payload, not just
+the entry. The script currently provides a partial signal that will silently degrade.
 
-The budget docs in the script header ("Keeps the main app chunk under the PERF-01 budget")
-say "main app chunk," but PERF-01's intent (from `.planning/phases/11-performance-optimization/`)
-is total initial-load payload, not just the entry. As written, the gate is a partial signal
-that will silently degrade as vendor chunks grow.
-
-**Fix:** Compute the sum of all eagerly-loaded chunks (entry + vendor chunks). Lazy route
-chunks are loaded on demand and can legitimately stay out of the budget. One approach:
+**Fix:** Either widen the match to cover all eager chunks and sum their gzipped sizes, or
+explicitly scope the budget to "entry only" in the script + docs.
 
 ```js
 const EAGER_PATTERN = /^(index|react-vendor|dexie-vendor|vendor)-[A-Za-z0-9_-]+\.js$/;
-// Then sum gzipped sizes of all matches and compare to budget.
+const eagerChunks = readdirSync(DIST_DIR).filter(n => EAGER_PATTERN.test(n));
+const totalGzipped = eagerChunks
+  .map(n => gzipSync(readFileSync(join(DIST_DIR, n))).length)
+  .reduce((a, b) => a + b, 0);
+// compare totalGzipped to MAX_GZIPPED_BYTES
 ```
-
-Alternatively, raise the budget to reflect the full eager payload and document that the gate
-is intentionally "main + vendors." Either is acceptable; the current state — strict gate on
-one of N chunks — does not match PERF-01's stated goal.
 
 ---
 
-### WR-03: `useDynamicRowHeight({ key: selectedJobId })` re-measures every row on every selection change
+### WR-03: `useDynamicRowHeight({ key: selectedJobId ?? '' })` flushes the entire row-height cache on every selection toggle — now more costly post-CR-01
 
-**File:** `src/components/JobsManager.tsx:226-229`
+**File:** `src/components/JobsManager.tsx:464–467`
 
 **Issue:**
 
-The `key` prop on `useDynamicRowHeight` resets the **entire** measurement cache when it
-changes. The comment at line 222-225 frames this as a feature ("the previously-expanded row
-collapses back to ~88px and the newly-selected row grows to its measured ~400px height") —
-but the cost is that *every* row's measured height is also forgotten and must be re-measured
-on next paint via `ResizeObserver`. With overscan 4 plus a tall viewport, that's 15-25 rows
-re-measured on every click.
+This was WR-03 in the prior review and remains unchanged. The reasoning is **upgraded** now
+that CR-01 is fixed: previously, every parent render remounted every visible row anyway, so
+the cache flush had no marginal cost beyond what was already happening. With the row
+components correctly memoized at module scope, the system is now in the steady state the
+optimization was designed for — and the cache flush sticks out as the only mechanism that
+forces wasted re-measurement.
 
-The first paint after each toggle uses `defaultRowHeight: 88`, so on selection-toggle of a
-deeply expanded row, the list height jumps (height collapses to defaults, then immediately
-expands as measurements complete). Users will perceive flicker / scroll-jump on every
-collapse, especially noticeable on the 100+ row list this is meant to optimize for.
+Each click on a job card changes `selectedJobId`, which flips the `key` arg, which resets the
+measurement cache. react-window then re-measures every overscanned row (~15–25 rows) using
+`ResizeObserver`, briefly rendering each at the 88px `defaultRowHeight` until measurement
+completes. Users will see a visible height jump / scroll-jump every time they collapse a
+deeply-expanded row. The 100+ row list this is meant to optimize for is exactly where this
+hurts most.
 
-react-window's `useDynamicRowHeight` is designed to handle row-height changes via
-`ResizeObserver` *without* a cache reset — the `key` arg is for "the whole dataset changed"
-(e.g., switching tabs or filters), not for per-row state toggles.
+`useDynamicRowHeight`'s built-in `ResizeObserver` already detects the per-row size change
+when an expanded card collapses. The `key` arg is intended for "the entire dataset changed"
+events (filter/sort/tab switch), not per-row state toggles.
 
-**Fix:** Remove the `key` arg or scope it to changes that genuinely invalidate all rows:
+**Fix:**
 
 ```ts
+// Just this — no `key`. ResizeObserver handles per-row size changes.
 const rowHeightCache = useDynamicRowHeight({ defaultRowHeight: 88 });
 ```
 
-The `ResizeObserver` inside `useDynamicRowHeight` already detects per-row size changes when
-the expanded section unmounts; the cache reset is unnecessary. If you observe flicker after
-removing `key`, the real fix is to ensure the expanded card's `style={style}` is preserved
-and the inner expansion uses normal flow so the row's outer height grows naturally.
+If a visible flicker remains after dropping `key`, the deeper fix is to ensure the
+expanded-detail block renders inside the row's outer `<div style={style}>` so the natural
+height-change is observed cleanly.
 
 ---
 
-### WR-04: `parseInt`/`parseFloat` patterns silently coerce invalid input to `0` or `1`, hiding user errors
+### WR-04: `overflow-x-auto` wrapper around virtualized `<List>` creates competing scroll containers
 
-**File:** `src/components/JobsManager.tsx:457, 466, 506` and `src/components/AssetLibrary.tsx:923, 933, 943, 953, 962, 986, 996, 1006`
-
-**Issue:**
-
-The pattern `parseInt(e.target.value) || 1` (line 457) coerces empty string, `NaN`, and
-**legitimate zero** to 1. `parseFloat(e.target.value) || 0` (line 466) coerces empty and
-`NaN` to 0 but also coerces a typed `0` to 0 (harmless), and negative-typed values to the
-parsed negative (because `-5 || 0` evaluates `-5`, but `0 || 0` and empty `'' || 0` both go
-to 0). Net effect:
-
-- Typing "0" in `saleQuantity` snaps it back to 1 silently — user thinks they typed 0 but
-  the model says 1. There's a `saleQuantity <= 0` guard at line 168, but it never fires
-  because the state was just normalized to 1.
-- Typing "abc" in any of the price/cost fields zeroes them silently — no validation feedback.
-- For `formData.wattage` in AssetLibrary (line 933), typing an invalid value sets wattage to
-  `NaN` (because `parseFloat('abc') = NaN`, and `NaN || undefined` short-circuits... actually
-  there's no `|| 0` here, so `setFormData({ ..., wattage: parseFloat(e.target.value) })`
-  stores `NaN` directly). Then the `formData.wattage` check at line 293 fires `!NaN = true`,
-  blocking submit with "Name, purchase price, and wattage are required" — but the field
-  visually contains "abc" with no validation hint.
-
-These were pre-existing patterns inherited into Phase 11's edits (the file under review),
-not new in Phase 11, but they live in the reviewed files.
-
-**Fix:** Standardize to `Number()` with explicit `Number.isFinite` guards, or to controlled
-inputs with explicit validation messaging:
-
-```tsx
-onChange={e => {
-  const raw = e.target.value;
-  const n = raw === '' ? 0 : Number(raw);
-  if (Number.isFinite(n)) setSaleQuantity(n);
-}}
-// then validate `saleQuantity < 1` at submit and show the user *why* it's rejected
-```
-
-If you want the existing "snap to 1" behavior, at least surface it: render a hint when the
-typed value is non-positive.
-
----
-
-### WR-05: `overflow-x-auto` wrapper around `<List>` likely conflicts with virtualization
-
-**File:** `src/components/AssetLibrary.tsx:1143`
+**File:** `src/components/AssetLibrary.tsx:1175`
 
 **Issue:**
 
-The wrapper `<div className="hidden md:block overflow-x-auto">` is meant for the old
-`<table>` markup (tables can overflow horizontally on narrow screens). The virtualized
-`<List>` sets its own `style.height` and uses absolute-positioned rows inside an
-overflow-y-scrolled container. Wrapping the List in another scroll container will at minimum
-create competing scroll containers (mouse-wheel events may bubble unpredictably) and may
-clip the list's own measurement of available height.
+Unchanged from the prior review's WR-05. The desktop table branch still renders inside
+`<div className="hidden md:block overflow-x-auto">`, which wraps either the non-virtualized
+row list or the virtualized `<List>`. The List sets its own `style.height: '60vh'` and uses
+internal scrolling for the virtualized body — wrapping it in a horizontal-overflow container
+is a vestige of the old `<table>` markup (where horizontal overflow was needed on narrow
+viewports).
 
-Worse: the inner row content uses `grid-cols-7 gap-x-4` (line 585) and `grid-cols-6
-gap-x-4` (line 650). Grid columns size themselves to the **list's** width, not the wrapper's
-— but the header row (line 1148, 1180) is rendered outside the List, also as a grid, and
-will size against the wrapper width. If the wrapper is wider than the List's measured width
-(e.g., after a window resize), the header columns and body row columns will misalign.
+With grid-based rows (lines 285, 356), horizontal overflow shouldn't occur — `grid-cols-7`
+and `grid-cols-6` are fraction-based and adapt to the container width. The wrapper now does
+nothing useful and risks competing wheel-scroll handlers on narrow desktop widths.
 
-**Fix:** Drop `overflow-x-auto` for the virtualized branch, or move the wrapper inside the
-non-virtualized branch only. Verify on narrow desktop viewports (e.g., 768-900px) that
-column headers and row cells still align:
+**Fix:** Drop `overflow-x-auto` for the virtualized branch (or for the entire block, since
+grids no longer need it):
 
 ```tsx
 <div className="hidden md:block">
-  {/* header row (sized by container) */}
-  <div role="row" className="grid grid-cols-7 ...">…</div>
-  {/* body — virtualized or not */}
-  {effectiveItemsPerPage > 50 ? <List … /> : <div>…</div>}
+  {/* header + body, virtualized or not */}
 </div>
 ```
 
 ---
 
-### WR-06: `getDefaultShippingCost` silently returns 0 for the `dropoff` method offered to CAD users
+### WR-05: `AssetListSkeleton` still hard-codes 7 columns; materials tab shows wrong column count during load
 
-**File:** `src/components/JobsManager.tsx:74, 114-123`
-
-**Issue:**
-
-`availableShippingMethods` for CAD includes `{ value: 'dropoff', label: 'Dropoff' }` (line
-74). When a user selects "Dropoff" from the shipping method `<Select>`, the change handler
-calls `setSaleShippingCost(getDefaultShippingCost(method))` (line 492). `getDefaultShippingCost`
-(line 114) has no `dropoff` branch — it hits the `default` and returns 0.
-
-If the user previously had a non-zero cost typed in, that value is silently zeroed when they
-pick Dropoff. There is no UI affordance explaining "Dropoff is variable / you must enter the
-cost manually." The user may submit a sale with cost 0 thinking the system auto-filled it.
-
-This is pre-existing in the file but lives in the reviewed scope.
-
-**Fix:** Either add a `dropoff` case to `getDefaultShippingCost` (with a `shippingConfig.dropoffBaseCost`
-or `null` sentinel), or preserve the current cost on dropoff:
-
-```ts
-const handleShippingMethodChange = (method: ShippingMethodType) => {
-  setSaleShippingMethod(method);
-  // Methods with a configured default; others (including 'dropoff') keep current cost.
-  const defaultCost = getDefaultShippingCost(method);
-  if (method !== 'dropoff' && method !== saleShippingMethod) {
-    setSaleShippingCost(defaultCost);
-  }
-};
-```
-
----
-
-### WR-07: Skeleton table column count hard-coded to 7, mismatches material tab (6 cols)
-
-**File:** `src/components/AssetLibrary.tsx:62-87`
+**File:** `src/components/AssetLibrary.tsx:22, 60–87, 788`
 
 **Issue:**
 
-`AssetListSkeleton` renders 7 `<th>` and 7 `<td>` per row. The IN-01 comment in the file
-(line 54-60) acknowledges this and explains the trade-off ("matches the worst-case (printer)
-column count of 7" / "the materials table has 6 columns; rendering 7 here means the skeleton
-may show one extra placeholder column on the materials tab"). The real table conditionally
-renders 6 vs 7 columns based on `filterCategory === 'printer'` (line 1144). The skeleton
-does not.
+Unchanged from the prior review's WR-07. `AssetListSkeleton()` takes no arguments and always
+renders 7 `<th>` / `<td>` per row. The materials view (`filterCategory !== 'printer'`)
+renders 6 columns in reality (line 1211). The IN-01 comment in the file acknowledges this
+trade-off but it's still a layout-shift bug: the skeleton is supposed to **prevent** layout
+shift, and instead introduces a one-column "snap" when data arrives on the materials tab.
 
-The result: on the materials tab during initial load, the skeleton shows an empty extra
-column on the right. The user sees the structure of the real table "shift left" by one
-column when data arrives. The skeleton is supposed to **prevent** layout shift, not introduce
-it.
-
-**Fix:** Pass `filterCategory` (or a derived `isPrinterView`) into the skeleton and render
-the correct column count:
+**Fix:**
 
 ```tsx
 function AssetListSkeleton({ isPrinterView }: { isPrinterView: boolean }) {
   const columns = isPrinterView ? 7 : 6;
-  return (
-    // ... mobile cards unchanged ...
-    <div className="hidden md:block">
-      <table className="w-full text-sm">
-        <thead><tr>{Array.from({ length: columns }).map(...)}</tr></thead>
-        <tbody>{[0,1,2,3,4].map(i => (
-          <tr key={i}>{Array.from({ length: columns }).map(...)}</tr>
-        ))}</tbody>
-      </table>
-    </div>
-  );
+  // ... render `columns` <th> and <td> placeholders
 }
+// Call site:
+<AssetListSkeleton isPrinterView={filterCategory === 'printer'} />
 ```
 
-Then call as `<AssetListSkeleton isPrinterView={filterCategory === 'printer'} />`.
+---
+
+### WR-06: Shared `mobileCardHeightCache` measures both printer and material cards — wrong cached heights survive tab switches
+
+**File:** `src/components/AssetLibrary.tsx:733, 1153`
+
+**Issue:**
+
+`mobileCardHeightCache` (line 733) is a single `useDynamicRowHeight` cache reused across
+both the printer-tab and material-tab mobile views (line 1153 — only one `<List>` is rendered
+at a time, but the cache persists across tab switches because it lives in the component
+scope, not inside a category-specific branch). Printer cards (lines 202–224) render a 4-row
+grid with up to 8 cells (price/wattage/nozzle cost + lifespan) and are typically ~250–300px
+tall. Material cards (lines 226–247) render 2–3 baseline-aligned rows and are typically
+~150–180px tall.
+
+When the user switches between Printer and Material tabs on mobile, the cache still contains
+heights measured for the *previous* category's items at indices 0..N. The first paint after
+the tab switch shows rows at the wrong heights until `ResizeObserver` re-measures, producing
+a visible jump.
+
+In contrast, desktop has two separate caches (`printerRowHeightCache` and
+`materialRowHeightCache` at lines 734–735), avoiding this issue. The same separation should
+apply on mobile.
+
+**Fix:**
+
+Either give mobile a `key` arg that invalidates on tab switch (mirror the desktop split with
+two caches, since per WR-03 we want to avoid `key` resets for normal use), or split the
+mobile cache:
+
+```ts
+const printerMobileCardHeightCache = useDynamicRowHeight({ defaultRowHeight: 280 });
+const materialMobileCardHeightCache = useDynamicRowHeight({ defaultRowHeight: 200 });
+// In render:
+rowHeight={filterCategory === 'printer' ? printerMobileCardHeightCache : materialMobileCardHeightCache}
+```
+
+The same concern applies (less severely) to pagination: when paginatedAssets changes, the
+height at index N now corresponds to a different asset. The `ResizeObserver` re-measures
+correctly but the first frame uses the previous page's height. Same fix shape if you decide
+this matters.
+
+---
 
 ## Info
 
-### IN-01: `assert-bundle-size.mjs` ignores brotli — production gzip likely diverges from local
+### IN-01: `assert-bundle-size.mjs` uses default gzip level (6); production CDN serves gzip-9 or brotli
 
-**File:** `scripts/assert-bundle-size.mjs:9, 29`
+**File:** `scripts/assert-bundle-size.mjs:29`
 
-**Issue:** The script uses Node's `zlib.gzipSync` at default level 6. Vercel's edge CDN
-serves either gzip (typically level 9) or brotli depending on `Accept-Encoding`. The local
-budget check is a useful proxy but it is *not* the bytes the user actually downloads. A 295
-KB local-gzip result could be a 270 KB brotli payload (under budget) or a 310 KB level-9 gzip
-on a different runtime. Document this clearly in the script header, or use level 9 and add a
-brotli computation.
+**Issue:** Unchanged from the prior review. The local budget gate uses Node's `gzipSync` at
+default level 6. Vercel's edge CDN serves gzip-9 or brotli depending on `Accept-Encoding`.
+The local number is a useful proxy but isn't the bytes shipped to users. A 299 KB local-gzip
+result could be 270 KB brotli (well under) or 305 KB gzip-9 (over).
 
 **Fix:**
 
 ```js
 const gzipped = gzipSync(buf, { level: 9 }).length;
+// Optionally also compute brotliCompressSync(buf).length and report both.
 ```
 
-And/or also compute `brotliCompressSync(buf).length` (Node ≥ 12) and report both, gating on
-the smaller (since users get whichever the CDN sends).
+---
+
+### IN-02: Skeleton uses `<table>` but real markup uses `<div role="row">` grid — column proportions won't match
+
+**File:** `src/components/AssetLibrary.tsx:61–88` (skeleton uses `<table>`) vs `1178–1235` (real markup uses `<div>` grids)
+
+**Issue:** Unchanged from the prior review. The skeleton still uses native `<table>` while
+the real virtualized branch uses `<div role="row" className="grid grid-cols-7 ...">`. Native
+table column-sizing (auto-layout from content widths) and `grid-cols-7` (equal-fraction by
+default) produce different column proportions. The user sees a column-width "snap" when data
+arrives.
+
+**Fix:** Re-implement the skeleton with the same grid markup the real table now uses
+(`grid grid-cols-7 gap-x-4` / `grid grid-cols-6 gap-x-4`). Then column widths are guaranteed
+to match.
 
 ---
 
-### IN-02: Mixing `<table>` skeleton with `<div role="row">` real markup will not visually match
+### IN-03: `selectedSales` is passed to every row but only used by the selected row — and `console.log` left in CostCalculator
 
-**File:** `src/components/AssetLibrary.tsx:62-87` (skeleton uses `<table>`) vs `1146-1207` (real markup uses `<div role="row">` grids)
+Two unrelated minor items collected here.
 
-**Issue:** Phase 11-05 replaced the desktop `<table>` with `<div>` grid markup, but the
-skeleton still uses `<table>`. Native `<table>` column sizing uses the browser's auto-layout
-algorithm (column widths derived from content); CSS Grid with `grid-cols-7` uses
-equal-fraction columns by default. The skeleton's column proportions will not match the real
-grid's, producing a visible "snap" of column widths when data arrives.
+**File 1:** `src/components/JobsManager.tsx:292, 476, 246`
 
-**Fix:** Re-implement the skeleton with the same `grid-cols-7 gap-x-4` / `grid-cols-6 gap-x-4`
-markup the real table now uses. Then the column widths are guaranteed to match.
-
----
-
-### IN-03: `JobCard` re-defined inside parent shadows is harmless but Eslint `react/no-unstable-nested-components` would flag it
-
-**File:** `src/components/JobsManager.tsx:233`, `src/components/AssetLibrary.tsx:457, 580, 645`
-
-**Issue:** This is the lint-level companion to CR-01. The project's ESLint config does not
-include `eslint-plugin-react/no-unstable-nested-components`, so the bug ships uncaught. Add
-the rule (or upgrade the eslint config to `react/recommended`) so the next round of nested
-component drift is caught at lint time, not at perf-investigation time.
+**Issue:** `useSales(selectedJobId || undefined)` returns the **filtered** sales for the
+selected job (or all sales if nothing is selected). That single array is then passed to every
+row via `selectedSales` in `rowProps`. Only the selected row actually reads it (line 246:
+`recentSales={isSelected ? selectedSales : undefined}`). This works correctly today and is
+deliberate — passing `salesByJob` (the full map) to every row would create more
+re-measurement churn. But it's a subtle data-flow contract: `selectedSales` is "the sales for
+*the* selected row, ignored by all other rows," not "this row's sales." A short JSDoc on the
+`JobRowProps.selectedSales` field would help future maintainers.
 
 **Fix:**
 
-```js
-// eslint.config.js — add to plugins.react.rules
-'react/no-unstable-nested-components': ['error', { allowAsProps: false }],
+```ts
+type JobRowProps = {
+  // ...
+  /**
+   * Sales records for the currently-selected job, or `undefined` when no row is selected.
+   * Non-selected rows IGNORE this — only the row matching selectedJobId reads it for the
+   * "Recent Sales" panel. Passing the full salesByJob map per-row was rejected to keep
+   * rowProps shallow comparison cheap.
+   */
+  selectedSales: Sale[];
+  // ...
+};
 ```
 
----
+**File 2:** `src/components/CostCalculator.tsx:218`
 
-### IN-04: `_` and similar single-letter loop vars in skeleton; `q`/`F`/`V`/`I` in compiled react-window output
+**Issue:** Pre-existing `console.log('Auto-selecting printer:', printerInstances[0].id, ...)`
+in the printer-auto-select effect. This is debug noise in production. Pre-existing in the
+file (was not added by Phase 11 commits, confirmed via git blame to initial commit) but lives
+in the reviewed scope.
 
-**File:** N/A — only authored sources reviewed
-
-**Issue:** Authored code uses readable names; no single-letter shadowing in scope. The
-single-letter names in `node_modules/react-window/dist/react-window.js` quoted above are
-post-minifier and not part of this review. Mentioned only to acknowledge the codebase as
-clean on naming.
+**Fix:** Remove the line. If the auto-select event is interesting for analytics, route it
+through Vercel Analytics instead of stdout.
 
 ---
 
