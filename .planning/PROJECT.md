@@ -59,6 +59,7 @@ Tax/VAT, Quick duplicate, Customer details on jobs, Editable tags + filter/searc
 
 **v1.1 Polish & Foundation (in progress):**
 - ✓ Skeleton loading components shown during initial IndexedDB load (validated in Phase 9, shipped 2026-05-19)
+- ✓ vite `manualChunks` splits vendor (react-vendor / dexie-vendor / vendor) + JobsManager and AssetLibrary virtualization via react-window v2; 300 KB gz build gate enforced (validated in Phase 11, shipped 2026-05-20)
 
 ### Active (v1.1)
 
@@ -66,7 +67,6 @@ Tax/VAT, Quick duplicate, Customer details on jobs, Editable tags + filter/searc
 - [ ] Every empty screen (assets, jobs, printers) shows an empty-state component (illustration + headline + CTA)
 - [ ] First-class theme toggle (light / dark / system) in Settings, with all surfaces rendering both themes correctly
 - [ ] Unit-test coverage for cost-calculation logic in CostCalculator (material, electricity, depreciation, nozzle wear, labor, failure rate)
-- [ ] vite `manualChunks` splits vendor from app code; jobs and asset lists use virtualization for >100 items
 
 ### Out of Scope (for v1.1)
 
@@ -127,4 +127,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-19 — Phase 9 (Skeleton Loading States) shipped: Skeleton primitive (3 variants, role=status) + AssetListSkeleton/JobsListSkeleton/PrinterListSkeleton wired into three consumers; App.tsx global "Loading..." gate removed; JobsManager refactored to single-return for modal stability*
+*Last updated: 2026-05-20 — Phase 11 (Performance Optimization) shipped: vite manualChunks vendor split (react-vendor / dexie-vendor / vendor), opt-in rollup-plugin-visualizer, 300 KB gz build gate enforced via scripts/assert-bundle-size.mjs, JobsManager + AssetLibrary virtualized with react-window v2 + useDynamicRowHeight (main chunk 45.4 KB gz / 254 KB headroom)*
