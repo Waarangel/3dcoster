@@ -691,6 +691,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             )}
           </div>
 
+          {/* Model URL — under Print Name / Printer, ahead of Filaments. Narrow input keeps the row visually light. */}
+          <div className="lg:col-span-3">
+            <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+              <span>Model URL</span>
+              <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
+              <NewBadge feature="model-url" />
+            </label>
+            <Input
+              type="url"
+              value={modelUrl}
+              onChange={e => setModelUrl(e.target.value)}
+              placeholder="https://makerworld.com/..."
+              className="max-w-md"
+            />
+          </div>
+
           {/* Multi-Filament Rows */}
           <div className="lg:col-span-3 space-y-3">
             <label className="block text-xs text-slate-400">Filaments *</label>
@@ -755,9 +771,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             ))}
           </div>
 
-          {/* Row 1: print parameters — uniform min-w chunks, no height-changing children */}
-          <div className="lg:col-span-3 flex flex-wrap gap-x-4 gap-y-3">
-            <div className="min-w-[160px]">
+          {/* Print parameters — guaranteed 4-on-a-row at lg+; wraps on narrow screens. */}
+          <div className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3">
+            <div>
               <label className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
               <Input
                 type="number"
@@ -769,7 +785,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               />
             </div>
 
-            <div className="min-w-[160px]">
+            <div>
               <label className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
               <Input
                 type="number"
@@ -782,7 +798,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               />
             </div>
 
-            <div className="min-w-[160px]">
+            <div>
               <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Prep Time (min)</span>
                 <InfoTooltip text="Slicing, bed prep, etc." />
@@ -796,7 +812,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               />
             </div>
 
-            <div className="min-w-[160px]">
+            <div>
               <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Post-Processing (min)</span>
                 <InfoTooltip text="Support removal, sanding, etc." />
@@ -811,26 +827,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
           </div>
 
-          {/* Row 2: Model/STL group — URL first (wider), then Cost (+per-unit) and Author Min Price.
-              Placed last so the per-unit checkbox toggling doesn't push other params down. */}
-          <div className="lg:col-span-3 flex flex-wrap gap-x-4 gap-y-3">
-            <div className="flex-1 min-w-[280px]">
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Model/STL URL</span>
-                <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
-                <NewBadge feature="model-url" />
-              </label>
-              <Input
-                type="url"
-                value={modelUrl}
-                onChange={e => setModelUrl(e.target.value)}
-                placeholder="https://makerworld.com/..."
-                className="max-w-2xl"
-              />
-            </div>
-
-            <div className="min-w-[160px]">
-              <label className="block text-xs text-slate-400 mb-1">Model/STL Cost ({currencySymbol})</label>
+          {/* Model Cost + Author Min Price — always visible side-by-side; the per-unit checkbox
+              only adds vertical space under Cost, never shifts the row. */}
+          <div className="lg:col-span-3 grid grid-cols-2 gap-x-4 gap-y-3 max-w-md">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Model Cost ({currencySymbol})</label>
               <Input
                 type="number"
                 step="0.01"
@@ -854,23 +855,21 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               )}
             </div>
 
-            {modelCost > 0 && (
-              <div className="min-w-[160px]">
-                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                  <span>Author Min Price ({currencySymbol})</span>
-                  <InfoTooltip text="Warn if selling below this" />
-                  <NewBadge feature="author-min-price" />
-                </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  compact
-                  value={authorMinPrice || ''}
-                  onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-            )}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Author Min Price ({currencySymbol})</span>
+                <InfoTooltip text="Warn if selling below this" />
+                <NewBadge feature="author-min-price" />
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                compact
+                value={authorMinPrice || ''}
+                onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
           </div>
         </div>
       </div>
