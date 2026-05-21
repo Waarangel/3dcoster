@@ -229,6 +229,12 @@ export interface UserProfile {
   };
   // UI preferences
   assetLibraryItemsPerPage?: number;
+
+  // Tax (Phase 13)
+  defaultTaxRate?: number;
+
+  // Quote numbering (Phase 16) — first quote is #1 (D-06); read via `?? 1`
+  nextQuoteNumber?: number;
 }
 
 // Built-in shipping carriers
