@@ -3,6 +3,7 @@ import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, Market
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
 import { NewBadge } from './NewBadge';
 import { Button, Input } from './ui';
+import { InfoTooltip } from './ui/InfoTooltip';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -257,6 +258,45 @@ export function SettingsModal({
                   <p className="text-xs text-slate-500 mt-2">
                     Applied to new jobs and when the form is cleared or a job is saved. You can still adjust the margin per job in the calculator.
                   </p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-700">
+                <h3 className="text-sm font-medium text-slate-300 mb-3 relative inline-block">
+                  Default Tax Rate
+                  <NewBadge feature="default-tax-rate" className="absolute top-0 left-full ml-2 pointer-events-none" />
+                </h3>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Tax Rate (%)</span>
+                    <InfoTooltip
+                      text={
+                        userCurrency === 'USD'
+                          ? 'Most US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.'
+                          : 'Default tax rate applied to new jobs. Override per-job in the calculator.'
+                      }
+                    />
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="99.9"
+                    compact
+                    placeholder="e.g., 20"
+                    value={userProfile.defaultTaxRate ?? ''}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '') {
+                        onUserProfileChange({ ...userProfile, defaultTaxRate: undefined });
+                      } else {
+                        const parsed = parseFloat(v);
+                        if (Number.isFinite(parsed)) {
+                          onUserProfileChange({ ...userProfile, defaultTaxRate: Math.min(Math.max(parsed, 0), 99.9) });
+                        }
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </div>
