@@ -55,8 +55,30 @@ A maintainer script — `scripts/refresh-tax-rates.ts` — that:
 - **`Currency` union changes are out of scope** — that's a separate todo
   (`tax-currency-coverage-expansion.md`).
 
+## Paid-tier hook
+
+This todo is the **free-tier maintainer-time** refresh: a maintainer runs the
+script before each release and ships static updated data to all users. Every
+free-tier user gets the freshest data 3DCoster has, gated only by our release
+cadence.
+
+The **paid-tier complement** is a separate workstream — see
+[background-data-refresh-paid-tier](./background-data-refresh-paid-tier.md).
+That bundles tax + marketplace + shipping rate refresh into a single "works
+while you sleep" service. The same authoritative-source scraping code can be
+shared between the two; the difference is delivery:
+
+- **Free tier:** maintainer runs script → commits to repo → ships in next release
+- **Paid tier:** 3DCoster backend service runs script weekly → publishes JSON
+  feed → user's app fetches it in the background
+
+Both can share `scripts/refresh-tax-rates.ts` as the core diffing/verification
+primitive. Build this todo first (free-tier static refresh); the paid-tier
+service can layer on top once the data pipeline is proven.
+
 ## Related
 
+- [background-data-refresh-paid-tier](./background-data-refresh-paid-tier.md) — paid-tier auto-refresh covering tax + marketplace + shipping
 - [tax-currency-coverage-expansion](./tax-currency-coverage-expansion.md) — fills the IN-02 gap (9 currencies fall to "manual")
 - Phase 13 verification report — `.planning/phases/13-tax-model-ui-sweep/13-VERIFICATION.md`
 - Code review IN-01 — 22 unreachable EUR reference rows could be wired up by this refresh
