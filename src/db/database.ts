@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees } from '../types';
+import { backfillTagsOnJob } from './backfill';
 
 // Settings stored as key-value pairs
 interface Setting {
@@ -68,6 +69,19 @@ db.version(5).stores({
     delete job.filamentId;
     delete job.filamentGrams;
   });
+});
+
+// v6: backfill tags=[] for Phase 15; all other new fields stay undefined (read-side fallback handles them)
+// Schema strings IDENTICAL to v5 — no multi-entry index on tags per D-04
+db.version(6).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+}).upgrade(tx => {
+  return tx.table('jobs').toCollection().modify(backfillTagsOnJob);
 });
 
 export { db };
