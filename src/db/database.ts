@@ -84,6 +84,11 @@ db.version(6).stores({
   return tx.table('jobs').toCollection().modify(backfillTagsOnJob);
 });
 
+// Reload this tab if another tab loads a newer schema (SCHEMA-02 / D-10 / D-11).
+// Without this, Dexie's default closes the connection and console.warn()s,
+// which crashes the React tree via useLiveQuery references.
+db.on('versionchange', () => { window.location.reload(); });
+
 export { db };
 
 // Helper functions for settings
