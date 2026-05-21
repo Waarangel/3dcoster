@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
 status: planning
-last_updated: "2026-05-21T00:42:55.697Z"
-last_activity: 2026-05-21
+last_updated: "2026-05-20T00:00:00.000Z"
+last_activity: 2026-05-20
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-19)
+See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Milestone complete
+**Current focus:** Phase 12 — Schema Foundation (not yet started)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-21 — Milestone v1.2 started
+Status: Roadmap created — ready for plan-phase
+Last activity: 2026-05-20 — v1.2 roadmap created (Phases 12–16)
 
 ## Performance Metrics
 
@@ -70,7 +70,9 @@ Last activity: 2026-05-21 — Milestone v1.2 started
 - v1.0 Phases 1–6 shipped (Multi-Material Support milestone, completed 2026-04-15)
 - Phase 5 added mid-milestone: Printer Maintenance Alerts
 - Phase 6 added mid-milestone: 3MF Multi-Plate Project Import
-- v1.1 Phases 7–12 redefined 2026-05-19 as Polish & Foundation (Quote-to-Customer deferred to v1.2)
+- v1.1 Phases 7–11 redefined 2026-05-19 as Polish & Foundation (Quote-to-Customer deferred to v1.2)
+- v1.1 shipped 2026-05-20 — all 5 phases complete
+- v1.2 Phases 12–16 defined 2026-05-20 (Quote-to-Customer)
 
 ### Decisions
 
@@ -94,17 +96,23 @@ Recent decisions affecting current work:
 - [v1.1 Roadmap 2026-05-19]: Phase 10 (Dark Mode) removed; app ships dark-only by design (Slate-based theme already in place, zero `dark:` Tailwind classes used). UI-06/UI-07 moved to Out of Scope. Phases 11/12 renumbered to 10/11.
 - [v1.1 Roadmap 2026-05-19]: NEW badge rule applies — empty-state CTAs are user-visible (badge required); primitives pass is invisible internal work (no badge)
 - [v1.1 Roadmap 2026-05-19]: Vitest infra exists (one test: threeMfParser.test.ts); Phase 10 adds cost-calc tests (renumbered from 11 after Dark Mode removal); tax/VAT test included as pending/skipped, activates in v1.2
+- [v1.2 Roadmap 2026-05-20]: 5-phase coarse structure (12–16); UI sweep folded into Phases 13+14 where forms overlap; ETSY helper folded into Phase 14 (co-located CostCalculator section); DUP folded into Phase 15 (co-located JobsManager work)
+- [v1.2 Roadmap 2026-05-20]: Phase 16 (PDF) hard-gates on Phases 13+14 both merged — PDF must render correct tax row and customer block from day one
+- [v1.2 Roadmap 2026-05-20]: `build.modulePreload: false` is mandatory in vite.config.ts before Phase 16 ships; CI assertion script required
+- [v1.2 Roadmap 2026-05-20]: Tax applies to sellingPrice not subtotal — the existing it.todo in costCalc.test.ts is the activation point and must be first in Phase 13
 
 ### Pending Todos
 
-None yet.
+- Phase 16 plan-phase must empirically measure jsPDF gz chunk size (`npm install jspdf jspdf-autotable && npm run build && ls -lh dist/assets/pdf-*.js`) before locking the library — three research sources disagree on exact size
+- Phase 16 plan-phase must test font fetch strategy in `npm run tauri:dev` (Tauri WKWebView may reject fetch('/fonts/...') — fallback is base64 embed in lazy chunk)
+- Phase 12 plan-phase must decide quote number storage location (`job.quoteNumber` vs `UserProfile.nextQuoteNumber` counter) before writing the v6 migration
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-05-20T12:54:43.491Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-cost-calculation-unit-tests/10-CONTEXT.md
+Last session: 2026-05-20
+Stopped at: Roadmap created — ready for /gsd:plan-phase 12
+Resume file: .planning/ROADMAP.md

@@ -112,37 +112,38 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHEMA-01 | — | Pending |
-| SCHEMA-02 | — | Pending |
-| TAX-01 | — | Pending |
-| TAX-02 | — | Pending |
-| TAX-03 | — | Pending |
-| TAX-04 | — | Pending |
-| TAX-05 | — | Pending |
-| CUST-01 | — | Pending |
-| CUST-02 | — | Pending |
-| TAGS-01 | — | Pending |
-| TAGS-02 | — | Pending |
-| TAGS-03 | — | Pending |
-| TAGS-04 | — | Pending |
-| DUP-01 | — | Pending |
-| DUP-02 | — | Pending |
-| PDF-01 | — | Pending |
-| PDF-02 | — | Pending |
-| PDF-03 | — | Pending |
-| PDF-04 | — | Pending |
-| PDF-05 | — | Pending |
-| ETSY-01 | — | Pending |
-| ETSY-02 | — | Pending |
-| UI-08 | — | Pending |
-| UI-09 | — | Pending |
-| UI-10 | — | Pending |
+| SCHEMA-01 | Phase 12 | Pending |
+| SCHEMA-02 | Phase 12 | Pending |
+| TAX-01 | Phase 13 | Pending |
+| TAX-02 | Phase 13 | Pending |
+| TAX-03 | Phase 13 | Pending |
+| TAX-04 | Phase 13 | Pending |
+| TAX-05 | Phase 13 | Pending |
+| UI-08 | Phase 13 | Pending |
+| UI-09 | Phase 13 | Pending |
+| CUST-01 | Phase 14 | Pending |
+| CUST-02 | Phase 14 | Pending |
+| ETSY-01 | Phase 14 | Pending |
+| ETSY-02 | Phase 14 | Pending |
+| UI-10 | Phase 14 | Pending |
+| TAGS-01 | Phase 15 | Pending |
+| TAGS-02 | Phase 15 | Pending |
+| TAGS-03 | Phase 15 | Pending |
+| TAGS-04 | Phase 15 | Pending |
+| DUP-01 | Phase 15 | Pending |
+| DUP-02 | Phase 15 | Pending |
+| PDF-01 | Phase 16 | Pending |
+| PDF-02 | Phase 16 | Pending |
+| PDF-03 | Phase 16 | Pending |
+| PDF-04 | Phase 16 | Pending |
+| PDF-05 | Phase 16 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 25 total
-- Mapped to phases: 0 (roadmapper to fill)
-- Unmapped: 25
+- Mapped to phases: 25
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-20*
+*Traceability filled: 2026-05-20*
 *Phase numbering continues from v1.1 — first phase is **Phase 12***

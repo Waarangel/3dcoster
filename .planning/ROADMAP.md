@@ -1,111 +1,106 @@
-# Roadmap: 3DCoster v1.1 — Polish & Foundation
+# Roadmap: 3DCoster v1.2 — Quote-to-Customer
 
-**Milestone:** v1.1 Polish & Foundation
-**Defined:** 2026-05-19
-**Phase range:** 7–11 (v1.0 ended at Phase 6)
-**Requirements:** 9 total (UI-01–UI-05, TEST-01–TEST-02, PERF-01–PERF-02)
-**Coverage:** 9/9 — 100%
+**Milestone:** v1.2 Quote-to-Customer
+**Defined:** 2026-05-20
+**Phase range:** 12–16 (v1.1 ended at Phase 11)
+**Requirements:** 25 total (SCHEMA-01–02, TAX-01–05, CUST-01–02, TAGS-01–04, DUP-01–02, PDF-01–05, ETSY-01–02, UI-08–10)
+**Coverage:** 25/25 — 100%
 
 **Constraints encoded in this roadmap:**
 - All phases are FREE tier — no paid-tier work in this milestone
 - All phases are LOCAL-ONLY — no backend, no Supabase, no API calls
-- Phase 7 is foundational: its primitives must be available before Phases 8–9 add new UI surfaces
-- App ships dark-only — no light/system theme toggle in v1.1 (Phase 10 removed 2026-05-19)
+- Phase 12 (schema) is foundational: every other phase depends on the Dexie v6 migration landing first
+- Phase 16 (PDF) cannot start until both Phase 13 (Tax) and Phase 14 (Customer) are merged — the PDF must render a complete tax row and customer block from day one
+- `build.modulePreload: false` in `vite.config.ts` is mandatory before Phase 16 ships — without it Vite generates `<link rel="modulepreload">` for the lazy PDF chunk and silently defeats the 300 KB gz budget win
+- Tax applies to `sellingPrice`, not `subtotal` — the existing `it.todo` in `costCalc.test.ts` is the activation point and must be the first thing activated in Phase 13
+
+**Phase structure rationale (coarse granularity):**
+The 25 requirements cluster into five natural delivery boundaries driven by hard dependencies:
+1. Schema migration unblocks all data fields — must ship alone to be testable before field consumers are written
+2. Tax + UI sweep cohere because both touch CostCalculator and Settings forms — applying the `compact`/`InfoTooltip` sweep once while those files are open avoids double-touching them
+3. Customer details + Etsy helper cohere because both add collapsible sections to the cost calculator screen — same file, same UI pattern, same one-time forms sweep for new fields
+4. Tags + search + quick duplicate cohere because all three are JobsManager work (tag chip filter, search bar, and duplicate row action live in the same component)
+5. PDF is last by hard constraint — it assembles the tax row, customer block, and job data all built in phases 13–15
+
+UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary forms in the same pass). UI-10 (features.ts dead-badge audit) folds into Phase 14 as a lightweight cleanup that requires no specific form context.
 
 ---
 
 ## Phases
 
-- [x] **Phase 7: Styling Primitives Pass** — Replace raw HTML form elements in main components with shared ui/ primitives (completed 2026-05-19)
-- [x] **Phase 8: Empty States with CTAs** — Every blank screen guides users with an empty-state component (completed 2026-05-19)
-- [x] **Phase 9: Skeleton Loading States** — Skeleton shapes replace plain "Loading..." text during IndexedDB load (completed 2026-05-20)
-- [x] **Phase 10: Cost-Calculation Unit Tests** — Full vitest coverage of cost-calc logic, runs on every CI build (completed 2026-05-20)
-- [x] **Phase 11: Performance Optimization** — manualChunks vendor split + list virtualization for jobs and assets (completed 2026-05-20)
+- [ ] **Phase 12: Schema Foundation** — Dexie v5→v6 migration adds v1.2 fields and wires the multi-tab reload guard
+- [ ] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms
+- [ ] **Phase 14: Customer Details + Etsy Helper** — Customer fields on jobs, display in JobsManager, Etsy ToS collapsible checklist, and features.ts dead-badge cleanup
+- [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset
+- [ ] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification
 
 ---
 
 ## Phase Details
 
-### Phase 7: Styling Primitives Pass
-**Goal**: All raw `<button>`, `<input>`, `<select>`, and `<textarea>` elements across the 14 main app components (CONTEXT.md D-01 expanded scope) are replaced with shared `src/components/ui/` primitives, and a grep-based lint guard prevents regression
-**Depends on**: Phase 6 (v1.0 complete)
-**Requirements**: UI-01, UI-02, UI-03
+### Phase 12: Schema Foundation
+**Goal**: The Dexie database is on v6 with all v1.2 fields available, and a second browser tab opening after a schema upgrade reloads cleanly instead of crashing
+**Depends on**: Phase 11 (v1.1 complete)
+**Requirements**: SCHEMA-01, SCHEMA-02
 **Success Criteria** (what must be TRUE):
-  1. All 14 in-scope main components (SettingsModal, CostCalculator, PrinterSettings, JobsManager, AssetLibrary, CsvImportModal, UserProfileModal, BambuImport, GcodeImport, ImageCarousel, UpdateBanner, FilamentSelector, Header, MaintenanceAlertModal) contain zero raw `<button>`, `<input>`, `<select>`, or `<textarea>` elements outside `// allow-raw-html` opt-outs — confirmed by `node scripts/lint-no-raw-html.mjs`
-  2. All replaced elements preserve existing behavior: correct variants, sizes, disabled states, type coercion, validation, and onChange/onClick handlers (D-08)
-  3. Grep-based lint guard is active at build time — `npm run build` chains `node scripts/lint-no-raw-html.mjs` and a pre-commit hook blocks raw form-element introduction
-  4. No behavioral regression: AssetLibrary form-submit semantics intact; SettingsModal tab switching works; CostCalculator inputs accept and coerce numeric values
-**Plans**: 3 plans
-**Plans**:
-- [x] 07-03-PLAN.md — Wave 0: Install lint guard (script + package.json + pre-commit hook) and refactor 9 lightweight components (MaintenanceAlertModal, UpdateBanner, FilamentSelector, Header, GcodeImport, ImageCarousel, CsvImportModal, UserProfileModal, BambuImport); finishes with 5 adversarial lint tests
-- [x] 07-01-PLAN.md — Wave 1: Refactor SettingsModal (44), CostCalculator (32), PrinterSettings (18) — heaviest tier (94 raw elements)
-- [x] 07-02-PLAN.md — Wave 1: Refactor AssetLibrary (40, contains the only `<form>`) and JobsManager (13) — medium tier (53 raw elements)
-**Note**: Internal refactoring only — no user-visible change. No NEW badge. Phases 8 and 9 depend on this pass so they build new UI surfaces on consistent primitives from the start.
+  1. A saved job from v1.0 or v1.1 opens without error after the v6 upgrade — the job record loads with `tags: []` backfilled and all other new fields absent (undefined), and the app renders normally
+  2. The v6 upgrade callback in `database.ts` sets `tags = []` on all existing job records; accessing `job.tags` on any loaded job never throws `TypeError: Cannot read properties of undefined`
+  3. Opening the app in a second browser tab after one tab has triggered the v6 migration causes the second tab to reload automatically rather than displaying a blank white screen — `db.on('versionchange', () => window.location.reload())` is present in `database.ts`
+  4. TypeScript types reflect all new optional fields on `PrintJob` (`tags?: string[]`, `customer?: JobCustomer`, `taxRate?: number`, `taxAmount?: number`) and `UserProfile` (`defaultTaxRate?: number`, `nextQuoteNumber?: number`) with no compilation errors
+**Plans**: TBD
 
-### Phase 8: Empty States with CTAs
-**Goal**: Every blank screen in the app shows an empty-state component with an illustration, headline, supporting copy, and a primary CTA button that drives the user to the next action
-**Depends on**: Phase 7 (empty-state component uses shared Button primitive from Phase 7's pass)
-**Requirements**: UI-04
+### Phase 13: Tax Model + UI Sweep
+**Goal**: Users can set, override, and see a tax rate on every job with correct rounding and order-of-operations, backed by a region default — and all currency/numeric inputs across touched forms use the compact/InfoTooltip pattern in one pass
+**Depends on**: Phase 12
+**Requirements**: TAX-01, TAX-02, TAX-03, TAX-04, TAX-05, UI-08, UI-09
 **Success Criteria** (what must be TRUE):
-  1. The Asset library screen with zero assets shows an empty-state component (icon/illustration + headline + supporting copy + CTA button leading to "Add Asset")
-  2. The Jobs screen with zero saved jobs shows an empty-state component with a CTA leading to the cost calculator
-  3. The Printer Settings screen with no printers configured shows an empty-state component with a CTA leading to "Add Printer"
-  4. All three empty-state CTA buttons use the shared `Button` primitive from `src/components/ui/` — no raw `<button>` introduced
-**Plans**: 2 plans
-**Plans**:
-- [x] 08-01-PLAN.md — Wave 1: Create EmptyState primitive + shouldShowEmptyState predicate + unit tests; three Lucide-style icon components (Package, ClipboardList, Printer) + icons sub-barrel; add EmptyState to top-level ui barrel; register `empty-states` in src/features.ts
-- [x] 08-02-PLAN.md — Wave 2: Wire EmptyState into AssetLibrary, JobsManager (with new onSwitchTab prop drilled from App.tsx), and PrinterSettings; add NewBadge `empty-states` overlay on jobs/materials/settings tab buttons; manual UAT checkpoint verifies CTA interactions and badge layout
-**UI hint**: yes
-**NEW Badge**: yes — `empty-states` registered in `src/features.ts`; badge placed as absolute overlay on the relevant tab or section heading (not inline, not on the CTA itself to avoid double-click confusion)
-
-### Phase 9: Skeleton Loading States
-**Goal**: Skeleton loading components replace the plain "Loading..." text during initial IndexedDB load for all three list views
-**Depends on**: Phase 7 (skeleton card shape uses shared Card primitive for visual consistency)
-**Requirements**: UI-05
-**Success Criteria** (what must be TRUE):
-  1. The assets list, jobs list, and printer list each show a skeleton component during initial IndexedDB load — each skeleton matches the approximate shape and row count of the real content layout
-  2. The plain "Loading..." text in `App.tsx` is removed; no plain-text loading fallback remains anywhere in the three list views
-  3. Skeleton components are replaced by real content (or Phase 8 empty states) once data loads — no flicker, no skeleton persisting after load
-**Plans**: 2 plans
-**Plans**:
-- [x] 09-01-PLAN.md — Wave 1: Create Skeleton primitive (variants line/card/circle, animate-pulse, role=status) with RED→GREEN unit tests; update src/components/ui/index.ts to export Skeleton + re-export shouldShowEmptyState
-- [x] 09-02-PLAN.md — Wave 2: Remove App.tsx global isLoading gate + prune 5 unused destructurings + drill 3 isLoading props; wire AssetListSkeleton (mobile+desktop), JobsListSkeleton (single-return refactor), PrinterListSkeleton co-located in consumers; D-10 ternary order; manual UAT checkpoint
+  1. User can set a default tax rate in Settings (Pricing tab); new jobs seed the tax row from this rate; the rate persists across sessions
+  2. User can override the tax rate per job in the cost calculator; the per-job override is saved with the job and displayed when the job is reopened
+  3. When the user has no Settings default and no per-job override, the tax row is seeded from `src/data/taxRates.ts` keyed by the user's currency/region — the region rate is shown alongside its `rateAsOf` date; US region shows 0% with a marketplace-facilitator note; an unknown region shows "enter manually" (never silently defaults to 0%)
+  4. A "Tax (X%)" line appears in the cost breakdown after `sellingPrice`; the total displayed is `sellingPrice + taxAmount`; the tax row is hidden when rate is 0%
+  5. The `calculateTax` unit tests in `costCalc.test.ts` pass: rate=0, EU/UK/AU rates, `rate=0.23 price=12.50 → taxAmount=2.88` (centime-rounding test), and the order-of-operations guard that asserts `taxAmount !== subtotal × rate` when depreciation > 0 — the existing `it.todo` is activated (not skipped)
+  6. All currency, percentage, and numeric inputs in CostCalculator, AssetLibrary, JobsManager, PrinterSettings, and import modals use the `compact` prop on `<Input>`; descriptive placeholder text is replaced with `<InfoTooltip>` next to the label, with placeholders showing example values only
+**Plans**: TBD
 **UI hint**: yes
 
-### Phase 10: Cost-Calculation Unit Tests
-**Goal**: Vitest unit tests cover all cost-calculation factors in CostCalculator.tsx and run automatically under `npm test` and on every CI/build pass
-**Depends on**: Phase 7 completing (ensures the component under test is in its final clean state); no other UI phase dependency — can execute in parallel with Phases 8–9 if desired
-**Requirements**: TEST-01, TEST-02
+### Phase 14: Customer Details + Etsy Helper
+**Goal**: Users can attach optional customer details to a saved job, see the customer name in JobsManager, and check their Etsy compliance from the same screen — with stale NewBadge entries cleaned up
+**Depends on**: Phase 12
+**Requirements**: CUST-01, CUST-02, ETSY-01, ETSY-02, UI-10
 **Success Criteria** (what must be TRUE):
-  1. Unit tests cover all calculation factors: material cost (multi-filament, per-filament weight), electricity, printer depreciation, nozzle wear (per-material density via `getMaterialDensity`), labor (prep + post-processing time), failure-rate adjustment, and model amortization
-  2. A named pending/skipped test for the tax/VAT factor is included with a note that it activates when v1.2 lands — the suite is extensible without rework
-  3. `npm test` exits with code 0 on a clean codebase; the test suite is integrated so CI fails the build if any test fails
-  4. All tests are deterministic: no IndexedDB dependency, no browser API dependency, no network calls
-**Plans**: 4 plans
-**Plans**:
-- [x] 10-01-PLAN.md — Wave 1: Extract cost-math useMemo into pure src/utils/costCalc.ts (CalcInput interface + 6 sub-helpers + calculateCost entrypoint with inline failure-rate clamp)
-- [x] 10-02-PLAN.md — Wave 2: Refactor CostCalculator.tsx:374 useMemo to import and call calculateCost (byte-for-byte math preservation, dependency array unchanged)
-- [x] 10-03-PLAN.md — Wave 2: Write src/utils/costCalc.test.ts with all D-13 edge cases (1/2/16 filament rows, failure-rate clamp boundaries, per-material density smoke tests) plus tax/VAT it.todo placeholder per D-12
-- [x] 10-04-PLAN.md — Wave 3: Wire vitest.config.ts coverage block (provider v8, scoped to costCalc.ts, thresholds 95/100/90) + update package.json scripts.build chain (lint-html → vitest+coverage → tsc → vite) + add test:watch
+  1. A collapsible "Customer" section on the cost calculator accepts name, email, address (freeform), and optional company name; all fields are optional and the section is collapsed by default
+  2. Customer name and email are visible on the saved-job row in JobsManager; full address appears only on the PDF (Phase 16)
+  3. A collapsible "Selling on Etsy?" section on the cost calculator displays the `EtsyToSHelper` checklist sourced from `src/data/etsyToS.ts`; each checklist item is checkable by the user for self-review purposes
+  4. The Etsy section displays a `policySummaryAsOf` date and a live link to `https://www.etsy.com/legal/creativity/`; a prominent disclaimer reads "Etsy's policies change — this is a reminder, not legal advice"; the checklist items do NOT appear on the customer PDF
+  5. `src/features.ts` is audited: `<NewBadge>` JSX consumers for features past `NEW_FEATURE_MAX_AGE_DAYS` are removed; feature registry entries with zero remaining JSX consumers are pruned
+**Plans**: TBD
+**UI hint**: yes
 
-### Phase 11: Performance Optimization
-**Goal**: Vite produces explicit vendor chunks that keep the main app bundle under 300 KB gzipped; jobs and asset lists use virtualization for lists exceeding 100 items and remain smooth under 4× CPU throttle
-**Depends on**: Nothing — this is a build-config and rendering change; no dependency on prior v1.1 phases. Can execute in parallel with any other phase.
-**Requirements**: PERF-01, PERF-02
+### Phase 15: Tags, Search + Quick Duplicate
+**Goal**: Users can tag, filter, and search their saved jobs, and duplicate any job in one click — with all existing JobsManager virtualization remaining stable during filter/search changes
+**Depends on**: Phase 12
+**Requirements**: TAGS-01, TAGS-02, TAGS-03, TAGS-04, DUP-01, DUP-02
 **Success Criteria** (what must be TRUE):
-  1. `vite.config.ts` defines `build.rollupOptions.output.manualChunks` splitting at minimum the React runtime and Dexie into separate vendor chunks — confirmed visible in the generated `dist/assets/` output filenames
-  2. The main app chunk is under 300 KB gzipped — verified via `npm run build` and inspecting chunk sizes
-  3. The jobs list and asset library list use virtualization (react-window or react-virtual) when item count exceeds 100; scrolling a 500-item test list under 4× CPU slowdown in DevTools produces no dropped frames
-  4. Lists with fewer than 100 items render identically to pre-Phase-12 — no regressions for the common case
-**Plans**: 6 plans
-**Plans**:
-- [x] 11-01-PLAN.md — Wave 1: Install react-window@^2 (runtime dep) and rollup-plugin-visualizer@^5 (devDep); add `scripts.analyze`. Gated behind a blocking package-legitimacy human checkpoint (T-11-SC mitigation)
-- [x] 11-02-PLAN.md — Wave 2: vite.config.ts manualChunks (react-vendor / dexie-vendor / vendor) per D-01; conditional visualizer plugin gated on `mode === 'analyze'` per D-10
-- [x] 11-03-PLAN.md — Wave 2: Create scripts/assert-bundle-size.mjs (300 KB gzipped gate per D-09 / D-11) and append it LAST in `scripts.build`
-- [x] 11-04-PLAN.md — Wave 3: JobsManager virtualization above 100 jobs using react-window v2 `<List>` + `useDynamicRowHeight` (design Q2 resolution: bimodal collapsed/expanded heights handled via cache + selection-driven reset)
-- [x] 11-05-PLAN.md — Wave 3: AssetLibrary virtualization at three call sites above 50 items/page (design Q1 resolution: `tagName="tbody"` primary path for desktop tables, div-grid fallback if breakage)
-- [x] 11-06-PLAN.md — Wave 4: Manual UAT (500-job scroll under 4× CPU throttle, expand/collapse correctness, AssetLibrary 100/page smoothness) + Phase SUMMARY (design Q3 resolution: DevTools console snippets documented in SUMMARY — no script file)
-**Note**: Infrastructure phase — no user-visible feature, no NEW badge. Ships bundled with v1.2 release per CONTEXT.md (no standalone `v*` tag push for Phase 11 alone).
+  1. User can add comma-separated tags to a saved job; tags are lowercased, trimmed, deduplicated, and capped at a maximum count; they persist as `tags: string[]` on the job record
+  2. JobsManager shows a multi-select chip filter sourced from all tags in use across saved jobs; selecting one or more chips filters the list with AND logic
+  3. A free-text search input in JobsManager filters by case-insensitive substring match across job title, customer name, and tags simultaneously
+  4. When the filter or search changes, the virtualized list scrolls to the top and the `useDynamicRowHeight` cache is invalidated — no stale row heights or collapsed/overlapping cards after filtering; the cache key encodes `selectedJobId + filterTagKey + searchQuery`
+  5. User can quick-duplicate a saved job from a row action in JobsManager; the duplicate appears immediately in the list; a unit test asserts that `duplicateJob(job).customer === undefined` (PII reset), and that `id`, `createdAt`, and `copiesSold` are reset to new values
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 16: Printable PDF Quote
+**Goal**: Users can download a professional PDF quote from any saved job — generated entirely client-side, lazy-loaded so the main app bundle stays under 300 KB gz, with a "Made with 3DCoster" footer on the free tier
+**Depends on**: Phase 13 (tax rows must be correct) + Phase 14 (customer block must exist)
+**Requirements**: PDF-01, PDF-02, PDF-03, PDF-04, PDF-05
+**Success Criteria** (what must be TRUE):
+  1. Clicking "Generate PDF" on a saved job in the cost calculator or JobsManager downloads a PDF containing: the 3DCoster header, auto-incremented quote number (persisted in `UserProfile.nextQuoteNumber`), valid-until date (30 days from generation), customer block (omitted if no customer details), line items, Subtotal / Tax (hidden at 0%) / Total, notes/terms section, and "Made with 3DCoster — 3dcoster.vercel.app" footer
+  2. `jspdf` and `jspdf-autotable` are never present in a static `import` statement anywhere in `src/`; both load only via dynamic `import()` triggered by the "Generate PDF" button click; `npm run build && grep -r "import.*jspdf" src/` returns no matches
+  3. `vite.config.ts` contains `build: { modulePreload: false }`; the CI assertion script `scripts/assert-no-pdf-preload.mjs` greps `dist/index.html` for `modulepreload` referencing the pdf chunk and exits non-zero if found; this script runs as part of `npm run build`
+  4. The main app chunk remains under 300 KB gzipped after jsPDF is added — `scripts/assert-bundle-size.mjs` passes; `npm run analyze` confirms the pdf chunk is a separate async file not included in `index-*.js` or the `vendor` chunk
+  5. PDF generation works in both web (browser save dialog) and Tauri desktop (Tauri file dialog); font rendering handles non-ASCII characters (accented letters, € symbol) without garbled glyphs; the font strategy (fetch from `/public/fonts/` or base64 in lazy chunk) is confirmed working in `npm run tauri:dev` before the plan is closed
+**Plans**: TBD
+**UI hint**: yes
 
 ---
 
@@ -113,11 +108,11 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Styling Primitives Pass | 3/3 | Complete    | 2026-05-19 |
-| 8. Empty States with CTAs | 2/2 | Complete   | 2026-05-19 |
-| 9. Skeleton Loading States | 2/2 | Complete   | 2026-05-20 |
-| 10. Cost-Calculation Unit Tests | 4/4 | Complete   | 2026-05-20 |
-| 11. Performance Optimization | 6/6 | Complete    | 2026-05-21 |
+| 12. Schema Foundation | 0/? | Not started | — |
+| 13. Tax Model + UI Sweep | 0/? | Not started | — |
+| 14. Customer Details + Etsy Helper | 0/? | Not started | — |
+| 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
+| 16. Printable PDF Quote | 0/? | Not started | — |
 
 ---
 
@@ -125,37 +120,53 @@
 
 | Requirement | Phase | Category |
 |-------------|-------|----------|
-| UI-01 | Phase 7 | UI |
-| UI-02 | Phase 7 | UI |
-| UI-03 | Phase 7 | UI |
-| UI-04 | Phase 8 | UI |
-| UI-05 | Phase 9 | UI |
-| TEST-01 | Phase 10 | Test |
-| TEST-02 | Phase 10 | Test |
-| PERF-01 | Phase 11 | Performance |
-| PERF-02 | Phase 11 | Performance |
+| SCHEMA-01 | Phase 12 | Schema |
+| SCHEMA-02 | Phase 12 | Schema |
+| TAX-01 | Phase 13 | Tax |
+| TAX-02 | Phase 13 | Tax |
+| TAX-03 | Phase 13 | Tax |
+| TAX-04 | Phase 13 | Tax |
+| TAX-05 | Phase 13 | Tax |
+| UI-08 | Phase 13 | UI Sweep |
+| UI-09 | Phase 13 | UI Sweep |
+| CUST-01 | Phase 14 | Customer |
+| CUST-02 | Phase 14 | Customer |
+| ETSY-01 | Phase 14 | Etsy |
+| ETSY-02 | Phase 14 | Etsy |
+| UI-10 | Phase 14 | UI Sweep |
+| TAGS-01 | Phase 15 | Tags |
+| TAGS-02 | Phase 15 | Tags |
+| TAGS-03 | Phase 15 | Tags |
+| TAGS-04 | Phase 15 | Tags |
+| DUP-01 | Phase 15 | Duplicate |
+| DUP-02 | Phase 15 | Duplicate |
+| PDF-01 | Phase 16 | PDF |
+| PDF-02 | Phase 16 | PDF |
+| PDF-03 | Phase 16 | PDF |
+| PDF-04 | Phase 16 | PDF |
+| PDF-05 | Phase 16 | PDF |
 
-**Mapped: 9/9** — no orphans (UI-06, UI-07 moved to Out of Scope per 2026-05-19 — app ships dark-only)
+**Mapped: 25/25** — no orphans
 
 ---
 
 ## Dependency Graph
 
 ```
-Phase 7 (Primitives Pass)  <-- foundation for all UI phases
-  └── Phase 8 (Empty States)      -- uses Button primitive from Phase 7
-  └── Phase 9 (Skeleton States)   -- uses Card primitive from Phase 7
+Phase 12 (Schema Foundation)  <-- foundation for all v1.2 phases
+  ├── Phase 13 (Tax Model + UI Sweep)     -- reads taxRate, defaultTaxRate from v6 schema
+  ├── Phase 14 (Customer Details + Etsy)  -- reads customer from v6 schema; can parallel with 13
+  └── Phase 15 (Tags, Search + Duplicate) -- reads tags from v6 schema; can parallel with 13+14
 
-Phase 10 (Unit Tests)      -- depends on Phase 7 only (component in final state)
-                              can run in parallel with Phases 8–9
-
-Phase 11 (Performance)     -- no UI dependency; can run in parallel with any phase
+Phase 13 + Phase 14 both merged → required before:
+  └── Phase 16 (PDF Quote)  -- must render correct tax rows AND customer block
 ```
+
+**Parallelizable after Phase 12:** Phases 13, 14, and 15 are independent of each other.
+**Phase 16 hard gate:** Both Phase 13 and Phase 14 must be merged before Phase 16 can start.
 
 ---
 
-*Roadmap created: 2026-05-19*
-*Phase 7 plans created: 2026-05-19*
-*Phase 8 plans created: 2026-05-19*
-*Phase 11 plans created: 2026-05-20*
-*Overwrites previous ROADMAP.md (v1.1 Quote-to-Customer — deferred to v1.2 per 2026-05-19 milestone swap)*
+*Roadmap created: 2026-05-20*
+*Replaces: v1.1 Polish & Foundation roadmap (Phases 7–11, completed 2026-05-20)*
+*Phase numbering continues from v1.1 — v1.2 phases start at Phase 12*
