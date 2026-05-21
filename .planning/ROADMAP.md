@@ -29,7 +29,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 ## Phases
 
 - [x] **Phase 12: Schema Foundation** — Dexie v5→v6 migration adds v1.2 fields and wires the multi-tab reload guard (completed 2026-05-21)
-- [ ] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms
+- [x] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms (completed 2026-05-21)
 - [ ] **Phase 14: Customer Details + Etsy Helper** — Customer fields on jobs, display in JobsManager, Etsy ToS collapsible checklist, and features.ts dead-badge cleanup
 - [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset
 - [ ] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification
@@ -70,7 +70,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 13-03-PLAN.md — SettingsModal Default Tax Rate field + InfoTooltip migrations + compact sweep (Wave 1, autonomous)
 - [x] 13-04-PLAN.md — AssetLibrary + JobsManager + PrinterSettings UI sweep + AssetLibrary NewBadge cleanup (Wave 1, autonomous)
 - [x] 13-05-PLAN.md — CostCalculator per-job Tax UI + Tax row + persistence + sweep + NewBadge cleanup (Wave 2, autonomous; depends on 13-01, 13-02)
-- [ ] 13-06-PLAN.md — UI-10 final cleanup: UserProfileModal + GcodeImport NewBadge removal + features.ts registry prune (Wave 3, autonomous; depends on 13-03, 13-04, 13-05)
+- [x] 13-06-PLAN.md — UI-10 final cleanup: UserProfileModal + GcodeImport NewBadge removal + features.ts registry prune (Wave 3, autonomous; depends on 13-03, 13-04, 13-05)
 **UI hint**: yes
 
 ### Phase 14: Customer Details + Etsy Helper
@@ -119,7 +119,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
-| 13. Tax Model + UI Sweep | 5/6 | In Progress|  |
+| 13. Tax Model + UI Sweep | 6/6 | Complete   | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 0/? | Not started | — |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 16. Printable PDF Quote | 0/? | Not started | — |

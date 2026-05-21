@@ -54,7 +54,7 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 - [ ] **UI-08**: Currency / numeric / percentage inputs across CostCalculator, AssetLibrary, JobsManager, PrinterSettings, and import modals use the `compact` prop on the shared `<Input>` primitive (max-w-28)
 - [ ] **UI-09**: Descriptive placeholder text is replaced with `<InfoTooltip text="..." />` next to the label across the same forms; placeholders show example values only
-- [ ] **UI-10**: `src/features.ts` is audited — stale `<NewBadge>` JSX consumers past `NEW_FEATURE_MAX_AGE_DAYS` are removed; entries with zero JSX hits are pruned from the registry
+- [x] **UI-10**: `src/features.ts` is audited — stale `<NewBadge>` JSX consumers past `NEW_FEATURE_MAX_AGE_DAYS` are removed; entries with zero JSX hits are pruned from the registry
 
 ## v2 / Future Requirements
 
@@ -125,7 +125,7 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | CUST-02 | Phase 14 | Pending |
 | ETSY-01 | Phase 14 | Pending |
 | ETSY-02 | Phase 14 | Pending |
-| UI-10 | Phase 13 | Pending |
+| UI-10 | Phase 13 | Complete |
 | TAGS-01 | Phase 15 | Pending |
 | TAGS-02 | Phase 15 | Pending |
 | TAGS-03 | Phase 15 | Pending |
