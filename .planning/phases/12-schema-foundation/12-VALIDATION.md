@@ -1,9 +1,9 @@
 ---
 phase: 12
 slug: schema-foundation
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-05-20
 ---
 
@@ -37,14 +37,19 @@ created: 2026-05-20
 
 ## Per-Task Verification Map
 
-> Filled in by the planner — placeholder rows show the expected shape. The planner MUST emit one row per task in PLAN.md, mapping each task ID to a verification command or to a manual UAT row below.
+> One row per task across all 4 plans. Maps each task ID to its `<automated>` verify or to a manual UAT row below.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 12-01-01 | 01 | 1 | SCHEMA-01 | — | N/A | source assert + types | `tsc -b` and `grep -E "version\\(6\\)" src/db/database.ts` | ❌ W0 | ⬜ pending |
-| 12-01-02 | 01 | 1 | SCHEMA-01 | — | N/A | source assert + types | `tsc -b` and `grep -E "tags\\?:\\s*string\\[\\]" src/types.ts` | ❌ W0 | ⬜ pending |
-| 12-02-01 | 02 | 1 | SCHEMA-02 | — | N/A | source assert | `grep -E "versionchange" src/db/database.ts` | ❌ W0 | ⬜ pending |
-| 12-03-01 | 03 | 2 | SCHEMA-01 | — | tags backfilled idempotently on parsed records | unit (pure fn) | `npx vitest run src/db/backfill.test.ts` | ❌ W0 | ⬜ pending |
+| 12-01-T1 | 01 | 1 | SCHEMA-01 | — | N/A | types + source assert | `tsc -b && grep -E "tags\\?:\\s*string\\[\\]" src/types.ts` | ✅ | ⬜ pending |
+| 12-01-T2 | 01 | 1 | SCHEMA-01 | — | N/A | types + source assert | `tsc -b && grep -E "defaultTaxRate\\?:\\s*number" src/types.ts` | ✅ | ⬜ pending |
+| 12-02-T1 | 02 | 1 | SCHEMA-01 | — | RED phase — defensive guard against corrupt `tags` value | unit (RED) | `npx vitest run src/db/backfill.test.ts 2>&1 \| grep -qE "fail\|error"` | ✅ (Wave 0 stub) | ⬜ pending |
+| 12-02-T2 | 02 | 1 | SCHEMA-01 | — | tags backfill idempotent; non-array values normalized | unit (GREEN) | `npx vitest run src/db/backfill.test.ts` | ✅ | ⬜ pending |
+| 12-03-T1 | 03 | 2 | SCHEMA-01 | T-12-01 (data loss) | upgrade returns modify-promise; `*tags` index NOT added | types + source assert | `tsc -b && grep -E "db\\.version\\(6\\)" src/db/database.ts && grep -E "return tx\\.table" src/db/database.ts` | ✅ | ⬜ pending |
+| 12-03-T2 | 03 | 2 | SCHEMA-02 | T-12-02 (white-screen on concurrent tab) | plain `window.location.reload()`, no `setTimeout`/`confirm`/toast | source assert (regex + awk ordering) | `tsc -b && grep -E "db\\.on\\('versionchange'" src/db/database.ts` | ✅ | ⬜ pending |
+| 12-04-T1 | 04 | 3 | SCHEMA-01, SCHEMA-02 | — | Full build green | build gate | `npm run build` | ✅ | ⬜ pending |
+| 12-04-T2 | 04 | 3 | SCHEMA-01 | — | v5→v6 real-DB migration backfills `tags=[]`; other fields undefined | manual UAT | — (see Manual-Only Verifications row 1–3) | manual | ⬜ pending |
+| 12-04-T3 | 04 | 3 | SCHEMA-02 | T-12-02 | Tab B auto-reloads ≤1s after Tab A loads v6 | manual UAT | — (see Manual-Only Verifications row 4) | manual | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
