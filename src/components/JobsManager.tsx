@@ -541,6 +541,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   <Input
                     type="number"
                     min="1"
+                    compact
                     value={saleQuantity}
                     onChange={e => setSaleQuantity(parseInt(e.target.value) || 1)}
                   />
@@ -550,6 +551,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   <Input
                     type="number"
                     step="0.01"
+                    compact
                     value={salePrice}
                     onChange={e => setSalePrice(parseFloat(e.target.value) || 0)}
                   />
@@ -589,6 +591,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                     <Input
                       type="number"
                       step="0.01"
+                      compact
                       value={saleShippingCost}
                       onChange={e => setSaleShippingCost(parseFloat(e.target.value) || 0)}
                     />
