@@ -2,9 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
-status: planning
-last_updated: "2026-05-20T00:00:00.000Z"
-last_activity: 2026-05-20
+status: Roadmap created — ready for plan-phase
+stopped_at: Phase 12 context gathered
+last_updated: "2026-05-21T01:17:05.881Z"
+last_activity: 2026-05-20 — v1.2 roadmap created (Phases 12–16)
 progress:
   total_phases: 5
   completed_phases: 0
@@ -113,6 +114,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-20
-Stopped at: Roadmap created — ready for /gsd:plan-phase 12
-Resume file: .planning/ROADMAP.md
+Last session: 2026-05-21T01:17:05.874Z
+Stopped at: Phase 12 context gathered
+Resume file: .planning/phases/12-schema-foundation/12-CONTEXT.md
