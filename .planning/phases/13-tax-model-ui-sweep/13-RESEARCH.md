@@ -867,7 +867,7 @@ Every claim in this research was either VERIFIED via tool (file read, grep, Node
 |---|-------|---------|---------------|
 | _none_ | — | — | — |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 ### Discrepancy 1: "Pricing tab" vs "Costs & Rates" tab
 
@@ -876,6 +876,7 @@ CONTEXT.md, ROADMAP.md, and REQUIREMENTS.md all describe "Settings (Pricing tab)
 - **What we know:** CONTEXT integration-points say "Default Tax Rate slots in next to Default Profit Margin." Default Profit Margin is in the "Costs & Rates" tab. So the user-intended placement is the existing **Costs & Rates** tab, just with a stale label in the docs.
 - **What's unclear:** Whether the planner should silently use "Costs & Rates" or whether the user genuinely wants a new "Pricing" tab. The CONTEXT canonical-refs notes literally `activeTab === 'pricing' block` — a tab that doesn't exist.
 - **Recommendation:** The planner should slot the Default Tax Rate into the **"Costs & Rates" tab next to Default Profit Margin** (matches the explicit "slots in next to Default Profit Margin" guidance). Mention in PLAN.md that the docs use legacy terminology; do not create a new tab. If the user genuinely wants a 4th tab, they will raise it in plan review — but the locked decisions weigh strongly toward "fit it into the existing tab where the related setting already lives."
+- **RESOLVED:** Default Tax Rate slots into the existing `activeTab === 'costs'` block ("Costs & Rates" tab) next to Default Profit Margin. No new "Pricing" tab is created. Source of resolution: planner rationale per CONTEXT D-04 / canonical-refs at 13-CONTEXT.md:72 (Default Profit Margin neighbor) and UI-SPEC at 13-UI-SPEC.md:126,128,335. Plan 03 Task 1 implements this; the docs' legacy "Pricing tab" wording in REQUIREMENTS.md TAX-01 + ROADMAP.md Phase 13 success-criterion 1 is acknowledged but unchanged.
 
 ### Discrepancy 2: "EU-average" — 21% is median, not mean
 
@@ -884,6 +885,7 @@ CONTEXT D-05 and DISCUSSION-LOG Q5 both call **21%** the "mean of 27 member stat
 - **What we know:** The user locked 21% explicitly with the tooltip wording "EU average rate — verify for your country." The exact word "average" is ambiguous (could be mean or median or some midpoint).
 - **What's unclear:** Whether the user intended the literal mathematical mean (21.9, which would round to 22) or the median 21 they actually picked. Given the EU-average is a deliberate compromise anyway (and the tooltip already tells the user to verify), the difference between 21 and 22 is well within the tooltip's "verify for your country" buffer.
 - **Recommendation:** Ship 21% (the locked value), but reword the tooltip in the data file's note field to remove the word "mean" — use "median" or "midpoint" instead. Or just say "EU midpoint rate — verify for your country." Surface this as a one-line note in PLAN.md so the user can override during plan review if they want 21.9 / 22 instead.
+- **RESOLVED:** Ship 21% (locked value per CONTEXT D-05); tooltip uses the word "midpoint" instead of "mean". Source of resolution: UI-SPEC line 122 (`eu-average` tooltip: "EU midpoint rate — verify for your country (21%)") + footnote at UI-SPEC line 122 explicitly resolving the wording. Plan 01 Task 2 implements the `eu-average` branch with the locked string.
 
 ### Discrepancy 3: REQUIREMENTS.md and ROADMAP.md vs CONTEXT D-17 on UI-10
 
@@ -892,6 +894,7 @@ REQUIREMENTS.md traceability table line 128 maps `UI-10 | Phase 14`. ROADMAP.md 
 - **What we know:** CONTEXT D-17 was the most recent decision; it explicitly cites the rationale ("same files get touched, same review window").
 - **What's unclear:** Whether ROADMAP.md and REQUIREMENTS.md should be updated to reflect the fold-in, or whether Phase 14 keeps the audit as a no-op (since Phase 13 will have completed it).
 - **Recommendation:** Follow CONTEXT D-17 — UI-10 IS in Phase 13. The planner includes UI-10 deliverables in the PLAN.md. Phase 14's plan-phase will read the updated `src/features.ts` and find nothing to prune (because Phase 13 already did it). Suggest the planner adds a note to STATE.md or PROJECT.md flagging this re-routing so future readers don't get confused. Do not edit ROADMAP/REQUIREMENTS proactively — that's outside the research scope.
+- **RESOLVED:** UI-10 is in Phase 13 per CONTEXT D-17. Plans 03, 04, 05, and 06 collectively complete the UI-10 audit (11 NewBadge JSX removals + features.ts prune to 4 entries). Source of resolution: CONTEXT D-17 (gold source). REQUIREMENTS.md UI-10 traceability row and ROADMAP.md Phase 13 `**Requirements**` line are updated by the planner in this revision pass to match reality; Phase 14 becomes a no-op audit for UI-10.
 
 ## Sources
 

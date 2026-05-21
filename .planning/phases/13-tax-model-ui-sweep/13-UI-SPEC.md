@@ -110,8 +110,10 @@ The Tax row label carries one `<InfoTooltip text={...}>` whose body text branche
 
 | `taxSource.kind` | Tooltip Body |
 |------------------|--------------|
-| `override` | `Per-job override — {rate}%` |
-| `settings` | `From Settings default — {rate}%` |
+| `override` (non-USD currency) | `Per-job override — {rate}%` |
+| `override` (USD currency) | `Per-job override — {rate}%\nMost US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.` |
+| `settings` (non-USD currency) | `From Settings default — {rate}%` |
+| `settings` (USD currency) | `From Settings default — {rate}%\nMost US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.` |
 | `region` (non-stale, no note) | `From your region ({regionCode}, as of {rateAsOf}).` |
 | `region` (stale per `isRateStale`) | `From your region ({regionCode}, as of {rateAsOf} — rate may be stale, verify locally).` |
 | `region` (US, marketplace facilitator) | `From your region (US, as of 2025-01-01).\nMost US states require marketplaces (Etsy, eBay, Amazon) to collect sales tax for you. Override only if you sell direct or in a non-facilitator state.` |
@@ -120,6 +122,8 @@ The Tax row label carries one `<InfoTooltip text={...}>` whose body text branche
 | `manual` | `Unknown region — enter manually. We don't have a default rate for your currency yet.` |
 
 > **Wording note on `eu-average`:** CONTEXT D-05 calls 21% the "average" / "mean"; the actual unweighted mean is 21.9% and 21% is the median (RESEARCH Discrepancy 2, line 880). The tooltip uses **"midpoint"** instead of "mean" to be accurate without re-opening the locked value. Planner may revert to "average" if the user prefers; substance is unchanged.
+
+> **D-12 + D-13 implementation note:** When `userCurrency === 'USD'`, the US marketplace-facilitator string is **appended** to the tooltip body for ALL `taxSource.kind` values, not just `kind: 'region'`. This preserves the note when a US user manually enters a non-zero rate via per-job override (D-12) and when the rate comes from the Settings default (D-13). Implementation: `tooltipForSource(source, userCurrency)` in `src/utils/taxResolution.ts` takes the user's currency as a second argument and appends the locked D-11 string to the returned tooltip whenever `userCurrency === 'USD'`. The `region` (US) row above already includes the note inline because the US region row in `src/data/taxRates.ts` carries the note string — the override/settings/eu-average/manual branches append it explicitly via the currency argument.
 
 ### SettingsModal — Default Tax Rate field
 

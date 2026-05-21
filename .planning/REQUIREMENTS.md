@@ -125,7 +125,7 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | CUST-02 | Phase 14 | Pending |
 | ETSY-01 | Phase 14 | Pending |
 | ETSY-02 | Phase 14 | Pending |
-| UI-10 | Phase 14 | Pending |
+| UI-10 | Phase 13 | Pending |
 | TAGS-01 | Phase 15 | Pending |
 | TAGS-02 | Phase 15 | Pending |
 | TAGS-03 | Phase 15 | Pending |

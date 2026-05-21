@@ -22,7 +22,7 @@ The 25 requirements cluster into five natural delivery boundaries driven by hard
 4. Tags + search + quick duplicate cohere because all three are JobsManager work (tag chip filter, search bar, and duplicate row action live in the same component)
 5. PDF is last by hard constraint — it assembles the tax row, customer block, and job data all built in phases 13–15
 
-UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary forms in the same pass). UI-10 (features.ts dead-badge audit) folds into Phase 14 as a lightweight cleanup that requires no specific form context.
+UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibrary, JobsManager, PrinterSettings, UserProfileModal, and GcodeImport in the same pass). Phase 13's plans 03–06 cover the NewBadge prune + features.ts registry edit alongside the form sweep — same files, same review window (CONTEXT D-17).
 
 ---
 
@@ -56,7 +56,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 ### Phase 13: Tax Model + UI Sweep
 **Goal**: Users can set, override, and see a tax rate on every job with correct rounding and order-of-operations, backed by a region default — and all currency/numeric inputs across touched forms use the compact/InfoTooltip pattern in one pass
 **Depends on**: Phase 12
-**Requirements**: TAX-01, TAX-02, TAX-03, TAX-04, TAX-05, UI-08, UI-09
+**Requirements**: TAX-01, TAX-02, TAX-03, TAX-04, TAX-05, UI-08, UI-09, UI-10
 **Success Criteria** (what must be TRUE):
   1. User can set a default tax rate in Settings (Pricing tab); new jobs seed the tax row from this rate; the rate persists across sessions
   2. User can override the tax rate per job in the cost calculator; the per-job override is saved with the job and displayed when the job is reopened
@@ -76,13 +76,13 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 ### Phase 14: Customer Details + Etsy Helper
 **Goal**: Users can attach optional customer details to a saved job, see the customer name in JobsManager, and check their Etsy compliance from the same screen — with stale NewBadge entries cleaned up
 **Depends on**: Phase 12
-**Requirements**: CUST-01, CUST-02, ETSY-01, ETSY-02, UI-10
+**Requirements**: CUST-01, CUST-02, ETSY-01, ETSY-02
 **Success Criteria** (what must be TRUE):
   1. A collapsible "Customer" section on the cost calculator accepts name, email, address (freeform), and optional company name; all fields are optional and the section is collapsed by default
   2. Customer name and email are visible on the saved-job row in JobsManager; full address appears only on the PDF (Phase 16)
   3. A collapsible "Selling on Etsy?" section on the cost calculator displays the `EtsyToSHelper` checklist sourced from `src/data/etsyToS.ts`; each checklist item is checkable by the user for self-review purposes
   4. The Etsy section displays a `policySummaryAsOf` date and a live link to `https://www.etsy.com/legal/creativity/`; a prominent disclaimer reads "Etsy's policies change — this is a reminder, not legal advice"; the checklist items do NOT appear on the customer PDF
-  5. `src/features.ts` is audited: `<NewBadge>` JSX consumers for features past `NEW_FEATURE_MAX_AGE_DAYS` are removed; feature registry entries with zero remaining JSX consumers are pruned
+  5. UI-10 has been completed by Phase 13 (CONTEXT D-17 fold-in); Phase 14 verifies the audit holds — `src/features.ts` still contains only the 4 fresh entries Phase 13 left, and no new stale `<NewBadge>` JSX has been introduced in CUST/ETSY work. If Phase 13's audit was complete, this criterion is a no-op verification step.
 **Plans**: TBD
 **UI hint**: yes
 
@@ -143,7 +143,7 @@ UI-08/09 fold into Phase 13 (touches CostCalculator, Settings, and AssetLibrary 
 | CUST-02 | Phase 14 | Customer |
 | ETSY-01 | Phase 14 | Etsy |
 | ETSY-02 | Phase 14 | Etsy |
-| UI-10 | Phase 14 | UI Sweep |
+| UI-10 | Phase 13 | UI Sweep |
 | TAGS-01 | Phase 15 | Tags |
 | TAGS-02 | Phase 15 | Tags |
 | TAGS-03 | Phase 15 | Tags |
