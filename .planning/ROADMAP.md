@@ -84,7 +84,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
   4. The Etsy section displays a `policySummaryAsOf` date and a live link to `https://www.etsy.com/legal/creativity/`; a prominent disclaimer reads "Etsy's policies change — this is a reminder, not legal advice"; the checklist items do NOT appear on the customer PDF
   5. UI-10 has been completed by Phase 13 (CONTEXT D-17 fold-in); Phase 14 verifies the audit holds — `src/features.ts` still contains only the 4 fresh entries Phase 13 left, and no new stale `<NewBadge>` JSX has been introduced in CUST/ETSY work. If Phase 13's audit was complete, this criterion is a no-op verification step.
 **Plans**: 4 plans
-- [ ] 14-01-PLAN.md — CollapsibleSection primitive + types.ts etsyChecks extension + features.ts 2 new entries (Wave 1, autonomous)
+- [x] 14-01-PLAN.md — CollapsibleSection primitive + types.ts etsyChecks extension + features.ts 2 new entries (Wave 1, autonomous)
 - [ ] 14-02-PLAN.md — Etsy data file etsyToS.ts + Etsy CollapsibleSection card on CostCalculator + etsyChecks 6-site state wiring (Wave 2, autonomous; depends on 14-01)
 - [ ] 14-03-PLAN.md — Customer CollapsibleSection card on CostCalculator + JobsManager subline + expanded-panel Customer block + customer 6-site state wiring (Wave 3, autonomous; depends on 14-01, 14-02)
 - [ ] 14-04-PLAN.md — UAT + UI-10 audit + features.ts grep gate + verification record (Wave 4, has checkpoint:human-verify; depends on 14-01, 14-02, 14-03)
@@ -124,7 +124,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 |-------|----------------|--------|-----------|
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
-| 14. Customer Details + Etsy Helper | 0/? | Not started | — |
+| 14. Customer Details + Etsy Helper | 1/4 | In Progress|  |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 16. Printable PDF Quote | 0/? | Not started | — |
 
