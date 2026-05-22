@@ -153,6 +153,24 @@ export interface JobCustomer {
   notes?: string;
 }
 
+/**
+ * Saved customer library record (Phase 15.1 — D-01).
+ * Extends JobCustomer so the per-Sale snapshot stays byte-identical: picking a
+ * library customer fills `sale.customer = { name, email, company, address, notes }`
+ * with zero field mapping. The library-only fields (id, createdAt, lastUsedAt)
+ * are NEVER copied into the sale snapshot — by-value rule, D-05.
+ */
+export interface Customer extends JobCustomer {
+  id: string;
+  createdAt: Date;
+  /**
+   * Bumped when the customer is picked in the Record Sale combobox or when
+   * silent email-match auto-link fires (D-03, D-07). NOT bumped by library
+   * edits — semantics: "last used in business," not "last touched."
+   */
+  lastUsedAt?: Date;
+}
+
 // A saved print job with break-even tracking
 export interface PrintJob {
   id: string;
