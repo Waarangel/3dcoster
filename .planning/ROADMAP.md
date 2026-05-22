@@ -145,7 +145,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
-| 15.1. Customer Library (INSERTED) | 5/5 | Complete   | 2026-05-22 |
+| 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
 | 16. Printable PDF Quote | 0/? | Not started | — |
 
 ---
