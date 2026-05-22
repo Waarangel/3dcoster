@@ -2,8 +2,9 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
 import { useSales } from '../hooks/useDatabase';
-import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
+import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
+import { NewBadge } from './NewBadge';
 
 interface JobsManagerProps {
   jobs: PrintJob[];
@@ -95,11 +96,6 @@ const JobCard = memo(function JobCard({
               <span className="text-slate-500 italic">No filament data</span>
             )} | {job.printTimeHours}h
           </div>
-          {(job.customer?.name || job.customer?.email) && (
-            <div className="mt-0.5 text-xs text-slate-500 truncate">
-              {[job.customer?.name, job.customer?.email].filter(Boolean).join(' · ')}
-            </div>
-          )}
         </div>
         <div className="text-right">
           <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
@@ -125,20 +121,6 @@ const JobCard = memo(function JobCard({
               <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
             </div>
           </div>
-
-          {(job.customer?.name || job.customer?.email || job.customer?.company || job.customer?.address) && (
-            <div className="mb-4">
-              <div className="text-xs text-slate-500 mb-1">Customer</div>
-              <div className="space-y-0.5 text-sm text-slate-300">
-                {job.customer?.name && <div>{job.customer.name}</div>}
-                {job.customer?.email && <div className="text-slate-400">{job.customer.email}</div>}
-                {job.customer?.company && <div className="text-slate-400">{job.customer.company}</div>}
-                {job.customer?.address && (
-                  <div className="text-slate-400 whitespace-pre-line">{job.customer.address}</div>
-                )}
-              </div>
-            </div>
-          )}
 
           {job.modelUrl && (
             <div className="mb-4 text-sm">
@@ -207,15 +189,58 @@ const JobCard = memo(function JobCard({
             <div className="mt-4">
               <h4 className="text-sm font-medium text-slate-300 mb-2">Recent Sales</h4>
               <div className="space-y-1">
-                {recentSales.slice(0, 5).map(sale => (
-                  <div key={sale.id} className="flex justify-between text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded">
-                    <span>
-                      {sale.quantity}x @ ${sale.unitPrice.toFixed(2)}
-                      {sale.customerName && <span className="text-slate-500 ml-2">({sale.customerName})</span>}
-                    </span>
-                    <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
-                  </div>
-                ))}
+                {recentSales.slice(0, 5).map(sale => {
+                  // Phase 14 revised (2026-05-22): customer is per-sale.
+                  // Read from sale.customer (new) with fallback to sale.customerName (legacy).
+                  const saleCustomerName = sale.customer?.name || sale.customerName;
+                  const hasCustomerDetails = Boolean(
+                    sale.customer?.name ||
+                    sale.customer?.email ||
+                    sale.customer?.company ||
+                    sale.customer?.address ||
+                    sale.customerName
+                  );
+                  const summaryLabel = saleCustomerName
+                    ? `${sale.quantity}x @ $${sale.unitPrice.toFixed(2)} (${saleCustomerName})`
+                    : `${sale.quantity}x @ $${sale.unitPrice.toFixed(2)}`;
+                  return (
+                    <details
+                      key={sale.id}
+                      className="text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded group"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <summary className="flex justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <span className="flex items-center gap-2">
+                          {hasCustomerDetails && (
+                            <span className="text-xs text-slate-500 group-open:rotate-90 transition-transform">▸</span>
+                          )}
+                          {!hasCustomerDetails && <span className="text-xs text-slate-700 w-2.5 inline-block">·</span>}
+                          {summaryLabel}
+                        </span>
+                        <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
+                      </summary>
+                      {hasCustomerDetails && (
+                        <div className="mt-2 pt-2 border-t border-slate-700 text-xs space-y-0.5 pl-5">
+                          {sale.customer?.name && (
+                            <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customer.name}</span></div>
+                          )}
+                          {!sale.customer?.name && sale.customerName && (
+                            <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customerName}</span></div>
+                          )}
+                          {sale.customer?.email && (
+                            <div><span className="text-slate-500">Email:</span> <span className="text-slate-300">{sale.customer.email}</span></div>
+                          )}
+                          {sale.customer?.company && (
+                            <div><span className="text-slate-500">Company:</span> <span className="text-slate-300">{sale.customer.company}</span></div>
+                          )}
+                          {sale.customer?.address && (
+                            <div><span className="text-slate-500">Address:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.address}</span></div>
+                          )}
+                        </div>
+                      )}
+                    </details>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -302,7 +327,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState(1);
   const [salePrice, setSalePrice] = useState(0);
-  const [customerName, setCustomerName] = useState('');
+  // Per-sale customer (Phase 14 revised on 2026-05-22 — D-21).
+  // Captured at sale time so each Sale row carries its own buyer info.
+  const [saleCustomerName, setSaleCustomerName] = useState('');
+  const [saleCustomerEmail, setSaleCustomerEmail] = useState('');
+  const [saleCustomerCompany, setSaleCustomerCompany] = useState('');
+  const [saleCustomerAddress, setSaleCustomerAddress] = useState('');
   const [saleShippingMethod, setSaleShippingMethod] = useState<ShippingMethodType>('local_pickup');
   const [saleShippingCost, setSaleShippingCost] = useState(0);
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
@@ -420,6 +450,16 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     const unitPrice = salePrice || selectedJob.sellingPrice;
     const marketplaceFee = calculateMarketplaceFee(unitPrice * saleQuantity, saleMarketplace);
 
+    // Per-sale customer payload (Phase 14 revised — D-21).
+    // Only persist `customer` if at least one field was filled in; saves nothing if the
+    // user skips customer entry. The legacy `customerName` field stays undefined on new
+    // sales — readers fall back to it for pre-revision IndexedDB records only.
+    const hasCustomer =
+      saleCustomerName.trim() !== '' ||
+      saleCustomerEmail.trim() !== '' ||
+      saleCustomerCompany.trim() !== '' ||
+      saleCustomerAddress.trim() !== '';
+
     const sale: Sale = {
       id: `sale-${Date.now()}`,
       jobId: selectedJob.id,
@@ -427,7 +467,14 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       unitPrice: unitPrice,
       totalRevenue: saleQuantity * unitPrice,
       soldAt: new Date(),
-      customerName: customerName || undefined,
+      customer: hasCustomer
+        ? {
+            name: saleCustomerName.trim() || undefined,
+            email: saleCustomerEmail.trim() || undefined,
+            company: saleCustomerCompany.trim() || undefined,
+            address: saleCustomerAddress.trim() || undefined,
+          }
+        : undefined,
       shippingMethod: saleShippingMethod,
       shippingCost: saleShippingCost,
       marketplace: saleMarketplace,
@@ -438,7 +485,10 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setShowSaleForm(false);
     setSaleQuantity(1);
     setSalePrice(0);
-    setCustomerName('');
+    setSaleCustomerName('');
+    setSaleCustomerEmail('');
+    setSaleCustomerCompany('');
+    setSaleCustomerAddress('');
     setSaleShippingMethod('local_pickup');
     setSaleShippingCost(0);
     setSaleMarketplace('facebook_local');
@@ -577,14 +627,53 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Customer Name (optional)</label>
-                <Input
-                  type="text"
-                  value={customerName}
-                  onChange={e => setCustomerName(e.target.value)}
-                  placeholder="Facebook Marketplace buyer"
-                />
+              {/* Customer details (Phase 14 revised — D-21).
+                  Optional 4-field block. Lives on the sale, not the job. */}
+              <div className="pt-3 border-t border-slate-700 relative">
+                <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">
+                  Customer (optional)
+                  <NewBadge feature="customer-details" className="absolute top-2 right-0" />
+                </div>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Name</label>
+                      <Input
+                        type="text"
+                        value={saleCustomerName}
+                        onChange={e => setSaleCustomerName(e.target.value)}
+                        placeholder="Jane Doe"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Email</label>
+                      <Input
+                        type="email"
+                        value={saleCustomerEmail}
+                        onChange={e => setSaleCustomerEmail(e.target.value)}
+                        placeholder="jane@example.com"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Company</label>
+                    <Input
+                      type="text"
+                      value={saleCustomerCompany}
+                      onChange={e => setSaleCustomerCompany(e.target.value)}
+                      placeholder="Acme LLC"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Address</label>
+                    <Textarea
+                      rows={2}
+                      value={saleCustomerAddress}
+                      onChange={e => setSaleCustomerAddress(e.target.value)}
+                      placeholder="Shipping address or pickup location"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="pt-3 border-t border-slate-700">

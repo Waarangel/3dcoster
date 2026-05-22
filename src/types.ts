@@ -151,7 +151,12 @@ export interface PrintJob {
   createdAt: Date;
   updatedAt: Date;
 
-  // Customer details (Phase 14)
+  /**
+   * @deprecated Phase 14 originally placed customer details on the job. On 2026-05-22 the
+   * decision was revised: customer details belong on each Sale (different buyers per sale).
+   * Kept on the type so pre-revision IndexedDB records still type-check; UI no longer reads
+   * or writes this field. Safe to remove once the codebase is sure no v6 records carry it.
+   */
   customer?: JobCustomer;
 
   // Tags (Phase 15)
@@ -223,6 +228,11 @@ export interface Sale {
   unitPrice: number;
   totalRevenue: number;
   soldAt: Date;
+  // Per-sale customer (Phase 14 revised — moved from PrintJob to Sale on 2026-05-22).
+  // Optional. Pre-revision sales used `customerName` (string only). On read, JobsManager
+  // displays `customer.name || customerName` for backwards compatibility.
+  customer?: JobCustomer;
+  /** @deprecated Use `customer.name` instead. Kept on the type so existing IndexedDB records still type-check. */
   customerName?: string;
   notes?: string;
   // Shipping for this specific sale (may differ from job default)
