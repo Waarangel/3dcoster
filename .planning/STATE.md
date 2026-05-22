@@ -4,8 +4,8 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 14 context gathered
-last_updated: "2026-05-21T19:45:15.038Z"
-last_activity: 2026-05-21 -- Phase 14 planning complete
+last_updated: "2026-05-22T02:59:43.807Z"
+last_activity: 2026-05-22 -- Phase 14 execution started
 progress:
   total_phases: 5
   completed_phases: 2
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 14 — customer details + etsy helper
+**Current focus:** Phase 14 — customer-details-etsy-helper
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-05-21 -- Phase 14 planning complete
+Phase: 14 (customer-details-etsy-helper) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 14
+Last activity: 2026-05-22 -- Phase 14 execution started
 
 ## Performance Metrics
 
