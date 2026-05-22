@@ -577,12 +577,22 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         visibleCustomers.length === 0 ? 0 : (i - 1 + visibleCustomers.length) % visibleCustomers.length
       );
     } else if (e.key === 'Enter') {
-      const picked = visibleCustomers[customerPickerActiveIndex];
-      if (customerPickerOpen && picked) {
-        e.preventDefault();
-        void handlePickCustomer(picked);
+      // WR-01 fix: the Record Sale modal is not a <form>, so there is no
+      // implicit submit handler. Treat Enter-with-no-match as "dismiss the
+      // dropdown" so the user has a clear next step (fill the fields below).
+      // Enter on the empty/unopened state is a no-op — do NOT attempt to
+      // submit the surrounding modal.
+      if (customerPickerOpen) {
+        const picked = visibleCustomers[customerPickerActiveIndex];
+        if (picked) {
+          e.preventDefault();
+          void handlePickCustomer(picked);
+        } else if (customerPickerQuery.trim()) {
+          // No match — close suggestions so the user can fill the fields below.
+          e.preventDefault();
+          setCustomerPickerOpen(false);
+        }
       }
-      // else: let Enter submit the form (existing behavior)
     } else if (e.key === 'Escape') {
       if (customerPickerOpen) {
         e.preventDefault();
@@ -592,7 +602,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       // Per UI-SPEC §5: Tab closes the dropdown and advances focus naturally (do NOT auto-pick)
       setCustomerPickerOpen(false);
     }
-  }, [customerPickerOpen, customerPickerActiveIndex, visibleCustomers, handlePickCustomer]);
+  }, [customerPickerOpen, customerPickerActiveIndex, customerPickerQuery, visibleCustomers, handlePickCustomer]);
 
   const handleConfirmDeleteSale = useCallback(async (sale: Sale) => {
     await deleteSale(sale);
