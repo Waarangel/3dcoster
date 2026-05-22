@@ -63,6 +63,24 @@ export function parseCustomerCsv(
     }
   }
 
+  // WR-06 fix: distinguish "binary/non-CSV file" from "empty CSV". If none
+  // of the five expected headers are present, Papa parsed something but it
+  // is almost certainly not a customer CSV (renamed Excel/XLSB file, log
+  // file, etc.). Surface a more actionable error than the generic
+  // "CSV file is empty".
+  const meta = parsed.meta as { fields?: string[] } | undefined;
+  const fields = meta?.fields ?? [];
+  const EXPECTED_HEADERS = ['name', 'email', 'company', 'address', 'notes'];
+  const hasAnyExpectedHeader = fields.some(f => EXPECTED_HEADERS.includes(f));
+  if (fields.length > 0 && !hasAnyExpectedHeader) {
+    return {
+      rows: [],
+      globalErrors: [
+        'Could not find any of the expected columns: name, email, company, address, notes. Check that the file is a customer CSV (not a renamed Excel/binary file).',
+      ],
+    };
+  }
+
   const rows: ParsedCustomerRow[] = [];
   const dataRows = parsed.data ?? [];
 

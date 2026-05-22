@@ -66,9 +66,23 @@ export function CustomerCsvImportModal({
   }, [isOpen, onClose]);
 
   // ---- File processing ----------------------------------------------------
+  // WR-06 fix: cap raw CSV size at 5 MB so a stray Excel/log file renamed
+  // to .csv can't pull a 200 MB blob into memory and crash the tab on
+  // low-RAM devices. Customer CSVs at the scales we target (hundreds to
+  // a few thousand rows) are well under this cap; users with larger
+  // datasets are nudged to split into batches.
+  const MAX_CSV_BYTES = 5 * 1024 * 1024;
+
   const processFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.csv')) {
       setError('Please select a .csv file.');
+      return;
+    }
+    if (file.size > MAX_CSV_BYTES) {
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+      setError(
+        `File is ${sizeMb} MB. Keep customer CSVs under 5 MB — split a larger file into smaller batches.`
+      );
       return;
     }
     setError(null);
