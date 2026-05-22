@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from './ui';
 import {
   parseCustomerCsv,
@@ -417,12 +417,16 @@ function PreviewStep({
 
       {/* Row list */}
       <div className="space-y-1.5 max-h-[45vh] overflow-y-auto">
+        {/* IN-05: pass the memoized onToggleRow directly (stable identity from useCallback)
+            so RowItem's React.memo can skip re-renders when its row props are unchanged.
+            Previously a fresh `() => onToggleRow(row.rowNumber)` arrow per render busted
+            referential equality and re-rendered every row on every toggle. */}
         {parseResult.rows.map(row => (
           <RowItem
             key={row.rowNumber}
             row={row}
             isSelected={selected.has(row.rowNumber)}
-            onToggle={() => onToggleRow(row.rowNumber)}
+            onToggle={onToggleRow}
           />
         ))}
       </div>
@@ -434,14 +438,20 @@ function PreviewStep({
 // ROW ITEM
 // =============================================================================
 
-function RowItem({
+// IN-05: React.memo + (rowNumber) signature for onToggle so toggling one row
+// doesn't re-render the other 999 rows in a 1000-row CSV import. The parent
+// passes the memoized `onToggleRow` from useCallback (stable identity), and
+// each RowItem captures its own rowNumber via the `row` prop — so as long
+// as a given row's `row`, `isSelected`, and `onToggle` references are
+// unchanged, the row skips re-render.
+const RowItem = memo(function RowItem({
   row,
   isSelected,
   onToggle,
 }: {
   row: ParsedCustomerRow;
   isSelected: boolean;
-  onToggle: () => void;
+  onToggle: (rowNumber: number) => void;
 }) {
   const hasErrors = row.errors.length > 0;
   const isInvalid = row.customer === null;
@@ -450,6 +460,13 @@ function RowItem({
   const subline = [row.customer?.email || row.data.email?.trim(), row.customer?.company || row.data.company?.trim()]
     .filter(Boolean)
     .join(' · ');
+
+  // Bind rowNumber at the row level; passing the stable onToggle reference
+  // up to React.memo is what avoids the per-row arrow allocation. The local
+  // handler is recreated when row.rowNumber or onToggle changes — both rare.
+  const handleChange = useCallback(() => {
+    onToggle(row.rowNumber);
+  }, [onToggle, row.rowNumber]);
 
   return (
     <div
@@ -465,7 +482,7 @@ function RowItem({
       <input
         type="checkbox"
         checked={isSelected}
-        onChange={onToggle}
+        onChange={handleChange}
         disabled={isInvalid}
         className="mt-0.5 accent-blue-500 disabled:opacity-30"
       />
@@ -495,4 +512,4 @@ function RowItem({
       </div>
     </div>
   );
-}
+});
