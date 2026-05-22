@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer } from '../types';
 import { backfillTagsOnJob } from './backfill';
 
 // Settings stored as key-value pairs
@@ -16,6 +16,7 @@ const db = new Dexie('3DCosterDB') as Dexie & {
   jobs: EntityTable<PrintJob, 'id'>;
   sales: EntityTable<Sale, 'id'>;
   settings: EntityTable<Setting, 'key'>;
+  customers: EntityTable<Customer, 'id'>;
 };
 
 // Schema - version 3 (added jobs and sales tables)
@@ -82,6 +83,19 @@ db.version(6).stores({
   settings: 'key',
 }).upgrade(tx => {
   return tx.table('jobs').toCollection().modify(backfillTagsOnJob);
+});
+
+// v7: add `customers` library store (Phase 15.1 — D-02). New store starts empty;
+// no row backfill on existing stores. The versionchange→reload handler below
+// (already added in Phase 12 SCHEMA-02) covers v7 across multiple tabs.
+db.version(7).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+  customers: 'id, name, email, lastUsedAt',  // email is non-unique index — fast lookup, no ConstraintError on duplicate
 });
 
 // Reload this tab if another tab loads a newer schema (SCHEMA-02 / D-10 / D-11).
