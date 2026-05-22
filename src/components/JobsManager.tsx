@@ -561,14 +561,17 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const handlePickerKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      // WR-04 fix: do not open an empty dropdown. If the user typed a query
+      // that matches nothing, ArrowDown has nothing to navigate — leave the
+      // dropdown state alone so the user isn't shown an active-index pointing
+      // at a non-existent row.
+      if (visibleCustomers.length === 0) return;
       if (!customerPickerOpen) {
         setCustomerPickerOpen(true);
         setCustomerPickerActiveIndex(0);
       } else {
         // wrap: last → first
-        setCustomerPickerActiveIndex(i =>
-          visibleCustomers.length === 0 ? 0 : (i + 1) % visibleCustomers.length
-        );
+        setCustomerPickerActiveIndex(i => (i + 1) % visibleCustomers.length);
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
