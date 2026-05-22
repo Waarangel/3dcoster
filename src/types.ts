@@ -192,6 +192,14 @@ export interface PrintJob {
 
   // Quote numbering (Phase 16) — assigned on first PDF gen, then reused (D-05)
   quoteNumber?: number;
+
+  // Per-job Etsy compliance self-review (Phase 14 — D-18).
+  // Schema-extension note: this field is NOT enumerated in SCHEMA-01's explicit field list.
+  // Adding it here mirrors how Phase 12 D-07 flagged quoteNumber — the field is optional
+  // and non-indexed, so the Dexie v6 schema string `'id, name, createdAt, printerInstanceId'`
+  // is unchanged and no migration is needed. Existing v6 records have etsyChecks === undefined
+  // which renders as "no boxes ticked".
+  etsyChecks?: Record<string, boolean>;
 }
 
 // Sales record for a print job
