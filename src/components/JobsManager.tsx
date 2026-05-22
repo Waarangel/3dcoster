@@ -95,6 +95,11 @@ const JobCard = memo(function JobCard({
               <span className="text-slate-500 italic">No filament data</span>
             )} | {job.printTimeHours}h
           </div>
+          {(job.customer?.name || job.customer?.email) && (
+            <div className="mt-0.5 text-xs text-slate-500 truncate">
+              {[job.customer?.name, job.customer?.email].filter(Boolean).join(' · ')}
+            </div>
+          )}
         </div>
         <div className="text-right">
           <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
@@ -120,6 +125,20 @@ const JobCard = memo(function JobCard({
               <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
             </div>
           </div>
+
+          {(job.customer?.name || job.customer?.email || job.customer?.company || job.customer?.address) && (
+            <div className="mb-4">
+              <div className="text-xs text-slate-500 mb-1">Customer</div>
+              <div className="space-y-0.5 text-sm text-slate-300">
+                {job.customer?.name && <div>{job.customer.name}</div>}
+                {job.customer?.email && <div className="text-slate-400">{job.customer.email}</div>}
+                {job.customer?.company && <div className="text-slate-400">{job.customer.company}</div>}
+                {job.customer?.address && (
+                  <div className="text-slate-400 whitespace-pre-line">{job.customer.address}</div>
+                )}
+              </div>
+            </div>
+          )}
 
           {job.modelUrl && (
             <div className="mb-4 text-sm">
