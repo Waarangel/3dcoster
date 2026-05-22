@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
-status: executing
-stopped_at: Phase 14 complete — ready for Phase 15.5 planning (Customer Library, user-decided insert)
-last_updated: "2026-05-22T12:51:30Z"
+status: completed
+stopped_at: "Phase 14 closed — ready for Phase 15.1 planning (Customer Library, user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence"
+last_updated: "2026-05-22T13:00:26.763Z"
 last_activity: 2026-05-22 -- Phase 14 closed; user approved D-21..D-24 mid-UAT scope reversal
 progress:
   total_phases: 5
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 15.5 planning queued (Customer Library — user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
+**Current focus:** Phase 15.1 planning queued (Customer Library — user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
 
 ## Current Position
 
@@ -111,7 +111,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- **User-decided insert: Phase 15.5 Customer Library** — to be added via `/gsd:phase add` between Phases 15 and 16. Scope: Customer as first-class asset with bulk import + dropdown picker in the Record Sale modal. Will deduplicate customers across sales (picks up the deferred CUST-F1 item from REQUIREMENTS.md). Replaces the current freeform-per-sale model with a library-backed picker (still allowing freeform entry for one-off buyers). Phase 16 PDF customer-block contract should be designed source-agnostic so it works against both the inline `Sale.customer` shape (current) and the library-backed customer (post-15.5).
+- **User-decided insert: Phase 15.1 Customer Library** — to be added via `/gsd:phase add` between Phases 15 and 16. Scope: Customer as first-class asset with bulk import + dropdown picker in the Record Sale modal. Will deduplicate customers across sales (picks up the deferred CUST-F1 item from REQUIREMENTS.md). Replaces the current freeform-per-sale model with a library-backed picker (still allowing freeform entry for one-off buyers). Phase 16 PDF customer-block contract should be designed source-agnostic so it works against both the inline `Sale.customer` shape (current) and the library-backed customer (post-15.1).
 - Phase 16 plan-phase must empirically measure jsPDF gz chunk size (`npm install jspdf jspdf-autotable && npm run build && ls -lh dist/assets/pdf-*.js`) before locking the library — three research sources disagree on exact size
 - Phase 16 plan-phase must test font fetch strategy in `npm run tauri:dev` (Tauri WKWebView may reject fetch('/fonts/...') — fallback is base64 embed in lazy chunk)
 - Phase 16 plan-phase must update its ROADMAP success criterion #1 wording: PDF customer block reads from `Sale.customer` (with `sale.customerName` legacy fallback) per D-21, NOT from `PrintJob.customer`
@@ -123,5 +123,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-05-22T12:51:30Z
-Stopped at: Phase 14 closed — ready for Phase 15.5 planning (Customer Library, user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
+Stopped at: Phase 14 closed — ready for Phase 15.1 planning (Customer Library, user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
 Resume file: .planning/phases/14-customer-details-etsy-helper/14-VERIFICATION.md

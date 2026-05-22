@@ -103,6 +103,19 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 15.1: Customer Library (INSERTED)
+**Goal**: Customers as first-class assets — new main nav tab with CRUD, bulk CSV import, and a dropdown picker (or add-new inline) in the Record Sale modal. Unblocks the "pick a saved customer" workflow Phase 16 (PDF Quote) will draw on so quotes can be generated for a chosen customer without retyping fields. Customer Library uses its own Dexie store; per-Sale customer remains a snapshot of values at sale time (not a foreign-key reference) so historical sales never mutate when a Customer record is later edited.
+**Depends on**: Phase 14 (Sale.customer shape exists) + Phase 15 (Tags/Search patterns may inform the picker UI)
+**Requirements**: TBD (CL-01..CL-NN, to be authored during discuss-phase)
+**Success Criteria** (what must be TRUE):
+  1. A new top-level "Customers" tab in the main nav lets users view a virtualized list of saved Customer records (Name, Email, Company, Address, last-used date) with create/edit/delete affordances
+  2. Bulk CSV import: user drops a CSV with name/email/company/address columns; preview screen shows N rows + validation errors per row; on confirm, new Customer records are written to a dedicated Dexie store; existing customers (matched by email case-insensitive) are skipped or updated per user choice
+  3. The Record Sale modal Customer block grows a "Select existing customer" combobox above the 4 fields; picking a saved customer fills the 4 fields (still editable — the saved Customer is the source, the per-Sale snapshot is the copy); "Add new" inline saves to the library on submit
+  4. Historical sales' `sale.customer` payloads are NEVER mutated when a Customer library record is later edited — the per-sale snapshot is by-value, not a foreign-key reference (audit: a unit test edits a customer record then asserts the corresponding sale's customer field is byte-identical to its pre-edit value)
+  5. The new Customer store sits alongside existing Material / Printer / etc. stores in a Dexie version bump (v6 → v7) with a migration step that backfills nothing (the store starts empty; D-18 schema-extension pattern does not apply — this is a new STORE, not a new field on existing records)
+**Plans**: TBD
+**UI hint**: yes
+
 ### Phase 16: Printable PDF Quote
 **Goal**: Users can download a professional PDF quote from any saved job — generated entirely client-side, lazy-loaded so the main app bundle stays under 300 KB gz, with a "Made with 3DCoster" footer on the free tier
 **Depends on**: Phase 13 (tax rows must be correct) + Phase 14 (customer block must exist)
@@ -126,6 +139,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
+| 15.1. Customer Library (INSERTED) | 0/? | Not started | — |
 | 16. Printable PDF Quote | 0/? | Not started | — |
 
 ---
