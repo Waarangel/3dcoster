@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer } from '../types';
 import { useSales, useCustomers } from '../hooks/useDatabase';
@@ -391,7 +391,10 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [customerPickerQuery, setCustomerPickerQuery] = useState('');
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [customerPickerActiveIndex, setCustomerPickerActiveIndex] = useState(0);
-  const customerPickerInputRef = useRef<HTMLInputElement>(null);
+  // IN-06: previously held a `customerPickerInputRef` here. It was wired to
+  // the picker <Input ref={...}> but never `.focus()`'d anywhere — pure
+  // dead code. Removed entirely. If autofocus-on-modal-open is wanted
+  // later, restore the ref + add a focused useEffect keyed on showSaleForm.
 
   const salesByJob = useMemo(() => {
     const map = new Map<string, Sale[]>();
@@ -884,7 +887,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                     </label>
                     <Input
                       id="customer-picker-input"
-                      ref={customerPickerInputRef}
                       type="text"
                       role="combobox"
                       aria-expanded={customerPickerOpen}
