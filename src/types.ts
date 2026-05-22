@@ -142,6 +142,15 @@ export interface JobCustomer {
   email?: string;
   address?: string;  // Freeform multi-line; PDF prints verbatim (D-08)
   company?: string;
+  /**
+   * Customer-bound notes (added 2026-05-22 as a Phase 14 post-closure follow-up).
+   * Captures buyer-specific quirks/preferences that travel with the customer:
+   * "prefers pickup", "always wants invoice emailed", "kid's birthday in May", etc.
+   * Distinct from `Sale.notes` which describes the specific transaction.
+   * Phase 15.1 Customer Library will inherit this field automatically since the
+   * library customer record uses the same JobCustomer shape.
+   */
+  notes?: string;
 }
 
 // A saved print job with break-even tracking

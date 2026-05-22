@@ -202,6 +202,7 @@ const JobCard = memo(function JobCard({
                     sale.customer?.email ||
                     sale.customer?.company ||
                     sale.customer?.address ||
+                    sale.customer?.notes ||
                     sale.customerName
                   );
                   const summaryLabel = saleCustomerName
@@ -238,6 +239,9 @@ const JobCard = memo(function JobCard({
                               )}
                               {sale.customer?.address && (
                                 <div><span className="text-slate-500">Address:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.address}</span></div>
+                              )}
+                              {sale.customer?.notes && (
+                                <div><span className="text-slate-500">Notes:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.notes}</span></div>
                               )}
                             </div>
                           ) : (
@@ -362,6 +366,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [saleCustomerEmail, setSaleCustomerEmail] = useState('');
   const [saleCustomerCompany, setSaleCustomerCompany] = useState('');
   const [saleCustomerAddress, setSaleCustomerAddress] = useState('');
+  const [saleCustomerNotes, setSaleCustomerNotes] = useState('');
   const [saleShippingMethod, setSaleShippingMethod] = useState<ShippingMethodType>('local_pickup');
   const [saleShippingCost, setSaleShippingCost] = useState(0);
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
@@ -487,6 +492,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setSaleCustomerEmail('');
     setSaleCustomerCompany('');
     setSaleCustomerAddress('');
+    setSaleCustomerNotes('');
     setSaleShippingMethod('local_pickup');
     setSaleShippingCost(0);
     setSaleMarketplace('facebook_local');
@@ -501,6 +507,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setSaleCustomerEmail(sale.customer?.email ?? '');
     setSaleCustomerCompany(sale.customer?.company ?? '');
     setSaleCustomerAddress(sale.customer?.address ?? '');
+    setSaleCustomerNotes(sale.customer?.notes ?? '');
     setSaleShippingMethod(sale.shippingMethod ?? 'local_pickup');
     setSaleShippingCost(sale.shippingCost ?? 0);
     setSaleMarketplace(sale.marketplace ?? 'facebook_local');
@@ -526,7 +533,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       saleCustomerName.trim() !== '' ||
       saleCustomerEmail.trim() !== '' ||
       saleCustomerCompany.trim() !== '' ||
-      saleCustomerAddress.trim() !== '';
+      saleCustomerAddress.trim() !== '' ||
+      saleCustomerNotes.trim() !== '';
 
     const customer = hasCustomer
       ? {
@@ -534,6 +542,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
           email: saleCustomerEmail.trim() || undefined,
           company: saleCustomerCompany.trim() || undefined,
           address: saleCustomerAddress.trim() || undefined,
+          notes: saleCustomerNotes.trim() || undefined,
         }
       : undefined;
 
@@ -759,6 +768,15 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       value={saleCustomerAddress}
                       onChange={e => setSaleCustomerAddress(e.target.value)}
                       placeholder="Shipping address or pickup location"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Notes</label>
+                    <Textarea
+                      rows={2}
+                      value={saleCustomerNotes}
+                      onChange={e => setSaleCustomerNotes(e.target.value)}
+                      placeholder="Quirks, preferences, allergies — anything to remember for next time"
                     />
                   </div>
                 </div>
