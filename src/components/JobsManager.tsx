@@ -545,7 +545,15 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
 
   // Phase 15.1 (CL-04 + D-05): pick fills Name/Email/Company/Address — NOT Notes.
   // (Sale has its own Sale.notes for transaction-level notes; library Notes is buyer-bound.)
-  const handlePickCustomer = useCallback(async (c: Customer) => {
+  //
+  // WR-05 fix: do NOT bump lastUsedAt here. The semantic is "last used in
+  // business," not "last touched in the UI." Picking and then cancelling the
+  // sale form would falsely advance lastUsedAt for a customer who was never
+  // actually used in a recorded sale. The bump now fires exclusively from
+  // handleRecordSale's auto-link path (D-07 silent link), which runs only on
+  // sale-commit — the picked-and-email-still-matches case is covered there,
+  // and the picked-then-cancelled case correctly no-ops.
+  const handlePickCustomer = useCallback((c: Customer) => {
     setSaleCustomerName(c.name ?? '');
     setSaleCustomerEmail(c.email ?? '');
     setSaleCustomerCompany(c.company ?? '');
@@ -554,8 +562,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setCustomerPickerQuery('');
     setCustomerPickerOpen(false);
     setCustomerPickerActiveIndex(0);
-    await bumpLastUsed(c.id);
-  }, [bumpLastUsed]);
+  }, []);
 
   // Phase 15.1 (CL-04) — WAI-ARIA combobox keyboard handler per UI-SPEC §5.
   const handlePickerKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -640,15 +647,20 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       : undefined;
 
     // Phase 15.1 (CL-04 / D-06 / D-07): library side-effect for NEW sales only.
-    // - If the user picked from the combobox, lastUsedAt was already bumped by handlePickCustomer
-    //   AND the 4 fields were filled from the library record; the typed values pass through unchanged.
-    // - If the user did NOT pick (typed values directly) and at least one of name/email is non-empty:
-    //   - If the typed email matches an existing library record (after trim+toLowerCase): silently
-    //     link by bumping lastUsedAt; do NOT overwrite library fields with per-sale typed values
-    //     (by-value rule, D-05/D-07).
-    //   - Otherwise: auto-create a new library record (D-06).
-    // Edit-sale path is excluded — we don't want to retroactively create library records when a
-    // user edits a pre-15.1 sale.
+    // Single source of truth for lastUsedAt bumps — fires here at sale-commit
+    // time, NOT at pick time (WR-05 fix: picking and cancelling the form must
+    // NOT advance lastUsedAt).
+    // - Picked customer who is still email-matched at commit → silent link
+    //   path below bumps lastUsedAt for that existing record. The 4 fields
+    //   were filled from the library record by handlePickCustomer; the typed
+    //   values pass through unchanged.
+    // - Picked customer whose email was edited to match a DIFFERENT record →
+    //   the silent link path bumps the new match (D-07 intended behavior),
+    //   and the originally-picked record is correctly left untouched.
+    // - User typed values directly with no email match → auto-create a new
+    //   library record (D-06).
+    // Edit-sale path is excluded — we don't want to retroactively create
+    // library records when a user edits a pre-15.1 sale.
     if (!editingSale && customer && (customer.name || customer.email)) {
       const emailKey = (customer.email || '').trim().toLowerCase();
       const existing = emailKey ? customersByEmail.get(emailKey) : undefined;
