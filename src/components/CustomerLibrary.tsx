@@ -177,11 +177,17 @@ export function CustomerLibrary({
   }, [editingCustomer, onAddCustomer, onUpdateCustomer]);
 
   // Delete confirm — count past sales by email at click time (D-14).
+  // WR-02 fix: use Dexie's streaming filter + count instead of
+  // materializing the entire sales table in memory. There is no email
+  // index on db.sales, so the iteration still walks every record, but
+  // .count() does not allocate a JS array — important for users with
+  // thousands of sales on low-RAM devices.
   const handleDelete = useCallback(async (customer: Customer) => {
     const emailKey = (customer.email || '').trim().toLowerCase();
     const n = emailKey
-      ? (await db.sales.toArray())
-          .filter(s => (s.customer?.email || '').trim().toLowerCase() === emailKey).length
+      ? await db.sales
+          .filter(s => (s.customer?.email || '').trim().toLowerCase() === emailKey)
+          .count()
       : 0;
     const display = customer.name || customer.email || 'this customer';
     const message = n === 0
