@@ -545,18 +545,38 @@ export function useCustomers() {
     return () => { cancelled = true; };
   }, []);
 
+  // WR-03 fix: shallow-freeze the customers array at the hook boundary so
+  // consumers cannot mutate the array reference returned by Dexie's
+  // liveQuery cache (e.g. an accidental `customers.sort()` in a future
+  // component would corrupt the cache and emit phantom re-renders).
+  // The freeze is shallow — individual Customer records are NOT frozen,
+  // which preserves the existing by-value snapshot model (CL-05) at the
+  // SALE WRITE site (mutation isolation is enforced when sale.customer is
+  // built from typed values, not at hook-read time).
+  // We deliberately keep the public type as `Customer[]` (not
+  // `readonly Customer[]`) so consumers like `[...customers].sort()` and
+  // `.filter()` keep working without rippling a readonly type-change
+  // through every prop signature. The runtime freeze still throws (in
+  // strict mode) on any direct mutation attempt — the type system loses
+  // a tiny amount of compile-time safety in exchange for a much smaller
+  // diff.
+  const customersFrozen = useMemo<Customer[]>(
+    () => Object.freeze(customers ?? []) as Customer[],
+    [customers]
+  );
+
   // O(1) email→customer map for picker + import dedup (UI-SPEC discretion #15).
   // Memoized so the reference is stable across renders that don't change the
   // customers array. Rows with empty email are excluded so the map never has
   // an empty-string key collision.
   const customersByEmail = useMemo(() => {
     const map = new Map<string, Customer>();
-    for (const c of customers ?? []) {
+    for (const c of customersFrozen) {
       const key = (c.email || '').trim().toLowerCase();
       if (key) map.set(key, c);
     }
     return map;
-  }, [customers]);
+  }, [customersFrozen]);
 
   const addCustomer = useCallback(async (customer: Customer) => {
     await db.customers.add(customer);
@@ -588,7 +608,7 @@ export function useCustomers() {
   }, []);
 
   return {
-    customers: customers ?? [],
+    customers: customersFrozen,
     customersByEmail,
     isLoading,
     addCustomer,
