@@ -1,7 +1,7 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType } from '../types';
-import { useSales } from '../hooks/useDatabase';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer } from '../types';
+import { useSales, useCustomers } from '../hooks/useDatabase';
 import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
@@ -379,6 +379,14 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [deleteSaleConfirmId, setDeleteSaleConfirmId] = useState<string | null>(null);
 
+  // Phase 15.1 (CL-04) — combobox picker state lives next to the saleCustomer* state
+  // so they can be cleared together by handleEditSale and the cancel/close flows.
+  const { customers, customersByEmail, bumpLastUsed, addCustomer } = useCustomers();
+  const [customerPickerQuery, setCustomerPickerQuery] = useState('');
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
+  const [customerPickerActiveIndex, setCustomerPickerActiveIndex] = useState(0);
+  const customerPickerInputRef = useRef<HTMLInputElement>(null);
+
   const salesByJob = useMemo(() => {
     const map = new Map<string, Sale[]>();
     for (const sale of allSales ?? []) {
@@ -511,8 +519,80 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setSaleShippingMethod(sale.shippingMethod ?? 'local_pickup');
     setSaleShippingCost(sale.shippingCost ?? 0);
     setSaleMarketplace(sale.marketplace ?? 'facebook_local');
+    // Phase 15.1 — clear picker state when entering edit mode (no auto-pick from prior sales)
+    setCustomerPickerQuery('');
+    setCustomerPickerOpen(false);
+    setCustomerPickerActiveIndex(0);
     setShowSaleForm(true);
   }, []);
+
+  // Phase 15.1 (CL-04) — filter customers by Name OR Email substring (case-insensitive).
+  // Empty query keeps the dropdown closed (UI-SPEC §5).
+  const filteredCustomers = useMemo<Customer[]>(() => {
+    const q = customerPickerQuery.trim().toLowerCase();
+    if (!q) return [];
+    return customers.filter(c =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.email || '').toLowerCase().includes(q)
+    );
+  }, [customers, customerPickerQuery]);
+
+  // Top 8 visible; the rest get an overflow footer per UI-SPEC §5.
+  const visibleCustomers = useMemo<Customer[]>(
+    () => filteredCustomers.slice(0, 8),
+    [filteredCustomers]
+  );
+
+  // Phase 15.1 (CL-04 + D-05): pick fills Name/Email/Company/Address — NOT Notes.
+  // (Sale has its own Sale.notes for transaction-level notes; library Notes is buyer-bound.)
+  const handlePickCustomer = useCallback(async (c: Customer) => {
+    setSaleCustomerName(c.name ?? '');
+    setSaleCustomerEmail(c.email ?? '');
+    setSaleCustomerCompany(c.company ?? '');
+    setSaleCustomerAddress(c.address ?? '');
+    // D-05: DO NOT setSaleCustomerNotes
+    setCustomerPickerQuery('');
+    setCustomerPickerOpen(false);
+    setCustomerPickerActiveIndex(0);
+    await bumpLastUsed(c.id);
+  }, [bumpLastUsed]);
+
+  // Phase 15.1 (CL-04) — WAI-ARIA combobox keyboard handler per UI-SPEC §5.
+  const handlePickerKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!customerPickerOpen) {
+        setCustomerPickerOpen(true);
+        setCustomerPickerActiveIndex(0);
+      } else {
+        // wrap: last → first
+        setCustomerPickerActiveIndex(i =>
+          visibleCustomers.length === 0 ? 0 : (i + 1) % visibleCustomers.length
+        );
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      // wrap: first → last
+      setCustomerPickerActiveIndex(i =>
+        visibleCustomers.length === 0 ? 0 : (i - 1 + visibleCustomers.length) % visibleCustomers.length
+      );
+    } else if (e.key === 'Enter') {
+      const picked = visibleCustomers[customerPickerActiveIndex];
+      if (customerPickerOpen && picked) {
+        e.preventDefault();
+        void handlePickCustomer(picked);
+      }
+      // else: let Enter submit the form (existing behavior)
+    } else if (e.key === 'Escape') {
+      if (customerPickerOpen) {
+        e.preventDefault();
+        setCustomerPickerOpen(false);
+      }
+    } else if (e.key === 'Tab') {
+      // Per UI-SPEC §5: Tab closes the dropdown and advances focus naturally (do NOT auto-pick)
+      setCustomerPickerOpen(false);
+    }
+  }, [customerPickerOpen, customerPickerActiveIndex, visibleCustomers, handlePickCustomer]);
 
   const handleConfirmDeleteSale = useCallback(async (sale: Sale) => {
     await deleteSale(sale);
