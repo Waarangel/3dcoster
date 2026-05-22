@@ -115,7 +115,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
   4. Historical sales' `sale.customer` payloads are NEVER mutated when a Customer library record is later edited — the per-sale snapshot is by-value, not a foreign-key reference (audit: a unit test edits a customer record then asserts the corresponding sale's customer field is byte-identical to its pre-edit value)
   5. The new Customer store sits alongside existing Material / Printer / etc. stores in a Dexie version bump (v6 → v7) with a migration step that backfills nothing (the store starts empty; D-18 schema-extension pattern does not apply — this is a new STORE, not a new field on existing records)
 **Plans**: 5 plans
-- [ ] 15.1-01-PLAN.md — Foundation: `Customer` type + Dexie v7 `customers` store + `useCustomers()` hook + REQUIREMENTS update + by-value snapshot audit test (Wave 1, autonomous)
+- [x] 15.1-01-PLAN.md — Foundation: `Customer` type + Dexie v7 `customers` store + `useCustomers()` hook + REQUIREMENTS update + by-value snapshot audit test (Wave 1, autonomous)
 - [ ] 15.1-02-PLAN.md — Customers tab UI: `CustomerLibrary.tsx` + `CustomerEditModal.tsx` + `App.tsx` tab wiring (Wave 2, autonomous; depends on 15.1-01)
 - [ ] 15.1-03-PLAN.md — CSV import: `src/utils/customerCsv.ts` + `CustomerCsvImportModal.tsx` + CustomerLibrary "Import CSV" wiring (Wave 2, autonomous; depends on 15.1-01)
 - [ ] 15.1-04-PLAN.md — Record Sale combobox picker + email-match auto-link + auto-create from typed values (Wave 3, autonomous; depends on 15.1-01, 15.1-02)
@@ -145,7 +145,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
-| 15.1. Customer Library (INSERTED) | 0/5 | Not started | — |
+| 15.1. Customer Library (INSERTED) | 1/5 | In Progress|  |
 | 16. Printable PDF Quote | 0/? | Not started | — |
 
 ---

@@ -4,8 +4,8 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 15.1 UI-SPEC approved
-last_updated: "2026-05-22T15:23:03.168Z"
-last_activity: 2026-05-22 -- Phase 15.1 planning complete
+last_updated: "2026-05-22T15:25:56.496Z"
+last_activity: 2026-05-22 -- Phase 15.1 execution started
 progress:
   total_phases: 6
   completed_phases: 3
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 15.1 planning queued (Customer Library — user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
+**Current focus:** Phase 15.1 — customer-library
 
 ## Current Position
 
-Phase: 14 (customer-details-etsy-helper) — COMPLETE
-Plan: 4 of 4 (all complete)
-Status: Ready to execute
-Last activity: 2026-05-22 -- Phase 15.1 planning complete
+Phase: 15.1 (customer-library) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 15.1
+Last activity: 2026-05-22 -- Phase 15.1 execution started
 
 ## Performance Metrics
 
