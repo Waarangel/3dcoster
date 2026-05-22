@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
-status: completed
-stopped_at: Phase 15.1 context gathered
-last_updated: "2026-05-22T13:28:04.417Z"
-last_activity: 2026-05-22 -- Phase 14 closed; user approved D-21..D-24 mid-UAT scope reversal
+status: executing
+stopped_at: Phase 15.1 UI-SPEC approved
+last_updated: "2026-05-22T15:23:03.168Z"
+last_activity: 2026-05-22 -- Phase 15.1 planning complete
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 14
+  total_plans: 19
   completed_plans: 14
   percent: 50
 ---
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 
 Phase: 14 (customer-details-etsy-helper) — COMPLETE
 Plan: 4 of 4 (all complete)
-Status: Complete — Phase 14 closed 2026-05-22 with user-approved D-21..D-24 mid-UAT scope reversal (customer-on-sale, conditional Etsy, Recent Sales accordion)
-Last activity: 2026-05-22 -- Phase 14 closed; user approved D-21..D-24 mid-UAT scope reversal
+Status: Ready to execute
+Last activity: 2026-05-22 -- Phase 15.1 planning complete
 
 ## Performance Metrics
 
@@ -122,6 +122,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-22T13:28:04.410Z
-Stopped at: Phase 15.1 context gathered
-Resume file: .planning/phases/15.1-customer-library/15.1-CONTEXT.md
+Last session: 2026-05-22T13:51:52.583Z
+Stopped at: Phase 15.1 UI-SPEC approved
+Resume file: .planning/phases/15.1-customer-library/15.1-UI-SPEC.md

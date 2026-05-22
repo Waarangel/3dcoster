@@ -25,6 +25,14 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 - [x] **CUST-01**: User can attach optional customer details (name, email, address, optional company name) to a saved job via a collapsible "Customer" section on the cost calculator
 - [x] **CUST-02**: Customer name + email display on the saved-job row in JobsManager; full address is visible on the PDF only
 
+### Customer Library (Phase 15.1 — inserted between Phase 15 and Phase 16)
+
+- [ ] **CL-01**: A new top-level `Customers` tab in the main nav renders a virtualized list of saved customer records (Name, Email, Company, Address, Notes, Last used) with `Add customer` / `Import CSV` actions, free-text search across Name + Email + Company (case-insensitive substring), an `<EmptyState>` zero-state, and the loading skeleton mirrored against the real row shape. Default sort is `lastUsedAt desc` with `undefined` (never-used) records first; tiebreaker `name asc`. Edit and Delete row actions; Delete uses native `confirm()` with the past-sales count and the "this only removes them from your library" reassurance copy from UI-SPEC §Copy
+- [ ] **CL-02**: A new `Customer` interface in `src/types.ts` extends `JobCustomer` with `id: string`, `createdAt: Date`, and `lastUsedAt?: Date`; a dedicated `customers` Dexie store is introduced in a v6→v7 migration with schema string `'id, name, email, lastUsedAt'` (email is a non-unique secondary index) and a no-op upgrade callback (the store starts empty). A `useCustomers()` hook in `src/hooks/useDatabase.ts` exposes `customers`, a memoized `customersByEmail` map (O(1) email→customer lookup), `isLoading`, and CRUD + `bumpLastUsed` + `bulkImportCustomers` callbacks
+- [ ] **CL-03**: Bulk CSV import via a new `CustomerCsvImportModal.tsx` modeled on `CsvImportModal.tsx` — two-step Upload → Preview flow; accepted columns are `name`, `email`, `company`, `address`, `notes` (case-insensitive headers, order irrelevant); each row requires Name OR Email (rejected with `Name or Email required`); malformed email rejected with `Email format invalid`; a global `Skip duplicates` (default) vs `Update duplicates` radio is applied to all email-matched rows; `Update duplicates` uses merge semantics — only non-empty incoming fields overwrite existing library values. Emails are normalized to lowercase on write
+- [ ] **CL-04**: The Record Sale modal in `JobsManager.tsx` grows a combobox picker above the existing 4-field Customer block — typeahead over Name OR Email (case-insensitive substring), top 8 matches with a "Showing first 8 of {M} matches — refine your search" overflow footer, full WAI-ARIA combobox keyboard semantics (`role="combobox"`, `aria-activedescendant`, ArrowUp/Down/Enter/Escape/Tab). Picking a row fills Name/Email/Company/Address in the existing 4-field block (Notes is NOT auto-filled) and bumps `lastUsedAt` on the picked record. On Save sale without picking: if Name OR Email is non-empty, the sale auto-creates a library record; if the typed email (after `trim().toLowerCase()`) matches an existing library record, the sale silently links to it (bumps `lastUsedAt`, does NOT overwrite the library fields with per-sale typed values)
+- [ ] **CL-05**: Historical sales' `sale.customer` payloads are NEVER mutated when a Customer library record is later edited or deleted — the per-sale snapshot is by-value, not a foreign-key reference. A unit test edits a Customer fixture then asserts the corresponding Sale's `customer` field is byte-identical to its pre-edit value (locked by ROADMAP Phase 15.1 success criterion #4)
+
 ### Tags + filter/search
 
 - [ ] **TAGS-01**: User can add free-text tags to a saved job via a comma-separated input; tags are lowercased, trimmed, deduped, capped (max-count guard), and persist as `tags: string[]`
@@ -67,7 +75,14 @@ Deferred to a future milestone.
 
 ### Customer
 
-- **CUST-F1**: Customer database / CRM tab — saving customers as reusable records instead of inline-on-job; scope explosion, deferred to a later "Sales Pipeline" milestone
+- **CUST-F1**: Customer database / CRM tab — saving customers as reusable records instead of inline-on-job — **delivered in Phase 15.1 (CL-01..CL-05)**; CUST-F1 closed as part of v1.2.
+
+### Customer Library (future)
+
+- **CL-F1**: Customer-bound metrics ("total spent", "lifetime value", sales-count badges on rows) — fits a future Sales Pipeline milestone
+- **CL-F2**: "Update library from per-sale edit" workflow (push per-sale customer edits back to the library record) — deferred until users request; today the library is the source on pick, sale snapshots are independent edits
+- **CL-F3**: Sortable column headers / advanced filters on the Customers tab — search is sufficient at v1
+- **CL-F4**: Soft-delete / archive workflow for customers — by-value snapshots make permanent delete safe; archive deferred indefinitely
 
 ### Tags
 
@@ -92,7 +107,6 @@ Explicitly excluded from v1.2. Documented to prevent scope creep.
 | Feature | Reason |
 |---------|--------|
 | White-label PDF (no footer, custom logo) | Paid tier (v2.0+) — Stimalo line |
-| Customer database / CRM tab | Scope explosion; defer to dedicated milestone |
 | Geo-based tax lookup API | Breaks offline-first design constraint |
 | `@react-pdf/renderer` / `pdf-lib` | pdf-lib abandoned (last published 2021); @react-pdf/renderer too heavy (~450 KB gz) and React-version compat issues |
 | `fuse.js` / `minisearch` / any fuzzy-search lib | Job count (10–500) doesn't justify the 8.6 KB gz cost; fuzzy match on user tags produces false positives |
@@ -105,6 +119,8 @@ Explicitly excluded from v1.2. Documented to prevent scope creep.
 | `sales-tax` / `node-sales-tax` npm | Node-first; data last updated June 2023; static `src/data/taxRates.ts` is leaner |
 | Backend / sync / Supabase | Free-tier v1.2 stays local-only per PROJECT.md free/paid line |
 | Marketing-page redesign | Polish pass is scoped to the calculator app + JobsManager + Settings |
+| Customer CSV export / sync / multi-device | Paid-tier work; v1.2 ships local-only import + CRUD |
+| Customer-bound metrics / dashboards | Future Sales Pipeline milestone — out of v1.2 |
 
 ## Traceability
 
@@ -132,6 +148,11 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | TAGS-04 | Phase 15 | Pending |
 | DUP-01 | Phase 15 | Pending |
 | DUP-02 | Phase 15 | Pending |
+| CL-01 | Phase 15.1 | Pending |
+| CL-02 | Phase 15.1 | Pending |
+| CL-03 | Phase 15.1 | Pending |
+| CL-04 | Phase 15.1 | Pending |
+| CL-05 | Phase 15.1 | Pending |
 | PDF-01 | Phase 16 | Pending |
 | PDF-02 | Phase 16 | Pending |
 | PDF-03 | Phase 16 | Pending |
@@ -139,11 +160,12 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | PDF-05 | Phase 16 | Pending |
 
 **Coverage:**
-- v1.2 requirements: 25 total
-- Mapped to phases: 25
+- v1.2 requirements: 30 total (25 original + 5 CL-XX inserted for Phase 15.1)
+- Mapped to phases: 30
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-20*
 *Traceability filled: 2026-05-20*
+*Phase 15.1 (CL-01..CL-05) requirements authored: 2026-05-22*
 *Phase numbering continues from v1.1 — first phase is **Phase 12***

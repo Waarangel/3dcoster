@@ -3,8 +3,8 @@
 **Milestone:** v1.2 Quote-to-Customer
 **Defined:** 2026-05-20
 **Phase range:** 12–16 (v1.1 ended at Phase 11)
-**Requirements:** 25 total (SCHEMA-01–02, TAX-01–05, CUST-01–02, TAGS-01–04, DUP-01–02, PDF-01–05, ETSY-01–02, UI-08–10)
-**Coverage:** 25/25 — 100%
+**Requirements:** 30 total (SCHEMA-01–02, TAX-01–05, CUST-01–02, CL-01–05, TAGS-01–04, DUP-01–02, PDF-01–05, ETSY-01–02, UI-08–10)
+**Coverage:** 30/30 — 100%
 
 **Constraints encoded in this roadmap:**
 - All phases are FREE tier — no paid-tier work in this milestone
@@ -32,6 +32,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms (completed 2026-05-21)
 - [x] **Phase 14: Customer Details + Etsy Helper** — Customer fields on sold work (revised mid-UAT to per-Sale per D-21), Recent Sales accordion with customer block, conditional Etsy ToS collapsible checklist (gated on marketplace=etsy per D-22), and features.ts dead-badge audit holds (completed 2026-05-22)
 - [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset
+- [ ] **Phase 15.1: Customer Library (INSERTED)** — Customers as first-class assets: new Customers tab with CRUD + virtualized list + CSV bulk import + combobox picker in the Record Sale modal (with email-match auto-link). Dexie v6→v7 introduces a dedicated `customers` store; per-Sale customer remains a by-value snapshot for byte-identical historical sales
 - [ ] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification
 
 ---
@@ -106,14 +107,19 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 ### Phase 15.1: Customer Library (INSERTED)
 **Goal**: Customers as first-class assets — new main nav tab with CRUD, bulk CSV import, and a dropdown picker (or add-new inline) in the Record Sale modal. Unblocks the "pick a saved customer" workflow Phase 16 (PDF Quote) will draw on so quotes can be generated for a chosen customer without retyping fields. Customer Library uses its own Dexie store; per-Sale customer remains a snapshot of values at sale time (not a foreign-key reference) so historical sales never mutate when a Customer record is later edited.
 **Depends on**: Phase 14 (Sale.customer shape exists) + Phase 15 (Tags/Search patterns may inform the picker UI)
-**Requirements**: TBD (CL-01..CL-NN, to be authored during discuss-phase)
+**Requirements**: CL-01, CL-02, CL-03, CL-04, CL-05
 **Success Criteria** (what must be TRUE):
   1. A new top-level "Customers" tab in the main nav lets users view a virtualized list of saved Customer records (Name, Email, Company, Address, Notes, last-used date) with create/edit/delete affordances. The Notes field captures buyer-bound quirks/preferences (already added to `JobCustomer` in a Phase 14 post-closure follow-up on 2026-05-22; the library inherits the field for free)
   2. Bulk CSV import: user drops a CSV with name/email/company/address columns; preview screen shows N rows + validation errors per row; on confirm, new Customer records are written to a dedicated Dexie store; existing customers (matched by email case-insensitive) are skipped or updated per user choice
   3. The Record Sale modal Customer block grows a "Select existing customer" combobox above the 4 fields; picking a saved customer fills the 4 fields (still editable — the saved Customer is the source, the per-Sale snapshot is the copy); "Add new" inline saves to the library on submit
   4. Historical sales' `sale.customer` payloads are NEVER mutated when a Customer library record is later edited — the per-sale snapshot is by-value, not a foreign-key reference (audit: a unit test edits a customer record then asserts the corresponding sale's customer field is byte-identical to its pre-edit value)
   5. The new Customer store sits alongside existing Material / Printer / etc. stores in a Dexie version bump (v6 → v7) with a migration step that backfills nothing (the store starts empty; D-18 schema-extension pattern does not apply — this is a new STORE, not a new field on existing records)
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 15.1-01-PLAN.md — Foundation: `Customer` type + Dexie v7 `customers` store + `useCustomers()` hook + REQUIREMENTS update + by-value snapshot audit test (Wave 1, autonomous)
+- [ ] 15.1-02-PLAN.md — Customers tab UI: `CustomerLibrary.tsx` + `CustomerEditModal.tsx` + `App.tsx` tab wiring (Wave 2, autonomous; depends on 15.1-01)
+- [ ] 15.1-03-PLAN.md — CSV import: `src/utils/customerCsv.ts` + `CustomerCsvImportModal.tsx` + CustomerLibrary "Import CSV" wiring (Wave 2, autonomous; depends on 15.1-01)
+- [ ] 15.1-04-PLAN.md — Record Sale combobox picker + email-match auto-link + auto-create from typed values (Wave 3, autonomous; depends on 15.1-01, 15.1-02)
+- [ ] 15.1-05-PLAN.md — NEW badge wiring on Customers tab + final build gate + UAT verification (Wave 4, has checkpoint:human-verify; depends on 15.1-02, 15.1-03, 15.1-04)
 **UI hint**: yes
 
 ### Phase 16: Printable PDF Quote
@@ -139,7 +145,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
-| 15.1. Customer Library (INSERTED) | 0/? | Not started | — |
+| 15.1. Customer Library (INSERTED) | 0/5 | Not started | — |
 | 16. Printable PDF Quote | 0/? | Not started | — |
 
 ---
@@ -168,13 +174,18 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | TAGS-04 | Phase 15 | Tags |
 | DUP-01 | Phase 15 | Duplicate |
 | DUP-02 | Phase 15 | Duplicate |
+| CL-01 | Phase 15.1 | Customer Library |
+| CL-02 | Phase 15.1 | Customer Library |
+| CL-03 | Phase 15.1 | Customer Library |
+| CL-04 | Phase 15.1 | Customer Library |
+| CL-05 | Phase 15.1 | Customer Library |
 | PDF-01 | Phase 16 | PDF |
 | PDF-02 | Phase 16 | PDF |
 | PDF-03 | Phase 16 | PDF |
 | PDF-04 | Phase 16 | PDF |
 | PDF-05 | Phase 16 | PDF |
 
-**Mapped: 25/25** — no orphans
+**Mapped: 30/30** — no orphans
 
 ---
 
@@ -186,16 +197,21 @@ Phase 12 (Schema Foundation)  <-- foundation for all v1.2 phases
   ├── Phase 14 (Customer Details + Etsy)  -- reads customer from v6 schema; can parallel with 13
   └── Phase 15 (Tags, Search + Duplicate) -- reads tags from v6 schema; can parallel with 13+14
 
+Phase 14 + Phase 15 → Phase 15.1 (Customer Library)
+  └── adds Dexie v6→v7 `customers` store; combobox picker grafted into Phase 14's Record Sale modal
+
 Phase 13 + Phase 14 both merged → required before:
   └── Phase 16 (PDF Quote)  -- must render correct tax rows AND customer block
 ```
 
 **Parallelizable after Phase 12:** Phases 13, 14, and 15 are independent of each other.
 **Phase 16 hard gate:** Both Phase 13 and Phase 14 must be merged before Phase 16 can start.
+**Phase 15.1 hard gate:** Phases 14 (Sale.customer shape) and 15 (JobsManager Record Sale modal stable) must be merged before Phase 15.1 can start.
 
 ---
 
 *Roadmap created: 2026-05-20*
 *Phase 12 plans created: 2026-05-21*
+*Phase 15.1 inserted: 2026-05-22 — CL-01..CL-05 authored during plan-phase*
 *Replaces: v1.1 Polish & Foundation roadmap (Phases 7–11, completed 2026-05-20)*
 *Phase numbering continues from v1.1 — v1.2 phases start at Phase 12*
