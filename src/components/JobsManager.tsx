@@ -220,30 +220,31 @@ const JobCard = memo(function JobCard({
                         </span>
                         <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
                       </summary>
-                      <div className="mt-2 pt-2 border-t border-slate-700 text-xs space-y-2 pl-5">
-                        {hasCustomerDetails && (
-                          <div className="space-y-0.5">
-                            {sale.customer?.name && (
-                              <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customer.name}</span></div>
-                            )}
-                            {!sale.customer?.name && sale.customerName && (
-                              <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customerName}</span></div>
-                            )}
-                            {sale.customer?.email && (
-                              <div><span className="text-slate-500">Email:</span> <span className="text-slate-300">{sale.customer.email}</span></div>
-                            )}
-                            {sale.customer?.company && (
-                              <div><span className="text-slate-500">Company:</span> <span className="text-slate-300">{sale.customer.company}</span></div>
-                            )}
-                            {sale.customer?.address && (
-                              <div><span className="text-slate-500">Address:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.address}</span></div>
-                            )}
-                          </div>
-                        )}
-                        {!hasCustomerDetails && (
-                          <div className="text-slate-500 italic">No customer details recorded.</div>
-                        )}
-                        <div className="flex gap-2 pt-1">
+                      <div className="mt-2 pt-2 border-t border-slate-700 text-xs pl-5 flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          {hasCustomerDetails ? (
+                            <div className="space-y-0.5">
+                              {sale.customer?.name && (
+                                <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customer.name}</span></div>
+                              )}
+                              {!sale.customer?.name && sale.customerName && (
+                                <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customerName}</span></div>
+                              )}
+                              {sale.customer?.email && (
+                                <div><span className="text-slate-500">Email:</span> <span className="text-slate-300 break-all">{sale.customer.email}</span></div>
+                              )}
+                              {sale.customer?.company && (
+                                <div><span className="text-slate-500">Company:</span> <span className="text-slate-300">{sale.customer.company}</span></div>
+                              )}
+                              {sale.customer?.address && (
+                                <div><span className="text-slate-500">Address:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.address}</span></div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-slate-500 italic">No customer details recorded.</div>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
                           <Button
                             variant="primary"
                             btnSize="sm"
