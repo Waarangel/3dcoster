@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
-stopped_at: Phase 14 context gathered
-last_updated: "2026-05-22T02:59:43.807Z"
-last_activity: 2026-05-22 -- Phase 14 execution started
+stopped_at: Phase 14 complete — ready for Phase 15.5 planning (Customer Library, user-decided insert)
+last_updated: "2026-05-22T12:51:30Z"
+last_activity: 2026-05-22 -- Phase 14 closed; user approved D-21..D-24 mid-UAT scope reversal
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 14
-  completed_plans: 10
-  percent: 40
+  completed_plans: 14
+  percent: 60
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 14 — customer-details-etsy-helper
+**Current focus:** Phase 15.5 planning queued (Customer Library — user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
 
 ## Current Position
 
-Phase: 14 (customer-details-etsy-helper) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 14
-Last activity: 2026-05-22 -- Phase 14 execution started
+Phase: 14 (customer-details-etsy-helper) — COMPLETE
+Plan: 4 of 4 (all complete)
+Status: Complete — Phase 14 closed 2026-05-22 with user-approved D-21..D-24 mid-UAT scope reversal (customer-on-sale, conditional Etsy, Recent Sales accordion)
+Last activity: 2026-05-22 -- Phase 14 closed; user approved D-21..D-24 mid-UAT scope reversal
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Last activity: 2026-05-22 -- Phase 14 execution started
 | 11 | 6 | - | - |
 | 12 | 4 | - | - |
 | 13 | 6 | - | - |
+| 14 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -105,12 +106,15 @@ Recent decisions affecting current work:
 - [v1.2 Roadmap 2026-05-20]: `build.modulePreload: false` is mandatory in vite.config.ts before Phase 16 ships; CI assertion script required
 - [v1.2 Roadmap 2026-05-20]: Tax applies to sellingPrice not subtotal — the existing it.todo in costCalc.test.ts is the activation point and must be first in Phase 13
 - [Phase ?]: [v1.2 Phase 13-06]: UI-10 audit complete — featureReleases registry pruned from 12 to 4 entries; default-tax-rate (2026-05-21) added to resolve Plan 03's orphan JSX; Pitfall 6 sequencing (JSX-first, cross-repo gate, then registry) successfully enforced
+- [v1.2 Phase 14 closure 2026-05-22]: All 4 requirements (CUST-01, CUST-02, ETSY-01, ETSY-02) verified PASS against the LOCKED revised contract D-21..D-24 (14-CONTEXT.md). Mid-UAT scope reversal: customer details moved from PrintJob to Sale (D-21); Etsy section now conditional on `marketplace === 'etsy'` (D-22); Recent Sales list became a `<details>`-based accordion with per-sale customer block (D-23); features.ts entries kept their original 2026-05-21 ship dates but JSX consumers moved (D-24 — customer-details now in JobsManager Record Sale modal, etsy-helper still in CostCalculator but conditionally rendered). Pre-existing bug fix-up: shipping/packaging/marketplace now persist on PrintJob so Edit re-hydrates true cost (commit `7b14260`). New affordances: Edit + Delete buttons on sale rows (commits `c56870f`, `5ec4aa7`). Dexie schema unchanged (v6); main bundle 49.8 KB gzipped; 110/110 tests passing.
+- [v1.2 Phase 16 dependency update — 2026-05-22]: Phase 16 PDF customer block MUST now pull from `Sale.customer` (with `sale.customerName` legacy-read fallback), NOT from `PrintJob.customer`. Phase 16 plan-phase MUST read 14-VERIFICATION.md as part of its `<read_first>` to pick up this revised contract. ETSY-02 PDF-exclusion contract is unchanged (Phase 16 must still exclude `PrintJob.etsyChecks`).
 
 ### Pending Todos
 
+- **User-decided insert: Phase 15.5 Customer Library** — to be added via `/gsd:phase add` between Phases 15 and 16. Scope: Customer as first-class asset with bulk import + dropdown picker in the Record Sale modal. Will deduplicate customers across sales (picks up the deferred CUST-F1 item from REQUIREMENTS.md). Replaces the current freeform-per-sale model with a library-backed picker (still allowing freeform entry for one-off buyers). Phase 16 PDF customer-block contract should be designed source-agnostic so it works against both the inline `Sale.customer` shape (current) and the library-backed customer (post-15.5).
 - Phase 16 plan-phase must empirically measure jsPDF gz chunk size (`npm install jspdf jspdf-autotable && npm run build && ls -lh dist/assets/pdf-*.js`) before locking the library — three research sources disagree on exact size
 - Phase 16 plan-phase must test font fetch strategy in `npm run tauri:dev` (Tauri WKWebView may reject fetch('/fonts/...') — fallback is base64 embed in lazy chunk)
-- Phase 12 plan-phase must decide quote number storage location (`job.quoteNumber` vs `UserProfile.nextQuoteNumber` counter) before writing the v6 migration
+- Phase 16 plan-phase must update its ROADMAP success criterion #1 wording: PDF customer block reads from `Sale.customer` (with `sale.customerName` legacy fallback) per D-21, NOT from `PrintJob.customer`
 
 ### Blockers/Concerns
 
@@ -118,6 +122,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-21T19:02:39.751Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-customer-details-etsy-helper/14-CONTEXT.md
+Last session: 2026-05-22T12:51:30Z
+Stopped at: Phase 14 closed — ready for Phase 15.5 planning (Customer Library, user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
+Resume file: .planning/phases/14-customer-details-etsy-helper/14-VERIFICATION.md

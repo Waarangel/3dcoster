@@ -22,8 +22,8 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 ### Customer details
 
-- [ ] **CUST-01**: User can attach optional customer details (name, email, address, optional company name) to a saved job via a collapsible "Customer" section on the cost calculator
-- [ ] **CUST-02**: Customer name + email display on the saved-job row in JobsManager; full address is visible on the PDF only
+- [x] **CUST-01**: User can attach optional customer details (name, email, address, optional company name) to a saved job via a collapsible "Customer" section on the cost calculator
+- [x] **CUST-02**: Customer name + email display on the saved-job row in JobsManager; full address is visible on the PDF only
 
 ### Tags + filter/search
 
@@ -47,8 +47,8 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 ### Etsy ToS compliance helper
 
-- [ ] **ETSY-01**: User sees an "Etsy compliance" collapsible section on the cost calculator with a checklist sourced from `src/data/etsyToS.ts` (covering original design, no third-party templates, IP/copyright, production-partner disclosure, AI disclosure)
-- [ ] **ETSY-02**: The Etsy section displays a `policySummaryAsOf` date and a direct link to `https://www.etsy.com/legal/creativity/`; the checklist content does NOT render on the customer PDF
+- [x] **ETSY-01**: User sees an "Etsy compliance" collapsible section on the cost calculator with a checklist sourced from `src/data/etsyToS.ts` (covering original design, no third-party templates, IP/copyright, production-partner disclosure, AI disclosure)
+- [x] **ETSY-02**: The Etsy section displays a `policySummaryAsOf` date and a direct link to `https://www.etsy.com/legal/creativity/`; the checklist content does NOT render on the customer PDF
 
 ### UI consistency sweep (continues UI-XX from v1.1)
 
@@ -121,10 +121,10 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | TAX-05 | Phase 13 | Complete |
 | UI-08 | Phase 13 | Complete |
 | UI-09 | Phase 13 | Complete |
-| CUST-01 | Phase 14 | Pending |
-| CUST-02 | Phase 14 | Pending |
-| ETSY-01 | Phase 14 | Pending |
-| ETSY-02 | Phase 14 | Pending |
+| CUST-01 | Phase 14 | Complete |
+| CUST-02 | Phase 14 | Complete |
+| ETSY-01 | Phase 14 | Complete |
+| ETSY-02 | Phase 14 | Complete |
 | UI-10 | Phase 13 | Complete |
 | TAGS-01 | Phase 15 | Pending |
 | TAGS-02 | Phase 15 | Pending |

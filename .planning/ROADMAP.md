@@ -30,7 +30,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 
 - [x] **Phase 12: Schema Foundation** — Dexie v5→v6 migration adds v1.2 fields and wires the multi-tab reload guard (completed 2026-05-21)
 - [x] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms (completed 2026-05-21)
-- [ ] **Phase 14: Customer Details + Etsy Helper** — Customer fields on jobs, display in JobsManager, Etsy ToS collapsible checklist, and features.ts dead-badge cleanup
+- [x] **Phase 14: Customer Details + Etsy Helper** — Customer fields on sold work (revised mid-UAT to per-Sale per D-21), Recent Sales accordion with customer block, conditional Etsy ToS collapsible checklist (gated on marketplace=etsy per D-22), and features.ts dead-badge audit holds (completed 2026-05-22)
 - [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset
 - [ ] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification
 
@@ -86,8 +86,8 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 **Plans**: 4 plans
 - [x] 14-01-PLAN.md — CollapsibleSection primitive + types.ts etsyChecks extension + features.ts 2 new entries (Wave 1, autonomous)
 - [x] 14-02-PLAN.md — Etsy data file etsyToS.ts + Etsy CollapsibleSection card on CostCalculator + etsyChecks 6-site state wiring (Wave 2, autonomous; depends on 14-01)
-- [x] 14-03-PLAN.md — Customer CollapsibleSection card on CostCalculator + JobsManager subline + expanded-panel Customer block + customer 6-site state wiring (Wave 3, autonomous; depends on 14-01, 14-02)
-- [ ] 14-04-PLAN.md — UAT + UI-10 audit + features.ts grep gate + verification record (Wave 4, has checkpoint:human-verify; depends on 14-01, 14-02, 14-03)
+- [x] 14-03-PLAN.md — Customer CollapsibleSection card on CostCalculator + JobsManager subline + expanded-panel Customer block + customer 6-site state wiring (Wave 3, autonomous; depends on 14-01, 14-02) — superseded mid-UAT by D-21..D-24 rewrite (commits `eca103b`, `c56870f`, `5ec4aa7`)
+- [x] 14-04-PLAN.md — UAT + UI-10 audit + features.ts grep gate + verification record (Wave 4, has checkpoint:human-verify; depends on 14-01, 14-02, 14-03) — closed 2026-05-22 with user-approved scope reversal landing D-21..D-24
 **UI hint**: yes
 
 ### Phase 15: Tags, Search + Quick Duplicate
@@ -124,7 +124,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 |-------|----------------|--------|-----------|
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
-| 14. Customer Details + Etsy Helper | 3/4 | In Progress|  |
+| 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 16. Printable PDF Quote | 0/? | Not started | — |
 
