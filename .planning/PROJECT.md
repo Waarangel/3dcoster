@@ -136,4 +136,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-20 — Milestone v1.2 Quote-to-Customer started; v1.1 (Polish & Foundation) shipped 2026-05-20 across Phases 7–11. v1.2 phase numbering continues from Phase 12.*
+*Last updated: 2026-05-22 — Phase 15.1 Customer Library complete (inserted phase): Customers tab with virtualized list + CSV bulk import + Record Sale combobox picker; Dexie v6→v7 customers store; per-Sale customer remains a by-value snapshot. v1.2 milestone: Phases 12–15.1 complete (5 of 6 phases); Phase 16 (Printable PDF Quote) is the final v1.2 phase.*
