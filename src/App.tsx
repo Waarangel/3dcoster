@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees } from './hooks/useDatabase';
+import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers } from './hooks/useDatabase';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
 import { CostCalculator } from './components/CostCalculator';
+import { CustomerLibrary } from './components/CustomerLibrary';
 import { JobsManager } from './components/JobsManager';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -14,7 +15,7 @@ import { Footer } from './components/Footer';
 import { UpdateBanner } from './components/UpdateBanner';
 import { isMaintenanceDismissed, markMaintenanceDismissed, MAINTENANCE_INTERVAL } from './utils/maintenanceDismissed';
 
-type Tab = 'calculator' | 'jobs' | 'materials' | 'settings';
+type Tab = 'calculator' | 'jobs' | 'materials' | 'customers' | 'settings';
 
 // Detect if running in standalone mode (PWA installed or Tauri desktop app)
 function useIsStandalone(): boolean {
@@ -64,6 +65,15 @@ function App() {
     () => assets.filter(a => a.category !== 'printer'),
     [assets]
   );
+
+  const {
+    customers,
+    isLoading: customersLoading,
+    addCustomer,
+    updateCustomer,
+    deleteCustomer,
+    bulkImportCustomers,
+  } = useCustomers();
 
   const {
     electricity,
@@ -145,6 +155,7 @@ function App() {
     { id: 'calculator', label: 'Cost Calculator', shortLabel: 'Calculator' },
     { id: 'jobs', label: 'My Jobs', shortLabel: 'Jobs' },
     { id: 'materials', label: 'Asset Library', shortLabel: 'Assets' },
+    { id: 'customers', label: 'Customers', shortLabel: 'Customers' },
     { id: 'settings', label: 'Printers', shortLabel: 'Printers' },
   ];
 
@@ -305,6 +316,17 @@ function App() {
             onResetPrinters={resetPrintersOnly}
             itemsPerPage={userProfile.assetLibraryItemsPerPage ?? 10}
             onItemsPerPageChange={(value) => updateUserProfile({ ...userProfile, assetLibraryItemsPerPage: value })}
+          />
+        )}
+
+        {activeTab === 'customers' && (
+          <CustomerLibrary
+            customers={customers}
+            isLoading={customersLoading}
+            onAddCustomer={addCustomer}
+            onUpdateCustomer={updateCustomer}
+            onDeleteCustomer={deleteCustomer}
+            onBulkImportCustomers={bulkImportCustomers}
           />
         )}
 
