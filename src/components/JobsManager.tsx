@@ -812,6 +812,73 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   <NewBadge feature="customer-details" className="absolute top-2 right-0" />
                 </div>
                 <div className="space-y-2">
+                  {/* Phase 15.1 (CL-04) — Customer combobox picker (LOCKED layout per UI-SPEC §5) */}
+                  <div className="relative">
+                    <label className="block text-sm text-slate-400 mb-1" htmlFor="customer-picker-input">
+                      Existing customer
+                    </label>
+                    <Input
+                      id="customer-picker-input"
+                      ref={customerPickerInputRef}
+                      type="text"
+                      role="combobox"
+                      aria-expanded={customerPickerOpen}
+                      aria-controls="customer-picker-listbox"
+                      aria-autocomplete="list"
+                      aria-activedescendant={
+                        customerPickerOpen && visibleCustomers[customerPickerActiveIndex]
+                          ? `customer-option-${visibleCustomers[customerPickerActiveIndex].id}`
+                          : undefined
+                      }
+                      value={customerPickerQuery}
+                      onChange={(e) => {
+                        setCustomerPickerQuery(e.target.value);
+                        setCustomerPickerOpen(true);
+                        setCustomerPickerActiveIndex(0);
+                      }}
+                      onFocus={() => { if (customerPickerQuery.trim()) setCustomerPickerOpen(true); }}
+                      onKeyDown={handlePickerKeyDown}
+                      placeholder="Type to find a saved customer…"
+                    />
+                    {customerPickerOpen && customerPickerQuery.trim() && (
+                      <div
+                        role="listbox"
+                        id="customer-picker-listbox"
+                        className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-72 overflow-y-auto"
+                      >
+                        {visibleCustomers.map((c, i) => (
+                          // allow-raw-html: WAI-ARIA combobox option needs full styling control (custom dropdown row, not a CTA button)
+                          <button
+                            key={c.id}
+                            type="button"
+                            role="option"
+                            id={`customer-option-${c.id}`}
+                            aria-selected={i === customerPickerActiveIndex}
+                            onClick={() => { void handlePickCustomer(c); }}
+                            onMouseEnter={() => setCustomerPickerActiveIndex(i)}
+                            className={`w-full text-left px-4 py-3 hover:bg-slate-700 focus:bg-slate-700 focus:outline-none min-h-[44px] ${
+                              i === customerPickerActiveIndex ? 'bg-blue-500/10 text-blue-300' : ''
+                            }`}
+                          >
+                            <div className="text-sm font-medium text-white">{c.name || '(no name)'}</div>
+                            <div className="text-xs text-slate-400">
+                              {[c.email, c.company].filter(Boolean).join(' · ')}
+                            </div>
+                          </button>
+                        ))}
+                        {filteredCustomers.length > 8 && (
+                          <div className="px-4 py-2 text-xs text-slate-500 border-t border-slate-700">
+                            Showing first 8 of {filteredCustomers.length} matches — refine your search
+                          </div>
+                        )}
+                        {filteredCustomers.length === 0 && (
+                          <div className="px-4 py-3 text-sm text-slate-400">
+                            No saved customers match "{customerPickerQuery}". The customer will be saved when you record the sale.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Name</label>
