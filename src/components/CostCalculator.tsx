@@ -3,10 +3,11 @@ import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, Mater
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
-import { Button, Input, Select, InfoTooltip } from './ui';
+import { Button, Input, Select, InfoTooltip, CollapsibleSection } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { calculateCost, calculateTax } from '../utils/costCalc';
 import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
+import { etsyChecklist, policySummaryAsOf, policyLink } from '../data/etsyToS';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -140,6 +141,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // Marketplace
   const [marketplace, setMarketplace] = useState<MarketplaceType>(() => getStoredValue('marketplace', 'none'));
 
+  // Etsy self-review check state (Phase 14 — ETSY-01, D-18).
+  // editingJob takes precedence over sessionStorage (resumed-job-edit case).
+  const [etsyChecks, setEtsyChecks] = useState<Record<string, boolean>>(
+    () => editingJob?.etsyChecks ?? getStoredValue('etsyChecks', {} as Record<string, boolean>)
+  );
+
   // Job saved feedback
   const [justSaved, setJustSaved] = useState(false);
 
@@ -174,13 +181,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       shippingOverrideCost,
       packagingMaterials,
       marketplace,
+      etsyChecks,
     };
     sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
   }, [
     editingJob, printName, filamentRows,
     selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes, postProcessingMinutes,
     failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, taxRateOverride, lastEdited,
-    shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace
+    shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace, etsyChecks
   ]);
 
   // Populate fields when editing an existing job
@@ -199,6 +207,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setMaterialsUsed(editingJob.materialsUsed);
       setSellingPrice(editingJob.sellingPrice);
       setTaxRateOverride(editingJob.taxRate);
+      setEtsyChecks(editingJob.etsyChecks ?? {});
       // Seed profit margin + target profit from the saved cost basis so the
       // user sees the historical margin immediately, not the user-profile default.
       // The derive-from-price effect rebases these against current trueCost once
@@ -514,6 +523,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     setShippingOverrideCost(null);
     setPackagingMaterials([]);
     setMarketplace('none');
+    setEtsyChecks({});
     // Clear sessionStorage when form is cleared
     sessionStorage.removeItem(FORM_STORAGE_KEY);
   };
@@ -570,6 +580,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         sellingPrice,
         taxRate: taxRateOverride,
         taxAmount: tax.taxAmount,
+        etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
       };
 
       onUpdateJob(updatedJob);
@@ -599,6 +610,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         sellingPrice,
         taxRate: taxRateOverride,
         taxAmount: tax.taxAmount,
+        etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
         copiesSold: 0,
       };
 
@@ -1490,6 +1502,51 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           )}
         </div>
       </div>
+
+      {/* Plan 14-03 inserts its Customer card directly above this comment. */}
+
+      {/* Etsy compliance helper — Phase 14 ETSY-01, ETSY-02 */}
+      <CollapsibleSection
+        title="Selling on Etsy?"
+        badge={<NewBadge feature="etsy-helper" className="absolute -top-1 -right-1" />}
+      >
+        {/* Disclaimer at top — verbatim wording locked by D-17 / ROADMAP success criterion #4 */}
+        <div className="bg-slate-700/50 border border-yellow-500/30 text-yellow-100/90 rounded p-3 text-sm mb-4">
+          Etsy's policies change — this is a reminder, not legal advice.
+        </div>
+
+        {/* 5-item checklist; raw checkbox elements require the `allow-raw-html` comment per lint guard (PATTERNS Gotcha) */}
+        <div className="space-y-1">
+          {etsyChecklist.map(item => (
+            <label key={item.id} className="flex items-start gap-3 p-2 rounded hover:bg-slate-700/30 cursor-pointer">
+              {/* allow-raw-html: per-item checklist toggle; no Checkbox primitive exists, matches BambuImport.tsx:209 precedent */}
+              <input
+                type="checkbox"
+                className="mt-1 w-4 h-4 accent-blue-500 cursor-pointer"
+                checked={!!etsyChecks?.[item.id]}
+                onChange={e => setEtsyChecks(prev => ({ ...prev, [item.id]: e.target.checked }))}
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-white">{item.title}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{item.body}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {/* Date + live link rendered inline below checklist — D-17 */}
+        <div className="mt-4 text-xs text-slate-500">
+          Verified against Etsy policy as of {policySummaryAsOf} —{' '}
+          <a
+            href={policyLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline"
+          >
+            etsy.com/legal/creativity/
+          </a>
+        </div>
+      </CollapsibleSection>
 
       {/* Save Job Button */}
       <div className="flex flex-col md:flex-row md:justify-end gap-4">
