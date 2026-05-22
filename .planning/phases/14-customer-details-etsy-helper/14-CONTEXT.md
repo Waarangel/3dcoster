@@ -88,6 +88,34 @@ A new collapsible "Customer" section and a new collapsible "Selling on Etsy?" se
 - Order/layout of the Customer expanded-row block relative to the existing Cost/Profit/Sell-price grid (above, below, or side-by-side on wide screens)
 - Whether the Etsy disclaimer notice uses a Heroicons exclamation-triangle icon to the left of the text, or just text — planner picks (icon would match Tailwind's typical alert pattern, but the section is text-heavy enough that an icon is optional)
 
+## Decisions Revised — 2026-05-22 (Plan 14-04 UAT feedback)
+
+Plans 14-01, 14-02, 14-03 shipped against the LOCKED decisions above (customer-on-job, always-visible Etsy section). During Plan 14-04 UAT the user surfaced three architectural reversals. The original decisions remain in the historical record above; the revised contract is below. Pre-revision IndexedDB records remain readable (PrintJob.customer marked @deprecated, sale.customerName kept as @deprecated read-back).
+
+- **D-21 (revises D-05, D-06..D-14):** Customer details move from `PrintJob` to `Sale`. The job-level Customer CollapsibleSection card is REMOVED from `CostCalculator.tsx`. The Record Sale modal in `JobsManager.tsx` grows from a single "Customer Name" input to a 4-field block (Name + Email + Company + Address) per sale. Sale.customer is the new field; sale.customerName is kept on the type as @deprecated for backwards compatibility with pre-revision IndexedDB records.
+
+  **Why:** A single PrintJob can be sold to multiple buyers. The customer-on-job model lost N-1 buyers per multi-sale job. Customer-on-sale captures buyer identity at the moment of sale, which is where it actually belongs in the data model.
+
+  **How to apply:** New sales write `sale.customer = {name?, email?, company?, address?}` only when at least one field is non-empty (no empty-object pollution). On read, JobsManager prefers `sale.customer.name` and falls back to `sale.customerName` for legacy rows.
+
+- **D-22 (revises D-03 for the Etsy section only):** The Etsy compliance helper section in `CostCalculator.tsx` is now **conditional on `marketplace === 'etsy'`**. When the user has not selected Etsy as their marketplace, the Etsy CollapsibleSection does not render at all. (Customer section is gone entirely — D-21.)
+
+  **Why:** An always-visible Etsy checklist is irrelevant noise for non-Etsy sellers. The user is the source of truth for their marketplace; gating on that field surfaces compliance content only when it applies.
+
+  **How to apply:** Wrap the Etsy CollapsibleSection JSX in `{marketplace === 'etsy' && (<CollapsibleSection ...>)}`. The PrintJob.etsyChecks data shape from D-18 stays unchanged.
+
+- **D-23 (new — replaces flat Recent Sales list):** The "Recent Sales" list inside the expanded JobCard becomes an **accordion**. Each row uses native `<details>`+`<summary>` (lint-no-raw-html does NOT block these). Summary shows `{qty}x @ ${unitPrice} ({customer.name || customerName})`; expanded body shows Name / Email / Company / Address when present, plus `whitespace-pre-line` on Address. Pre-revision sales with `customerName` only show the legacy name in both summary and expanded body.
+
+  **Why:** With customer details now per-sale (D-21), the per-row payload is too large for a flat one-liner. Accordion default-collapsed keeps the UI compact; click-to-expand surfaces buyer info on demand.
+
+  **How to apply:** Native `<details>` provides the disclosure behavior. `onClick={e => e.stopPropagation()}` on the `<details>` element prevents the JobCard's click-to-select handler from firing when toggling a sale row.
+
+- **D-24 (new — features.ts entries):** Both `customer-details` and `etsy-helper` entries in `src/features.ts` stay (dated 2026-05-21 per the ship dates set by Plan 14-01). Their JSX consumers move:
+  - `customer-details` consumer was `CostCalculator.tsx` Customer card header → now `JobsManager.tsx` Record Sale modal Customer section header.
+  - `etsy-helper` consumer stays on the `CostCalculator.tsx` Etsy CollapsibleSection header, but the section is now rendered conditionally on marketplace (D-22). The badge time-window still applies on first render when the section is shown.
+
+  **Why:** The features are still genuinely new to the user — UI placement changed but the user-facing experience (a new field surface) is the same. Keeping the original ship date means the 14-day NEW window is shared across the original and revised UI placements.
+
 </decisions>
 
 <canonical_refs>
