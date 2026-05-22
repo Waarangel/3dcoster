@@ -265,6 +265,10 @@ function App() {
                 {activeTab === tab.id && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
                 )}
+                {/* Phase 15.1 NEW badge — only on the Customers tab. Absolute overlay so it never displaces siblings. */}
+                {tab.id === 'customers' && (
+                  <NewBadge feature="customer-library" className="absolute -top-1 -right-1 pointer-events-none" />
+                )}
               </button>
             ))}
           </div>
