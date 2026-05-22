@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
 status: completed
-stopped_at: "Phase 14 closed — ready for Phase 15.1 planning (Customer Library, user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence"
-last_updated: "2026-05-22T13:00:26.763Z"
+stopped_at: Phase 15.1 context gathered
+last_updated: "2026-05-22T13:28:04.417Z"
 last_activity: 2026-05-22 -- Phase 14 closed; user approved D-21..D-24 mid-UAT scope reversal
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 3
   total_plans: 14
   completed_plans: 14
-  percent: 60
+  percent: 50
 ---
 
 # Project State
@@ -122,6 +122,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-22T12:51:30Z
-Stopped at: Phase 14 closed — ready for Phase 15.1 planning (Customer Library, user-decided insert via /gsd:phase add) before resuming the original Phase 15/16 sequence
-Resume file: .planning/phases/14-customer-details-etsy-helper/14-VERIFICATION.md
+Last session: 2026-05-22T13:28:04.410Z
+Stopped at: Phase 15.1 context gathered
+Resume file: .planning/phases/15.1-customer-library/15.1-CONTEXT.md
