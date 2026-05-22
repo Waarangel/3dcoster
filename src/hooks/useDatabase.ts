@@ -492,6 +492,25 @@ export function useSales(jobId?: string) {
     }
   }, []);
 
+  // Phase 14 revised (2026-05-22): users need to fix typos in sale records
+  // (especially customer email). Quantity change must reconcile job.copiesSold
+  // by the delta between old and new sale quantity.
+  const updateSale = useCallback(async (updated: Sale) => {
+    const previous = await db.sales.get(updated.id);
+    await db.sales.put(updated);
+    if (previous && previous.quantity !== updated.quantity) {
+      const job = await db.jobs.get(updated.jobId);
+      if (job) {
+        const delta = updated.quantity - previous.quantity;
+        await db.jobs.put({
+          ...job,
+          copiesSold: Math.max(0, job.copiesSold + delta),
+          updatedAt: new Date(),
+        });
+      }
+    }
+  }, []);
+
   // Calculate totals for a job
   const getTotals = useCallback((jobSales: Sale[]) => {
     return jobSales.reduce(
@@ -506,6 +525,7 @@ export function useSales(jobId?: string) {
   return {
     sales: sales ?? [],
     addSale,
+    updateSale,
     deleteSale,
     getTotals,
   };

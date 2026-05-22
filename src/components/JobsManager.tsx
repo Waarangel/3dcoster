@@ -38,6 +38,8 @@ type JobCardProps = {
   onOpenSaleForm: (job: PrintJob) => void;
   onEdit: (job: PrintJob) => void;
   onDelete: (id: string) => void;
+  onEditSale: (sale: Sale) => void;
+  onDeleteSale: (sale: Sale) => void;
   style?: React.CSSProperties;
 };
 
@@ -54,6 +56,8 @@ const JobCard = memo(function JobCard({
   onOpenSaleForm,
   onEdit,
   onDelete,
+  onEditSale,
+  onDeleteSale,
   style,
 }: JobCardProps) {
   return (
@@ -211,33 +215,51 @@ const JobCard = memo(function JobCard({
                     >
                       <summary className="flex justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                         <span className="flex items-center gap-2">
-                          {hasCustomerDetails && (
-                            <span className="text-xs text-slate-500 group-open:rotate-90 transition-transform">▸</span>
-                          )}
-                          {!hasCustomerDetails && <span className="text-xs text-slate-700 w-2.5 inline-block">·</span>}
+                          <span className="text-xs text-slate-500 group-open:rotate-90 transition-transform">▸</span>
                           {summaryLabel}
                         </span>
                         <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
                       </summary>
-                      {hasCustomerDetails && (
-                        <div className="mt-2 pt-2 border-t border-slate-700 text-xs space-y-0.5 pl-5">
-                          {sale.customer?.name && (
-                            <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customer.name}</span></div>
-                          )}
-                          {!sale.customer?.name && sale.customerName && (
-                            <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customerName}</span></div>
-                          )}
-                          {sale.customer?.email && (
-                            <div><span className="text-slate-500">Email:</span> <span className="text-slate-300">{sale.customer.email}</span></div>
-                          )}
-                          {sale.customer?.company && (
-                            <div><span className="text-slate-500">Company:</span> <span className="text-slate-300">{sale.customer.company}</span></div>
-                          )}
-                          {sale.customer?.address && (
-                            <div><span className="text-slate-500">Address:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.address}</span></div>
-                          )}
+                      <div className="mt-2 pt-2 border-t border-slate-700 text-xs space-y-2 pl-5">
+                        {hasCustomerDetails && (
+                          <div className="space-y-0.5">
+                            {sale.customer?.name && (
+                              <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customer.name}</span></div>
+                            )}
+                            {!sale.customer?.name && sale.customerName && (
+                              <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customerName}</span></div>
+                            )}
+                            {sale.customer?.email && (
+                              <div><span className="text-slate-500">Email:</span> <span className="text-slate-300">{sale.customer.email}</span></div>
+                            )}
+                            {sale.customer?.company && (
+                              <div><span className="text-slate-500">Company:</span> <span className="text-slate-300">{sale.customer.company}</span></div>
+                            )}
+                            {sale.customer?.address && (
+                              <div><span className="text-slate-500">Address:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.address}</span></div>
+                            )}
+                          </div>
+                        )}
+                        {!hasCustomerDetails && (
+                          <div className="text-slate-500 italic">No customer details recorded.</div>
+                        )}
+                        <div className="flex gap-2 pt-1">
+                          <Button
+                            variant="primary"
+                            btnSize="sm"
+                            onClick={e => { e.stopPropagation(); onEditSale(sale); }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            btnSize="sm"
+                            onClick={e => { e.stopPropagation(); onDeleteSale(sale); }}
+                          >
+                            Delete
+                          </Button>
                         </div>
-                      )}
+                      </div>
                     </details>
                   );
                 })}
@@ -265,6 +287,8 @@ type JobRowProps = {
   onOpenSaleForm: (job: PrintJob) => void;
   onEdit: (job: PrintJob) => void;
   onDelete: (id: string) => void;
+  onEditSale: (sale: Sale) => void;
+  onDeleteSale: (sale: Sale) => void;
 };
 
 const JobRow = ({
@@ -279,6 +303,8 @@ const JobRow = ({
   onOpenSaleForm,
   onEdit,
   onDelete,
+  onEditSale,
+  onDeleteSale,
 }: RowComponentProps<JobRowProps>) => {
   const job = jobs[index];
   const isSelected = selectedJobId === job.id;
@@ -293,6 +319,8 @@ const JobRow = ({
       onOpenSaleForm={onOpenSaleForm}
       onEdit={onEdit}
       onDelete={onDelete}
+      onEditSale={onEditSale}
+      onDeleteSale={onDeleteSale}
       style={style}
     />
   );
@@ -338,8 +366,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
   const [deleteConfirmJobId, setDeleteConfirmJobId] = useState<string | null>(null);
 
-  const { sales, addSale } = useSales(selectedJobId || undefined);
+  const { sales, addSale, updateSale, deleteSale } = useSales(selectedJobId || undefined);
   const { sales: allSales } = useSales();
+  // Phase 14 revised (2026-05-22): sales are editable so users can fix per-sale
+  // customer typos after recording. Null = create mode; Sale = edit mode.
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [deleteSaleConfirmId, setDeleteSaleConfirmId] = useState<string | null>(null);
 
   const salesByJob = useMemo(() => {
     const map = new Map<string, Sale[]>();
@@ -444,6 +476,41 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     };
   }, [salesByJob]);
 
+  // Reset all sale-form state. Called after submit + on Cancel.
+  const resetSaleForm = useCallback(() => {
+    setShowSaleForm(false);
+    setEditingSale(null);
+    setSaleQuantity(1);
+    setSalePrice(0);
+    setSaleCustomerName('');
+    setSaleCustomerEmail('');
+    setSaleCustomerCompany('');
+    setSaleCustomerAddress('');
+    setSaleShippingMethod('local_pickup');
+    setSaleShippingCost(0);
+    setSaleMarketplace('facebook_local');
+  }, []);
+
+  // Open the sale modal in edit mode. Loads the existing sale's fields into form state.
+  const handleEditSale = useCallback((sale: Sale) => {
+    setEditingSale(sale);
+    setSaleQuantity(sale.quantity);
+    setSalePrice(sale.unitPrice);
+    setSaleCustomerName(sale.customer?.name ?? sale.customerName ?? '');
+    setSaleCustomerEmail(sale.customer?.email ?? '');
+    setSaleCustomerCompany(sale.customer?.company ?? '');
+    setSaleCustomerAddress(sale.customer?.address ?? '');
+    setSaleShippingMethod(sale.shippingMethod ?? 'local_pickup');
+    setSaleShippingCost(sale.shippingCost ?? 0);
+    setSaleMarketplace(sale.marketplace ?? 'facebook_local');
+    setShowSaleForm(true);
+  }, []);
+
+  const handleConfirmDeleteSale = useCallback(async (sale: Sale) => {
+    await deleteSale(sale);
+    setDeleteSaleConfirmId(null);
+  }, [deleteSale]);
+
   const handleRecordSale = async () => {
     if (!selectedJob || saleQuantity <= 0) return;
 
@@ -460,38 +527,48 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       saleCustomerCompany.trim() !== '' ||
       saleCustomerAddress.trim() !== '';
 
-    const sale: Sale = {
-      id: `sale-${Date.now()}`,
-      jobId: selectedJob.id,
-      quantity: saleQuantity,
-      unitPrice: unitPrice,
-      totalRevenue: saleQuantity * unitPrice,
-      soldAt: new Date(),
-      customer: hasCustomer
-        ? {
-            name: saleCustomerName.trim() || undefined,
-            email: saleCustomerEmail.trim() || undefined,
-            company: saleCustomerCompany.trim() || undefined,
-            address: saleCustomerAddress.trim() || undefined,
-          }
-        : undefined,
-      shippingMethod: saleShippingMethod,
-      shippingCost: saleShippingCost,
-      marketplace: saleMarketplace,
-      marketplaceFee: marketplaceFee,
-    };
+    const customer = hasCustomer
+      ? {
+          name: saleCustomerName.trim() || undefined,
+          email: saleCustomerEmail.trim() || undefined,
+          company: saleCustomerCompany.trim() || undefined,
+          address: saleCustomerAddress.trim() || undefined,
+        }
+      : undefined;
 
-    await addSale(sale);
-    setShowSaleForm(false);
-    setSaleQuantity(1);
-    setSalePrice(0);
-    setSaleCustomerName('');
-    setSaleCustomerEmail('');
-    setSaleCustomerCompany('');
-    setSaleCustomerAddress('');
-    setSaleShippingMethod('local_pickup');
-    setSaleShippingCost(0);
-    setSaleMarketplace('facebook_local');
+    if (editingSale) {
+      // Edit mode: preserve id + soldAt + jobId from the original sale.
+      const updated: Sale = {
+        ...editingSale,
+        quantity: saleQuantity,
+        unitPrice: unitPrice,
+        totalRevenue: saleQuantity * unitPrice,
+        customer,
+        customerName: undefined,  // Drop the legacy field on update — new shape wins.
+        shippingMethod: saleShippingMethod,
+        shippingCost: saleShippingCost,
+        marketplace: saleMarketplace,
+        marketplaceFee: marketplaceFee,
+      };
+      await updateSale(updated);
+    } else {
+      const sale: Sale = {
+        id: `sale-${Date.now()}`,
+        jobId: selectedJob.id,
+        quantity: saleQuantity,
+        unitPrice: unitPrice,
+        totalRevenue: saleQuantity * unitPrice,
+        soldAt: new Date(),
+        customer,
+        shippingMethod: saleShippingMethod,
+        shippingCost: saleShippingCost,
+        marketplace: saleMarketplace,
+        marketplaceFee: marketplaceFee,
+      };
+      await addSale(sale);
+    }
+
+    resetSaleForm();
   };
 
   // Stable callbacks so React.memo on JobCard can skip rows whose data
@@ -539,6 +616,10 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // a shallow comparison and re-renders rows when these values change —
   // selecting a different job updates selectedJobId, which flips isSelected
   // for the two affected rows and leaves the rest memoized (CR-03 fix).
+  // Stable callbacks for per-sale actions so JobCard's React.memo can short-circuit.
+  const handleEditSaleStable = useCallback((sale: Sale) => handleEditSale(sale), [handleEditSale]);
+  const handleDeleteSaleStable = useCallback((sale: Sale) => setDeleteSaleConfirmId(sale.id), []);
+
   const rowProps = useMemo<JobRowProps>(() => ({
     jobs,
     selectedJobId,
@@ -549,7 +630,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onOpenSaleForm: handleOpenSaleForm,
     onEdit: onEditJob,
     onDelete: handleDeleteJob,
-  }), [jobs, selectedJobId, sales, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob]);
+    onEditSale: handleEditSaleStable,
+    onDeleteSale: handleDeleteSaleStable,
+  }), [jobs, selectedJobId, sales, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleEditSaleStable, handleDeleteSaleStable]);
 
   return (
     <div className="space-y-6">
@@ -591,6 +674,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   onOpenSaleForm={handleOpenSaleForm}
                   onEdit={onEditJob}
                   onDelete={handleDeleteJob}
+                  onEditSale={handleEditSaleStable}
+                  onDeleteSale={handleDeleteSaleStable}
                 />
               );
             })}
@@ -599,9 +684,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       </div>
 
       {showSaleForm && selectedJob && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowSaleForm(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={resetSaleForm}>
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-4">Record Sale - {selectedJob.name}</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              {editingSale ? 'Edit Sale' : 'Record Sale'} - {selectedJob.name}
+            </h3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -750,11 +837,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   onClick={handleRecordSale}
                   className="flex-1"
                 >
-                  Record Sale
+                  {editingSale ? 'Save Changes' : 'Record Sale'}
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={() => setShowSaleForm(false)}
+                  onClick={resetSaleForm}
                 >
                   Cancel
                 </Button>
@@ -780,6 +867,34 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
               </Button>
               <Button
                 onClick={confirmDeleteJob}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSaleConfirmId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteSaleConfirmId(null)}>
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Sale</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              Delete this sale record? The job's copies-sold count will decrease accordingly. This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => setDeleteSaleConfirmId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const sale = sales.find(s => s.id === deleteSaleConfirmId);
+                  if (sale) handleConfirmDeleteSale(sale);
+                }}
                 className="bg-red-600 hover:bg-red-700"
               >
                 Delete
