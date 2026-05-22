@@ -32,7 +32,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms (completed 2026-05-21)
 - [x] **Phase 14: Customer Details + Etsy Helper** — Customer fields on sold work (revised mid-UAT to per-Sale per D-21), Recent Sales accordion with customer block, conditional Etsy ToS collapsible checklist (gated on marketplace=etsy per D-22), and features.ts dead-badge audit holds (completed 2026-05-22)
 - [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset
-- [ ] **Phase 15.1: Customer Library (INSERTED)** — Customers as first-class assets: new Customers tab with CRUD + virtualized list + CSV bulk import + combobox picker in the Record Sale modal (with email-match auto-link). Dexie v6→v7 introduces a dedicated `customers` store; per-Sale customer remains a by-value snapshot for byte-identical historical sales
+- [x] **Phase 15.1: Customer Library (INSERTED)** — Customers as first-class assets: new Customers tab with CRUD + virtualized list + CSV bulk import + combobox picker in the Record Sale modal (with email-match auto-link). Dexie v6→v7 introduces a dedicated `customers` store; per-Sale customer remains a by-value snapshot for byte-identical historical sales (completed 2026-05-22)
 - [ ] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification
 
 ---
@@ -119,7 +119,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 15.1-02-PLAN.md — Customers tab UI: `CustomerLibrary.tsx` + `CustomerEditModal.tsx` + `App.tsx` tab wiring (Wave 2, autonomous; depends on 15.1-01)
 - [x] 15.1-03-PLAN.md — CSV import: `src/utils/customerCsv.ts` + `CustomerCsvImportModal.tsx` + CustomerLibrary "Import CSV" wiring (Wave 2, autonomous; depends on 15.1-01)
 - [x] 15.1-04-PLAN.md — Record Sale combobox picker + email-match auto-link + auto-create from typed values (Wave 3, autonomous; depends on 15.1-01, 15.1-02)
-- [ ] 15.1-05-PLAN.md — NEW badge wiring on Customers tab + final build gate + UAT verification (Wave 4, has checkpoint:human-verify; depends on 15.1-02, 15.1-03, 15.1-04)
+- [x] 15.1-05-PLAN.md — NEW badge wiring on Customers tab + final build gate + UAT verification (Wave 4, has checkpoint:human-verify; depends on 15.1-02, 15.1-03, 15.1-04)
 **UI hint**: yes
 
 ### Phase 16: Printable PDF Quote
@@ -145,7 +145,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
-| 15.1. Customer Library (INSERTED) | 4/5 | In Progress|  |
+| 15.1. Customer Library (INSERTED) | 5/5 | Complete   | 2026-05-22 |
 | 16. Printable PDF Quote | 0/? | Not started | — |
 
 ---
