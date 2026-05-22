@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage, UserProfile } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage, UserProfile, JobCustomer } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
-import { Button, Input, Select, InfoTooltip, CollapsibleSection } from './ui';
+import { Button, Input, Select, Textarea, InfoTooltip, CollapsibleSection } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { calculateCost, calculateTax } from '../utils/costCalc';
 import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
@@ -147,6 +147,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     () => editingJob?.etsyChecks ?? getStoredValue('etsyChecks', {} as Record<string, boolean>)
   );
 
+  // Customer details (Phase 14 — CUST-01, D-06..D-11).
+  const [customer, setCustomer] = useState<JobCustomer>(
+    () => editingJob?.customer ?? getStoredValue('customer', {} as JobCustomer)
+  );
+
   // Job saved feedback
   const [justSaved, setJustSaved] = useState(false);
 
@@ -182,13 +187,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       packagingMaterials,
       marketplace,
       etsyChecks,
+      customer,
     };
     sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
   }, [
     editingJob, printName, filamentRows,
     selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes, postProcessingMinutes,
     failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, taxRateOverride, lastEdited,
-    shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace, etsyChecks
+    shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace, etsyChecks, customer
   ]);
 
   // Populate fields when editing an existing job
@@ -208,6 +214,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setSellingPrice(editingJob.sellingPrice);
       setTaxRateOverride(editingJob.taxRate);
       setEtsyChecks(editingJob.etsyChecks ?? {});
+      setCustomer(editingJob.customer ?? {});
       // Seed profit margin + target profit from the saved cost basis so the
       // user sees the historical margin immediately, not the user-profile default.
       // The derive-from-price effect rebases these against current trueCost once
@@ -524,9 +531,17 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     setPackagingMaterials([]);
     setMarketplace('none');
     setEtsyChecks({});
+    setCustomer({});
     // Clear sessionStorage when form is cleared
     sessionStorage.removeItem(FORM_STORAGE_KEY);
   };
+
+  // Returns true iff at least one customer field has non-whitespace content.
+  // Used to decide whether to persist the customer object (vs. leaving it undefined
+  // when the user never typed anything). Phase 14 — CUST-01.
+  function hasAnyCustomerField(c: JobCustomer): boolean {
+    return Boolean(c.name?.trim() || c.email?.trim() || c.address?.trim() || c.company?.trim());
+  }
 
   // Auto-dismiss validation error
   useEffect(() => {
@@ -581,6 +596,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         taxRate: taxRateOverride,
         taxAmount: tax.taxAmount,
         etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
+        customer: hasAnyCustomerField(customer) ? customer : undefined,
       };
 
       onUpdateJob(updatedJob);
@@ -611,6 +627,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         taxRate: taxRateOverride,
         taxAmount: tax.taxAmount,
         etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
+        customer: hasAnyCustomerField(customer) ? customer : undefined,
         copiesSold: 0,
       };
 
@@ -1503,7 +1520,53 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         </div>
       </div>
 
-      {/* Plan 14-03 inserts its Customer card directly above this comment. */}
+      {/* Customer details — Phase 14 CUST-01, CUST-02 */}
+      <CollapsibleSection
+        title="Customer"
+        badge={<NewBadge feature="customer-details" className="absolute -top-1 -right-1" />}
+      >
+        {/* Row 1: Name + Email — md:grid-cols-2 responsive grid per D-07 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Name</label>
+            <Input
+              type="text"
+              value={customer.name ?? ''}
+              onChange={e => setCustomer(c => ({ ...c, name: e.target.value }))}
+              placeholder="Jane Doe"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Email</label>
+            <Input
+              type="email"
+              value={customer.email ?? ''}
+              onChange={e => setCustomer(c => ({ ...c, email: e.target.value }))}
+              placeholder="jane@example.com"
+            />
+          </div>
+        </div>
+        {/* Row 2: Company — full-width within section per D-07 */}
+        <div className="mt-4">
+          <label className="block text-xs text-slate-400 mb-1">Company</label>
+          <Input
+            type="text"
+            value={customer.company ?? ''}
+            onChange={e => setCustomer(c => ({ ...c, company: e.target.value }))}
+            placeholder="Acme LLC"
+          />
+        </div>
+        {/* Row 3: Address — full-width Textarea, 3 rows per D-11 */}
+        <div className="mt-4">
+          <label className="block text-xs text-slate-400 mb-1">Address</label>
+          <Textarea
+            rows={3}
+            value={customer.address ?? ''}
+            onChange={e => setCustomer(c => ({ ...c, address: e.target.value }))}
+            placeholder="Shipping address or pickup location"
+          />
+        </div>
+      </CollapsibleSection>
 
       {/* Etsy compliance helper — Phase 14 ETSY-01, ETSY-02 */}
       <CollapsibleSection
