@@ -128,9 +128,9 @@ export function CustomerEditModal({ isOpen, initialCustomer, onSave, onClose }: 
               </div>
             )}
 
-            {/* 1. Name */}
+            {/* 1. Name (IN-03: no `*` — the rule is "Name OR Email", per the helper text above) */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Name *</label>
+              <label className="block text-xs text-slate-400 mb-1">Name</label>
               <Input
                 type="text"
                 value={name}
@@ -138,9 +138,9 @@ export function CustomerEditModal({ isOpen, initialCustomer, onSave, onClose }: 
               />
             </div>
 
-            {/* 2. Email */}
+            {/* 2. Email (IN-03: no `*` — the rule is "Name OR Email", per the helper text above) */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Email *</label>
+              <label className="block text-xs text-slate-400 mb-1">Email</label>
               <Input
                 type="email"
                 value={email}
