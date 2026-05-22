@@ -4,6 +4,7 @@ import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window'
 import type { Customer } from '../types';
 import { Button, Input, EmptyState, Skeleton } from './ui';
 import { CustomerEditModal } from './CustomerEditModal';
+import { CustomerCsvImportModal } from './CustomerCsvImportModal';
 import { db } from '../db/database';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
 
@@ -13,9 +14,7 @@ interface CustomerLibraryProps {
   onAddCustomer: (c: Customer) => Promise<void>;
   onUpdateCustomer: (c: Customer) => Promise<void>;
   onDeleteCustomer: (id: string) => Promise<void>;
-  // Reserved for Plan 03 — CSV importer wiring. Declared so the prop surface
-  // is stable before Plan 03 lands the modal mount.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // Routed to CustomerCsvImportModal as `onImportCustomers` (Plan 03).
   onBulkImportCustomers: (toImport: Customer[]) => Promise<void>;
 }
 
@@ -110,6 +109,7 @@ export function CustomerLibrary({
   onAddCustomer,
   onUpdateCustomer,
   onDeleteCustomer,
+  onBulkImportCustomers,
 }: CustomerLibraryProps) {
   // Local state
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,7 +211,6 @@ export function CustomerLibrary({
             aria-pressed={showCsvImport}
             className="flex-1 sm:flex-none"
           >
-            {/* TODO Plan 03 — wire CustomerCsvImportModal */}
             Import CSV
           </Button>
           <Button
@@ -283,6 +282,14 @@ export function CustomerLibrary({
         initialCustomer={editingCustomer}
         onSave={handleSaveFromModal}
         onClose={handleCloseModal}
+      />
+
+      {/* CSV import modal (Plan 03) */}
+      <CustomerCsvImportModal
+        isOpen={showCsvImport}
+        existingCustomers={customers}
+        onImportCustomers={onBulkImportCustomers}
+        onClose={() => setShowCsvImport(false)}
       />
     </div>
   );
