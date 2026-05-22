@@ -7,6 +7,8 @@ export const featureReleases: Record<string, Date> = {
   'default-profit-margin': new Date('2026-05-18'),
   'model-url': new Date('2026-05-20'),
   'default-tax-rate': new Date('2026-05-21'),
+  'customer-details': new Date('2026-05-21'),
+  'etsy-helper': new Date('2026-05-21'),
   // Add new features here with their release date
 };
 
