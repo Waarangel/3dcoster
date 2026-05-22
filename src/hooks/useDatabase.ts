@@ -535,15 +535,13 @@ export function useSales(jobId?: string) {
 // Modeled on usePrinterInstances (no seed data, minimal CRUD + entity-specific bumpers).
 export function useCustomers() {
   const customers = useLiveQuery(() => db.customers.toArray(), []);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    db.customers.count().then(() => {
-      if (!cancelled) setIsLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, []);
+  // IN-01 fix: derive isLoading directly from the liveQuery value so consumers
+  // also see `isLoading=true` if the store is cleared mid-session (e.g. user
+  // wipes IndexedDB via DevTools) and Dexie re-emits `undefined`. Previously
+  // a one-shot useState+useEffect flipped to false on the first count and
+  // never re-flipped, briefly surfacing `customers: []` to consumers during
+  // the next re-emission.
+  const isLoading = customers === undefined;
 
   // WR-03 fix: shallow-freeze the customers array at the hook boundary so
   // consumers cannot mutate the array reference returned by Dexie's
