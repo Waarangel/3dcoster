@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
-import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees } from '../types';
+import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 
 // Hook for all assets (materials + printers) with CRUD operations
@@ -528,5 +528,73 @@ export function useSales(jobId?: string) {
     updateSale,
     deleteSale,
     getTotals,
+  };
+}
+
+// Hook for customer library (Phase 15.1 — D-03 + UI-SPEC discretion #15).
+// Modeled on usePrinterInstances (no seed data, minimal CRUD + entity-specific bumpers).
+export function useCustomers() {
+  const customers = useLiveQuery(() => db.customers.toArray(), []);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    db.customers.count().then(() => {
+      if (!cancelled) setIsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // O(1) email→customer map for picker + import dedup (UI-SPEC discretion #15).
+  // Memoized so the reference is stable across renders that don't change the
+  // customers array. Rows with empty email are excluded so the map never has
+  // an empty-string key collision.
+  const customersByEmail = useMemo(() => {
+    const map = new Map<string, Customer>();
+    for (const c of customers ?? []) {
+      const key = (c.email || '').trim().toLowerCase();
+      if (key) map.set(key, c);
+    }
+    return map;
+  }, [customers]);
+
+  const addCustomer = useCallback(async (customer: Customer) => {
+    await db.customers.add(customer);
+  }, []);
+
+  const updateCustomer = useCallback(async (customer: Customer) => {
+    await db.customers.put(customer);
+  }, []);
+
+  const deleteCustomer = useCallback(async (id: string) => {
+    await db.customers.delete(id);
+  }, []);
+
+  // D-03: bump lastUsedAt when the customer is picked in the Record Sale combobox
+  // or when the silent email-match auto-link path fires. NOT bumped by library
+  // edits — semantics is "last used in business," not "last touched."
+  // Read-modify-write so we no-op silently if the record was deleted concurrently.
+  const bumpLastUsed = useCallback(async (id: string) => {
+    const existing = await db.customers.get(id);
+    if (existing) {
+      await db.customers.put({ ...existing, lastUsedAt: new Date() });
+    }
+  }, []);
+
+  // Bulk import for the CSV importer (Plan 03). Mirrors useAssets.bulkImportAssets:
+  // upsert semantics so the same call handles both new rows and overwrite-existing.
+  const bulkImportCustomers = useCallback(async (toImport: Customer[]) => {
+    await db.customers.bulkPut(toImport);
+  }, []);
+
+  return {
+    customers: customers ?? [],
+    customersByEmail,
+    isLoading,
+    addCustomer,
+    updateCustomer,
+    deleteCustomer,
+    bumpLastUsed,
+    bulkImportCustomers,
   };
 }
