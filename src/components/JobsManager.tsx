@@ -355,6 +355,12 @@ function JobsListSkeleton() {
   );
 }
 
+// Phase 15.1 (CL-04 / IN-04) — Maximum number of customer-picker dropdown rows
+// shown before the "Showing first N of M matches" overflow footer appears.
+// UI-SPEC §5 sets this to 8; centralized here so the slice limit and the
+// overflow-footer threshold can never drift out of sync.
+const PICKER_VISIBLE_LIMIT = 8;
+
 export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showSaleForm, setShowSaleForm] = useState(false);
@@ -537,9 +543,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     );
   }, [customers, customerPickerQuery]);
 
-  // Top 8 visible; the rest get an overflow footer per UI-SPEC §5.
+  // Top PICKER_VISIBLE_LIMIT visible; the rest get an overflow footer per UI-SPEC §5.
   const visibleCustomers = useMemo<Customer[]>(
-    () => filteredCustomers.slice(0, 8),
+    () => filteredCustomers.slice(0, PICKER_VISIBLE_LIMIT),
     [filteredCustomers]
   );
 
@@ -925,9 +931,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                             </div>
                           </button>
                         ))}
-                        {filteredCustomers.length > 8 && (
+                        {filteredCustomers.length > PICKER_VISIBLE_LIMIT && (
                           <div className="px-4 py-2 text-xs text-slate-500 border-t border-slate-700">
-                            Showing first 8 of {filteredCustomers.length} matches — refine your search
+                            Showing first {PICKER_VISIBLE_LIMIT} of {filteredCustomers.length} matches — refine your search
                           </div>
                         )}
                         {filteredCustomers.length === 0 && (
