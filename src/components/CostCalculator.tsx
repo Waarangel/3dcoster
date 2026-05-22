@@ -215,6 +215,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setTaxRateOverride(editingJob.taxRate);
       setEtsyChecks(editingJob.etsyChecks ?? {});
       setCustomer(editingJob.customer ?? {});
+      // Cost-input snapshot restore (Phase 14 fix-up). Fields are optional on PrintJob —
+      // pre-fix-up records have these undefined, in which case we leave form state alone
+      // (it falls back to sessionStorage / defaults from the initial useState).
+      if (editingJob.shippingMethod !== undefined) setShippingMethod(editingJob.shippingMethod);
+      if (editingJob.shippingDistanceKm !== undefined) setShippingDistanceKm(editingJob.shippingDistanceKm);
+      if (editingJob.shippingOverrideCost !== undefined) setShippingOverrideCost(editingJob.shippingOverrideCost);
+      if (editingJob.packagingMaterials !== undefined) setPackagingMaterials(editingJob.packagingMaterials);
+      if (editingJob.marketplace !== undefined) setMarketplace(editingJob.marketplace);
       // Seed profit margin + target profit from the saved cost basis so the
       // user sees the historical margin immediately, not the user-profile default.
       // The derive-from-price effect rebases these against current trueCost once
@@ -597,6 +605,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         taxAmount: tax.taxAmount,
         etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
         customer: hasAnyCustomerField(customer) ? customer : undefined,
+        shippingMethod,
+        shippingDistanceKm,
+        shippingOverrideCost,
+        packagingMaterials,
+        marketplace,
       };
 
       onUpdateJob(updatedJob);
@@ -628,6 +641,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         taxAmount: tax.taxAmount,
         etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
         customer: hasAnyCustomerField(customer) ? customer : undefined,
+        shippingMethod,
+        shippingDistanceKm,
+        shippingOverrideCost,
+        packagingMaterials,
+        marketplace,
         copiesSold: 0,
       };
 

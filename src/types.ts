@@ -200,6 +200,19 @@ export interface PrintJob {
   // is unchanged and no migration is needed. Existing v6 records have etsyChecks === undefined
   // which renders as "no boxes ticked".
   etsyChecks?: Record<string, boolean>;
+
+  // Cost-input snapshot (Phase 14 fix-up — D-18 schema-extension pattern).
+  // These fields are part of trueCost computation in CostCalculator. Saving them on the
+  // job lets Edit re-hydrate the exact form state that produced the saved costPerUnit;
+  // otherwise the form falls back to sessionStorage / defaults and recomputes a different
+  // (lower) cost on Edit, silently overwriting the saved value when the user re-saves.
+  // All optional, non-indexed — Dexie v6 schema string unchanged. Existing v6 records have
+  // these fields undefined; the form falls back to its existing defaults in that case.
+  shippingMethod?: ShippingMethodType;
+  shippingDistanceKm?: number;
+  shippingOverrideCost?: number | null;
+  packagingMaterials?: MaterialUsage[];
+  marketplace?: MarketplaceType;
 }
 
 // Sales record for a print job
