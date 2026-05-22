@@ -626,6 +626,40 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         }
       : undefined;
 
+    // Phase 15.1 (CL-04 / D-06 / D-07): library side-effect for NEW sales only.
+    // - If the user picked from the combobox, lastUsedAt was already bumped by handlePickCustomer
+    //   AND the 4 fields were filled from the library record; the typed values pass through unchanged.
+    // - If the user did NOT pick (typed values directly) and at least one of name/email is non-empty:
+    //   - If the typed email matches an existing library record (after trim+toLowerCase): silently
+    //     link by bumping lastUsedAt; do NOT overwrite library fields with per-sale typed values
+    //     (by-value rule, D-05/D-07).
+    //   - Otherwise: auto-create a new library record (D-06).
+    // Edit-sale path is excluded — we don't want to retroactively create library records when a
+    // user edits a pre-15.1 sale.
+    if (!editingSale && customer && (customer.name || customer.email)) {
+      const emailKey = (customer.email || '').trim().toLowerCase();
+      const existing = emailKey ? customersByEmail.get(emailKey) : undefined;
+      if (existing) {
+        // D-07 silent link: bump lastUsedAt; do NOT overwrite library fields with per-sale values
+        await bumpLastUsed(existing.id);
+      } else {
+        // D-06 auto-create from typed values
+        const newCustomer: Customer = {
+          id: typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `customer-${Date.now()}`,
+          createdAt: new Date(),
+          lastUsedAt: new Date(),  // first use = creation time
+          name: customer.name,
+          email: customer.email,
+          company: customer.company,
+          address: customer.address,
+          notes: customer.notes,
+        };
+        await addCustomer(newCustomer);
+      }
+    }
+
     if (editingSale) {
       // Edit mode: preserve id + soldAt + jobId from the original sale.
       const updated: Sale = {
