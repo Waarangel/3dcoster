@@ -27,7 +27,9 @@ function scanDir(dir) {
 
     // CRITICAL: exclude src/pdf/ from scanning — it is the allowed static jspdf consumer.
     // Guard applied uniformly to both directory recursion AND file reads.
-    if (fullPath.includes('/src/pdf/') || fullPath.includes('\\src\\pdf\\')) continue;
+    // Uses both slash variants to handle relative paths (src/pdf/) and absolute paths (/src/pdf/).
+    if (fullPath.includes('/src/pdf/') || fullPath.includes('\\src\\pdf\\') ||
+        fullPath.startsWith('src/pdf/') || fullPath.startsWith('src\\pdf\\')) continue;
 
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
