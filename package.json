@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/lint-no-raw-html.mjs && vitest run --coverage && tsc -b && vite build && node scripts/assert-bundle-size.mjs",
+    "build": "node scripts/lint-no-raw-html.mjs && node scripts/assert-no-static-jspdf.mjs && vitest run --coverage && tsc -b && vite build && node scripts/assert-bundle-size.mjs && node scripts/assert-no-pdf-preload.mjs",
     "lint": "eslint .",
     "lint:no-raw-html": "node scripts/lint-no-raw-html.mjs",
     "analyze": "vite build --mode analyze",
