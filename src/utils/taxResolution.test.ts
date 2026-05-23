@@ -314,3 +314,23 @@ describe('tooltipForSource', () => {
     expect(result).toContain('marketplaces');
   });
 });
+
+// ---------------------------------------------------------------------------
+// taxLabelFor — Wave 0 scaffold (Phase 16 D-06)
+// taxLabelFor() doesn't exist yet — plan 02 adds it to taxResolution.ts.
+// Scaffolded with it.todo() so this file runs green today.
+// Plan 02 will add `taxLabelFor` to the import list and flip these to real assertions.
+// ---------------------------------------------------------------------------
+
+describe('taxLabelFor', () => {
+  it.todo("EU code (DE, FR, IT, NL, ES in EU set) → 'VAT'");
+  it.todo("GB → 'VAT'");
+  it.todo("AU → 'GST'");
+  it.todo("NZ → 'GST'");
+  it.todo("IN → 'GST'");
+  it.todo("CA → 'GST'");
+  it.todo("MX → 'IVA' (note: ES is in EU set so EU check fires first → VAT; MX → IVA)");
+  it.todo("US → 'Sales Tax'");
+  it.todo("undefined → 'Tax' (fallback)");
+  it.todo("unknown code (e.g. 'ZZ') → 'Tax' (fallback)");
+});
