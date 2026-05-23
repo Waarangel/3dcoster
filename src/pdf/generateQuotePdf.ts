@@ -19,20 +19,24 @@ const MARGIN_RIGHT = 40;
 const FONT_ID = 'NotoSans';
 
 // ---------------------------------------------------------------------------
-// Module-level font-load guard (RESEARCH.md Pattern 3)
-// Only the first call to ensureFontsLoaded() does real work; subsequent calls
-// are a no-op. This means the first test/PDF-gen in a session pays the cost;
-// all subsequent ones are instant.
+// Font registration (RESEARCH.md Pattern 3)
+//
+// jsPDF 4.x VFS is per-instance (stored in doc.internal.vFS). This means
+// addFileToVFS AND addFont must be called on EVERY new jsPDF() instance.
+// The base64 strings are module-level constants (already in memory), so
+// calling addFileToVFS per-instance is cheap — it just copies the reference
+// into the instance's VFS dictionary.
+//
+// There is no persistent shared VFS between instances; the module-level
+// `fontsLoaded` guard pattern from RESEARCH.md Pattern 3 does NOT apply
+// to jsPDF 4.x's per-instance VFS. Each doc gets its own registration.
 // ---------------------------------------------------------------------------
-let fontsLoaded = false;
 
 function ensureFontsLoaded(doc: jsPDF): void {
-  if (fontsLoaded) return;
   doc.addFileToVFS('NotoSans-Regular.ttf', notoSansRegularBase64);
   doc.addFileToVFS('NotoSans-Bold.ttf', notoSansBoldBase64);
   doc.addFont('NotoSans-Regular.ttf', FONT_ID, 'normal');
   doc.addFont('NotoSans-Bold.ttf', FONT_ID, 'bold');
-  fontsLoaded = true;
 }
 
 // ---------------------------------------------------------------------------
