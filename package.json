@@ -18,10 +18,14 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-shell": "^2.3.5",
     "@vercel/analytics": "^1.6.1",
     "dexie": "^4.2.1",
     "dexie-react-hooks": "^4.2.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "jszip": "^3.10.1",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
@@ -48,6 +52,7 @@
     "jsdom": "^29.0.2",
     "rollup-plugin-visualizer": "^5.14.0",
     "sharp": "^0.34.5",
+    "subset-font": "^2.5.0",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
