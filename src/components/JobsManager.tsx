@@ -186,10 +186,11 @@ const JobCard = memo(function JobCard({
               <Button
                 variant="secondary"
                 btnSize="sm"
-                disabled={isGeneratingPdf}
+                disabled={isGeneratingPdf || job.sellingPrice <= 0}
+                title={job.sellingPrice <= 0 ? 'Set a selling price first' : undefined}
                 onClick={(e) => { e.stopPropagation(); onGeneratePdf(job); }}
               >
-                {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
+                {isGeneratingPdf ? 'Generating...' : 'Print Quote'}
               </Button>
               <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
             </div>
