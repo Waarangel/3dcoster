@@ -2,8 +2,8 @@
 phase: 16
 slug: printable-pdf-quote
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-05-22
 ---
 
