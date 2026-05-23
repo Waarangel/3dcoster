@@ -90,7 +90,7 @@ function scrollToQuoteRow(quoteId: string) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function RecentQuotesSection({ jobId }: { jobId: string }) {
+export function RecentQuotesSection({ jobId }: { jobId: string }) {
   const { quotesByJobId, updateQuote } = useQuotes();
   const quotesForJob = quotesByJobId.get(jobId) ?? [];
   // D-17 / G6: legacy 'draft' rows are NOT user-visible — runtime never writes them.
@@ -186,7 +186,7 @@ function QuoteRow({ quote, onMarkAccepted, onMarkDeclined, onReopen }: QuoteRowP
   );
 }
 
-function SaleBackRefLink({ convertedFromQuoteId, jobId }: { convertedFromQuoteId: string; jobId: string }) {
+export function SaleBackRefLink({ convertedFromQuoteId, jobId }: { convertedFromQuoteId: string; jobId: string }) {
   const { quotesByJobId } = useQuotes();
   const linkedQuote = quotesByJobId.get(jobId)?.find(q => q.id === convertedFromQuoteId);
   // Data anomaly (Quote deleted) — render nothing rather than a broken link.
