@@ -145,7 +145,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 16-05-PLAN.md — Wave 4: automated verification chain + UAT — surfaced 8 gaps (Wave 4, checkpoint, SHIPPED with gaps_found verdict)
 - [x] 16-06-PLAN.md — Gap A / D-13: Remove Generate PDF from CostCalculator (Wave 0 of gap closure, autonomous; depends on 16-04)
 - [x] 16-07-PLAN.md — Gap B / D-14: Rename JobsManager button to Print Quote + secondary variant (Wave 0 of gap closure, autonomous; depends on 16-04)
-- [ ] 16-08-PLAN.md — Gap H / D-21: Tax-fallback bug fix at CostCalculator save sites + Phase 13 Sale-write audit (Wave 1 of gap closure, autonomous; depends on 16-06, 16-07)
+- [x] 16-08-PLAN.md — Gap H / D-21: Tax-fallback bug fix at CostCalculator save sites + Phase 13 Sale-write audit (Wave 1 of gap closure, autonomous; depends on 16-06, 16-07)
 - [ ] 16-09-PLAN.md — Gaps C+E / D-15+D-17+D-22: Quote interface + Dexie v7→v8 migration with locked backfill test + refactor generateQuotePdf to take Quote arg + Shipping row (Wave 2 of gap closure, autonomous; depends on 16-07, 16-08)
 - [ ] 16-10-PLAN.md — Gap D / D-16+D-18: PrintQuoteModal with customer picker + transactional Quote write + counter increment site moves here (Wave 3 of gap closure, autonomous; depends on 16-09)
 - [ ] 16-11-PLAN.md — Gap F / D-19: Recent Quotes section in JobsManager accordion + status pills + Mark Accepted/Declined/Reopen + back-ref link (Wave 4 of gap closure, autonomous; depends on 16-10)
@@ -164,7 +164,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
-| 16. Printable PDF Quote | 6/13 | In Progress|  |
+| 16. Printable PDF Quote | 7/13 | In Progress|  |
 
 ---
 
