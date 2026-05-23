@@ -191,6 +191,45 @@ describe('RecentQuotesSection — status transitions', () => {
   });
 });
 
+describe('Convert to Sale (D-20)', () => {
+  it("Convert to Sale button is ENABLED on accepted Quote when onStartConversion is provided", async () => {
+    quotesFixture = [makeQuote({ status: 'accepted', quoteNumber: 5 })];
+    const onStartConversion = vi.fn();
+    await act(async () => {
+      root!.render(<RecentQuotesSection jobId="job-1" onStartConversion={onStartConversion} />);
+    });
+    const btn = buttonByText('Convert to Sale');
+    expect(btn).toBeDefined();
+    expect(btn!.disabled).toBe(false);
+  });
+
+  it("Convert to Sale click fires onStartConversion with the Quote", async () => {
+    const quote = makeQuote({ id: 'quote-aa', status: 'accepted', quoteNumber: 5 });
+    quotesFixture = [quote];
+    const onStartConversion = vi.fn();
+    await act(async () => {
+      root!.render(<RecentQuotesSection jobId="job-1" onStartConversion={onStartConversion} />);
+    });
+    const btn = buttonByText('Convert to Sale');
+    await act(async () => { btn!.click(); });
+    expect(onStartConversion).toHaveBeenCalledTimes(1);
+    expect(onStartConversion.mock.calls[0][0].id).toBe('quote-aa');
+    expect(onStartConversion.mock.calls[0][0].quoteNumber).toBe(5);
+  });
+
+  it("Convert to Sale stays DISABLED when onStartConversion is not provided (backwards-compat with plan 16-11 default)", async () => {
+    quotesFixture = [makeQuote({ status: 'accepted' })];
+    await act(async () => {
+      root!.render(<RecentQuotesSection jobId="job-1" />);
+    });
+    const btn = buttonByText('Convert to Sale');
+    expect(btn).toBeDefined();
+    expect(btn!.disabled).toBe(true);
+  });
+
+  it.todo("transactional rollback (db.transaction rolls back both Sale and Quote on failure) — verified by plan 16-13 UAT integration coverage (requires fake-indexeddb to mock cleanly)");
+});
+
 describe('SaleBackRefLink — D-19', () => {
   it("renders '← Q-NNNN' when a Quote with the convertedFromQuoteId exists", async () => {
     const q = makeQuote({ id: 'quote-xyz', quoteNumber: 7, status: 'converted', convertedToSaleId: 'sale-7' });
