@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers } from './hooks/useDatabase';
-import type { PrintJob, UserProfile } from './types';
-import { db, setUserProfile as dbSetUserProfile } from './db/database';
+import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
 import { CostCalculator } from './components/CostCalculator';
@@ -152,23 +151,11 @@ function App() {
     setEditingJob(null);
   };
 
-  // Quote-number persistence callback (Phase 16 — T-16-12, T-16-19)
-  // REQUIRED by both CostCalculator and JobsManager (no ?: in props interface).
-  // Atomic sequenced writes: job must be persisted + userProfile incremented BEFORE
-  // the generator is called so quoteNumber is durable and nextQuoteNumber is advanced.
-  // After persisting, we update editingJob state so the next render's CostCalculator
-  // prop reflects the persisted quoteNumber (prevents stale-snapshot duplicate assignment).
-  const handlePersistQuoteNumber = async (job: PrintJob, profile: UserProfile): Promise<PrintJob> => {
-    // 1. Atomic sequenced writes — BOTH must complete before the generator is called
-    await db.jobs.put(job);
-    await dbSetUserProfile(profile);
-    // 2. Update editingJob so CostCalculator's editingJob prop reflects the persisted
-    //    quoteNumber on the next render. Without this, a second click before re-render
-    //    would see the stale pre-persist snapshot and re-assign quoteNumber.
-    setEditingJob(prev => prev && prev.id === job.id ? job : prev);
-    // 3. Return the persisted job so the caller passes it (not its local variable) to the generator
-    return job;
-  };
+  // Phase 16 gap closure plan 16-10: the lifetime quote-number counter increment
+  // site has MOVED from this `handlePersistQuoteNumber` helper into the
+  // `createQuote` hook action in `useDatabase.ts`. The hook now owns the
+  // atomic multi-store transaction (quotes + customers + settings); App.tsx
+  // no longer needs to drive that write path.
 
   const tabs: { id: Tab; label: string; shortLabel: string }[] = [
     { id: 'calculator', label: 'Cost Calculator', shortLabel: 'Calculator' },
@@ -325,7 +312,6 @@ function App() {
             onDeleteJob={deleteJob}
             onEditJob={handleEditJob}
             onSwitchTab={setActiveTab}
-            onPersistQuoteNumber={handlePersistQuoteNumber}
           />
         )}
 

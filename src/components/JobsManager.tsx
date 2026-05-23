@@ -1,10 +1,11 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, RuntimeQuoteStatus } from '../types';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile } from '../types';
 import { useSales, useCustomers } from '../hooks/useDatabase';
 import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
+import { PrintQuoteModal } from './PrintQuoteModal';
 
 interface JobsManagerProps {
   jobs: PrintJob[];
@@ -12,10 +13,7 @@ interface JobsManagerProps {
   materials: Material[];
   shippingConfig: ShippingConfig;
   userCurrency: Currency;
-  // REQUIRED (no ?:) — making this optional silently corrupts quote numbering.
-  // Same callback App.tsx passes to CostCalculator; atomic Dexie writes + state sync.
   userProfile: UserProfile;
-  onPersistQuoteNumber: (job: PrintJob, profile: UserProfile) => Promise<PrintJob>;
   onDeleteJob: (id: string) => Promise<void>;
   onEditJob: (job: PrintJob) => void;
   onSwitchTab: (tab: 'calculator' | 'jobs' | 'materials' | 'settings') => void;
@@ -387,11 +385,14 @@ function JobsListSkeleton() {
 // overflow-footer threshold can never drift out of sync.
 const PICKER_VISIBLE_LIMIT = 8;
 
-export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, onPersistQuoteNumber, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  // Per-job generating state (Set<string> keyed by job.id) — multiple jobs can
-  // be expanded simultaneously, so a Map/Set is safer than a single boolean (T-16-12).
-  const [generatingJobIds, setGeneratingJobIds] = useState<Set<string>>(new Set());
+  // Print Quote modal state (plan 16-10). Holds the PrintJob whose modal is open, or null.
+  const [printQuoteModalJob, setPrintQuoteModalJob] = useState<PrintJob | null>(null);
+  // Per-job generating set kept as a stable empty Set so the JobCard prop chain
+  // (`isGeneratingPdf={generatingJobIds.has(job.id)}`) keeps compiling without
+  // touching every row component. The modal owns its own Generate button state.
+  const generatingJobIds = useMemo(() => new Set<string>(), []);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState(1);
   const [salePrice, setSalePrice] = useState(0);
@@ -763,64 +764,14 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     resetSaleForm();
   };
 
-  // PDF generation handler (Phase 16 — T-16-12, T-16-14)
-  // Per-job Set<id> prevents double-click race when multiple accordion rows are open.
-  const handleGeneratePdf = useCallback(async (job: PrintJob) => {
-    if (generatingJobIds.has(job.id)) return;
-    setGeneratingJobIds(prev => new Set(prev).add(job.id));
-    try {
-      let updatedJob: PrintJob = job;
-      let updatedProfile = userProfile;
-      if (updatedJob.quoteNumber === undefined) {
-        const newNum = updatedProfile.nextQuoteNumber ?? 1;
-        const newJob: PrintJob = { ...updatedJob, quoteNumber: newNum };
-        updatedProfile = { ...updatedProfile, nextQuoteNumber: newNum + 1 };
-        // REQUIRED callback: App.tsx persists BOTH writes atomically AND updates
-        // editingJob state. Use the RETURNED job — not newJob — for the generator.
-        updatedJob = await onPersistQuoteNumber(newJob, updatedProfile);
-      }
-      // Find most-recent sale for this job (sorted desc by soldAt — latest first)
-      const jobSales = (allSales ?? []).filter(s => s.jobId === job.id);
-      const mostRecentSale = jobSales.length > 0
-        ? [...jobSales].sort((a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime())[0]
-        : undefined;
-      // TODO(plan-16-10): REPLACED by PrintQuoteModal flow — this stopgap exists only to
-      // keep wave-2 tsc green while plan 16-10 lands the modal that constructs the Quote
-      // properly via useQuotes().createQuote(...). The renamed Print Quote button (plan
-      // 16-07) currently still triggers this silent-fallback path; the modal opener swap
-      // happens in plan 16-10.
-      const stopgapSentAt = new Date();
-      const stopgapQuote: Quote & { status: RuntimeQuoteStatus } = {
-        id: typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `quote-${Date.now()}`,
-        quoteNumber: updatedJob.quoteNumber!,
-        printJobId: updatedJob.id,
-        customerId: undefined,
-        customerSnapshot: mostRecentSale?.customer ?? { name: '' },
-        lineItemsSnapshot: {
-          jobTitle: updatedJob.name,
-          sellingPrice: updatedJob.sellingPrice,
-          shippingCost: 0,
-          resolvedTaxRate: updatedJob.taxRate ?? 0,
-          taxAmount: updatedJob.taxAmount ?? 0,
-          currency: updatedProfile.currency,
-          notes: updatedJob.notes ?? '',
-          terms: updatedProfile.defaultTerms ?? '',
-          countryAtSendTime: updatedProfile.address?.country,
-        },
-        status: 'sent',  // RuntimeQuoteStatus narrow type — 'draft' refused here at compile time
-        createdAt: stopgapSentAt,
-        sentAt: stopgapSentAt,
-      };
-      const { generateQuotePdf } = await import('../pdf/generateQuotePdf');
-      await generateQuotePdf(stopgapQuote);
-    } catch (err) {
-      console.error('PDF generation failed:', err);
-    } finally {
-      setGeneratingJobIds(prev => { const next = new Set(prev); next.delete(job.id); return next; });
-    }
-  }, [generatingJobIds, userProfile, onPersistQuoteNumber, allSales]);
+  // Print Quote button → open the modal (Phase 16 gap closure plan 16-10, D-18).
+  // The prior silent most-recent-sale fallback is gone; the modal is the SOLE
+  // entry point for creating a Quote. The createQuote hook action (16-09 Task 4)
+  // owns the multi-store Dexie transaction (quotes + customers + settings) so
+  // this component never touches db directly.
+  const handleGeneratePdf = useCallback((job: PrintJob) => {
+    setPrintQuoteModalJob(job);
+  }, []);
 
   // Stable callbacks so React.memo on JobCard can skip rows whose data
   // didn't change. State setters are already stable; only derived handlers
@@ -1232,6 +1183,17 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
             </div>
           </div>
         </div>
+      )}
+
+      {/* Phase 16 gap closure plan 16-10: PrintQuoteModal — D-18 sole entry point for Quote creation */}
+      {printQuoteModalJob && (
+        <PrintQuoteModal
+          job={printQuoteModalJob}
+          userProfile={userProfile}
+          isOpen={true}
+          onClose={() => setPrintQuoteModalJob(null)}
+          onQuoteCreated={() => { /* plan 16-11 may add scroll-to / focus-row here */ }}
+        />
       )}
 
     </div>
