@@ -171,6 +171,92 @@ export interface Customer extends JobCustomer {
   lastUsedAt?: Date;
 }
 
+/**
+ * Quote lifecycle status (Phase 16 gap closure — D-17).
+ *
+ * Full enum INCLUDING `'draft'`. The `'draft'` variant is a LEGACY MIGRATION-ONLY
+ * value emitted by the v7→v8 backfill in `src/db/backfill.ts` for pre-existing
+ * PrintJobs that had a `quoteNumber` but no Sales. Runtime code MUST NEVER write
+ * `'draft'` — that is enforced at the type level by `RuntimeQuoteStatus` below
+ * (G6 lock — D-17). The wider `QuoteStatus` exists so legacy `'draft'` rows can
+ * still be READ by the runtime (e.g. rendered in plan 16-11's Recent Quotes
+ * section if a user expands a job whose backfill emitted a draft).
+ */
+export type QuoteStatus = 'sent' | 'accepted' | 'declined' | 'converted' | 'draft';
+
+/**
+ * Runtime-only Quote status (Phase 16 gap closure — BLOCKER I-03 fix, G6 lock).
+ *
+ * Excludes `'draft'` so the compiler REFUSES `status: 'draft'` at every NEW
+ * Quote constructor call site. PrintQuoteModal (plan 16-10) and the
+ * Convert-to-Sale Quote patch (plan 16-12) declare their write payload's
+ * `status` field as `RuntimeQuoteStatus`. This is compile-time enforcement
+ * of G6 ("runtime never writes draft"), NOT a JSDoc/comment-only convention.
+ *
+ * The migration helper in `src/db/backfill.ts` is the SOLE module allowed to
+ * use the wider `QuoteStatus` when constructing the `'draft'` backfill rows.
+ */
+export type RuntimeQuoteStatus = Exclude<QuoteStatus, 'draft'>;
+
+/**
+ * First-class Quote entity (Phase 16 gap closure — D-17 G4 + G7 locks).
+ *
+ * Strict by-value snapshot rule (D-17 G4): a Quote captures the customer and
+ * line-item state AT the moment Generate Quote fires. Subsequent edits to the
+ * source PrintJob or UserProfile do NOT mutate already-issued Quotes. The PDF
+ * generator's refactored signature `generateQuotePdf(quote: Quote)` accepts a
+ * Quote argument ONLY — this is type-level enforcement of the snapshot rule.
+ *
+ * The `status` field is typed as the wider `QuoteStatus` (so legacy `'draft'`
+ * rows from the v7→v8 backfill can be READ), but every runtime WRITE payload
+ * declares `status: RuntimeQuoteStatus` so the compiler refuses `'draft'` at
+ * the call site (per BLOCKER I-03 / G6 lock).
+ */
+export interface Quote {
+  id: string;
+  /** 4-digit display via formatQuoteNumber(); REQUIRED (no `?`) — type system locks presence at render time. */
+  quoteNumber: number;
+  /** FK to PrintJob.id */
+  printJobId: string;
+  /** FK to Customer.id (undefined when no library link — e.g. user typed values with no email match) */
+  customerId?: string;
+  /** By-value snapshot of customer fields at Generate time (D-17 G4) */
+  customerSnapshot: JobCustomer;
+  /** By-value snapshot of priced + identity fields at Generate time (D-17 G4) */
+  lineItemsSnapshot: {
+    jobTitle: string;
+    sellingPrice: number;
+    /** D-15: shipping line on the PDF. Default 0 when omitted. */
+    shippingCost: number;
+    /** D-21 lock: the RESOLVED tax rate (post-fallback), NOT the raw user override. */
+    resolvedTaxRate: number;
+    /** D-22 lock: computed as sellingPrice × (resolvedTaxRate / 100). Shipping is NOT in the tax base. */
+    taxAmount: number;
+    currency: Currency;
+    /** PrintJob.notes at Generate time (may be '') */
+    notes: string;
+    /** UserProfile.defaultTerms at Generate time (may be '') */
+    terms: string;
+    /** UserProfile.address.country at Generate time — taxLabelFor reproducibility */
+    countryAtSendTime?: string;
+  };
+  /**
+   * Wider type so legacy 'draft' rows from v7→v8 backfill can be READ.
+   * Runtime WRITES declare their payload `status: RuntimeQuoteStatus` so the
+   * compiler refuses 'draft' at the call site (BLOCKER I-03 / G6 lock).
+   */
+  status: QuoteStatus;
+  createdAt: Date;
+  /** For v1.2, sentAt === createdAt (PDF generation IS sent per G6 lock). */
+  sentAt: Date;
+  /** Set when the user marks Accepted/Declined via the Recent Quotes section (plan 16-11). */
+  decisionAt?: Date;
+  /** Set when Convert to Sale fires (plan 16-12). */
+  convertedAt?: Date;
+  /** FK to Sale.id on conversion (plan 16-12). */
+  convertedToSaleId?: string;
+}
+
 // A saved print job with break-even tracking
 export interface PrintJob {
   id: string;
@@ -222,7 +308,13 @@ export interface PrintJob {
   // Notes
   notes?: string;
 
-  // Quote numbering (Phase 16) — assigned on first PDF gen, then reused (D-05)
+  /**
+   * @deprecated Phase 16 gap closure (D-17). Read-only after v7→v8 migration —
+   * the `Quote.quoteNumber` field is the source of truth for new quotes.
+   * Pre-migration PrintJobs that had this field set will have a Quote backfilled
+   * from them (status='converted' if sold, status='draft' otherwise). Removed in
+   * a follow-up cleanup phase.
+   */
   quoteNumber?: number;
 
   // Per-job Etsy compliance self-review (Phase 14 — D-18).
@@ -267,6 +359,13 @@ export interface Sale {
   shippingCost?: number;
   marketplace?: MarketplaceType;
   marketplaceFee?: number;
+  /**
+   * Back-reference to the Quote that produced this Sale (Phase 16 D-20).
+   * Set inside the Convert-to-Sale transaction in JobsManager (plan 16-12)
+   * so the Recent Sales row can render a `← Q-NNNN` link back to the
+   * originating Quote in the Recent Quotes section (plan 16-11).
+   */
+  convertedFromQuoteId?: string;
 }
 
 // User profile with preferences
