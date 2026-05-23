@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTaxRate, isRateStale, tooltipForSource } from './taxResolution';
+import { resolveTaxRate, isRateStale, tooltipForSource, taxLabelFor } from './taxResolution';
 import type { TaxRateSource } from './taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 
@@ -316,21 +316,71 @@ describe('tooltipForSource', () => {
 });
 
 // ---------------------------------------------------------------------------
-// taxLabelFor — Wave 0 scaffold (Phase 16 D-06)
-// taxLabelFor() doesn't exist yet — plan 02 adds it to taxResolution.ts.
-// Scaffolded with it.todo() so this file runs green today.
-// Plan 02 will add `taxLabelFor` to the import list and flip these to real assertions.
+// taxLabelFor — Phase 16 D-06 region-aware tax label
 // ---------------------------------------------------------------------------
 
 describe('taxLabelFor', () => {
-  it.todo("EU code (DE, FR, IT, NL, ES in EU set) → 'VAT'");
-  it.todo("GB → 'VAT'");
-  it.todo("AU → 'GST'");
-  it.todo("NZ → 'GST'");
-  it.todo("IN → 'GST'");
-  it.todo("CA → 'GST'");
-  it.todo("MX → 'IVA' (note: ES is in EU set so EU check fires first → VAT; MX → IVA)");
-  it.todo("US → 'Sales Tax'");
-  it.todo("undefined → 'Tax' (fallback)");
-  it.todo("unknown code (e.g. 'ZZ') → 'Tax' (fallback)");
+  it("undefined → 'Tax' (fallback for missing country)", () => {
+    expect(taxLabelFor(undefined)).toBe('Tax');
+  });
+
+  it("'' → 'Tax' (empty string fallback)", () => {
+    expect(taxLabelFor('')).toBe('Tax');
+  });
+
+  it("'  ' → 'Tax' (whitespace-only; trims before lookup)", () => {
+    expect(taxLabelFor('  ')).toBe('Tax');
+  });
+
+  it("'xx' → 'Tax' (unknown ISO code fallback)", () => {
+    expect(taxLabelFor('xx')).toBe('Tax');
+  });
+
+  it("'DE' → 'VAT' (EU member)", () => {
+    expect(taxLabelFor('DE')).toBe('VAT');
+  });
+
+  it("'FR' → 'VAT' (EU member)", () => {
+    expect(taxLabelFor('FR')).toBe('VAT');
+  });
+
+  it("'de' → 'VAT' (lowercase input uppercased internally)", () => {
+    expect(taxLabelFor('de')).toBe('VAT');
+  });
+
+  it("'GR' → 'VAT' (ISO code for Greece — NOT 'EL' which is Eurostat notation)", () => {
+    expect(taxLabelFor('GR')).toBe('VAT');
+  });
+
+  it("'GB' → 'VAT' (UK — not EU but VAT country)", () => {
+    expect(taxLabelFor('GB')).toBe('VAT');
+  });
+
+  it("'ES' → 'VAT' (EU check fires before IVA branch — documented in RESEARCH.md Pattern 9)", () => {
+    expect(taxLabelFor('ES')).toBe('VAT');
+  });
+
+  it("'AU' → 'GST'", () => {
+    expect(taxLabelFor('AU')).toBe('GST');
+  });
+
+  it("'NZ' → 'GST'", () => {
+    expect(taxLabelFor('NZ')).toBe('GST');
+  });
+
+  it("'IN' → 'GST'", () => {
+    expect(taxLabelFor('IN')).toBe('GST');
+  });
+
+  it("'CA' → 'GST'", () => {
+    expect(taxLabelFor('CA')).toBe('GST');
+  });
+
+  it("'MX' → 'IVA' (MX is NOT in EU set, falls through to IVA branch)", () => {
+    expect(taxLabelFor('MX')).toBe('IVA');
+  });
+
+  it("'US' → 'Sales Tax'", () => {
+    expect(taxLabelFor('US')).toBe('Sales Tax');
+  });
 });

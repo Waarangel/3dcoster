@@ -185,3 +185,31 @@ export function labelForSource(source: TaxRateSource): string {
     case 'manual': return 'manual';
   }
 }
+
+// ============================================
+// PDF quote helpers (Phase 16)
+// ============================================
+
+// EU27 ISO 3166-1 alpha-2 codes — used by taxLabelFor() below.
+// Note: uses GR (ISO standard for Greece) not EL (Eurostat notation).
+// ES is intentionally in this set — EU check fires FIRST in taxLabelFor,
+// so ES → 'VAT' even though MX → 'IVA'. See RESEARCH.md Pattern 9.
+const EU_COUNTRY_CODES = new Set([
+  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI',
+  'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU',
+  'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+]);
+
+// Region-aware tax label for PDF quote (D-06).
+// Branch order: EU check fires FIRST (so ES → 'VAT' despite appearing in IVA list
+// per CONTEXT.md D-06 — EU sellers expect 'VAT'; deliberate trade-off per Pattern 9).
+export function taxLabelFor(countryCode?: string): 'VAT' | 'GST' | 'IVA' | 'Sales Tax' | 'Tax' {
+  if (!countryCode) return 'Tax';
+  const code = countryCode.trim().toUpperCase();
+  if (!code) return 'Tax';
+  if (EU_COUNTRY_CODES.has(code) || code === 'GB') return 'VAT';
+  if (['AU', 'NZ', 'IN', 'CA'].includes(code)) return 'GST';
+  if (['ES', 'MX'].includes(code)) return 'IVA';
+  if (code === 'US') return 'Sales Tax';
+  return 'Tax';
+}
