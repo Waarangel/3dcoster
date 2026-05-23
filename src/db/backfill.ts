@@ -1,3 +1,5 @@
+import type { PrintJob, Sale, Quote, QuoteStatus } from '../types';
+
 /**
  * Backfill `tags = []` on a job record that came from a pre-v6 schema.
  *
@@ -25,4 +27,99 @@
  */
 export function backfillTagsOnJob(job: Record<string, unknown>): void {
   if (!Array.isArray(job.tags)) job.tags = [];
+}
+
+/**
+ * backfillQuotesFromJobs — pure helper for v7→v8 migration (Phase 16 gap closure D-17 G7).
+ *
+ * Reads existing PrintJobs and Sales; returns the Quote rows that should be created.
+ * No Dexie, no React, no IO. Mirrors backfillTagsOnJob's pure-function pattern so it
+ * can be unit-tested under jsdom without an IndexedDB shim.
+ *
+ * TYPE-LEVEL NOTE (BLOCKER I-03 / G6 lock):
+ * This is the SOLE module in the codebase allowed to WRITE `status='draft'`. Runtime
+ * callers (PrintQuoteModal, Convert-to-Sale) use `RuntimeQuoteStatus = Exclude<QuoteStatus, 'draft'>`
+ * which excludes 'draft' so the compiler refuses any accidental 'draft' write at those
+ * call sites. The migration legitimately needs to emit 'draft' for legacy PrintJobs
+ * that had a quoteNumber but no Sale — hence the wider `QuoteStatus` type is used here.
+ *
+ * Rules (per D-17):
+ *  - For each PrintJob with `quoteNumber` set:
+ *    - If the job has ≥1 Sale → emit Quote(status='converted', convertedToSaleId=mostRecentSale.id,
+ *      customerSnapshot=mostRecentSale.customer ?? { name: mostRecentSale.customerName ?? '' },
+ *      convertedAt=mostRecentSale.soldAt).
+ *    - Else → emit Quote(status='draft', customerSnapshot={ name: '' }) — best-effort empty snapshot
+ *      for legacy. No `convertedToSaleId`.
+ *  - PrintJobs WITHOUT quoteNumber are SKIPPED — no Quote emitted, the PrintJob row is untouched.
+ *
+ * Currency sentinel: the migration runs inside the Dexie upgrade callback, where there is no
+ * UserProfile access. We default `currency` to 'USD' for backfilled rows. The PDF generator
+ * will never render these rows in v1.2 because the runtime UI only surfaces status='sent'/'accepted'/
+ * 'declined'/'converted' Quotes (and the 'converted' ones are silent re-renders of the originating
+ * Sale's PDF only, which doesn't yet exist) — so the wrong-currency render path is unreachable.
+ *
+ * Timestamps: createdAt = sentAt = new Date(job.createdAt) (best-effort lift from the job).
+ */
+export function backfillQuotesFromJobs(jobs: PrintJob[], sales: Sale[]): Quote[] {
+  // Index sales by jobId for O(1) lookup (vs nested filter per job which is O(n×m)).
+  const salesByJobId = new Map<string, Sale[]>();
+  for (const sale of sales) {
+    const list = salesByJobId.get(sale.jobId);
+    if (list) list.push(sale);
+    else salesByJobId.set(sale.jobId, [sale]);
+  }
+
+  const out: Quote[] = [];
+  for (const job of jobs) {
+    if (job.quoteNumber === undefined) continue;
+
+    const jobSales = salesByJobId.get(job.id) ?? [];
+    // Sort descending by soldAt — most recent first. Copy first to avoid mutating salesByJobId arrays.
+    const sortedSales = [...jobSales].sort(
+      (a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime(),
+    );
+    const mostRecentSale = sortedSales[0];
+
+    const isConverted = mostRecentSale !== undefined;
+    // STATUS WRITE: the SOLE site allowed to write 'draft'. Runtime call sites use
+    // RuntimeQuoteStatus which excludes 'draft'; the compiler refuses 'draft' there.
+    // Here the wider QuoteStatus type is the contract.
+    const status: QuoteStatus = isConverted ? 'converted' : 'draft';
+
+    const customerSnapshot = isConverted
+      ? (mostRecentSale.customer ?? { name: mostRecentSale.customerName ?? '' })
+      : { name: '' };
+
+    const createdAt = new Date(job.createdAt);
+
+    out.push({
+      id: crypto.randomUUID(),
+      quoteNumber: job.quoteNumber,
+      printJobId: job.id,
+      customerId: undefined,
+      customerSnapshot,
+      lineItemsSnapshot: {
+        jobTitle: job.name,
+        sellingPrice: job.sellingPrice ?? 0,
+        shippingCost: 0,
+        resolvedTaxRate: job.taxRate ?? 0,
+        taxAmount: job.taxAmount ?? 0,
+        // Currency sentinel — migration runs without UserProfile access. See module JSDoc.
+        currency: 'USD',
+        notes: job.notes ?? '',
+        terms: '',
+        countryAtSendTime: undefined,
+      },
+      status,
+      createdAt,
+      sentAt: createdAt,
+      ...(isConverted
+        ? {
+            convertedAt: new Date(mostRecentSale.soldAt),
+            convertedToSaleId: mostRecentSale.id,
+          }
+        : {}),
+    });
+  }
+  return out;
 }
