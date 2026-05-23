@@ -175,3 +175,119 @@
 - Per-customer or yearly quote-number reset.
 - Translation of PDF UI strings (Tax label exception via D-06).
 - Cost-breakdown line items mode (B2B / government bid use case).
+
+---
+
+# Extension Discussion — 2026-05-23
+
+**Date:** 2026-05-23
+**Trigger:** UAT (plan 16-05 Task 2) surfaced 8 gaps. User verdict: "extend Phase 16 to cover everything."
+**Areas discussed:** Quote UI scope, Convert flow, Shipping placement, Snapshot scope, Quote modal UX, Status transitions, quoteNumber migration
+**Carrying forward:** Phase 15.1 Customer entity + picker; Phase 14 D-21 customer-fields-editable; Phase 15.1 D-04 by-value snapshot rule.
+
+---
+
+## G1 — Quote UI scope (per-job vs top-level tab)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Per-job Recent Quotes section only (Recommended) | Mirror Recent Sales inside the JobsManager accordion. Smallest scope, matches existing pattern, ships fastest. Top-level Quotes tab deferred to v1.3 if usage signals demand. | ✓ |
+| Per-job section + top-level Quotes tab | Full parity with Customers tab. Outstanding quotes visible across all jobs in one place. Materially more work (new route, filtering, possibly pagination). | |
+| Top-level Quotes tab only (skip per-job) | Single Quotes surface, no per-job repetition. Cleaner conceptually but loses the "what's outstanding for this product?" job-anchored view. | |
+
+**User's choice:** Per-job only — locked as D-19. Top-level Quotes tab explicitly deferred to v1.3 in the extension out-of-scope list.
+
+---
+
+## G2 — Convert Quote → Sale flow
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Open Record Sale modal pre-populated from Quote snapshot (Recommended) | Reuses existing Record Sale modal; user confirms/adjusts; on save, Sale is written AND Quote is marked converted with convertedToSaleId. One step, one chance to catch quote drift. | ✓ |
+| Silent conversion — Sale created directly from Quote snapshot | Click Convert → Sale appears, Quote auto-marks converted. Fastest path. Loses the opportunity to adjust if reality differed (discounts, partial shipments). | |
+| Two-step: small confirm dialog → then silent create | Halfway point — confirms intent without re-confirming details. | |
+
+**User's choice:** Pre-populated Record Sale modal — locked as D-20.
+
+---
+
+## G3 — shippingCost placement
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| On the Quote (Recommended) | Quote.shippingCost set at quote-creation. Different quotes for the same job can have different shipping. Mirrors customer per-quote. Aligns with by-value snapshot rule. | ✓ |
+| On PrintJob — inherited into quote, overridable | PrintJob.shippingCost default, Quote.shippingCost optional override. Most flexible. Adds form complexity. | |
+| On PrintJob only — same for every quote | Symmetric to today's PrintJob.taxRate. Simplest form. Inflexible (international shipping, tiered rates). | |
+
+**User's choice:** On the Quote — locked as D-15 (PDF row) + D-17 (schema field).
+
+---
+
+## G4 — Quote PDF snapshot scope
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Snapshot ALL priced + identity fields (Recommended) | Quote stores: sellingPrice, shipping, resolvedTaxRate, notes, terms, customer (deep copy), countryAtSendTime. PDF reads only from Quote — reproducible byte-for-byte. Strict by-value, matches 15.1 D-04 + 14 D-21. | ✓ |
+| Snapshot priced fields, terms read fresh | Lighter snapshot. Historical PDFs drift if user updates defaultTerms. | |
+| Read everything fresh from PrintJob + UserProfile | Smallest data footprint. Breaks historical reproducibility. | |
+
+**User's choice:** Snapshot everything — locked as D-17 (`Quote.lineItemsSnapshot` carries `notes`, `terms`, `countryAtSendTime` in addition to numeric fields).
+
+---
+
+## G5 — Print Quote click → PDF flow
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Print Quote opens a modal — pick customer + shipping + preview totals — then Generate (Recommended) | Click Print Quote → modal with: customer combobox (reuses 15.1's typeahead), shipping input, live totals preview, Generate button. Click Generate → Quote written status='sent', PDF downloads. One audit-ready step. | ✓ |
+| Inline picker on the accordion, then PDF auto-downloads | Inline section on the accordion. Contradicts G3 (shipping is per-quote, so needs an entry point per click). | |
+| Two-step: pick customer → small modal for shipping → PDF | Heavier click count for what could be one modal. | |
+
+**User's choice:** Single modal — locked as D-18 (PrintQuoteModal).
+
+---
+
+## G6 — Status transitions after PDF generation
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| PDF download = 'sent'; user manually marks accepted/declined (Recommended) | Generate → Quote status='sent'. Recent Quotes row has [Mark Accepted] [Mark Declined] [Convert to Sale] buttons. Simplest mental model. | ✓ |
+| PDF download = 'draft'; user explicitly clicks 'Mark Sent' before status can advance | More granular — lets you regenerate without committing. Adds one click per real quote. | |
+| Three states only: draft / sent / converted | Lightest model. Loses "who declined / who's outstanding" — conflicts with user's UAT report. | |
+
+**User's choice:** sent on generation; manual decision buttons — locked as D-19 (row UI) + D-17 (status enum).
+
+---
+
+## G7 — PrintJob.quoteNumber migration
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Move to Quote.quoteNumber; backfill existing jobs into synthetic Quotes (Recommended) | Quote owns the field. For each PrintJob with quoteNumber: create Quote with status='converted' if it has sales, else 'draft'. PrintJob.quoteNumber stays as deprecated read-only field for one phase. Cleanest long-term model. | ✓ |
+| Keep on PrintJob; Quote table just references it | Quote.printJobId points at PrintJob, PrintJob still owns quoteNumber. Simpler now but creates ownership split. | |
+| Move to Quote.quoteNumber; DON'T backfill | Hard cut. Acceptable since the feature is brand-new. Simplest migration. | |
+
+**User's choice:** Move + backfill — locked as D-17 v7→v8 migration (one Dexie upgrade callback, two synthetic-Quote variants based on whether the source job has sales).
+
+---
+
+## Out-of-Scope Reaffirmation
+
+The following came up during gap-list discussion but stay deferred:
+
+- **Top-level Quotes tab** — deferred to v1.3 (G1 lock).
+- **Quote PDF preview before download** — same as Phase 16 original deferred.
+- **Per-jurisdiction shipping-tax handling** — D-22 explicitly locks tax base to sellingPrice only.
+- **E-sign / email-the-quote integrations** — still v2.0+ territory.
+- **Soft-delete / archive workflow for Quotes** — delete is permanent (matches Customer delete pattern, by-value snapshots make this safe).
+- **Quote PDF visual differences from current** — same template; "QUOTE" label stays; the user can tell quotes from invoices by the document title.
+
+## Claude's Discretion (Extension)
+
+- Migration scoping: one plan (schema + backfill) vs two plans (schema-only then backfill) — planner picks based on backfill risk.
+- PrintQuoteModal mobile layout (375px width budget).
+- Whether to refactor `generateQuotePdf` to take `Quote` argument vs materialize a temp quote at the call site — strong recommendation: refactor cleanly (1 caller after D-13).
+- NewBadge feature key on the renamed "Print Quote" button — keep `pdf-quote`, do NOT bump feature date (rename is polish, not a new feature).
+- `assert-no-static-jspdf.mjs` audit count update — `await import('../pdf/generateQuotePdf')` drops from 2 → 1.
+- Migration test fixture organization.
+

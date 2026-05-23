@@ -198,5 +198,179 @@ A "Generate PDF" action on saved jobs produces a downloadable, professional-look
 
 ---
 
+<extension>
+## Extension — UAT-driven scope additions (2026-05-23)
+
+**Trigger:** After Phase 16 plans 16-01..16-04 shipped, UAT (plan 16-05 Task 2) surfaced 8 gaps. See [16-VERIFICATION.md](.planning/phases/16-printable-pdf-quote/16-VERIFICATION.md) for the verbatim user report and per-gap fix detail. The user's verdict was: "extend Phase 16 to cover everything." The extension is in scope of Phase 16, not v1.3.
+
+**Goal of the extension:** Turn the printable PDF (already correct as a document) into a real **Quote lifecycle**. A quote is sent to a specific customer (not the most-recent-sale customer), carries shipping, has an explicit status (sent → accepted/declined → converted), and is preserved as a by-value snapshot that the PDF can reproduce immutably. Plus one pre-existing tax-fallback bug that Phase 16 surfaced.
+
+### Carrying forward from Phase 15.1 + 14
+
+- **Customer entity already exists** (Phase 15.1 D-01): `Customer extends JobCustomer` at `src/types.ts:163`. Dexie `customers` store. `useCustomers()` hook. Typeahead combobox picker in JobsManager Record Sale modal (15.1 D-04). The extension reuses ALL of these — no new picker UX language, no Customer schema work.
+- **By-value snapshot rule is locked project-wide** (Phase 15.1 D-04, Phase 14 D-21, Phase 16 D-04 line item collapse): Sale.customer is a snapshot, Sale.lineItems are snapshots, PDF is a frozen artifact. **Quote inherits this rule fully** — see D-17 below.
+- **Email-match dedup pattern** (Phase 15.1 D-07): typed email matching `trim().toLowerCase()` an existing Customer silently links to that record; do not create a duplicate, do not overwrite the library from per-quote edits. Applied to Print Quote modal.
+- **3-layer tax model** (Phase 13): `resolveTaxRate({ jobOverride, settingsDefault, currency, address })` is correct; the defect is at the save boundary (gap H / D-21 below).
+
+### Extension domain delta
+
+**Added to in-scope:**
+- New `Quote` Dexie store (v7 → v8 migration) — first-class quote records distinct from Sales.
+- New `Quote.shippingCost: number` field; PDF gains a Shipping row between Subtotal and Tax (D-15 below extends D-07).
+- New `src/components/PrintQuoteModal.tsx` — modal opened on the JobsManager "Print Quote" button (renamed from "Generate PDF" per D-14). Customer combobox (reuses 15.1's typeahead) + shipping input + live totals preview + Generate button.
+- New "Recent Quotes" section in JobsManager accordion (mirrors existing "Recent Sales" — D-19 below).
+- New "Convert to Sale" action on accepted Quotes — opens the existing Record Sale modal pre-populated from Quote snapshot (D-20).
+- Tax-fallback bug fix in CostCalculator save path (D-21).
+
+**Moved to OUT of scope (was in-scope per original D-12):**
+- "Generate PDF" button on CostCalculator — REMOVED per gap A / D-13. CostCalculator never had Sale/Customer context, so a quote from this surface was always wrong-by-default.
+
+**Newly out of scope (explicitly deferred to v1.3):**
+- Top-level "Quotes" tab in main nav. Per-job Recent Quotes section is sufficient for v1.2 (G1 locked). Revisit when usage shows demand for a cross-job outstanding-quotes view.
+- Quote PDF preview-before-download — same answer as Phase 16 original deferred list.
+- Per-jurisdiction shipping-tax handling. Tax computed on `sellingPrice` only; shipping is NOT taxed. Total = `subtotal + shipping + tax`. v1.2 ships US-default behavior even for EU users; per-jurisdiction shipping-VAT is v2 work (D-22).
+- E-signing / send-by-email integrations — still v2.0+ territory.
+
+### Extension decisions (D-13 through D-22)
+
+**D-13 (gap A):** Remove "Generate PDF" button + handler + dynamic-import block from `src/components/CostCalculator.tsx`. Remove the 4 GeneratePdfButton tests from `src/components/CostCalculator.test.tsx`. The single remaining call site for `await import('../pdf/generateQuotePdf')` is in JobsManager — the audit count drops from 2 → 1 (update any pinned grep expectation in CI scripts). The `GeneratePdfButton` subcomponent itself can stay (it'll be reused by the new Print Quote modal in D-18 if it's the right shape) OR be inlined into the modal — planner picks. **Supersedes original D-12 CostCalculator branch.** Original D-12 JobsManager branch survives but the button label changes per D-14.
+
+**D-14 (gap B):** Rename JobsManager "Generate PDF" → **"Print Quote"**. Replace the current ghost styling with the standard secondary button variant from `src/components/ui/Button.tsx`. The button must look like a button — same affordance as Edit / Delete next to it. NewBadge stays as absolute overlay (no inline layout change). Tooltip on disabled state stays "Set a selling price first" (still gated by `sellingPrice <= 0`). The button no longer auto-generates a PDF on click — it opens the modal in D-18.
+
+**D-15 (gap C — shipping):** Add `Quote.shippingCost: number` (default 0; D-17 below). The PDF generator inserts a "Shipping" row between Subtotal and Tax when `shippingCost > 0`:
+- Shipping = 0 → Subtotal → (Tax row if applicable) → Total
+- Shipping > 0 → Subtotal → `Shipping: €X.XX` → (Tax row if applicable) → Total
+- Total = `subtotal + shippingCost + taxAmount` (never includes shipping in the taxable base — see D-22)
+- Extends D-07 (tax-row hide/show); shipping row uses the same hide-when-zero rule.
+
+**D-16 (gap D — customer picker behavior):** PrintQuoteModal customer picker reuses Phase 15.1's typeahead combobox pattern verbatim. Inline new-customer auto-save on submit (15.1 D-06). Email-match dedup with silent link (15.1 D-07). Library record is NOT overwritten by per-quote edits. The per-Quote customer fields (the `Quote.customerSnapshot` written at Generate time) ARE the by-value snapshot — they can diverge from the library record and the PDF reflects what was in the modal at Generate time.
+
+**D-17 (gaps D + E + G7-locked — Quote schema + migration):**
+- New Dexie store `quotes` at v8 with schema `'id, quoteNumber, status, customerId, printJobId, createdAt, sentAt'`. `quoteNumber` is indexed because the Recent Quotes section needs it for sort. `status` is indexed because filtering by status is a common query.
+- `Quote` interface in `src/types.ts`:
+  ```ts
+  interface Quote {
+    id: string;                         // uuid
+    quoteNumber: number;                // 4-digit; display via formatQuoteNumber()
+    printJobId: string;                 // FK to PrintJob.id
+    customerId?: string;                // FK to Customer.id (undefined if new customer typed but email-dedup never fired)
+    customerSnapshot: JobCustomer;      // by-value copy at Generate time
+    lineItemsSnapshot: {                // by-value snapshot of priced + identity fields
+      jobTitle: string;
+      sellingPrice: number;
+      shippingCost: number;
+      resolvedTaxRate: number;          // the rate ACTUALLY APPLIED (post-fallback) — NOT the override
+      taxAmount: number;                // computed from resolvedTaxRate
+      currency: 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'NZD' | 'CHF' | 'JPY' | 'ZAR';
+      notes: string;                    // PrintJob.notes at Generate time (may be empty)
+      terms: string;                    // UserProfile.defaultTerms at Generate time (may be empty)
+      countryAtSendTime?: string;       // UserProfile.address.country at Generate time — needed for taxLabelFor() reproducibility
+    };
+    status: 'sent' | 'accepted' | 'declined' | 'converted';
+    createdAt: Date;
+    sentAt: Date;                       // = createdAt for v1.2 (PDF download IS sent — see D-19/G6 lock)
+    decisionAt?: Date;                  // set when user clicks Mark Accepted / Mark Declined
+    convertedAt?: Date;                 // set when Convert to Sale fires (D-20)
+    convertedToSaleId?: string;         // FK to Sale.id on conversion
+  }
+  ```
+- **Snapshot rule (per G4 lock — strict by-value):** PDF reads ONLY from Quote. NEVER from PrintJob or UserProfile at render time. Even `countryAtSendTime` is snapshotted so the `taxLabelFor()` mapping is reproducible 6 months later if the user moves countries.
+- **Migration v7 → v8 (per G7 lock — backfill old PrintJobs):**
+  - For each PrintJob with `quoteNumber` set:
+    - If the job has ≥1 Sale: create a Quote with `status='converted'`, `convertedToSaleId = most-recent Sale.id`, `customerSnapshot = most-recent Sale.customer`, `convertedAt = most-recent Sale.createdAt`.
+    - Else: create a Quote with `status='draft'` (NOT `'sent'` — we have no PDF on file proving it was sent). Migration writes minimal snapshot from the job's current state; this is acknowledged best-effort for legacy data.
+  - PrintJob.quoteNumber stays as a deprecated field (read-only) for one phase as a safety belt. Removed in a follow-up cleanup phase (16.1 or v1.3 hygiene).
+  - `UserProfile.nextQuoteNumber` stays — still the counter source. Increment site moves from CostCalculator-save / JobsManager-PDF-gen to Quote-creation (the Generate button in PrintQuoteModal).
+- **Migration test (locked):** v7 fixture with 3 PrintJobs (1 has sales, 1 has quoteNumber but no sales, 1 has no quote ever) → after v8 upgrade, exactly 2 Quote rows exist with correct statuses; the 3rd PrintJob remains as-is.
+
+**D-18 (gap D + G5-locked — Print Quote modal UX):**
+- New `src/components/PrintQuoteModal.tsx`. Opened when the user clicks "Print Quote" on the JobsManager accordion (D-14).
+- Layout (top to bottom):
+  1. Header: `Print Quote — {jobTitle}` + close X.
+  2. Customer combobox (reuses 15.1's typeahead via `useCustomers()` — same Name + Email + Company filter, same dropdown row layout).
+  3. Four customer fields below the combobox (Name / Email / Company / Address) — auto-filled on pick, freely editable per-quote (the edits flow into `customerSnapshot`, not back into the library).
+  4. Shipping input: single `<Input compact>` with currency-suffix per project conventions (compact input rule from `feedback_narrow_currency_inputs.md`).
+  5. Live totals preview block (reuses the same `formatCurrency` + `resolveTaxRate` helpers — so the modal shows EXACTLY what the PDF will show):
+     - Subtotal: €X.XX
+     - Shipping: €Y.YY (hidden when zero)
+     - {TaxLabel} ({rate}%): €Z.ZZ (hidden when zero)
+     - **Total: €T.TT** (bold)
+  6. Footer: `[Cancel]` and `[Generate Quote]` (primary).
+- **On Generate Quote click:**
+  1. Validate: customer Name OR Email required (matches Customer-library required-field rule from 15.1 D-09).
+  2. Compute resolved tax via `resolveTaxRate({ jobOverride: job.taxRate, settingsDefault: userProfile.defaultTaxRate, currency, address })`. Note: `job.taxRate` is now the corrected-by-D-21 resolved value, so this falls back correctly.
+  3. Assign quote number: `Q-{userProfile.nextQuoteNumber ?? 1}`; bump `UserProfile.nextQuoteNumber` in the SAME write transaction as the Quote insert (Dexie `transaction('rw', ['quotes', 'settings'], ...)`). This is the lifetime counter increment site moving per D-17.
+  4. If typed customer email matches an existing Customer (case-insensitive after trim): silently link (`Quote.customerId = existing.id`, bump `Customer.lastUsedAt`). Otherwise create a new Customer record (mirrors 15.1 D-06 auto-save). `customerSnapshot` always reflects what was in the modal — never the library record.
+  5. Write the Quote row with `status='sent'`, `sentAt=now`, `customerSnapshot` + `lineItemsSnapshot` populated. `customerId` is set if the dedup or pick path fired.
+  6. Generate + download the PDF (existing `generateQuotePdf` API, called with the new `quote` argument shape — PDF generator refactor: read all fields from `quote.lineItemsSnapshot` + `quote.customerSnapshot` instead of `job` + `userProfile`).
+  7. Close modal, show a transient toast/banner: `Quote Q-NNNN saved. View it in Recent Quotes.`
+
+**D-19 (gap F + G1-locked — Recent Quotes UI):**
+- JobsManager accordion grows a new `Recent Quotes` section, rendered above the existing `Recent Sales` section (quotes precede sales chronologically in the workflow).
+- Section behaves like Recent Sales — collapsed list with expandable rows. Empty state: section is hidden entirely if zero quotes exist for this job (don't show "No quotes yet" — visual noise).
+- Row layout:
+  - Top line (bold): `Q-NNNN · {customerSnapshot.name}` (or email if name is empty).
+  - Muted second line: `{sentAt relative date}` · `€{total}` (where `total = subtotal + shipping + tax` from the snapshot).
+  - Right side: status badge — `[Sent]` (gray pill) / `[Accepted]` (green pill) / `[Declined]` (red pill) / `[Converted]` (blue pill).
+- Action buttons on the row (right-aligned, after the badge):
+  - status='sent' → `[Mark Accepted]` + `[Mark Declined]`.
+  - status='accepted' → `[Convert to Sale]` + `[Mark Declined]` (allow flip if user typo'd).
+  - status='declined' → `[Reopen]` (sets back to status='sent' — for the rare typo case; bumps decisionAt = undefined).
+  - status='converted' → no action buttons; row shows "→ Sale on {convertedAt date}" instead.
+- Mark Accepted / Mark Declined: single-click, no modal — just writes `status` + `decisionAt = now`. (Per-quote audit trail is the timestamp; no notes field on the decision for v1.2.)
+- Mobile layout: planner discretion. Reasonable default: stacked layout with status badge inline + a `⋯` overflow menu for actions.
+- The accordion's existing Recent Sales display gets a small enhancement: if a Sale was `convertedFromQuoteId`, surface a tiny `← Q-NNNN` link on the Sale row (clicking scrolls to the corresponding Quote row above). Improves the audit-trail discoverability.
+
+**D-20 (gap G + G2-locked — Convert Quote → Sale):**
+- The `[Convert to Sale]` button on a status='accepted' Quote opens the existing Record Sale modal (`JobsManager.tsx` Record Sale flow) pre-populated from `Quote.lineItemsSnapshot` + `Quote.customerSnapshot`:
+  - Sale price = `Quote.lineItemsSnapshot.sellingPrice` (user can adjust — e.g., $5 discount agreed in negotiation).
+  - Customer fields = `Quote.customerSnapshot` (user can adjust).
+  - Shipping cost: **Sale model gets a new optional `shippingCost?: number` field**, pre-populated from `Quote.lineItemsSnapshot.shippingCost`. (Sale schema gain is symmetric to the Quote schema gain — they share the same priced-fields shape.)
+  - Tax rate: pre-populated from `Quote.lineItemsSnapshot.resolvedTaxRate`. The Sale-save fix from D-21 also applies — store the resolved rate, not the override.
+- On Sale save (within the existing Record Sale flow):
+  - Write the Sale as today, plus `Sale.convertedFromQuoteId = quote.id` for the back-reference.
+  - Update the Quote row: `status='converted'`, `convertedAt=now`, `convertedToSaleId=newSale.id`.
+  - Both writes in the same Dexie transaction (`rw` over `['sales', 'quotes']`). On rollback, neither persists — no half-converted state.
+- The user can also Record Sale **without** a Quote (legacy path stays). Only the Quote → Sale convert path sets `convertedFromQuoteId`.
+
+**D-21 (gap H — tax-fallback bug fix):**
+- In `src/components/CostCalculator.tsx`:
+  ```diff
+  - taxRate: taxRateOverride,
+  + taxRate: tax.ratePercent,
+  ```
+  at the two save sites (lines 634 + 670 as of pre-fix HEAD). The form's `taxRateOverride` state stays unchanged — it's the live-edit value. The saved record reflects what was actually applied, mirroring how `taxAmount` already does.
+- Regression test: PrintJob saved with `taxRateOverride=undefined` and `userProfile.defaultTaxRate=13` → saved `job.taxRate === 13`, `job.taxAmount > 0`. PDF generated from such a job MUST show "Tax (13%): €X.XX" between Subtotal and Total.
+- **Audit Phase 13 Sale writes** for the same defect: grep `taxRate: taxRateOverride` and `taxRate: .*Override` across `src/` outside CostCalculator. If found in a Sale write path (Record Sale modal, Sale repair scripts, anywhere), apply the symmetric fix. Sale.taxRate must reflect the resolved rate, not the override. Do NOT backfill historical Sale records — Sale invoice PDFs don't exist yet, so the inconsistency is invisible. (Add a TODO comment in the Sale-write site if a future Sale-PDF feature lands.)
+
+**D-22 (tax base excludes shipping):**
+- The Quote PDF computes tax on `sellingPrice` only, NOT on `(sellingPrice + shippingCost)`. Matches the existing `calculateTax(sellingPrice, ratePercent)` behavior in `src/utils/costCalc.ts:127` — no change needed. Total = `subtotal + shipping + tax` where `tax = subtotal × rate`.
+- Per-jurisdiction shipping-tax (shipping IS taxable in most EU jurisdictions) is explicitly out of scope for v1.2. Locked here to prevent the planner from extending the tax engine. Defer to v2 alongside any wider EU VAT compliance work.
+
+### Extension canonical refs
+
+- [16-VERIFICATION.md](.planning/phases/16-printable-pdf-quote/16-VERIFICATION.md) — verbatim UAT report + 8-gap list (A–H). PRIMARY source for extension scope.
+- [15.1-CONTEXT.md](.planning/phases/15.1-customer-library/15.1-CONTEXT.md) — Customer entity (D-01), Dexie store + index strategy (D-02), `useCustomers()` hook, typeahead combobox pattern (D-04), inline auto-save on submit (D-06), email-match silent-dedup (D-07), `<NewBadge>` placement rules (D-16). PrintQuoteModal MUST mirror this.
+- [14-CONTEXT.md](.planning/phases/14-customer-details-etsy-helper/14-CONTEXT.md) — customer-on-Sale shape, by-value snapshot rule, fields-editable-per-sale (D-21).
+- [13-CONTEXT.md](.planning/phases/13-tax-model-ui-sweep/13-CONTEXT.md) — `resolveTaxRate` fallback chain, 3-layer model, address-aware lookup. Phase 16 extension D-21 fix is at the save boundary; the resolver itself is correct.
+- `src/utils/costCalc.ts:127` — `calculateTax(sellingPrice, ratePercent)` — shows tax base is sellingPrice only (D-22 lock).
+- `src/utils/taxResolution.ts` — `taxLabelFor()` already lives here from Phase 16 original D-06; PDF reads it given `countryAtSendTime` from `Quote.lineItemsSnapshot`.
+
+### Extension claude's discretion
+
+- **Migration scoping:** Plan v7→v8 as one plan (schema + backfill) vs two (schema-only then backfill). One plan is cleaner; two reduces blast radius if backfill has edge cases. Planner picks based on risk read.
+- **PrintQuoteModal file path:** `src/components/PrintQuoteModal.tsx` mirrors the existing modal naming convention (CustomerEditModal, CsvImportModal). No discretion needed — planner just uses this.
+- **Quote.id generation:** Use the same UUID strategy as Customer (Phase 15.1 — `crypto.randomUUID()` from `src/utils/uuid.ts` if it exists, else inline `crypto.randomUUID()`). Planner reads 15.1 plans for the established idiom.
+- **Recent Quotes section's mobile layout:** Status badge stacking + overflow menu vs single-row inline — planner picks based on accordion width budget. Test at 375px.
+- **Whether to refactor `generateQuotePdf` to take a `Quote` argument vs keep its current `(job, userProfile)` signature and have callers materialize a "temp quote" before render** — refactor cleanly is the right move (the function is at most 1 caller after D-13); reduces argument drift and surfaces the by-value snapshot rule in the API.
+- **NewBadge handling on the renamed "Print Quote" button** — keep the `pdf-quote` feature key + absolute-overlay placement. The badge stays for 36 hours after first sight per the existing rule; we are NOT bumping the feature date because the rename is incremental polish, not a new feature.
+- **`vite.config.ts` audit count update:** `await import('../pdf/generateQuotePdf')` drops from 2 → 1. Update `scripts/assert-no-static-jspdf.mjs` if it pins the count; otherwise no change. The PDF generator is still lazy-loaded via the same chunk strategy.
+- **Test fixture for the migration test:** Planner builds a v7 fixture + asserts v8 outcome. Reasonable to put in `src/db/database.migrations.test.ts` if it exists, else colocate with the v8 upgrade callback.
+
+</extension>
+
+---
+
 *Phase: 16-printable-pdf-quote*
-*Context gathered: 2026-05-22*
+*Context gathered: 2026-05-22 (original) + 2026-05-23 (UAT extension)*
+*Extension trigger: 16-VERIFICATION.md gaps A–H — user verdict "extend Phase 16 to cover everything"*
