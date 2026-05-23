@@ -311,7 +311,6 @@ function App() {
             onUpdateJob={updateJob}
             editingJob={editingJob}
             onCancelEdit={handleCancelEdit}
-            onPersistQuoteNumber={handlePersistQuoteNumber}
           />
         )}
 

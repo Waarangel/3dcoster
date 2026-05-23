@@ -1,112 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createRoot } from 'react-dom/client';
-import { act } from 'react';
-import { GeneratePdfButton } from './CostCalculator';
-import type { PrintJob } from '../types';
+import { describe, it } from 'vitest';
 
 // ---------------------------------------------------------------------------
-// CostCalculator — Generate PDF button disabled-state tests
-// Tests use the extracted GeneratePdfButton subcomponent which has a focused
-// prop surface (editingJob, sellingPrice, isGenerating, onGenerate) to avoid
-// mounting the full CostCalculator prop surface.
+// CostCalculator — Generate PDF surface retired (Phase 16 gap closure, D-13)
+// The PDF button subcomponent and its 4 disabled-state tests were removed here
+// in 16-06 because the CostCalculator no longer surfaces PDF generation.
+// The only PDF entry point is the Print Quote modal in JobsManager (D-14 + D-18).
+// Tests for that surface live in JobsManager.test.tsx.
 // ---------------------------------------------------------------------------
 
-// Minimal PrintJob fixture for testing disabled-state
-const makeJob = (overrides: Partial<PrintJob> = {}): PrintJob => ({
-  id: 'test-job-1',
-  name: 'Test Print',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  filaments: [],
-  printTimeHours: 1,
-  printerInstanceId: 'printer-1',
-  modelCost: 0,
-  prepTimeMinutes: 0,
-  postProcessingMinutes: 0,
-  materialsUsed: [],
-  failureRate: 5,
-  costPerUnit: 2.50,
-  sellingPrice: 5.00,
-  copiesSold: 0,
-  ...overrides,
-});
-
-let container: HTMLDivElement;
-let root: ReturnType<typeof createRoot>;
-
-beforeEach(() => {
-  container = document.createElement('div');
-  document.body.appendChild(container);
-  root = createRoot(container);
-});
-
-afterEach(() => {
-  act(() => { root.unmount(); });
-  container.remove();
-});
-
-describe('CostCalculator — Generate PDF button', () => {
-  it('disables Generate PDF button when no editingJob is provided', () => {
-    act(() => {
-      root.render(
-        <GeneratePdfButton
-          editingJob={null}
-          sellingPrice={10}
-          isGenerating={false}
-          onGenerate={vi.fn()}
-        />
-      );
-    });
-    const btn = container.querySelector('button');
-    expect(btn).not.toBeNull();
-    expect(btn!.disabled).toBe(true);
-  });
-
-  it('disables Generate PDF button when sellingPrice is 0', () => {
-    act(() => {
-      root.render(
-        <GeneratePdfButton
-          editingJob={makeJob()}
-          sellingPrice={0}
-          isGenerating={false}
-          onGenerate={vi.fn()}
-        />
-      );
-    });
-    const btn = container.querySelector('button');
-    expect(btn).not.toBeNull();
-    expect(btn!.disabled).toBe(true);
-  });
-
-  it('enables Generate PDF button when editingJob is set AND sellingPrice > 0', () => {
-    act(() => {
-      root.render(
-        <GeneratePdfButton
-          editingJob={makeJob()}
-          sellingPrice={5.00}
-          isGenerating={false}
-          onGenerate={vi.fn()}
-        />
-      );
-    });
-    const btn = container.querySelector('button');
-    expect(btn).not.toBeNull();
-    expect(btn!.disabled).toBe(false);
-  });
-
-  it('shows "Set a selling price first" title when sellingPrice <= 0', () => {
-    act(() => {
-      root.render(
-        <GeneratePdfButton
-          editingJob={makeJob()}
-          sellingPrice={0}
-          isGenerating={false}
-          onGenerate={vi.fn()}
-        />
-      );
-    });
-    const btn = container.querySelector('button');
-    expect(btn).not.toBeNull();
-    expect(btn!.title).toBe('Set a selling price first');
-  });
+describe('CostCalculator', () => {
+  it.todo('CostCalculator tests TBD — PDF button retired per D-13');
 });
