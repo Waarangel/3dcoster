@@ -291,6 +291,9 @@ export interface UserProfile {
   // Tax (Phase 13)
   defaultTaxRate?: number;
 
+  // Default quote terms (Phase 16 D-09) — boilerplate for PDF Notes/Terms section.
+  // Optional; omitted from PDF when empty/whitespace-only.
+  defaultTerms?: string;
   // Quote numbering (Phase 16) — first quote is #1 (D-06); read via `?? 1`
   nextQuoteNumber?: number;
 }
