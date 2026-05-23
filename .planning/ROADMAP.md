@@ -137,7 +137,20 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
   3. `vite.config.ts` contains `build: { modulePreload: false }`; the CI assertion script `scripts/assert-no-pdf-preload.mjs` greps `dist/index.html` for `modulepreload` referencing the pdf chunk and exits non-zero if found; this script runs as part of `npm run build`
   4. The main app chunk remains under 300 KB gzipped after jsPDF is added — `scripts/assert-bundle-size.mjs` passes; `npm run analyze` confirms the pdf chunk is a separate async file not included in `index-*.js` or the `vendor` chunk
   5. PDF generation works in both web (browser save dialog) and Tauri desktop (Tauri file dialog); font rendering handles non-ASCII characters (accented letters, € symbol) without garbled glyphs; the font strategy (fetch from `/public/fonts/` or base64 in lazy chunk) is confirmed working in `npm run tauri:dev` before the plan is closed
-**Plans**: TBD
+**Plans**: 13 plans (5 original — shipped + UAT — plus 8 gap-closure plans authored 2026-05-23)
+- [x] 16-01-PLAN.md — Wave 0: install jspdf + autotable + Tauri dialog/fs plugins; CI gate scripts; subset Noto Sans; test scaffolds (Wave 0, autonomous, SHIPPED)
+- [x] 16-02-PLAN.md — Wave 1: pure utilities (formatQuoteNumber + customerNameSlug + taxLabelFor); UserProfile.defaultTerms; pdf-quote features.ts entry (Wave 1, autonomous, SHIPPED)
+- [x] 16-03-PLAN.md — Wave 2: src/pdf/generateQuotePdf.ts full PDF generator + 21 integration tests (Wave 2, autonomous, SHIPPED)
+- [x] 16-04-PLAN.md — Wave 3: Generate PDF buttons (CostCalculator + JobsManager); UserProfileModal defaultTerms; vite.config.ts modulePreload (Wave 3, autonomous, SHIPPED)
+- [x] 16-05-PLAN.md — Wave 4: automated verification chain + UAT — surfaced 8 gaps (Wave 4, checkpoint, SHIPPED with gaps_found verdict)
+- [ ] 16-06-PLAN.md — Gap A / D-13: Remove Generate PDF from CostCalculator (Wave 0 of gap closure, autonomous; depends on 16-04)
+- [ ] 16-07-PLAN.md — Gap B / D-14: Rename JobsManager button to Print Quote + secondary variant (Wave 0 of gap closure, autonomous; depends on 16-04)
+- [ ] 16-08-PLAN.md — Gap H / D-21: Tax-fallback bug fix at CostCalculator save sites + Phase 13 Sale-write audit (Wave 1 of gap closure, autonomous; depends on 16-06, 16-07)
+- [ ] 16-09-PLAN.md — Gaps C+E / D-15+D-17+D-22: Quote interface + Dexie v7→v8 migration with locked backfill test + refactor generateQuotePdf to take Quote arg + Shipping row (Wave 2 of gap closure, autonomous; depends on 16-07, 16-08)
+- [ ] 16-10-PLAN.md — Gap D / D-16+D-18: PrintQuoteModal with customer picker + transactional Quote write + counter increment site moves here (Wave 3 of gap closure, autonomous; depends on 16-09)
+- [ ] 16-11-PLAN.md — Gap F / D-19: Recent Quotes section in JobsManager accordion + status pills + Mark Accepted/Declined/Reopen + back-ref link (Wave 4 of gap closure, autonomous; depends on 16-10)
+- [ ] 16-12-PLAN.md — Gap G / D-20: Convert to Sale with transactional Sale+Quote update (Wave 5 of gap closure, autonomous; depends on 16-11)
+- [ ] 16-13-PLAN.md — Gap-closure UAT: re-run 7 original scenarios + 7 new extension scenarios + decision-coverage verification (Wave 6 of gap closure, checkpoint; depends on 16-06..16-12)
 **UI hint**: yes
 
 ---
@@ -151,7 +164,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
-| 16. Printable PDF Quote | 4/5 | In Progress|  |
+| 16. Printable PDF Quote | 5/13 | Gap closure in progress (UAT surfaced 8 gaps; 8 closure plans authored 2026-05-23) | — |
 
 ---
 
