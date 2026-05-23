@@ -1,11 +1,14 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile } from '../types';
-import { useSales, useCustomers } from '../hooks/useDatabase';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, QuoteStatus } from '../types';
+import { useSales, useCustomers, useQuotes } from '../hooks/useDatabase';
 import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
+import { formatQuoteNumber } from '../utils/format';
+import { formatCurrency } from '../utils/currency';
+import { formatRelativeDate } from '../utils/formatRelativeDate';
 
 interface JobsManagerProps {
   jobs: PrintJob[];
@@ -46,6 +49,160 @@ type JobCardProps = {
   onDeleteSale: (sale: Sale) => void;
   style?: React.CSSProperties;
 };
+
+// ---------------------------------------------------------------------------
+// Phase 16 gap closure plan 16-11 — Quote lifecycle UI (D-19).
+//
+// QuoteStatusPill: small inline pill mapping QuoteStatus → color + label.
+// RecentQuotesSection: per-job section above Recent Sales; handles status
+//   transitions (Mark Accepted / Mark Declined / Reopen) via useQuotes.
+// SaleBackRefLink: tiny "← Q-NNNN" link rendered next to Recent Sales rows
+//   that have convertedFromQuoteId set; scrolls to the originating Quote row.
+//
+// All three subcomponents are inlined here (over a sibling file) because they
+// only consume JobsManager-local data flows. Each calls useQuotes itself so
+// JobCard's prop chain stays unchanged — dexie-react-hooks dedupes the
+// underlying liveQuery emitter, so the per-expanded-card cost is negligible.
+// ---------------------------------------------------------------------------
+
+const QUOTE_STATUS_STYLES: Record<QuoteStatus, { label: string; classes: string }> = {
+  sent:      { label: 'Sent',      classes: 'bg-slate-700 text-slate-300' },
+  accepted:  { label: 'Accepted',  classes: 'bg-emerald-700/30 text-emerald-300' },
+  declined:  { label: 'Declined',  classes: 'bg-red-700/30 text-red-300' },
+  converted: { label: 'Converted', classes: 'bg-blue-700/30 text-blue-300' },
+  // 'draft' is a legacy migration-only value (D-17 / G6 lock) — never written
+  // by runtime, but mapped here so the type is exhaustive and any future read
+  // path that surfaces a draft row gets a styled pill rather than crashing.
+  draft:     { label: 'Draft',     classes: 'bg-amber-700/30 text-amber-300' },
+};
+
+function QuoteStatusPill({ status }: { status: QuoteStatus }) {
+  const { label, classes } = QUOTE_STATUS_STYLES[status];
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}>
+      {label}
+    </span>
+  );
+}
+
+function scrollToQuoteRow(quoteId: string) {
+  const el = document.getElementById(`quote-row-${quoteId}`);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function RecentQuotesSection({ jobId }: { jobId: string }) {
+  const { quotesByJobId, updateQuote } = useQuotes();
+  const quotesForJob = quotesByJobId.get(jobId) ?? [];
+  // D-17 / G6: legacy 'draft' rows are NOT user-visible — runtime never writes them.
+  const visibleQuotes = quotesForJob.filter(q => q.status !== 'draft');
+  if (visibleQuotes.length === 0) return null;  // D-19: hide section entirely at zero
+
+  const sorted = [...visibleQuotes].sort(
+    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+  );
+
+  return (
+    <section className="mt-4" aria-labelledby={`recent-quotes-heading-${jobId}`} onClick={(e) => e.stopPropagation()}>
+      <h4 id={`recent-quotes-heading-${jobId}`} className="text-sm font-medium text-slate-300 mb-2">
+        Recent Quotes
+      </h4>
+      <ul className="space-y-1">
+        {sorted.map(quote => (
+          <QuoteRow
+            key={quote.id}
+            quote={quote}
+            onMarkAccepted={async () => { await updateQuote({ ...quote, status: 'accepted', decisionAt: new Date() }); }}
+            onMarkDeclined={async () => { await updateQuote({ ...quote, status: 'declined', decisionAt: new Date() }); }}
+            onReopen={async () => { await updateQuote({ ...quote, status: 'sent', decisionAt: undefined }); }}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+interface QuoteRowProps {
+  quote: Quote;
+  onMarkAccepted: () => Promise<void>;
+  onMarkDeclined: () => Promise<void>;
+  onReopen: () => Promise<void>;
+}
+
+function QuoteRow({ quote, onMarkAccepted, onMarkDeclined, onReopen }: QuoteRowProps) {
+  const customerLabel = quote.customerSnapshot.name || quote.customerSnapshot.email || 'No customer';
+  const currency = quote.lineItemsSnapshot.currency;
+  const total = quote.lineItemsSnapshot.sellingPrice + quote.lineItemsSnapshot.shippingCost + quote.lineItemsSnapshot.taxAmount;
+
+  return (
+    <li
+      id={`quote-row-${quote.id}`}
+      className="text-sm bg-slate-800 px-3 py-2 rounded flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold text-slate-100 truncate">
+          {formatQuoteNumber(quote.quoteNumber)} · {customerLabel}
+        </div>
+        <div className="text-xs text-slate-400">
+          {formatRelativeDate(new Date(quote.sentAt))} · {formatCurrency(total, currency)}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <QuoteStatusPill status={quote.status} />
+        {quote.status === 'sent' && (
+          <>
+            <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onMarkAccepted(); }}>
+              Mark Accepted
+            </Button>
+            <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onMarkDeclined(); }}>
+              Mark Declined
+            </Button>
+          </>
+        )}
+        {quote.status === 'accepted' && (
+          <>
+            <Button
+              variant="primary"
+              btnSize="sm"
+              disabled
+              title="Convert to Sale lands in plan 16-12"
+            >
+              Convert to Sale
+            </Button>
+            <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onMarkDeclined(); }}>
+              Mark Declined
+            </Button>
+          </>
+        )}
+        {quote.status === 'declined' && (
+          <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onReopen(); }}>
+            Reopen
+          </Button>
+        )}
+        {quote.status === 'converted' && quote.convertedAt && (
+          <span className="text-xs text-slate-400">→ Sale on {formatRelativeDate(new Date(quote.convertedAt))}</span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function SaleBackRefLink({ convertedFromQuoteId, jobId }: { convertedFromQuoteId: string; jobId: string }) {
+  const { quotesByJobId } = useQuotes();
+  const linkedQuote = quotesByJobId.get(jobId)?.find(q => q.id === convertedFromQuoteId);
+  // Data anomaly (Quote deleted) — render nothing rather than a broken link.
+  if (!linkedQuote) return null;
+  return (
+    // allow-raw-html: inline back-ref link, not a CTA button — Button primitive's min-h-[44px] would dwarf the row
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); scrollToQuoteRow(linkedQuote.id); }}
+      className="ml-2 text-xs text-blue-300 hover:underline"
+      title="Scroll to originating quote"
+    >
+      ← {formatQuoteNumber(linkedQuote.quoteNumber)}
+    </button>
+  );
+}
 
 // Module-scope, memoized job card. CR-01 fix: row component identity is now
 // stable across parent renders, so react-window's internal memo wrapper
@@ -207,6 +364,9 @@ const JobCard = memo(function JobCard({
             </Button>
           </div>
 
+          {/* Phase 16 plan 16-11 (D-19): Recent Quotes section renders ABOVE Recent Sales */}
+          <RecentQuotesSection jobId={job.id} />
+
           {recentSales && recentSales.length > 0 && (
             <div className="mt-4">
               <h4 className="text-sm font-medium text-slate-300 mb-2">Recent Sales</h4>
@@ -236,6 +396,10 @@ const JobCard = memo(function JobCard({
                         <span className="flex items-center gap-2">
                           <span className="text-xs text-slate-500 group-open:rotate-90 transition-transform">▸</span>
                           {summaryLabel}
+                          {/* Phase 16 plan 16-11 (D-19): back-ref link to originating Quote, if any */}
+                          {sale.convertedFromQuoteId && (
+                            <SaleBackRefLink convertedFromQuoteId={sale.convertedFromQuoteId} jobId={job.id} />
+                          )}
                         </span>
                         <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
                       </summary>
