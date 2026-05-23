@@ -1,10 +1,34 @@
 ---
 phase: 16-printable-pdf-quote
-verified: 2026-05-23T11:19:00Z
-status: in-progress
-score: 0/5 — automated chain green; awaiting human UAT
-verified_by: automated + human-uat-pending
-gaps: []
+verified: 2026-05-23T15:25:00Z
+status: gaps_found
+score: 2/5 — automated chain green; UAT surfaced scope gap + 1 pre-existing bug
+verified_by: automated + human-uat
+gaps:
+  - id: A
+    severity: ux
+    title: Remove "Generate PDF" from CostCalculator
+  - id: B
+    severity: ux
+    title: Rename "Generate PDF" → "Print Quote" + proper button styling in JobsManager
+  - id: C
+    severity: scope
+    title: Add Shipping line — PDF Total must equal Subtotal + Shipping + Tax
+  - id: D
+    severity: scope
+    title: Customer picker before quote generation (pick existing / enter new)
+  - id: E
+    severity: scope
+    title: Quote entity with lifecycle (draft/sent/accepted/declined/converted)
+  - id: F
+    severity: scope
+    title: Quote list view + per-customer quote-vs-sale status badges
+  - id: G
+    severity: scope
+    title: Convert Quote → Sale action
+  - id: H
+    severity: bug
+    title: Saved job.taxRate stores override, not resolved rate — PDF drops tax row when field blank
 deferred: []
 ---
 
@@ -13,8 +37,8 @@ deferred: []
 **Phase Goal:** Users can generate a professional PDF quote from any saved job — client-side, lazy-loaded, with Unicode glyph support, region-aware tax labels, layered Notes/Terms, and a working Tauri native save dialog. Quote numbers auto-assign and persist per job.
 
 **Automated chain run:** 2026-05-23T11:19:00Z
-**Status:** AUTOMATED CHAIN GREEN — awaiting human UAT
-**Human UAT:** Pending (Task 2 checkpoint)
+**Human UAT run:** 2026-05-23T15:25:00Z
+**Status:** GAPS FOUND — UAT surfaced product-scope gap (D–G), two UX issues (A–B), one missing feature (C), and one pre-existing bug (H). The PDF generator itself is correct; the gap is the surrounding quote workflow.
 
 ---
 
@@ -70,51 +94,236 @@ Build output from `npm run build` (vite build + assert-bundle-size):
 
 **`dist/index.html` modulepreload check:** No `modulepreload` links found — PDF chunk is purely lazy-loaded. Gate `assert-no-pdf-preload.mjs` exits 0. **PASS**
 
-The build output from `assert-bundle-size.mjs` confirms: `✓ main chunk: 54.8 KB gzipped (under 300 KB) — index-D3AjJ3H_.js`
+---
+
+## Requirement Status (Final)
+
+| Requirement | Description | Automated | UAT | Final |
+|-------------|-------------|-----------|-----|-------|
+| **PDF-01** | "Generate PDF" buttons exist, disabled when sellingPrice ≤ 0 | PASS | partial (button exists but wrong placement/naming — see A, B) | **partial** |
+| **PDF-02** | PDF byte stream + section content correct | PASS | partial (PDF is correct but Total drops tax when job has blank tax field — see H) | **partial** |
+| **PDF-03** | No static `from 'jspdf'` outside `src/pdf/` | PASS | n/a | **PASS** |
+| **PDF-04** | `dist/index.html` has no `modulepreload` for pdf chunk | PASS | n/a | **PASS** |
+| **PDF-05** | Main app chunk ≤ 300 KB gzipped | PASS | n/a | **PASS** |
+
+**Score: 3/5 PASS, 2/5 partial.** The two partials are real and blocking ship; see UAT Failures.
 
 ---
 
-## Requirement Status (Preliminary — Automated Only)
+## UAT Scenario Results
 
-| Requirement | Description | Automated Evidence | Status |
-|-------------|-------------|-------------------|--------|
-| **PDF-01** | "Generate PDF" button on CostCalculator + JobsManager; disabled when `sellingPrice <= 0` | CostCalculator.test.tsx: 4 tests for GeneratePdfButton disabled state (0 todos) — vitest 181 PASS | automated PASS / awaiting UAT |
-| **PDF-02** | PDF byte stream starts `%PDF-`, contains expected section strings | generateQuotePdf.test.ts: 21 integration tests (magic bytes, customer block, tax rows, notes/terms, footer, glyph coverage) — vitest 181 PASS | automated PASS / awaiting UAT |
-| **PDF-03** | No static `from 'jspdf'` / `from 'jspdf-autotable'` outside `src/pdf/` | `assert-no-static-jspdf.mjs` exits 0; grep audit confirms 1 match each (both `generateQuotePdf.ts`) | **automated PASS** |
-| **PDF-04** | `dist/index.html` contains no `modulepreload` for pdf chunk | `assert-no-pdf-preload.mjs` exits 0; `grep modulepreload dist/index.html` → 0 matches | **automated PASS** |
-| **PDF-05** | Main app chunk ≤ 300 KB gzipped | `assert-bundle-size.mjs` exits 0; main chunk 56.11 KB gz (well under gate) | **automated PASS** |
+UAT was halted after the user identified a product-scope gap that extends beyond per-scenario verification. Per-scenario detail below is partial; the dominant signal is the gap list, not the scenario walkthrough.
 
----
+| # | Scenario | Result | Notes |
+|---|----------|--------|-------|
+| 1 | Web PDF — no customer, no tax (CostCalculator) | n/a | Scenario obsoleted by gap A (Generate PDF should not exist on CostCalculator) |
+| 2 | Web PDF — customer + EU tax + Notes/Terms (JobsManager) | n/a | Did not reach — UAT halted by gap H discovery |
+| 3 | Web PDF — terms only, no notes | n/a | Did not reach |
+| 4 | Web PDF — neither notes nor terms | n/a | Did not reach |
+| 5 | Tauri desktop PDF + native save dialog | n/a | Did not reach |
+| 6 | NewBadge non-regression | n/a | Did not reach |
+| 7 | Quote number lifecycle | n/a | Did not reach |
 
-## Coverage Report
-
-From `vitest run --coverage` (run as part of `npm run build`):
-
-| File | Statements | Branches | Functions | Lines | Uncovered |
-|------|-----------|---------|----------|-------|-----------|
-| `costCalc.ts` | 97.82% (45/46) | 94.28% (33/35) | 100% (13/13) | 100% (41/41) | Lines 169-170 |
-
-Note: coverage is reported only for `costCalc.ts` (the utility file explicitly included in coverage). The PDF generator module (`generateQuotePdf.ts`) is exercised by 21 integration tests but is not in the coverage include set (it is in `src/pdf/`, not `src/utils/`).
+The user's UAT pivoted from per-scenario PASS/FAIL to a product-design walkthrough of the quote flow — see UAT Failures.
 
 ---
 
-## Pending Human UAT
+## UAT Failures (Gap List)
 
-The following 7 UAT scenarios are PENDING human verification. After the user runs them and types "approved" (or a failure description), this section will be replaced by `## UAT Scenario Results`.
+The user's verbatim UAT findings, decomposed into 8 actionable gaps. Items A–B are quick UX fixes; C is a missing feature; D–G are a scope expansion (quote lifecycle); H is a pre-existing bug that Phase 16 surfaced.
 
-| # | Scenario | Key Verifications |
-|---|----------|------------------|
-| 1 | Web PDF — no customer, no tax (CostCalculator) | D-01 aesthetic, D-02 header, D-03 section order, D-04 collapsed row, D-07 0% tax row hidden |
-| 2 | Web PDF — customer + EU tax + Notes/Terms (JobsManager accordion ONLY) | D-06 region-aware label (VAT), D-07 tax row shown, D-08 layered Notes + Terms, D-10 Unicode (€/ü/ç), D-11 filename slug |
-| 3 | Web PDF — terms only, no notes | D-08 Notes subsection omitted, Terms present |
-| 4 | Web PDF — neither notes nor terms | D-08 whole Notes/Terms area omitted, no gap before footer |
-| 5 | Tauri desktop PDF + native save dialog | D-12 Tauri save plumbing, RESEARCH.md Pattern 8 cancel semantics |
-| 6 | NewBadge non-regression (CostCalculator + JobsManager at 375px) | Absolute overlay only — no sibling push/wrap/shrink |
-| 7 | Quote number lifecycle (assign once, reuse on 2nd gen) | D-05 lifetime counter, no re-increment |
+### A. Remove "Generate PDF" from CostCalculator
 
-**v1.2 Limitation — surfaced during UAT:** CostCalculator PDFs do NOT include a customer block. The CostCalculator surface has no Sale context. To verify the customer block + Unicode + EU tax combination, Scenario 2 MUST use the JobsManager accordion Generate PDF button (the only v1.2 surface that includes the customer block). This is a known and documented v1.2 design decision — see 16-04-SUMMARY.md and the code comment in `src/components/CostCalculator.tsx`.
+**User report:** *"Generate PDF should not be on the Cost Calculator section since you can only create a quote from a saved job."*
+
+**Why:** CostCalculator runs pre-save and pre-customer. A quote needs (at minimum) a saved job; in the extended scope (D–G) it also needs a chosen customer. The CostCalculator surface has no Sale context, so the button can only ever produce a customer-less PDF — which is exactly the v1.2 limitation that confused the UAT tester.
+
+**Fix:** Delete the `GeneratePdfButton` from `src/components/CostCalculator.tsx` and its dynamic-import block. The single remaining `GeneratePdfButton` call site is in JobsManager.
+
+**Files to touch:** `src/components/CostCalculator.tsx`, `src/components/CostCalculator.test.tsx` (remove the 4 GeneratePdfButton tests), `vite.config.ts` (`await import('../pdf/generateQuotePdf')` call-site count drops from 2 → 1; update audit expectations in any CI script if pinned).
+
+**Severity:** UX. Blocking — keeps users out of the wrong flow.
+
+---
+
+### B. Rename "Generate PDF" → "Print Quote" + proper button styling
+
+**User report:** *"On the My Jobs screen, the Generate PDF doesn't look like a button and should say 'Print Quote'."*
+
+**Why:** The current button uses ghost styling and reads as a text link. "Print Quote" matches user mental model (this is a quote workflow, not a generic PDF export). Wording also unblocks B+E: once the button says "Print Quote", a "Quote" list/status surface (gap F) is the natural follow-on.
+
+**Fix:** In `JobsManager.tsx` Generate PDF button — change label to "Print Quote" and use the standard secondary button variant (`<Button btnSize="…" variant="secondary">…</Button>` per project shared-UI conventions in `src/components/ui/Button.tsx`). Carry the NewBadge overlay through unchanged.
+
+**Files to touch:** `src/components/JobsManager.tsx`, `src/components/CostCalculator.test.tsx` (drop in favor of a JobsManager.test.tsx integration test if not present).
+
+**Severity:** UX. Blocking — current styling fails the affordance test.
+
+---
+
+### C. Add Shipping line — PDF Total must equal Subtotal + Shipping + Tax
+
+**User report:** *"A quote should include tax and shipping. The user wants total cost, not just subtotal."*
+
+**Tax baseline (already correct):** When a job has `taxRate > 0`, the PDF already shows a tax row between Subtotal and Total, and Total = Subtotal + Tax. This is implemented in `src/pdf/generateQuotePdf.ts:183-205`. See gap H for a related defect where the saved `job.taxRate` field can be empty even when the user has a default rate set.
+
+**Why:** Shipping is a real cost. A quote without shipping understates what the customer will actually pay. The "total cost" anchor in the user's report makes this explicit: customers need to see the all-in number, not a misleading subtotal.
+
+**Fix (data + PDF + UI):**
+1. Add `shippingCost?: number` to `PrintJob` in `src/types.ts`.
+2. Add a Shipping input to CostCalculator (or, post-gap-A, to the quote-creation surface introduced by gap D).
+3. PDF generator: insert a "Shipping" row between Subtotal and Tax when `shippingCost > 0`, and update `total = subtotal + shipping + tax`. Update the 21 integration tests in `generateQuotePdf.test.ts` to cover: shipping-only, shipping-with-tax, no-shipping. Add at least one assertion that Total = Subtotal + Shipping + Tax.
+4. CONTEXT.md D-07 currently only describes tax row hide/show. Extend it to D-07a (tax) + D-07b (shipping).
+
+**Severity:** Missing feature. Blocking — current quote misrepresents cost to customer.
+
+**Open question for discuss-phase:** Is shipping a per-job field (saved on PrintJob, like taxRate) or a per-quote field (entered at the moment of quote generation, like terms)? The latter is more flexible (different shipping for different customers/destinations) but ties into gap D (customer picker → maybe also shipping picker).
+
+---
+
+### D. Customer picker before quote generation (pick existing / enter new)
+
+**User report:** *"When I click Generate PDF it automatically downloaded for the most recent customer. How do I generate a quote for a new customer?"*
+
+**Why:** Today the JobsManager Print Quote path silently uses the most-recent sale's customer (`src/components/JobsManager.tsx` quote-handler block). That's a v1.2 stopgap, not a design. Quotes happen BEFORE a sale exists — a quote is sent to a *prospective* customer who, by definition, has not bought anything yet. So the most-recent-sale fallback is exactly the wrong default.
+
+**Fix (new UX surface):**
+1. Replace silent customer auto-selection with a modal (or inline section) presented when "Print Quote" is clicked.
+2. Picker shows: (a) `[+ New customer]` action that opens an inline form (Name required; Email/Company/Address optional), (b) a list of existing customers attached to *any* prior sale or quote (deduplicated by email/name), (c) a "no customer" option that produces a customer-less PDF (preserves the v1.2 CostCalculator-style use case if anyone still wants it).
+3. After picker → quote is generated with the selected customer in the Bill To block.
+4. The picker should also feed the quote-entity write in gap E (so the quote carries a customer ref, not just a name string).
+
+**Severity:** Scope expansion. Blocking — current behavior is wrong-by-default for the primary quote-to-prospect use case.
+
+**Open question for discuss-phase:** Does the customer picker auto-save new customers to a `Customer` table, or just inline the name/email on the Quote and let dedup happen later? Today there is no standalone `Customer` table — customer fields live on `Sale` records (see `src/types.ts`). Standing this up properly (a Customer entity referenced from Sale, Quote, and any future surface) is itself a meaningful schema decision.
+
+---
+
+### E. Quote entity with lifecycle (draft / sent / accepted / declined / converted)
+
+**User report:** *"There is also no way currently to tell which customers for a product have quotes and which are sales."*
+
+**Why:** A quote is not a sale. It is a pre-sale artifact that may or may not become a sale. Today the data model has only `PrintJob` and `Sale` — there is no representation of "I sent a quote to this customer for $X, awaiting their decision." Without a Quote entity:
+- Cannot list outstanding quotes
+- Cannot mark a quote as accepted/declined
+- Cannot distinguish "this customer received a quote" from "this customer bought" (gap F depends on this)
+- Cannot convert a quote into a sale (gap G depends on this)
+- Cannot snapshot quote line items at quote-send time (the PrintJob price could change after the quote was sent, but the quote PDF the customer holds is immutable — we need to track what was on it)
+
+**Fix (schema + flows):**
+1. Add a `Quote` table to the Dexie schema. Fields: `id`, `quoteNumber` (Q-NNNN, migrated from PrintJob.quoteNumber), `printJobId` (FK to PrintJob), `customerId` (FK if customer entity exists per gap D's open question — else inline `customerName`, `customerEmail`, etc.), `status: 'draft' | 'sent' | 'accepted' | 'declined' | 'converted'`, `lineItemsSnapshot` (the data the PDF was generated from — sellingPrice, taxRate, shippingCost, notes, terms at quote-send time), `convertedToSaleId?` (FK to Sale on conversion), `createdAt`, `sentAt?`, `decisionAt?`, `convertedAt?`.
+2. Migration: existing PrintJob.quoteNumber field becomes a one-time backfill into a Quote row with status='converted' (for any job that has a sale) or status='draft' (for any job that has a quoteNumber but no sale).
+3. Quote creation: gap D's customer picker writes a new Quote row alongside generating the PDF.
+4. Quote status transitions: `draft → sent` (when PDF is generated, default), `sent → accepted/declined` (user action in gap F's quote list view), `accepted → converted` (user action in gap G).
+
+**Severity:** Scope expansion. Blocking — D, F, G are unimplementable without this.
+
+**Open question for discuss-phase:** Does the Quote table own its own line items, or reference PrintJob and snapshot only the moment-in-time price? The latter is simpler (one source of truth for the print details) but means the PDF must read both Quote AND PrintJob — and we must guard against PrintJob deletion. The former is more rigorous but doubles the data model. Recommended: snapshot only the priced fields (sellingPrice, taxRate, shippingCost, notes, terms) into `lineItemsSnapshot` — the human-readable "print name" and "filament weight" can be read fresh from PrintJob with a fallback to the snapshot if the job is gone.
+
+---
+
+### F. Quote list view + per-customer quote-vs-sale status badges
+
+**User report:** *"There is also no way currently to tell which customers for a product have quotes and which are sales."*
+
+**Why:** Once gap E exists, the user needs surfaces to *see* outstanding quotes. Today the JobsManager accordion shows Recent Sales; it does not show Recent Quotes. From a workflow standpoint: the user needs to know which prospective customers they're waiting on (status='sent'), which ones declined (status='declined' — might be worth re-engaging), and which are ready to convert (status='accepted').
+
+**Fix (UI):**
+1. Extend the JobsManager accordion with a "Recent Quotes" section parallel to "Recent Sales", showing quoteNumber, customer name, send date, status badge.
+2. Add a status badge on the customer line within Recent Sales / Recent Quotes — e.g., "1x @ $60.00 (Marcus) [✓ Sale]" vs "Q-0042 (François Müller) [📤 Sent]" / "[✓ Accepted]" / "[✗ Declined]".
+3. Optionally: a top-level "Quotes" tab in JobsManager that lists outstanding quotes across all jobs, sortable by send date / status / customer. (Decide in discuss-phase whether v1.2 includes this top-level view or just the per-job section.)
+
+**Severity:** Scope expansion. UX-critical once E ships.
+
+**Open question for discuss-phase:** Is the per-job Recent Quotes section sufficient for v1.2, or do we also want the top-level "Quotes" tab? The latter is materially more work (new route, new filtering, possibly pagination).
+
+---
+
+### G. Convert Quote → Sale action
+
+**User report:** *"How do we convert a quote into a sale?"*
+
+**Why:** This is the natural workflow: customer accepts the quote → user clicks a button → a Sale is created from the quote, the quote is marked `status: converted` and gets `convertedToSaleId`. Without this, the user has to manually duplicate the quote details into the existing Record Sale form, and the link between the quote and the resulting sale is lost.
+
+**Fix (UI + data):**
+1. On a quote with `status: accepted` (set by user via gap F's quote list), expose a "Convert to Sale" button.
+2. On click: open the existing Record Sale modal pre-populated from the Quote snapshot (sellingPrice, customer, quantity, taxRate, shippingCost). User can adjust if reality differs from the quote (e.g., they ended up giving a small discount).
+3. On Sale save: write the Sale as today, AND mark the quote `status: converted`, `convertedToSaleId: <new sale id>`, `convertedAt: now`. The Sale optionally gets a `convertedFromQuoteId` back-reference for audit.
+4. After conversion, the JobsManager job card surfaces both the Sale (in Recent Sales) and the original Quote (in Recent Quotes, marked converted) — full audit trail.
+
+**Severity:** Scope expansion. Blocking — without this, the quote workflow is open-loop.
+
+**Open question for discuss-phase:** Does conversion require the user to re-confirm the customer + line items, or does it just create the Sale silently from the Quote snapshot? Silent is faster but loses an opportunity to catch quote drift (e.g., the customer agreed to a different price). Recommended: open the Record Sale modal pre-populated, so user can confirm or adjust in one step.
+
+---
+
+### H. Saved `job.taxRate` stores override, not resolved rate — PDF drops tax row when field is blank
+
+**User report:** *"It looks like the quote isn't inheriting the default tax rate when the field is left blank."*
+
+**Root cause:** In `src/components/CostCalculator.tsx`:
+
+```ts
+// Live preview correctly resolves through the fallback chain:
+const tax = useMemo(() => resolveTaxRate({
+  jobOverride: taxRateOverride,
+  settingsDefault: userProfile.defaultTaxRate,
+  currency: userCurrency,
+  address: userProfile.address,
+}), [taxRateOverride, userProfile.defaultTaxRate, userCurrency, userProfile.address]);
+// → tax.ratePercent = 13 (resolved from userProfile.defaultTaxRate)
+// → tax.taxAmount   = correct (computed from 13%)
+
+// But the save block stores the raw override, not the resolved rate:
+db.jobs.put({
+  ...
+  taxRate: taxRateOverride,   // ← BUG: undefined when field is blank
+  taxAmount: tax.taxAmount,   // ← computed from 13%, so correct
+})
+```
+
+In `src/pdf/generateQuotePdf.ts:183-185`:
+
+```ts
+const taxRate   = job.taxRate;        // undefined for blank-field jobs
+const taxAmount = job.taxAmount;      // correct value (e.g., $X)
+const showTax   = !!(taxRate && taxRate > 0 && taxAmount && taxAmount > 0);
+//                       ^^^^^^^^^^^^^^^^^^^^
+//                       fails — taxRate is undefined → showTax = false → no tax row
+```
+
+**Effect:** A user with `userProfile.defaultTaxRate = 13` who creates a job and leaves the tax field blank gets a PDF that shows no tax row at all and Total = Subtotal only. The customer is undercharged. This silently undermines every quote sent through the blank-field path.
+
+**Why Phase 16 surfaced it:** CostCalculator's live preview always re-resolves from `userProfile.defaultTaxRate`, so the bug was invisible in the UI. The PDF generator is the first consumer that reads `job.taxRate` from the saved record — it's the canary that exposed the saved-state inconsistency.
+
+**Fix (cleanest):** Save the resolved rate, not the override.
+
+```diff
+- taxRate: taxRateOverride,
++ taxRate: tax.ratePercent,
+```
+
+at `src/components/CostCalculator.tsx:634` and `:670`. Override semantics stay in form state (`taxRateOverride`), but the saved record reflects what was actually applied — mirroring how `taxAmount` already works.
+
+**Tests:**
+- New regression test: job saved with `taxRateOverride = undefined` + `userProfile.defaultTaxRate = 13` → saved `job.taxRate === 13`, `job.taxAmount > 0` (already passes), PDF must show "Tax (13%): $X.XX" row.
+- New regression test: PDF generated for such a job has `Total === Subtotal + TaxAmount`, not `Subtotal` alone.
+
+**Audit Phase 13 sales records:** The Sale model likely has the same defect (`sale.taxRate = override` vs `sale.taxRate = resolvedRate`). Sales invoice PDFs (if/when they're added) would hit the same bug. Worth a quick search during the extended phase: `grep -n "taxRate: taxRateOverride" src/` outside CostCalculator.
+
+**Severity:** Pre-existing bug. Blocking — quotes generated through the blank-field path silently undercharge customers. Not a Phase 16 regression (the data model predates Phase 16) but Phase 16 is the right place to fix it because Phase 16 introduced the first consumer that reads `job.taxRate` from saved state.
+
+---
+
+## Recommended Next Step
+
+The gap list spans (1) two pure UX fixes (A, B), (2) one missing feature (C — shipping), (3) a scope expansion adding a Quote lifecycle (D, E, F, G), and (4) one pre-existing schema bug (H). Items D–G change the data model meaningfully — they need a real `discuss-phase` round, not just `--gaps` planning, to lock down the open questions on (i) Customer entity vs inline strings (gap D), (ii) Quote snapshot vs reference semantics (gap E), (iii) per-job Recent Quotes vs top-level Quotes tab (gap F), and (iv) silent vs confirmed conversion (gap G).
+
+Run **`/gsd-discuss-phase 16`** next. It will read this VERIFICATION.md, surface the open questions above, lock decisions into a revised `16-CONTEXT.md`, and only then route to `/gsd-plan-phase 16 --gaps`.
+
+If the user later decides any of D–G are too big for Phase 16 (e.g., the Quote lifecycle ships in v1.3), the discuss-phase round is the right place to triage. Phase 16 could plausibly ship with just A, B, C, H — leaving D–G as a v1.3 milestone — IF the user is willing to accept that quotes use the "most-recent customer" fallback in the interim. The user's UAT verdict was that this is unacceptable; defaulting to the full extension is the safer read.
 
 ---
 
 *Automated chain run: 2026-05-23T11:19:00Z by gsd-executor (Plan 16-05 Task 1)*
+*Human UAT run: 2026-05-23T15:25:00Z by user (UAT halted at scope-gap discovery)*
 *Phase: 16-printable-pdf-quote*
