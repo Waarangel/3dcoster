@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer } from '../types';
-import { backfillTagsOnJob } from './backfill';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote } from '../types';
+import { backfillTagsOnJob, backfillQuotesFromJobs } from './backfill';
 
 // Settings stored as key-value pairs
 interface Setting {
@@ -17,6 +17,7 @@ const db = new Dexie('3DCosterDB') as Dexie & {
   sales: EntityTable<Sale, 'id'>;
   settings: EntityTable<Setting, 'key'>;
   customers: EntityTable<Customer, 'id'>;
+  quotes: EntityTable<Quote, 'id'>;
 };
 
 // Schema - version 3 (added jobs and sales tables)
@@ -96,6 +97,34 @@ db.version(7).stores({
   sales: 'id, jobId, soldAt',
   settings: 'key',
   customers: 'id, name, email, lastUsedAt',  // email is non-unique index — fast lookup, no ConstraintError on duplicate
+});
+
+// v8: add `quotes` library store (Phase 16 gap closure — D-17 G7).
+// Backfill: one Quote per PrintJob that has a quoteNumber set. PrintJobs
+// with sales → Quote(status='converted'); PrintJobs without sales →
+// Quote(status='draft'). PrintJobs without a quoteNumber are skipped.
+//
+// The pure-helper boundary (backfillQuotesFromJobs) is exhaustively tested
+// in src/db/backfill.test.ts + src/db/database.migrations.test.ts — Dexie's
+// transactional upgrade just pipes existing jobs+sales into the helper and
+// bulkAdds the result. The versionchange→reload handler below (Phase 12
+// SCHEMA-02) covers v8 multi-tab reload automatically.
+db.version(8).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+  customers: 'id, name, email, lastUsedAt',
+  quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',  // quoteNumber + status indexed per D-17
+}).upgrade(async tx => {
+  const jobs = await tx.table('jobs').toArray();
+  const sales = await tx.table('sales').toArray();
+  const quotes = backfillQuotesFromJobs(jobs, sales);
+  if (quotes.length > 0) {
+    await tx.table('quotes').bulkAdd(quotes);
+  }
 });
 
 // Reload this tab if another tab loads a newer schema (SCHEMA-02 / D-10 / D-11).

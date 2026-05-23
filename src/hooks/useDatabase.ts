@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
-import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer } from '../types';
+import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 
 // Hook for all assets (materials + printers) with CRUD operations
@@ -614,5 +614,169 @@ export function useCustomers() {
     deleteCustomer,
     bumpLastUsed,
     bulkImportCustomers,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// useQuotes — Quote entity hook (Phase 16 gap closure D-17 + WARNING I-07 Option B)
+//
+// Mirrors useCustomers' shape. Exposes:
+//   - read side: quotes array + quotesByJobId Map (O(1) per-job lookup for plan 16-11)
+//   - simple CRUD: addQuote / updateQuote / deleteQuote
+//   - createQuote transactional action: owns the multi-store Dexie transaction
+//     (quotes + customers + settings) so consumers (PrintQuoteModal in plan 16-10)
+//     never import `db` directly. Per WARNING I-07 Option B architectural cleanliness.
+//
+// The createQuote action's Quote payload is typed `status: RuntimeQuoteStatus` so
+// TypeScript REFUSES `'draft'` at the call site — compile-time enforcement of G6
+// lock per BLOCKER I-03.
+// ---------------------------------------------------------------------------
+
+/**
+ * Input to `createQuote` — the modal-collected fields + a reference to the current
+ * UserProfile snapshot. The hook action constructs the full Quote internally.
+ */
+export interface CreateQuoteInput {
+  job: PrintJob;
+  userProfile: UserProfile;
+  /** By-value snapshot of customer fields from the modal at submit time. */
+  customerSnapshot: JobCustomer;
+  /** Set when the modal's email-match dedup found an existing Customer; undefined = auto-create. */
+  existingCustomerId?: string;
+  /** D-15: shipping line from the modal's compact input. */
+  shippingCost: number;
+  /** D-21 resolved rate (post-fallback chain). */
+  resolvedTaxRate: number;
+  /** D-22 computed from sellingPrice × (resolvedTaxRate/100). */
+  taxAmount: number;
+}
+
+export function useQuotes() {
+  const quotes = useLiveQuery(() => db.quotes.toArray(), []);
+  // IN-01 pattern: derive isLoading directly from the liveQuery value so consumers
+  // also see `isLoading=true` if the store is cleared mid-session.
+  const isLoading = quotes === undefined;
+
+  // Shallow-freeze at the hook boundary (mirrors useCustomers WR-03).
+  const quotesFrozen = useMemo<Quote[]>(
+    () => Object.freeze(quotes ?? []) as Quote[],
+    [quotes]
+  );
+
+  // O(1) per-job lookup for plan 16-11's Recent Quotes section. Indexed by
+  // printJobId so each accordion expand renders without a full-array scan.
+  const quotesByJobId = useMemo(() => {
+    const map = new Map<string, Quote[]>();
+    for (const q of quotesFrozen) {
+      const list = map.get(q.printJobId);
+      if (list) list.push(q);
+      else map.set(q.printJobId, [q]);
+    }
+    return map;
+  }, [quotesFrozen]);
+
+  // Simple CRUD — used by plan 16-11 status flips (updateQuote for Mark Accepted/Declined/Reopen).
+  // addQuote / deleteQuote are surfaced for future hygiene; they are distinct from createQuote
+  // (which wraps the full transactional action with customer link + counter bump).
+  const addQuote = useCallback(async (quote: Quote) => {
+    await db.quotes.add(quote);
+  }, []);
+
+  const updateQuote = useCallback(async (quote: Quote) => {
+    await db.quotes.put(quote);
+  }, []);
+
+  const deleteQuote = useCallback(async (id: string) => {
+    await db.quotes.delete(id);
+  }, []);
+
+  /**
+   * Transactional Quote creation (per WARNING I-07 Option B).
+   *
+   * One atomic Dexie transaction over ['quotes', 'customers', 'settings']:
+   *  - If existingCustomerId is set → bump that Customer's lastUsedAt.
+   *  - Else if name OR email present → auto-create a Customer; capture id for Quote.customerId.
+   *  - Add the Quote (status: 'sent' as RuntimeQuoteStatus — compiler refuses 'draft' here).
+   *  - Bump UserProfile.nextQuoteNumber via setUserProfile.
+   *
+   * Returns the freshly-written Quote so the caller can feed it to generateQuotePdf.
+   * PrintQuoteModal (plan 16-10) calls `await createQuote(...)` and NEVER imports `db` directly.
+   */
+  const createQuote = useCallback(async (input: CreateQuoteInput): Promise<Quote> => {
+    const { job, userProfile, customerSnapshot, existingCustomerId, shippingCost, resolvedTaxRate, taxAmount } = input;
+    const nextNum = userProfile.nextQuoteNumber ?? 1;
+
+    // Auto-create customer candidate: only if no existing link AND at least name OR email present.
+    const shouldAutoCreate = !existingCustomerId &&
+      ((customerSnapshot.name?.trim() ?? '') !== '' || (customerSnapshot.email?.trim() ?? '') !== '');
+
+    const newCustomerCandidate: Customer | undefined = shouldAutoCreate
+      ? {
+          id: typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `customer-${Date.now()}`,
+          createdAt: new Date(),
+          lastUsedAt: new Date(),
+          name: customerSnapshot.name,
+          email: customerSnapshot.email,
+          company: customerSnapshot.company,
+          address: customerSnapshot.address,
+          notes: customerSnapshot.notes,
+        }
+      : undefined;
+
+    const customerIdForQuote = existingCustomerId ?? newCustomerCandidate?.id;
+
+    // Compile-time G6 guard: `status` is typed RuntimeQuoteStatus on the payload, so
+    // TypeScript REFUSES `'draft'` at this call site (per BLOCKER I-03).
+    const sentAt = new Date();
+    const quotePayload: Quote & { status: RuntimeQuoteStatus } = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `quote-${Date.now()}`,
+      quoteNumber: nextNum,
+      printJobId: job.id,
+      customerId: customerIdForQuote,
+      customerSnapshot,
+      lineItemsSnapshot: {
+        jobTitle: job.name,
+        sellingPrice: job.sellingPrice,
+        shippingCost,
+        resolvedTaxRate,
+        taxAmount,
+        currency: userProfile.currency,
+        notes: job.notes ?? '',
+        terms: userProfile.defaultTerms ?? '',
+        countryAtSendTime: userProfile.address?.country,
+      },
+      status: 'sent',  // RuntimeQuoteStatus — 'draft' refused here at compile time
+      createdAt: sentAt,
+      sentAt,
+    };
+
+    await db.transaction('rw', db.quotes, db.customers, db.settings, async () => {
+      if (existingCustomerId) {
+        const existing = await db.customers.get(existingCustomerId);
+        if (existing) {
+          await db.customers.put({ ...existing, lastUsedAt: new Date() });
+        }
+      } else if (newCustomerCandidate) {
+        await db.customers.add(newCustomerCandidate);
+      }
+      await db.quotes.add(quotePayload);
+      await setUserProfile({ ...userProfile, nextQuoteNumber: nextNum + 1 });
+    });
+
+    return quotePayload;
+  }, []);
+
+  return {
+    quotes: quotesFrozen,
+    quotesByJobId,
+    isLoading,
+    addQuote,
+    updateQuote,
+    deleteQuote,
+    createQuote,
   };
 }
