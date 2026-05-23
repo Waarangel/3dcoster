@@ -723,6 +723,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       }
     }
 
+    // TODO(future-sale-pdf): D-21 audit 2026-05-23 — when Sale gains taxRate (e.g.,
+    // Sale PDF invoicing in v2), persist the RESOLVED rate from resolveTaxRate(),
+    // NOT the raw form override. Mirror the CostCalculator.tsx D-21 fix at lines
+    // 589 + 624. Sale today (Phase 14 shape) has shippingCost/marketplace/marketplaceFee
+    // but no taxRate field — audit-clean as of 2026-05-23.
     if (editingSale) {
       // Edit mode: preserve id + soldAt + jobId from the original sale.
       const updated: Sale = {
