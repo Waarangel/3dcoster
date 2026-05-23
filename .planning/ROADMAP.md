@@ -105,7 +105,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 16-01-PLAN.md — Wave 0: install jspdf + autotable + Tauri dialog/fs plugins; author CI gate scripts; subset Noto Sans fonts; scaffold Wave 0 test files (Wave 0, autonomous)
 - [x] 16-02-PLAN.md — Wave 1: pure utilities (formatQuoteNumber + customerNameSlug + taxLabelFor); UserProfile.defaultTerms type; pdf-quote features.ts entry (Wave 1, autonomous; depends on 16-01)
 - [x] 16-03-PLAN.md — Wave 2: src/pdf/generateQuotePdf.ts full PDF generator (header/customer/line items/totals/notes-terms/footer) + integration tests (Wave 2, autonomous; depends on 16-01, 16-02)
-- [ ] 16-04-PLAN.md — Wave 3: Generate PDF buttons in CostCalculator + JobsManager; UserProfileModal defaultTerms textarea; vite.config.ts modulePreload + named pdf chunk; CostCalculator component tests (Wave 3, autonomous; depends on 16-01, 16-02, 16-03)
+- [x] 16-04-PLAN.md — Wave 3: Generate PDF buttons in CostCalculator + JobsManager; UserProfileModal defaultTerms textarea; vite.config.ts modulePreload + named pdf chunk; CostCalculator component tests (Wave 3, autonomous; depends on 16-01, 16-02, 16-03)
 - [ ] 16-05-PLAN.md — Wave 4: automated verification chain + human UAT (web + Tauri + Unicode + 0% tax + EU tax + Notes/Terms + NewBadge layout + quote-number lifecycle) + close phase (Wave 4, has checkpoint:human-verify; depends on 16-01, 16-02, 16-03, 16-04)
 **UI hint**: yes
 
@@ -151,7 +151,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
-| 16. Printable PDF Quote | 3/5 | In Progress|  |
+| 16. Printable PDF Quote | 4/5 | In Progress|  |
 
 ---
 
