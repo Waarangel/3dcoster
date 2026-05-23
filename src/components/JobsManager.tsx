@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer } from '../types';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile } from '../types';
 import { useSales, useCustomers } from '../hooks/useDatabase';
 import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
@@ -12,6 +12,10 @@ interface JobsManagerProps {
   materials: Material[];
   shippingConfig: ShippingConfig;
   userCurrency: Currency;
+  // REQUIRED (no ?:) — making this optional silently corrupts quote numbering.
+  // Same callback App.tsx passes to CostCalculator; atomic Dexie writes + state sync.
+  userProfile: UserProfile;
+  onPersistQuoteNumber: (job: PrintJob, profile: UserProfile) => Promise<PrintJob>;
   onDeleteJob: (id: string) => Promise<void>;
   onEditJob: (job: PrintJob) => void;
   onSwitchTab: (tab: 'calculator' | 'jobs' | 'materials' | 'settings') => void;
@@ -33,11 +37,13 @@ type JobCardProps = {
   isSelected: boolean;
   info: BreakEvenInfo;
   recentSales?: Sale[];
+  isGeneratingPdf: boolean;
   getFilamentName: (id: string) => string;
   onToggleSelect: (id: string) => void;
   onOpenSaleForm: (job: PrintJob) => void;
   onEdit: (job: PrintJob) => void;
   onDelete: (id: string) => void;
+  onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
   style?: React.CSSProperties;
@@ -51,11 +57,13 @@ const JobCard = memo(function JobCard({
   isSelected,
   info,
   recentSales,
+  isGeneratingPdf,
   getFilamentName,
   onToggleSelect,
   onOpenSaleForm,
   onEdit,
   onDelete,
+  onGeneratePdf,
   onEditSale,
   onDeleteSale,
   style,
@@ -166,7 +174,7 @@ const JobCard = memo(function JobCard({
             )}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="success"
               btnSize="sm"
@@ -174,6 +182,17 @@ const JobCard = memo(function JobCard({
             >
               Record Sale
             </Button>
+            <div className="relative">
+              <Button
+                variant="secondary"
+                btnSize="sm"
+                disabled={isGeneratingPdf}
+                onClick={(e) => { e.stopPropagation(); onGeneratePdf(job); }}
+              >
+                {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
+              </Button>
+              <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
+            </div>
             <Button
               btnSize="sm"
               onClick={(e) => { e.stopPropagation(); onEdit(job); }}
@@ -286,12 +305,14 @@ type JobRowProps = {
   jobs: PrintJob[];
   selectedJobId: string | null;
   selectedSales: Sale[];
+  generatingJobIds: Set<string>;
   getFilamentName: (id: string) => string;
   getBreakEvenInfo: (job: PrintJob) => BreakEvenInfo;
   onToggleSelect: (id: string) => void;
   onOpenSaleForm: (job: PrintJob) => void;
   onEdit: (job: PrintJob) => void;
   onDelete: (id: string) => void;
+  onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
 };
@@ -302,12 +323,14 @@ const JobRow = ({
   jobs,
   selectedJobId,
   selectedSales,
+  generatingJobIds,
   getFilamentName,
   getBreakEvenInfo,
   onToggleSelect,
   onOpenSaleForm,
   onEdit,
   onDelete,
+  onGeneratePdf,
   onEditSale,
   onDeleteSale,
 }: RowComponentProps<JobRowProps>) => {
@@ -319,11 +342,13 @@ const JobRow = ({
       isSelected={isSelected}
       info={getBreakEvenInfo(job)}
       recentSales={isSelected ? selectedSales : undefined}
+      isGeneratingPdf={generatingJobIds.has(job.id)}
       getFilamentName={getFilamentName}
       onToggleSelect={onToggleSelect}
       onOpenSaleForm={onOpenSaleForm}
       onEdit={onEdit}
       onDelete={onDelete}
+      onGeneratePdf={onGeneratePdf}
       onEditSale={onEditSale}
       onDeleteSale={onDeleteSale}
       style={style}
@@ -361,8 +386,11 @@ function JobsListSkeleton() {
 // overflow-footer threshold can never drift out of sync.
 const PICKER_VISIBLE_LIMIT = 8;
 
-export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, onPersistQuoteNumber, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  // Per-job generating state (Set<string> keyed by job.id) — multiple jobs can
+  // be expanded simultaneously, so a Map/Set is safer than a single boolean (T-16-12).
+  const [generatingJobIds, setGeneratingJobIds] = useState<Set<string>>(new Set());
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState(1);
   const [salePrice, setSalePrice] = useState(0);
@@ -729,6 +757,36 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     resetSaleForm();
   };
 
+  // PDF generation handler (Phase 16 — T-16-12, T-16-14)
+  // Per-job Set<id> prevents double-click race when multiple accordion rows are open.
+  const handleGeneratePdf = useCallback(async (job: PrintJob) => {
+    if (generatingJobIds.has(job.id)) return;
+    setGeneratingJobIds(prev => new Set(prev).add(job.id));
+    try {
+      let updatedJob: PrintJob = job;
+      let updatedProfile = userProfile;
+      if (updatedJob.quoteNumber === undefined) {
+        const newNum = updatedProfile.nextQuoteNumber ?? 1;
+        const newJob: PrintJob = { ...updatedJob, quoteNumber: newNum };
+        updatedProfile = { ...updatedProfile, nextQuoteNumber: newNum + 1 };
+        // REQUIRED callback: App.tsx persists BOTH writes atomically AND updates
+        // editingJob state. Use the RETURNED job — not newJob — for the generator.
+        updatedJob = await onPersistQuoteNumber(newJob, updatedProfile);
+      }
+      // Find most-recent sale for this job (sorted desc by soldAt — latest first)
+      const jobSales = (allSales ?? []).filter(s => s.jobId === job.id);
+      const mostRecentSale = jobSales.length > 0
+        ? [...jobSales].sort((a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime())[0]
+        : undefined;
+      const { generateQuotePdf } = await import('../pdf/generateQuotePdf');
+      await generateQuotePdf({ job: updatedJob, userProfile: updatedProfile, sale: mostRecentSale });
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+    } finally {
+      setGeneratingJobIds(prev => { const next = new Set(prev); next.delete(job.id); return next; });
+    }
+  }, [generatingJobIds, userProfile, onPersistQuoteNumber, allSales]);
+
   // Stable callbacks so React.memo on JobCard can skip rows whose data
   // didn't change. State setters are already stable; only derived handlers
   // need useCallback wrapping.
@@ -782,15 +840,17 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     jobs,
     selectedJobId,
     selectedSales: sales,
+    generatingJobIds,
     getFilamentName,
     getBreakEvenInfo,
     onToggleSelect: handleToggleSelect,
     onOpenSaleForm: handleOpenSaleForm,
     onEdit: onEditJob,
     onDelete: handleDeleteJob,
+    onGeneratePdf: handleGeneratePdf,
     onEditSale: handleEditSaleStable,
     onDeleteSale: handleDeleteSaleStable,
-  }), [jobs, selectedJobId, sales, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleEditSaleStable, handleDeleteSaleStable]);
+  }), [jobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable]);
 
   return (
     <div className="space-y-6">
@@ -827,11 +887,13 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   isSelected={isSelected}
                   info={getBreakEvenInfo(job)}
                   recentSales={isSelected ? sales : undefined}
+                  isGeneratingPdf={generatingJobIds.has(job.id)}
                   getFilamentName={getFilamentName}
                   onToggleSelect={handleToggleSelect}
                   onOpenSaleForm={handleOpenSaleForm}
                   onEdit={onEditJob}
                   onDelete={handleDeleteJob}
+                  onGeneratePdf={handleGeneratePdf}
                   onEditSale={handleEditSaleStable}
                   onDeleteSale={handleDeleteSaleStable}
                 />
