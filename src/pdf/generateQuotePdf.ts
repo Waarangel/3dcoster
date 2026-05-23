@@ -1,11 +1,17 @@
 /**
  * PDF quote generator — dynamic-import target. No static jspdf import in src/ outside this file.
  * No React, no Dexie. Mirrors layout decisions in CONTEXT.md D-01..D-12.
+ *
+ * Strict by-value snapshot rule (D-17 G4): PDF reads ONLY from Quote.lineItemsSnapshot
+ * + Quote.customerSnapshot — NEVER from PrintJob or UserProfile at render time. The
+ * single-argument signature `generateQuotePdf(quote: Quote)` is type-level enforcement
+ * of the snapshot rule. Subsequent edits to the source PrintJob/UserProfile do not
+ * mutate already-issued quotes.
  */
 
 import jsPDF from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
-import type { PrintJob, Sale, UserProfile, Currency } from '../types';
+import type { Quote } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { formatQuoteNumber, customerNameSlug } from '../utils/format';
 import { taxLabelFor } from '../utils/taxResolution';
@@ -40,28 +46,13 @@ function ensureFontsLoaded(doc: jsPDF): void {
 }
 
 // ---------------------------------------------------------------------------
-// Exported types
+// Internal section renderers — all read from `quote.lineItemsSnapshot` +
+// `quote.customerSnapshot` only. Per D-17 G4, no PrintJob/UserProfile here.
 // ---------------------------------------------------------------------------
 
-/**
- * Parameters for generating a PDF quote.
- * - job.quoteNumber MUST be assigned before calling — generator throws if undefined.
- * - sale is optional: present when generating from JobsManager (recorded sale exists);
- *   absent when generating from CostCalculator (no customer block rendered).
- */
-export interface QuotePdfParams {
-  job: PrintJob;
-  userProfile: UserProfile;
-  sale?: Sale;
-}
-
-// ---------------------------------------------------------------------------
-// Internal section renderers
-// ---------------------------------------------------------------------------
-
-function renderHeader(doc: jsPDF, params: QuotePdfParams): number {
+function renderHeader(doc: jsPDF, quote: Quote): number {
   const pageWidth = doc.internal.pageSize.getWidth();
-  const quoteNum = formatQuoteNumber(params.job.quoteNumber!);
+  const quoteNum = formatQuoteNumber(quote.quoteNumber);
 
   // Wordmark — bold 18pt, top-left
   doc.setFont(FONT_ID, 'bold');
@@ -79,10 +70,10 @@ function renderHeader(doc: jsPDF, params: QuotePdfParams): number {
   doc.setLineWidth(0.5);
   doc.line(MARGIN_LEFT, 65, pageWidth - MARGIN_RIGHT, 65);
 
-  return 85; // next Y position
+  return 85;
 }
 
-function renderMetaAndCustomer(doc: jsPDF, params: QuotePdfParams, startY: number): number {
+function renderMetaAndCustomer(doc: jsPDF, quote: Quote, startY: number): number {
   const pageWidth = doc.internal.pageSize.getWidth();
   const today = new Date();
   const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -91,7 +82,7 @@ function renderMetaAndCustomer(doc: jsPDF, params: QuotePdfParams, startY: numbe
     return d.toISOString().split('T')[0];
   }
 
-  const quoteNum = formatQuoteNumber(params.job.quoteNumber!);
+  const quoteNum = formatQuoteNumber(quote.quoteNumber);
   const issueStr = fmtDate(today);
   const validStr = fmtDate(validUntil);
 
@@ -107,15 +98,12 @@ function renderMetaAndCustomer(doc: jsPDF, params: QuotePdfParams, startY: numbe
   doc.text(`Valid until: ${validStr}`, MARGIN_LEFT, leftY);
   leftY += 14;
 
-  // RIGHT column: customer block — only when at least one field is non-empty
-  const sale = params.sale;
-  const cust = sale?.customer;
-  const legacyName = sale?.customerName;
-
-  const hasCustomer =
-    cust
-      ? !!(cust.name || cust.email || cust.company || cust.address || legacyName)
-      : !!(legacyName);
+  // RIGHT column: customer block — only when at least one field is non-empty.
+  // Per D-17 G4 the customerSnapshot is always present on a Quote; the
+  // empty-snapshot guard catches v7→v8 backfill 'draft' rows that never get
+  // rendered anyway but is defensive against future call sites.
+  const cust = quote.customerSnapshot;
+  const hasCustomer = !!(cust.name || cust.email || cust.company || cust.address);
 
   let rightY = startY;
   if (hasCustomer) {
@@ -125,11 +113,10 @@ function renderMetaAndCustomer(doc: jsPDF, params: QuotePdfParams, startY: numbe
     rightY += 14;
     doc.setFont(FONT_ID, 'normal');
 
-    const displayName = cust?.name || legacyName;
-    if (displayName) { doc.text(displayName, rightX, rightY); rightY += 12; }
-    if (cust?.company) { doc.text(cust.company, rightX, rightY); rightY += 12; }
-    if (cust?.email) { doc.text(cust.email, rightX, rightY); rightY += 12; }
-    if (cust?.address) {
+    if (cust.name) { doc.text(cust.name, rightX, rightY); rightY += 12; }
+    if (cust.company) { doc.text(cust.company, rightX, rightY); rightY += 12; }
+    if (cust.email) { doc.text(cust.email, rightX, rightY); rightY += 12; }
+    if (cust.address) {
       const lines = doc.splitTextToSize(cust.address, pageWidth / 2 - MARGIN_RIGHT);
       doc.text(lines, rightX, rightY);
       rightY += lines.length * 12;
@@ -139,14 +126,16 @@ function renderMetaAndCustomer(doc: jsPDF, params: QuotePdfParams, startY: numbe
   return Math.max(leftY, rightY) + 10;
 }
 
-function renderLineItems(doc: jsPDF, params: QuotePdfParams, startY: number): number {
-  const { job, userProfile } = params;
-  const currency = userProfile.currency as Currency;
-  const qty = job.copiesSold || 1;
-  const unitPrice = job.sellingPrice;
+function renderLineItems(doc: jsPDF, quote: Quote, startY: number): number {
+  const { jobTitle, sellingPrice, currency } = quote.lineItemsSnapshot;
+  // Quote.lineItemsSnapshot does not carry quantity — collapsed single-row layout
+  // per D-04 always renders qty=1 at this surface. The amount column equals the
+  // unit price.
+  const qty = 1;
+  const unitPrice = sellingPrice;
   const amount = qty * unitPrice;
 
-  const description = `Custom 3D print — ${job.name}`;
+  const description = `Custom 3D print — ${jobTitle}`;
 
   autoTable(doc, {
     startY,
@@ -172,17 +161,19 @@ function renderLineItems(doc: jsPDF, params: QuotePdfParams, startY: number): nu
   return (doc as any).lastAutoTable.finalY as number;
 }
 
-function renderTotals(doc: jsPDF, params: QuotePdfParams, startY: number): number {
-  const { job, userProfile } = params;
-  const currency = userProfile.currency as Currency;
+function renderTotals(doc: jsPDF, quote: Quote, startY: number): number {
+  const { sellingPrice, shippingCost, resolvedTaxRate, taxAmount, currency, countryAtSendTime } =
+    quote.lineItemsSnapshot;
   const pageWidth = doc.internal.pageSize.getWidth();
   const rightX = pageWidth - MARGIN_RIGHT;
 
-  const qty = job.copiesSold || 1;
-  const subtotal = qty * job.sellingPrice;
-  const taxRate = job.taxRate;
-  const taxAmount = job.taxAmount;
-  const showTax = !!(taxRate && taxRate > 0 && taxAmount && taxAmount > 0);
+  // D-04: subtotal collapses to a single row × unitPrice. D-22 tax base lock:
+  // tax is computed against sellingPrice ONLY (shipping is NOT taxed). The
+  // snapshot's taxAmount already reflects this — calculateTax(sellingPrice, rate)
+  // — so we just render the stored value rather than re-multiplying here.
+  const subtotal = sellingPrice;
+  const showShipping = shippingCost > 0;
+  const showTax = resolvedTaxRate > 0 && taxAmount > 0;
 
   doc.setFontSize(10);
   doc.setFont(FONT_ID, 'normal');
@@ -193,15 +184,22 @@ function renderTotals(doc: jsPDF, params: QuotePdfParams, startY: number): numbe
   doc.text(`Subtotal: ${formatCurrency(subtotal, currency)}`, rightX, y, { align: 'right' });
   y += 14;
 
-  // Tax row — only when both taxRate and taxAmount are truthy and > 0
-  if (showTax) {
-    const label = taxLabelFor(userProfile.address?.country);
-    doc.text(`${label} (${taxRate}%): ${formatCurrency(taxAmount!, currency)}`, rightX, y, { align: 'right' });
+  // Shipping row — D-15. Between Subtotal and Tax. Hidden when shippingCost === 0.
+  if (showShipping) {
+    doc.text(`Shipping: ${formatCurrency(shippingCost, currency)}`, rightX, y, { align: 'right' });
     y += 14;
   }
 
-  // Total — bold
-  const total = subtotal + (showTax ? (taxAmount ?? 0) : 0);
+  // Tax row — only when both resolvedTaxRate and taxAmount are > 0.
+  if (showTax) {
+    const label = taxLabelFor(countryAtSendTime);
+    doc.text(`${label} (${resolvedTaxRate}%): ${formatCurrency(taxAmount, currency)}`, rightX, y, { align: 'right' });
+    y += 14;
+  }
+
+  // Total = subtotal + shippingCost + taxAmount (D-15 + D-22).
+  // Hidden tax / hidden shipping cleanly drop their contributions to 0.
+  const total = subtotal + (showShipping ? shippingCost : 0) + (showTax ? taxAmount : 0);
   doc.setFont(FONT_ID, 'bold');
   doc.text(`Total: ${formatCurrency(total, currency)}`, rightX, y, { align: 'right' });
   doc.setFont(FONT_ID, 'normal');
@@ -210,16 +208,16 @@ function renderTotals(doc: jsPDF, params: QuotePdfParams, startY: number): numbe
   return y;
 }
 
-function renderNotesAndTerms(doc: jsPDF, params: QuotePdfParams, startY: number): number {
-  const { job, userProfile } = params;
+function renderNotesAndTerms(doc: jsPDF, quote: Quote, startY: number): number {
+  const { notes, terms } = quote.lineItemsSnapshot;
   const pageWidth = doc.internal.pageSize.getWidth();
   const contentWidth = pageWidth - MARGIN_LEFT - MARGIN_RIGHT;
 
-  const notesStr = job.notes?.trim();
-  const termsStr = userProfile.defaultTerms?.trim();
+  const notesStr = notes.trim();
+  const termsStr = terms.trim();
 
   if (!notesStr && !termsStr) {
-    return startY; // nothing to render
+    return startY;
   }
 
   let y = startY + 16;
@@ -258,37 +256,33 @@ function renderFooter(doc: jsPDF): void {
   doc.setFont(FONT_ID, 'normal');
   doc.setTextColor(120, 120, 120);
   doc.text('Made with 3DCoster — 3dcoster.vercel.app', MARGIN_LEFT, pageHeight - 30);
-  doc.setTextColor(0, 0, 0); // reset to avoid state leak
+  doc.setTextColor(0, 0, 0);
 }
 
-function buildFilename(params: QuotePdfParams): string {
-  const qNum = formatQuoteNumber(params.job.quoteNumber!);
-  const slug = customerNameSlug(
-    params.sale?.customer?.name ?? params.sale?.customer?.company
-  );
+function buildFilename(quote: Quote): string {
+  const qNum = formatQuoteNumber(quote.quoteNumber);
+  const slug = customerNameSlug(quote.customerSnapshot.name ?? quote.customerSnapshot.company);
   return slug ? `Quote-${qNum}-${slug}.pdf` : `Quote-${qNum}.pdf`;
 }
 
 // ---------------------------------------------------------------------------
 // Private builder — assembles the full jsPDF document
+//
+// Invariant: Quote.quoteNumber is required by the Quote interface, so the
+// previous "throw when undefined" guard is unreachable at the type level
+// and has been removed.
 // ---------------------------------------------------------------------------
 
-function _buildDoc(params: QuotePdfParams): jsPDF {
-  if (params.job.quoteNumber === undefined) {
-    throw new Error(
-      'generateQuotePdf: job.quoteNumber must be assigned before calling — assign UserProfile.nextQuoteNumber ?? 1 and persist before generating'
-    );
-  }
-
+function _buildDoc(quote: Quote): jsPDF {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   ensureFontsLoaded(doc);
   doc.setFont(FONT_ID, 'normal');
 
-  let y = renderHeader(doc, params);
-  y = renderMetaAndCustomer(doc, params, y);
-  y = renderLineItems(doc, params, y);
-  y = renderTotals(doc, params, y);
-  y = renderNotesAndTerms(doc, params, y);
+  let y = renderHeader(doc, quote);
+  y = renderMetaAndCustomer(doc, quote, y);
+  y = renderLineItems(doc, quote, y);
+  y = renderTotals(doc, quote, y);
+  y = renderNotesAndTerms(doc, quote, y);
   renderFooter(doc);
 
   return doc;
@@ -302,8 +296,8 @@ function _buildDoc(params: QuotePdfParams): jsPDF {
  * Build the PDF and return its bytes.
  * Used by tests (no disk I/O) and by the Tauri save branch.
  */
-export async function generateQuotePdfBytes(params: QuotePdfParams): Promise<Uint8Array> {
-  const doc = _buildDoc(params);
+export async function generateQuotePdfBytes(quote: Quote): Promise<Uint8Array> {
+  const doc = _buildDoc(quote);
   return new Uint8Array(doc.output('arraybuffer'));
 }
 
@@ -313,9 +307,9 @@ export async function generateQuotePdfBytes(params: QuotePdfParams): Promise<Uin
  * Tauri path: native save dialog via @tauri-apps/plugin-dialog + writeFile via @tauri-apps/plugin-fs.
  * Tauri imports are DYNAMIC so the Tauri SDK is never bundled into the web chunk.
  */
-export async function generateQuotePdf(params: QuotePdfParams): Promise<void> {
-  const doc = _buildDoc(params);
-  const filename = buildFilename(params);
+export async function generateQuotePdf(quote: Quote): Promise<void> {
+  const doc = _buildDoc(quote);
+  const filename = buildFilename(quote);
 
   if (!__IS_TAURI__) {
     doc.save(filename);
@@ -331,7 +325,7 @@ export async function generateQuotePdf(params: QuotePdfParams): Promise<void> {
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
   });
 
-  if (!savePath) return; // user cancelled — silent return per Tauri docs
+  if (!savePath) return;
 
   const buffer = doc.output('arraybuffer');
   await writeFile(savePath, new Uint8Array(buffer));

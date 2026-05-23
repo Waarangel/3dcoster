@@ -1,51 +1,58 @@
 import { describe, it, expect } from 'vitest';
-import type { PrintJob, UserProfile, Sale, JobCustomer } from '../types';
+import type { Quote, JobCustomer, Currency } from '../types';
 import { generateQuotePdfBytes } from './generateQuotePdf';
 
 // ---------------------------------------------------------------------------
-// Fixture helpers
+// Fixture helper — single makeQuote builder per D-17 G4 strict by-value rule.
+// The pre-Phase-16-gap fixture used makeJob/makeProfile/makeSale separately;
+// post-refactor the PDF reads only from Quote so the fixture collapses to one.
 // ---------------------------------------------------------------------------
 
-function makeJob(overrides: Partial<PrintJob> = {}): PrintJob {
-  return {
-    id: 'job-1',
-    name: 'Test Print',
-    createdAt: new Date('2026-05-23'),
-    updatedAt: new Date('2026-05-23'),
-    filaments: [],
-    printTimeHours: 2,
-    printerInstanceId: 'instance-1',
-    modelCost: 0,
-    prepTimeMinutes: 0,
-    postProcessingMinutes: 0,
-    materialsUsed: [],
-    failureRate: 0,
-    costPerUnit: 5.00,
+// Test-only override shape: allows tests to pass partial snapshots without
+// re-supplying every required field. The fixture shallow-merges nested
+// snapshots so callers can write `{ lineItemsSnapshot: { notes: 'x' } }`.
+type QuoteOverrides = Partial<Omit<Quote, 'lineItemsSnapshot' | 'customerSnapshot'>> & {
+  lineItemsSnapshot?: Partial<Quote['lineItemsSnapshot']>;
+  customerSnapshot?: Partial<JobCustomer>;
+};
+
+function makeQuote(overrides: QuoteOverrides = {}): Quote {
+  const baseSnapshot: Quote['lineItemsSnapshot'] = {
+    jobTitle: 'Test Print',
     sellingPrice: 15.00,
-    copiesSold: 0,
+    shippingCost: 0,
+    resolvedTaxRate: 0,
+    taxAmount: 0,
+    currency: 'USD' as Currency,
+    notes: '',
+    terms: '',
+    countryAtSendTime: undefined,
+  };
+  const baseCustomer: JobCustomer = {};
+
+  const mergedLineItems: Quote['lineItemsSnapshot'] = overrides.lineItemsSnapshot
+    ? { ...baseSnapshot, ...overrides.lineItemsSnapshot }
+    : baseSnapshot;
+  const mergedCustomer: JobCustomer = overrides.customerSnapshot
+    ? { ...baseCustomer, ...overrides.customerSnapshot }
+    : baseCustomer;
+
+  // Pull the nested-snapshot overrides out so the spread of `rest` doesn't fight us.
+  const { lineItemsSnapshot: _ls, customerSnapshot: _cs, ...rest } = overrides;
+  void _ls; void _cs;
+
+  return {
+    id: 'quote-1',
     quoteNumber: 42,
-    ...overrides,
-  } as PrintJob;
-}
-
-function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
-  return {
-    currency: 'USD',
-    laborHourlyRate: 20,
-    ...overrides,
-  } as UserProfile;
-}
-
-function makeSale(customer?: JobCustomer): Sale {
-  return {
-    id: 'sale-1',
-    jobId: 'job-1',
-    quantity: 1,
-    unitPrice: 15.00,
-    totalRevenue: 15.00,
-    soldAt: new Date('2026-05-23'),
-    customer,
-  } as Sale;
+    printJobId: 'job-1',
+    customerId: undefined,
+    customerSnapshot: mergedCustomer,
+    lineItemsSnapshot: mergedLineItems,
+    status: 'sent',
+    createdAt: new Date('2026-05-23'),
+    sentAt: new Date('2026-05-23'),
+    ...rest,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -79,8 +86,6 @@ function pdfExtractText(bytes: Uint8Array): string {
   const raw = pdfRaw(bytes);
 
   // 1. Build a glyph-id→unicode-char map from all ToUnicode CMap sections.
-  //    jsPDF may embed multiple CMaps (one per font variant: regular, bold).
-  //    We merge them — glyph IDs within a given font are unique.
   const glyphToChar: Record<number, string> = {};
 
   const cmapRegex = /beginbfchar([\s\S]*?)endbfchar/g;
@@ -98,7 +103,6 @@ function pdfExtractText(bytes: Uint8Array): string {
   }
 
   // 2. Find all hex-encoded text in Tj operators and decode glyph sequences.
-  //    Format: <hexstring> Tj  (hex nibbles grouped in 4 = 2 bytes per glyph)
   const parts: string[] = [];
   const tjRegex = /<([0-9a-fA-F]+)>\s*Tj/g;
   let tjMatch: RegExpExecArray | null;
@@ -121,12 +125,11 @@ function pdfExtractText(bytes: Uint8Array): string {
 
 describe('generateQuotePdf', () => {
 
-  it('scaffold: fixture helpers produce valid minimal objects', () => {
-    const job = makeJob({ sellingPrice: 20.00, quoteNumber: 42 });
-    const profile = makeProfile({ nextQuoteNumber: 43 });
-    expect(job.sellingPrice).toBe(20.00);
-    expect(job.quoteNumber).toBe(42);
-    expect(profile.nextQuoteNumber).toBe(43);
+  it('scaffold: makeQuote produces a valid minimal Quote object', () => {
+    const q = makeQuote({ quoteNumber: 100 });
+    expect(q.quoteNumber).toBe(100);
+    expect(q.lineItemsSnapshot.sellingPrice).toBe(15.00);
+    expect(q.lineItemsSnapshot.currency).toBe('USD');
   });
 
   // -------------------------------------------------------------------------
@@ -134,27 +137,25 @@ describe('generateQuotePdf', () => {
   // -------------------------------------------------------------------------
 
   it('returns Uint8Array starting with %PDF- magic bytes', async () => {
-    const bytes = await generateQuotePdfBytes({ job: makeJob(), userProfile: makeProfile() });
+    const bytes = await generateQuotePdfBytes(makeQuote());
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(pdfRaw(bytes).slice(0, 5)).toBe('%PDF-');
   });
 
   // -------------------------------------------------------------------------
-  // 2. Throws when quoteNumber missing
+  // 2. (REMOVED — throws when quoteNumber missing)
+  //    Post-D-17 G4 refactor, Quote.quoteNumber is REQUIRED at the type level.
+  //    The runtime throw is unreachable; TypeScript enforces presence at the
+  //    call site. The old test that constructed Job with quoteNumber: undefined
+  //    no longer compiles, so it has been deleted.
   // -------------------------------------------------------------------------
-
-  it('throws when job.quoteNumber is undefined', async () => {
-    await expect(
-      generateQuotePdfBytes({ job: makeJob({ quoteNumber: undefined as any }), userProfile: makeProfile() })
-    ).rejects.toThrow(/quoteNumber/);
-  });
 
   // -------------------------------------------------------------------------
   // 3. Quote number in output
   // -------------------------------------------------------------------------
 
   it('contains the formatted quote number Q-0042', async () => {
-    const bytes = await generateQuotePdfBytes({ job: makeJob({ quoteNumber: 42 }), userProfile: makeProfile() });
+    const bytes = await generateQuotePdfBytes(makeQuote({ quoteNumber: 42 }));
     expect(pdfExtractText(bytes)).toContain('Q-0042');
   });
 
@@ -162,46 +163,41 @@ describe('generateQuotePdf', () => {
   // 4. Customer name present
   // -------------------------------------------------------------------------
 
-  it('includes customer name when sale.customer.name is set', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob(),
-      userProfile: makeProfile(),
-      sale: makeSale({ name: 'Alice Test' }),
-    });
+  it('includes customer name when customerSnapshot.name is set', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ customerSnapshot: { name: 'Alice Test' } }),
+    );
     expect(pdfExtractText(bytes)).toContain('Alice');
   });
 
   // -------------------------------------------------------------------------
-  // 5. Customer block omitted when no sale
+  // 5. Customer block omitted when snapshot is empty
   // -------------------------------------------------------------------------
 
-  it('omits customer block entirely when sale is undefined', async () => {
-    const bytes = await generateQuotePdfBytes({ job: makeJob(), userProfile: makeProfile() });
+  it('omits customer block entirely when customerSnapshot is empty', async () => {
+    const bytes = await generateQuotePdfBytes(makeQuote());
     expect(pdfExtractText(bytes)).not.toContain('Bill To');
   });
 
   // -------------------------------------------------------------------------
-  // 6. Customer block omitted when sale.customer has no non-empty fields
+  // 6. Customer block omitted when all fields are empty strings
   // -------------------------------------------------------------------------
 
-  it('omits customer block when sale.customer has no non-empty fields', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob(),
-      userProfile: makeProfile(),
-      sale: makeSale({}), // empty customer object
-    });
+  it('omits customer block when customerSnapshot has no non-empty fields', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ customerSnapshot: { name: '', email: '', company: '' } }),
+    );
     expect(pdfExtractText(bytes)).not.toContain('Bill To');
   });
 
   // -------------------------------------------------------------------------
-  // 7. Tax row hidden when taxRate is 0
+  // 7. Tax row hidden when resolvedTaxRate is 0
   // -------------------------------------------------------------------------
 
-  it('hides Tax row when taxRate is 0', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ taxRate: 0, taxAmount: 0 }),
-      userProfile: makeProfile(),
-    });
+  it('hides Tax row when resolvedTaxRate is 0', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { resolvedTaxRate: 0, taxAmount: 0 } }),
+    );
     const text = pdfExtractText(bytes);
     expect(text).not.toContain('Tax (');
     expect(text).not.toContain('VAT (');
@@ -209,14 +205,13 @@ describe('generateQuotePdf', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 8. Tax row hidden when taxRate and taxAmount are undefined
+  // 8. Tax row hidden when taxAmount is 0 (even if rate is non-zero — defensive)
   // -------------------------------------------------------------------------
 
-  it('hides Tax row when taxRate and taxAmount are undefined', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ taxRate: undefined, taxAmount: undefined }),
-      userProfile: makeProfile(),
-    });
+  it('hides Tax row when taxAmount is 0', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { resolvedTaxRate: 0, taxAmount: 0 } }),
+    );
     const text = pdfExtractText(bytes);
     expect(text).not.toContain('Tax (');
     expect(text).not.toContain('VAT (');
@@ -224,14 +219,20 @@ describe('generateQuotePdf', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 9. VAT (19%) shown for DE country with taxRate=19
+  // 9. VAT (19%) shown for DE country with resolvedTaxRate=19
   // -------------------------------------------------------------------------
 
-  it('shows VAT (19%) when country is DE and taxRate is 19', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ taxRate: 19, taxAmount: 22.8 }),
-      userProfile: makeProfile({ currency: 'EUR', address: { country: 'DE' } }),
-    });
+  it('shows VAT (19%) when countryAtSendTime is DE and resolvedTaxRate is 19', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({
+        lineItemsSnapshot: {
+          resolvedTaxRate: 19,
+          taxAmount: 2.85,
+          currency: 'EUR' as Currency,
+          countryAtSendTime: 'DE',
+        },
+      }),
+    );
     expect(pdfExtractText(bytes)).toContain('VAT (19%)');
   });
 
@@ -239,23 +240,34 @@ describe('generateQuotePdf', () => {
   // 10. GST shown for AU country
   // -------------------------------------------------------------------------
 
-  it('shows GST when country is AU', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ taxRate: 10, taxAmount: 1.5 }),
-      userProfile: makeProfile({ currency: 'AUD', address: { country: 'AU' } }),
-    });
+  it('shows GST when countryAtSendTime is AU', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({
+        lineItemsSnapshot: {
+          resolvedTaxRate: 10,
+          taxAmount: 1.5,
+          currency: 'AUD' as Currency,
+          countryAtSendTime: 'AU',
+        },
+      }),
+    );
     expect(pdfExtractText(bytes)).toContain('GST (');
   });
 
   // -------------------------------------------------------------------------
-  // 11. Generic Tax label when country is unset
+  // 11. Generic Tax label when countryAtSendTime is unset
   // -------------------------------------------------------------------------
 
-  it('shows generic Tax label when country is unset and taxRate > 0', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ taxRate: 5, taxAmount: 0.75 }),
-      userProfile: makeProfile({ address: undefined }),
-    });
+  it('shows generic Tax label when countryAtSendTime is unset and resolvedTaxRate > 0', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({
+        lineItemsSnapshot: {
+          resolvedTaxRate: 5,
+          taxAmount: 0.75,
+          countryAtSendTime: undefined,
+        },
+      }),
+    );
     expect(pdfExtractText(bytes)).toContain('Tax (5%)');
   });
 
@@ -264,38 +276,35 @@ describe('generateQuotePdf', () => {
   // -------------------------------------------------------------------------
 
   it('omits Notes and Terms sections when both empty', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ notes: undefined }),
-      userProfile: makeProfile({ defaultTerms: undefined }),
-    });
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { notes: '', terms: '' } }),
+    );
     const text = pdfExtractText(bytes);
     expect(text).not.toContain('Notes');
     expect(text).not.toContain('Terms');
   });
 
   // -------------------------------------------------------------------------
-  // 13. Notes section rendered when PrintJob.notes is non-empty
+  // 13. Notes section rendered when snapshot.notes is non-empty
   // -------------------------------------------------------------------------
 
-  it('renders Notes section when PrintJob.notes is non-empty', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ notes: 'PLA gloss' }),
-      userProfile: makeProfile({ defaultTerms: undefined }),
-    });
+  it('renders Notes section when snapshot.notes is non-empty', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { notes: 'PLA gloss', terms: '' } }),
+    );
     const text = pdfExtractText(bytes);
     expect(text).toContain('Notes');
     expect(text).toContain('PLA gloss');
   });
 
   // -------------------------------------------------------------------------
-  // 14. Terms section rendered when UserProfile.defaultTerms is non-empty
+  // 14. Terms section rendered when snapshot.terms is non-empty
   // -------------------------------------------------------------------------
 
-  it('renders Terms section when UserProfile.defaultTerms is non-empty', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ notes: undefined }),
-      userProfile: makeProfile({ defaultTerms: 'Payment 14d' }),
-    });
+  it('renders Terms section when snapshot.terms is non-empty', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { notes: '', terms: 'Payment 14d' } }),
+    );
     const text = pdfExtractText(bytes);
     expect(text).toContain('Terms');
     expect(text).toContain('Payment 14d');
@@ -306,10 +315,9 @@ describe('generateQuotePdf', () => {
   // -------------------------------------------------------------------------
 
   it('renders both Notes and Terms when both non-empty', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ notes: 'PLA gloss' }),
-      userProfile: makeProfile({ defaultTerms: 'Payment 14d' }),
-    });
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { notes: 'PLA gloss', terms: 'Payment 14d' } }),
+    );
     const text = pdfExtractText(bytes);
     expect(text).toContain('Notes');
     expect(text).toContain('PLA gloss');
@@ -322,7 +330,7 @@ describe('generateQuotePdf', () => {
   // -------------------------------------------------------------------------
 
   it('includes Made with 3DCoster footer', async () => {
-    const bytes = await generateQuotePdfBytes({ job: makeJob(), userProfile: makeProfile() });
+    const bytes = await generateQuotePdfBytes(makeQuote());
     expect(pdfExtractText(bytes)).toContain('Made with 3DCoster');
   });
 
@@ -331,40 +339,148 @@ describe('generateQuotePdf', () => {
   // -------------------------------------------------------------------------
 
   it('includes 3dcoster.vercel.app in footer', async () => {
-    const bytes = await generateQuotePdfBytes({ job: makeJob(), userProfile: makeProfile() });
+    const bytes = await generateQuotePdfBytes(makeQuote());
     expect(pdfExtractText(bytes)).toContain('3dcoster.vercel.app');
   });
 
   // -------------------------------------------------------------------------
-  // 18. Line item description includes job name
+  // 18. Line item description includes job title (snapshot)
   // -------------------------------------------------------------------------
 
-  it('includes Custom 3D print — {jobName} line item', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ name: 'Phone Stand' }),
-      userProfile: makeProfile(),
-    });
+  it('includes Custom 3D print — {jobTitle} line item', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { jobTitle: 'Phone Stand' } }),
+    );
     expect(pdfExtractText(bytes)).toContain('Phone Stand');
   });
 
   // -------------------------------------------------------------------------
-  // Whitespace-only notes treated as empty (D-08)
+  // Whitespace-only notes/terms treated as empty (D-08)
   // -------------------------------------------------------------------------
 
   it('treats whitespace-only notes as empty and omits Notes section', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ notes: '   ' }),
-      userProfile: makeProfile({ defaultTerms: undefined }),
-    });
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { notes: '   ', terms: '' } }),
+    );
     expect(pdfExtractText(bytes)).not.toContain('Notes');
   });
 
-  it('treats whitespace-only defaultTerms as empty and omits Terms section', async () => {
-    const bytes = await generateQuotePdfBytes({
-      job: makeJob({ notes: undefined }),
-      userProfile: makeProfile({ defaultTerms: '\t  \n' }),
-    });
+  it('treats whitespace-only terms as empty and omits Terms section', async () => {
+    const bytes = await generateQuotePdfBytes(
+      makeQuote({ lineItemsSnapshot: { notes: '', terms: '\t  \n' } }),
+    );
     expect(pdfExtractText(bytes)).not.toContain('Terms');
+  });
+
+  // -------------------------------------------------------------------------
+  // D-15: Shipping row
+  // -------------------------------------------------------------------------
+
+  describe('D-15 shipping row', () => {
+    it('omits Shipping row when shippingCost === 0', async () => {
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({ lineItemsSnapshot: { shippingCost: 0 } }),
+      );
+      expect(pdfExtractText(bytes)).not.toContain('Shipping');
+    });
+
+    it('renders Shipping row between Subtotal and Tax when shippingCost > 0', async () => {
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({
+          lineItemsSnapshot: {
+            sellingPrice: 100,
+            shippingCost: 5,
+            resolvedTaxRate: 20,
+            taxAmount: 20,
+            currency: 'EUR' as Currency,
+          },
+        }),
+      );
+      const text = pdfExtractText(bytes);
+      expect(text).toContain('Shipping');
+      // Order check: Subtotal index < Shipping index < Tax (20%) index.
+      // We rely on pdfExtractText preserving text-order via the parts array.
+      const subIdx = text.indexOf('Subtotal');
+      const shipIdx = text.indexOf('Shipping');
+      const taxIdx = text.indexOf('Tax (20%)');
+      expect(subIdx).toBeGreaterThanOrEqual(0);
+      expect(shipIdx).toBeGreaterThan(subIdx);
+      expect(taxIdx).toBeGreaterThan(shipIdx);
+    });
+
+    it('Total includes shippingCost: subtotal + shipping + tax (D-15)', async () => {
+      // sellingPrice=50, shipping=10, rate=10% → tax=5 → total=65
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({
+          lineItemsSnapshot: {
+            sellingPrice: 50,
+            shippingCost: 10,
+            resolvedTaxRate: 10,
+            taxAmount: 5,
+            currency: 'USD' as Currency,
+          },
+        }),
+      );
+      const text = pdfExtractText(bytes);
+      // formatCurrency('USD') uses $ prefix; check both raw and prefixed forms.
+      expect(text).toMatch(/Total/);
+      expect(text).toContain('65');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // D-22: Tax-base lock — shipping is NOT in the tax base.
+  // -------------------------------------------------------------------------
+
+  describe('D-22 tax base lock', () => {
+    it('tax row uses sellingPrice × rate, NOT (sellingPrice + shippingCost) × rate', async () => {
+      // sellingPrice=100, shipping=10, rate=20%
+      // Correct (D-22): tax = 100 × 0.20 = 20.00. Total = 100 + 10 + 20 = 130.
+      // Wrong base:     tax = 110 × 0.20 = 22.00. Total = 100 + 10 + 22 = 132.
+      // The snapshot carries the resolved tax already so the renderer must display
+      // the snapshotted value (20), not re-derive from (subtotal + shipping).
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({
+          lineItemsSnapshot: {
+            sellingPrice: 100,
+            shippingCost: 10,
+            resolvedTaxRate: 20,
+            taxAmount: 20,  // ← D-22: calculateTax(sellingPrice, rate) — shipping NOT in base
+            currency: 'EUR' as Currency,
+            countryAtSendTime: 'DE',
+          },
+        }),
+      );
+      const text = pdfExtractText(bytes);
+      // The VAT (20%) line should show 20.00, not 22.00.
+      expect(text).toMatch(/VAT \(20%\).*20/);
+      expect(text).not.toMatch(/VAT \(20%\).*22\.00/);
+      // Total = 100 + 10 + 20 = 130.
+      expect(text).toMatch(/Total.*130/);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // D-17 G4 by-value snapshot lock
+  // -------------------------------------------------------------------------
+
+  describe('D-17 G4 by-value snapshot', () => {
+    it('uses snapshot countryAtSendTime for tax label, not any external source', async () => {
+      // A Quote with countryAtSendTime='IT' (Italy → VAT) must render VAT
+      // regardless of any other state. The function signature no longer
+      // accepts userProfile, so cross-reads are impossible at the type level.
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({
+          lineItemsSnapshot: {
+            resolvedTaxRate: 22,
+            taxAmount: 3.3,
+            currency: 'EUR' as Currency,
+            countryAtSendTime: 'IT',
+          },
+        }),
+      );
+      expect(pdfExtractText(bytes)).toContain('VAT (22%)');
+    });
   });
 
 });

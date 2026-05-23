@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile } from '../types';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, RuntimeQuoteStatus } from '../types';
 import { useSales, useCustomers } from '../hooks/useDatabase';
 import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
@@ -784,8 +784,37 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       const mostRecentSale = jobSales.length > 0
         ? [...jobSales].sort((a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime())[0]
         : undefined;
+      // TODO(plan-16-10): REPLACED by PrintQuoteModal flow — this stopgap exists only to
+      // keep wave-2 tsc green while plan 16-10 lands the modal that constructs the Quote
+      // properly via useQuotes().createQuote(...). The renamed Print Quote button (plan
+      // 16-07) currently still triggers this silent-fallback path; the modal opener swap
+      // happens in plan 16-10.
+      const stopgapSentAt = new Date();
+      const stopgapQuote: Quote & { status: RuntimeQuoteStatus } = {
+        id: typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `quote-${Date.now()}`,
+        quoteNumber: updatedJob.quoteNumber!,
+        printJobId: updatedJob.id,
+        customerId: undefined,
+        customerSnapshot: mostRecentSale?.customer ?? { name: '' },
+        lineItemsSnapshot: {
+          jobTitle: updatedJob.name,
+          sellingPrice: updatedJob.sellingPrice,
+          shippingCost: 0,
+          resolvedTaxRate: updatedJob.taxRate ?? 0,
+          taxAmount: updatedJob.taxAmount ?? 0,
+          currency: updatedProfile.currency,
+          notes: updatedJob.notes ?? '',
+          terms: updatedProfile.defaultTerms ?? '',
+          countryAtSendTime: updatedProfile.address?.country,
+        },
+        status: 'sent',  // RuntimeQuoteStatus narrow type — 'draft' refused here at compile time
+        createdAt: stopgapSentAt,
+        sentAt: stopgapSentAt,
+      };
       const { generateQuotePdf } = await import('../pdf/generateQuotePdf');
-      await generateQuotePdf({ job: updatedJob, userProfile: updatedProfile, sale: mostRecentSale });
+      await generateQuotePdf(stopgapQuote);
     } catch (err) {
       console.error('PDF generation failed:', err);
     } finally {
