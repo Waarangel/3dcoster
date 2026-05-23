@@ -27,6 +27,48 @@ interface CostCalculatorProps {
   onUpdateJob: (job: PrintJob) => void;
   editingJob: PrintJob | null;
   onCancelEdit: () => void;
+  // REQUIRED (no ?:) — making this optional silently corrupts quote numbering:
+  // the in-memory job would carry a quoteNumber that was never written to Dexie,
+  // and UserProfile.nextQuoteNumber would never increment, causing duplicate
+  // quote numbers across sessions. App.tsx MUST supply this prop.
+  onPersistQuoteNumber: (job: PrintJob, profile: UserProfile) => Promise<PrintJob>;
+}
+
+// ---------------------------------------------------------------------------
+// GeneratePdfButton — extracted for unit testability
+// The button's disabled-state logic only depends on editingJob, sellingPrice,
+// and isGenerating. Extracted so tests can verify disabled-state in isolation
+// without mounting the full CostCalculator prop surface.
+// ---------------------------------------------------------------------------
+interface GeneratePdfButtonProps {
+  editingJob: PrintJob | null;
+  sellingPrice: number;
+  isGenerating: boolean;
+  onGenerate: () => void;
+}
+
+export function GeneratePdfButton({ editingJob, sellingPrice, isGenerating, onGenerate }: GeneratePdfButtonProps) {
+  const disabled = !editingJob || sellingPrice <= 0 || isGenerating;
+  const title = !editingJob
+    ? 'Save the job first'
+    : sellingPrice <= 0
+    ? 'Set a selling price first'
+    : '';
+  return (
+    <div className="relative w-full md:w-auto">
+      <Button
+        variant="secondary"
+        btnSize="lg"
+        onClick={onGenerate}
+        disabled={disabled}
+        title={title}
+        className="w-full md:w-auto"
+      >
+        {isGenerating ? 'Generating...' : 'Generate PDF'}
+      </Button>
+      <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
+    </div>
+  );
 }
 
 // Session storage key for form persistence
@@ -54,7 +96,7 @@ interface FilamentRow {
   editedCurrency: Currency;
 }
 
-export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
+export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit, onPersistQuoteNumber }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
@@ -149,6 +191,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   // Job saved feedback
   const [justSaved, setJustSaved] = useState(false);
+
+  // PDF generation in-progress flag (prevents double-click race — T-16-12)
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Validation error toast
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -635,6 +680,35 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       onSaveJob(job, printTimeHours);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 3000);
+    }
+  };
+
+  // Generate PDF for the currently-edited saved job (Phase 16)
+  const handleGeneratePdf = async () => {
+    if (!editingJob || sellingPrice <= 0 || isGenerating) return;
+    setIsGenerating(true);
+    try {
+      let job: PrintJob = editingJob;
+      let profile: UserProfile = userProfile;
+      if (job.quoteNumber === undefined) {
+        const newNum = profile.nextQuoteNumber ?? 1;
+        const updatedJob: PrintJob = { ...job, quoteNumber: newNum };
+        const updatedProfile: UserProfile = { ...profile, nextQuoteNumber: newNum + 1 };
+        // REQUIRED callback: App.tsx persists BOTH writes atomically AND updates jobs/editingJob
+        // state so editingJob reflects the persisted quoteNumber on next render. We use the
+        // RETURNED job (not updatedJob) to call the generator — guarantees we pass the persisted
+        // state and not a stale local snapshot.
+        job = await onPersistQuoteNumber(updatedJob, updatedProfile);
+        profile = updatedProfile;
+      }
+      const { generateQuotePdf } = await import('../pdf/generateQuotePdf');
+      // v1.2 limitation: CostCalculator PDF does not include a customer block — use the
+      // JobsManager accordion (which pulls the most-recent sale's customer) for customer-attached PDFs.
+      await generateQuotePdf({ job, userProfile: profile });
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -1591,6 +1665,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             Cancel Edit
           </Button>
         )}
+        <GeneratePdfButton
+          editingJob={editingJob}
+          sellingPrice={sellingPrice}
+          isGenerating={isGenerating}
+          onGenerate={handleGeneratePdf}
+        />
         <Button
           variant={editingJob ? 'primary' : 'success'}
           btnSize="lg"

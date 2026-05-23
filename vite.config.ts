@@ -73,6 +73,10 @@ export default defineConfig(({ mode }) => ({
       : []),
   ],
   build: {
+    // Disable automatic modulepreload link injection so the pdf chunk is NOT
+    // preloaded on every page load — it is only fetched on first "Generate PDF"
+    // click (lazy-loaded). The assert-no-pdf-preload.mjs CI gate verifies this.
+    modulePreload: false,
     rollupOptions: {
       output: {
         // Vendor chunk splitting per D-01: 3 named chunks for React, Dexie, and other deps.
@@ -87,6 +91,12 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('/react/') || id.includes('/react-dom/')) return 'react-vendor';
             if (id.includes('/dexie/') || id.includes('/dexie-react-hooks/')) return 'dexie-vendor';
             return 'vendor';
+          }
+          // Route all PDF dependencies to the lazily-loaded pdf chunk (Phase 16 D-01).
+          // /jspdf/ and /jspdf-autotable/ match node_modules paths; /src/pdf/ matches the
+          // generator module. Surrounding slashes prevent false matches on substrings.
+          if (id.includes('/src/pdf/') || id.includes('/jspdf/') || id.includes('/jspdf-autotable/')) {
+            return 'pdf';
           }
         },
       },

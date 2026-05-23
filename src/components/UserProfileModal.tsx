@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG } from '../utils/currency';
-import { Button, Input, Select } from './ui';
+import { Button, Input, Select, Textarea } from './ui';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -169,6 +169,21 @@ export function UserProfileModal({
                   />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Default Quote Terms (Phase 16 D-09) */}
+          <div>
+            <h3 className="text-sm font-medium text-slate-300 mb-3">Default Quote Terms</h3>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Default quote terms (optional)</label>
+              <Textarea
+                rows={4}
+                value={userProfile.defaultTerms || ''}
+                onChange={e => onProfileChange({ ...userProfile, defaultTerms: e.target.value || undefined })}
+                placeholder="e.g. Payment due within 14 days. All sales final."
+              />
+              <p className="text-xs text-slate-500 mt-1">Added to the Terms section of every PDF quote.</p>
             </div>
           </div>
 
