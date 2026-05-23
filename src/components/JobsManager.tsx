@@ -1,7 +1,8 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, QuoteStatus } from '../types';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, QuoteStatus, RuntimeQuoteStatus } from '../types';
 import { useSales, useCustomers, useQuotes } from '../hooks/useDatabase';
+import { db } from '../db/database';
 import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
@@ -47,6 +48,8 @@ type JobCardProps = {
   onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
+  /** Phase 16 plan 16-12: when provided, enables the Convert to Sale button on accepted Quotes in the Recent Quotes section. */
+  onStartConversion?: (quote: Quote) => void;
   style?: React.CSSProperties;
 };
 
@@ -90,7 +93,7 @@ function scrollToQuoteRow(quoteId: string) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-export function RecentQuotesSection({ jobId }: { jobId: string }) {
+export function RecentQuotesSection({ jobId, onStartConversion }: { jobId: string; onStartConversion?: (quote: Quote) => void }) {
   const { quotesByJobId, updateQuote } = useQuotes();
   const quotesForJob = quotesByJobId.get(jobId) ?? [];
   // D-17 / G6: legacy 'draft' rows are NOT user-visible — runtime never writes them.
@@ -114,6 +117,7 @@ export function RecentQuotesSection({ jobId }: { jobId: string }) {
             onMarkAccepted={async () => { await updateQuote({ ...quote, status: 'accepted', decisionAt: new Date() }); }}
             onMarkDeclined={async () => { await updateQuote({ ...quote, status: 'declined', decisionAt: new Date() }); }}
             onReopen={async () => { await updateQuote({ ...quote, status: 'sent', decisionAt: undefined }); }}
+            onConvert={onStartConversion ? () => onStartConversion(quote) : undefined}
           />
         ))}
       </ul>
@@ -126,9 +130,11 @@ interface QuoteRowProps {
   onMarkAccepted: () => Promise<void>;
   onMarkDeclined: () => Promise<void>;
   onReopen: () => Promise<void>;
+  /** Phase 16 plan 16-12 (D-20): when provided, the Convert to Sale button is enabled and opens the Record Sale modal pre-filled from this Quote's snapshot. Undefined keeps the button disabled (plan 16-11 default). */
+  onConvert?: () => void;
 }
 
-function QuoteRow({ quote, onMarkAccepted, onMarkDeclined, onReopen }: QuoteRowProps) {
+function QuoteRow({ quote, onMarkAccepted, onMarkDeclined, onReopen, onConvert }: QuoteRowProps) {
   const customerLabel = quote.customerSnapshot.name || quote.customerSnapshot.email || 'No customer';
   const currency = quote.lineItemsSnapshot.currency;
   const total = quote.lineItemsSnapshot.sellingPrice + quote.lineItemsSnapshot.shippingCost + quote.lineItemsSnapshot.taxAmount;
@@ -163,8 +169,9 @@ function QuoteRow({ quote, onMarkAccepted, onMarkDeclined, onReopen }: QuoteRowP
             <Button
               variant="primary"
               btnSize="sm"
-              disabled
-              title="Convert to Sale lands in plan 16-12"
+              disabled={!onConvert}
+              title={onConvert ? undefined : 'Convert to Sale is only available inside JobsManager'}
+              onClick={onConvert ? (e) => { e.stopPropagation(); onConvert(); } : undefined}
             >
               Convert to Sale
             </Button>
@@ -221,6 +228,7 @@ const JobCard = memo(function JobCard({
   onGeneratePdf,
   onEditSale,
   onDeleteSale,
+  onStartConversion,
   style,
 }: JobCardProps) {
   return (
@@ -364,8 +372,8 @@ const JobCard = memo(function JobCard({
             </Button>
           </div>
 
-          {/* Phase 16 plan 16-11 (D-19): Recent Quotes section renders ABOVE Recent Sales */}
-          <RecentQuotesSection jobId={job.id} />
+          {/* Phase 16 plan 16-11 (D-19) + plan 16-12 (D-20): Recent Quotes section + Convert to Sale */}
+          <RecentQuotesSection jobId={job.id} onStartConversion={onStartConversion} />
 
           {recentSales && recentSales.length > 0 && (
             <div className="mt-4">
@@ -478,6 +486,7 @@ type JobRowProps = {
   onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
+  onStartConversion?: (quote: Quote) => void;
 };
 
 const JobRow = ({
@@ -496,6 +505,7 @@ const JobRow = ({
   onGeneratePdf,
   onEditSale,
   onDeleteSale,
+  onStartConversion,
 }: RowComponentProps<JobRowProps>) => {
   const job = jobs[index];
   const isSelected = selectedJobId === job.id;
@@ -514,6 +524,7 @@ const JobRow = ({
       onGeneratePdf={onGeneratePdf}
       onEditSale={onEditSale}
       onDeleteSale={onDeleteSale}
+      onStartConversion={onStartConversion}
       style={style}
     />
   );
@@ -553,6 +564,10 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   // Print Quote modal state (plan 16-10). Holds the PrintJob whose modal is open, or null.
   const [printQuoteModalJob, setPrintQuoteModalJob] = useState<PrintJob | null>(null);
+  // Convert to Sale state (plan 16-12, D-20). When non-null, the Record Sale modal
+  // opens in "conversion" mode pre-populated from this Quote's snapshot; on save
+  // the Sale write + Quote 'converted' patch run in one Dexie transaction.
+  const [convertingFromQuote, setConvertingFromQuote] = useState<Quote | null>(null);
   // Per-job generating set kept as a stable empty Set so the JobCard prop chain
   // (`isGeneratingPdf={generatingJobIds.has(job.id)}`) keeps compiling without
   // touching every row component. The modal owns its own Generate button state.
@@ -694,9 +709,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   }, [salesByJob]);
 
   // Reset all sale-form state. Called after submit + on Cancel.
+  // Phase 16 plan 16-12: also clear convertingFromQuote so cancel-then-reopen
+  // doesn't reuse stale conversion state on the next Record Sale open.
   const resetSaleForm = useCallback(() => {
     setShowSaleForm(false);
     setEditingSale(null);
+    setConvertingFromQuote(null);
     setSaleQuantity(1);
     setSalePrice(0);
     setSaleCustomerName('');
@@ -708,6 +726,33 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setSaleShippingCost(0);
     setSaleMarketplace('facebook_local');
   }, []);
+
+  // Phase 16 plan 16-12 (D-20): Convert to Sale flow.
+  // Opens the existing Record Sale modal pre-populated from the Quote snapshot.
+  // The save handler (handleRecordSale) branches on convertingFromQuote to wrap
+  // Sale.add + Quote.put in one Dexie transaction.
+  const handleStartConversion = useCallback((quote: Quote) => {
+    // Find the matching job in this manager's scope and select it so the modal
+    // mounts with the correct selectedJob context.
+    const job = jobs.find(j => j.id === quote.printJobId);
+    if (job) setSelectedJobId(job.id);
+    setConvertingFromQuote(quote);
+    setEditingSale(null);
+    setSaleQuantity(1);
+    setSalePrice(quote.lineItemsSnapshot.sellingPrice);
+    setSaleCustomerName(quote.customerSnapshot.name ?? '');
+    setSaleCustomerEmail(quote.customerSnapshot.email ?? '');
+    setSaleCustomerCompany(quote.customerSnapshot.company ?? '');
+    setSaleCustomerAddress(quote.customerSnapshot.address ?? '');
+    setSaleCustomerNotes('');
+    setSaleShippingMethod('local_pickup');
+    setSaleShippingCost(quote.lineItemsSnapshot.shippingCost);
+    setSaleMarketplace('facebook_local');
+    setCustomerPickerQuery('');
+    setCustomerPickerOpen(false);
+    setCustomerPickerActiveIndex(0);
+    setShowSaleForm(true);
+  }, [jobs]);
 
   // Open the sale modal in edit mode. Loads the existing sale's fields into form state.
   const handleEditSale = useCallback((sale: Sale) => {
@@ -921,8 +966,33 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         shippingCost: saleShippingCost,
         marketplace: saleMarketplace,
         marketplaceFee: marketplaceFee,
+        // Phase 16 plan 16-12 (D-20): back-reference to the originating Quote when this Sale
+        // is being written as part of a Convert to Sale flow. The conversion's Quote patch
+        // is written atomically in the same Dexie transaction below.
+        convertedFromQuoteId: convertingFromQuote?.id,
       };
-      await addSale(sale);
+      if (convertingFromQuote) {
+        // D-20 atomicity: Sale.add + Quote.put run in ONE Dexie transaction.
+        // Rollback semantics leave NEITHER persisted on any mid-transaction failure.
+        //
+        // BLOCKER I-03 compile-time guard: the Quote patch declares
+        // `status: RuntimeQuoteStatus` so TypeScript REFUSES `'draft'` at this
+        // call site. Symmetric with createQuote in useDatabase.ts — both runtime
+        // write sites narrow the status to the runtime-only enum.
+        const quotePatch: Quote & { status: RuntimeQuoteStatus } = {
+          ...convertingFromQuote,
+          status: 'converted',
+          convertedAt: new Date(),
+          convertedToSaleId: sale.id,
+        };
+        await db.transaction('rw', db.sales, db.quotes, async () => {
+          await db.sales.add(sale);
+          await db.quotes.put(quotePatch);
+        });
+      } else {
+        // Legacy non-conversion path — unchanged.
+        await addSale(sale);
+      }
     }
 
     resetSaleForm();
@@ -1000,7 +1070,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onGeneratePdf: handleGeneratePdf,
     onEditSale: handleEditSaleStable,
     onDeleteSale: handleDeleteSaleStable,
-  }), [jobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable]);
+    onStartConversion: handleStartConversion,
+  }), [jobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion]);
 
   return (
     <div className="space-y-6">
@@ -1046,6 +1117,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   onGeneratePdf={handleGeneratePdf}
                   onEditSale={handleEditSaleStable}
                   onDeleteSale={handleDeleteSaleStable}
+                  onStartConversion={handleStartConversion}
                 />
               );
             })}
@@ -1059,6 +1131,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
             <h3 className="text-lg font-semibold text-white mb-4">
               {editingSale ? 'Edit Sale' : 'Record Sale'} - {selectedJob.name}
             </h3>
+
+            {convertingFromQuote && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs text-blue-300 mb-3">
+                Converting {formatQuoteNumber(convertingFromQuote.quoteNumber)} — review and adjust if needed.
+              </div>
+            )}
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
