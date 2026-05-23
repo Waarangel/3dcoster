@@ -149,7 +149,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 16-09-PLAN.md — Gaps C+E / D-15+D-17+D-22: Quote interface + Dexie v7→v8 migration with locked backfill test + refactor generateQuotePdf to take Quote arg + Shipping row (Wave 2 of gap closure, autonomous; depends on 16-07, 16-08)
 - [x] 16-10-PLAN.md — Gap D / D-16+D-18: PrintQuoteModal with customer picker + transactional Quote write + counter increment site moves here (Wave 3 of gap closure, autonomous; depends on 16-09)
 - [x] 16-11-PLAN.md — Gap F / D-19: Recent Quotes section in JobsManager accordion + status pills + Mark Accepted/Declined/Reopen + back-ref link (Wave 4 of gap closure, autonomous; depends on 16-10)
-- [ ] 16-12-PLAN.md — Gap G / D-20: Convert to Sale with transactional Sale+Quote update (Wave 5 of gap closure, autonomous; depends on 16-11)
+- [x] 16-12-PLAN.md — Gap G / D-20: Convert to Sale with transactional Sale+Quote update (Wave 5 of gap closure, autonomous; depends on 16-11)
 - [ ] 16-13-PLAN.md — Gap-closure UAT: re-run 7 original scenarios + 7 new extension scenarios + decision-coverage verification (Wave 6 of gap closure, checkpoint; depends on 16-06..16-12)
 **UI hint**: yes
 
@@ -164,7 +164,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 0/? | Not started | — |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
-| 16. Printable PDF Quote | 10/13 | In Progress|  |
+| 16. Printable PDF Quote | 11/13 | In Progress|  |
 
 ---
 
