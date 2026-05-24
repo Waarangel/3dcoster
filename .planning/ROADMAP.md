@@ -105,7 +105,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 15-01-PLAN.md — normalizeTagsOnJob pure helper in src/db/backfill.ts + 6 Vitest cases (D-02 + D-12) — TAGS-01 reconcile foundation (Wave 1, autonomous)
 - [x] 15-02-PLAN.md — duplicateJob + nextCopyName pure helpers in src/utils/duplicateJob.ts + D-15 locked test contract + by-value isolation tests (D-08 + D-09 + D-15) — DUP-02 (Wave 1, autonomous)
 - [x] 15-03-PLAN.md — parseTagsInput shared parser in src/db/backfill.ts + CostCalculator tag input field with NewBadge label-inline (D-01 + D-02 + D-13) — TAGS-01 input surface a (Wave 2, autonomous; depends on 15-01)
-- [ ] 15-04-PLAN.md — JobsManager sticky sub-header (search bar + chip filter + AND logic + 250ms debounce + filter-empty-state) + extend useDynamicRowHeight cache key to pipe-delimited tri-key (D-03 + D-04 + D-05 + D-06 + D-10 + D-14) — TAGS-02 + TAGS-03 + TAGS-04 (Wave 2, autonomous; depends on 15-01)
+- [x] 15-04-PLAN.md — JobsManager sticky sub-header (search bar + chip filter + AND logic + 250ms debounce + filter-empty-state) + extend useDynamicRowHeight cache key to pipe-delimited tri-key (D-03 + D-04 + D-05 + D-06 + D-10 + D-14) — TAGS-02 + TAGS-03 + TAGS-04 (Wave 2, autonomous; depends on 15-01)
 - [ ] 15-05-PLAN.md — JobsManager JobCard tag chips + inline tag editor + [⋯] overflow menu with Duplicate + post-duplicate scroll/highlight + features.ts 3 entries + useJobs init wiring of normalizeTagsOnJob (D-07 + D-11 + D-12 + D-13) — TAGS-01 surface b + DUP-01 (Wave 3, autonomous; depends on 15-01, 15-02, 15-03, 15-04)
 - [ ] 15-06-PLAN.md — Automated chain (tsc + vitest + build) + human UAT against all 5 ROADMAP Success Criteria + all 15 D-XX decisions + VERIFICATION.md (Wave 4, has checkpoint:human-verify; depends on 15-01..15-05)
 **UI hint**: yes
@@ -163,7 +163,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
-| 15. Tags, Search + Quick Duplicate | 3/6 | In Progress|  |
+| 15. Tags, Search + Quick Duplicate | 4/6 | In Progress|  |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
 | 16. Printable PDF Quote | 12/13 | In Progress|  |
 

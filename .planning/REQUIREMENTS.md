@@ -36,9 +36,9 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 ### Tags + filter/search
 
 - [x] **TAGS-01**: User can add free-text tags to a saved job via a comma-separated input; tags are lowercased, trimmed, deduped, capped (max-count guard), and persist as `tags: string[]`
-- [ ] **TAGS-02**: JobsManager shows a multi-select chip filter sourced from the set of tags in use across saved jobs; selecting one or more chips filters the list with AND logic
-- [ ] **TAGS-03**: JobsManager shows a free-text search input that filters by case-insensitive substring match across job title, customer name, and tags
-- [ ] **TAGS-04**: The react-window virtualized list scrolls to top and resets its `useDynamicRowHeight` cache when the filter or search changes (no stale-height regression)
+- [x] **TAGS-02**: JobsManager shows a multi-select chip filter sourced from the set of tags in use across saved jobs; selecting one or more chips filters the list with AND logic
+- [x] **TAGS-03**: JobsManager shows a free-text search input that filters by case-insensitive substring match across job title, customer name, and tags
+- [x] **TAGS-04**: The react-window virtualized list scrolls to top and resets its `useDynamicRowHeight` cache when the filter or search changes (no stale-height regression)
 
 ### Quick duplicate
 
@@ -143,9 +143,9 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | ETSY-02 | Phase 14 | Complete |
 | UI-10 | Phase 13 | Complete |
 | TAGS-01 | Phase 15 | Complete |
-| TAGS-02 | Phase 15 | Pending |
-| TAGS-03 | Phase 15 | Pending |
-| TAGS-04 | Phase 15 | Pending |
+| TAGS-02 | Phase 15 | Complete |
+| TAGS-03 | Phase 15 | Complete |
+| TAGS-04 | Phase 15 | Complete |
 | DUP-01 | Phase 15 | Pending |
 | DUP-02 | Phase 15 | Pending |
 | CL-01 | Phase 15.1 | Complete |

@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
-last_updated: "2026-05-24T16:00:50.584Z"
+last_updated: "2026-05-24T16:10:30.998Z"
 last_activity: 2026-05-24
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 38
-  completed_plans: 34
+  completed_plans: 35
   percent: 67
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 ## Current Position
 
 Phase: 15 (tags-search-quick-duplicate) — EXECUTING
-Plan: 2 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-05-24
 
@@ -69,6 +69,7 @@ Last activity: 2026-05-24
 | Phase 06-3mf-multi-plate-project-import P02 | 8min | 2 tasks | 2 files |
 | Phase 13 P06 | 3min | 2 tasks | 3 files |
 | Phase 15 P15-03 | 4min | 2 tasks | 3 files |
+| Phase 15 P04 | 5 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,9 @@ Recent decisions affecting current work:
 - [v1.2 Phase 16 dependency update — 2026-05-22]: Phase 16 PDF customer block MUST now pull from `Sale.customer` (with `sale.customerName` legacy-read fallback), NOT from `PrintJob.customer`. Phase 16 plan-phase MUST read 14-VERIFICATION.md as part of its `<read_first>` to pick up this revised contract. ETSY-02 PDF-exclusion contract is unchanged (Phase 16 must still exclude `PrintJob.etsyChecks`).
 - [Phase 15]: [v1.2 Phase 15-03]: parseTagsInput shares the D-02 transform with normalizeTagsOnJob via _normalizeTagToken private helper — whitelist regex appears in executable code exactly once (backfill.ts:55); TAGS_MAX=10 constant centralizes the D-02 cap. Empty input returns undefined NOT [] per D-02 line 43 lock.
 - [Phase 15]: [v1.2 Phase 15-03]: Tags NewBadge uses label-inline (NOT absolute-overlay) per D-13 + project memory rule — mirrors Model URL pattern exactly; absolute-overlay reserved for square icon buttons in Plans 15-04 and 15-05.
+- [Phase ?]: [v1.2 Phase 15-04]: D-05 cache-key tri-key shipped — useDynamicRowHeight invalidates on selectedJobId|chip-filter|debounced-search; react-window resets row heights and scrolls to top on any filter change (TAGS-04 contract)
+- [Phase ?]: [v1.2 Phase 15-04]: searchedJobs reuses existing salesByJob Map (all sales) instead of building a parallel index from per-selected-job sales — caught a latent D-06 bug where the plan's literal pattern would have missed customer matches on non-selected jobs
+- [Phase ?]: [v1.2 Phase 15-04]: Filter sub-header sits OUTSIDE react-window List (page-level sticky), per PATTERNS.md No-Analog rule — react-window v2 List has no native header slot above virtualized rows
 
 ### Pending Todos
 
@@ -126,6 +130,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-24T15:57:24.493Z
+Last session: 2026-05-24T16:10:30.992Z
 Stopped at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
 Resume file: None
