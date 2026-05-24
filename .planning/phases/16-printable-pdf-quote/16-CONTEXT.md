@@ -371,6 +371,163 @@ A "Generate PDF" action on saved jobs produces a downloadable, professional-look
 
 ---
 
+<extension>
+
+## Second extension: post-gap-closure UAT (2026-05-23 evening) — D-23 through D-32
+
+**Trigger:** After plans 16-06..16-12 shipped the gap-closure for A–H, human UAT against the live app surfaced 6 new findings recorded as gaps I–N in [16-VERIFICATION.md](.planning/phases/16-printable-pdf-quote/16-VERIFICATION.md). The user's feedback distilled to: *"the quote machinery is over-engineered for what this is — a print cost app. The whole separate-section-with-status-pills surface is wrong. Just track who got quoted vs who bought."*
+
+**Verbatim user reframe (load-bearing):**
+> "Ultimately this is a print cost app. The idea of the quote is just useful for tracking which customers we have quoted, and which have become sales. … if they accept, that just becomes a sale. If they decline, then it's no sale recorded."
+>
+> "I'm not sure why Recent Quotes is separate from Recent Sales. We just need the quote associated with the sale."
+
+Plus their two-scenario flow:
+1. Customer commits immediately → **Record Sale** (one click)
+2. Customer wants a quote first → **Print Quote** (PDF downloads) → row sits as Pending until customer decides → **Convert to Sale** (becomes a Sale) OR **Mark Declined** (with reason)
+
+**Research basis:** Industry research across FreshBooks, QuickBooks, Wave, Xero, Zoho, Etsy, Shopify confirmed (a) the unified transaction-list pattern is dominant and (b) "Convert to ___" is the standard accept-action verb. CRM-style "Mark as Won/Lost" was rejected as wrong register for a maker-shop product. See conversation transcript 2026-05-23T19:00 for citations.
+
+### Goal of the second extension
+
+Collapse the over-engineered 4-state lifecycle UI into a 3-state user-facing model, merge Recent Quotes + Recent Sales into one unified "Orders" section per job, fix two surface bugs (gap I — button styling; gap K — picker data-source), and capture a decline-reason for audit purposes.
+
+### What survives from the first extension
+
+Most of the schema + plumbing built in 16-06..16-12 stays unchanged:
+- `Quote` interface + Dexie v8 schema (D-17) — unchanged; only adds optional `declineReason?: string`
+- `PrintQuoteModal` (D-18) — unchanged, plus a new `edit` mode (D-27)
+- `createQuote` hook action (D-18, WARNING I-07 Option B) — unchanged
+- Atomic Sale+Quote transaction on Convert (D-20) — unchanged
+- Tax-base lock (D-22) — unchanged
+- `RuntimeQuoteStatus` G6 compile-time guard (D-17 / BLOCKER I-03) — narrows further to `'sent' | 'declined' | 'converted'` (drops `'accepted'`)
+
+### What changes
+
+| Surface | Before (16-09..16-12) | After (this extension) |
+|---------|----------------------|------------------------|
+| Per-job section name | "Recent Quotes" + "Recent Sales" (two sections) | **"Orders"** (one merged section) — D-23 |
+| Quote status pills | 4 states: Sent / Accepted / Declined / Converted | **3 states**: Pending (amber) / Sale (green) / Declined (slate) — D-24 |
+| `[Mark Accepted]` button | Present on Sent rows | **Removed** — accept = sale, so Convert to Sale IS the accept action — D-25 |
+| Row layout for converted Quote | Separate row with "Converted" badge + "→ Sale on {date}" | Quote row **disappears** — represented by its Sale row with `from Q-NNNN · Quoted 3 days ago` informational subtext — D-26 |
+| Declined Quote | Stays as a Quote row with no extra metadata | **Captures `declineReason`** via a small modal on Mark Declined click; reason shown as `Reason: {text}` sub-line under the Declined row — D-28 |
+| Action affordances | Inline buttons (Mark Accepted, Mark Declined, Convert to Sale) | Primary inline button + overflow `[⋯]` menu — D-29 |
+| Sale row subtext for converted quotes | `← Q-NNNN` clickable back-ref link (scrolls) | **Plain text** `from Q-NNNN · Quoted 3 days ago` — purely informational, not interactive (per user) — D-30 |
+| Print Quote button styling | `variant="secondary"` → bg-slate-700 disappears against accordion | **`variant="primary"` (blue)** + Edit button moves to `ghost-with-border` — D-31 (gap I) |
+| Customer picker source | `db.customers` only (library) | **Library + one-time backfill** from Sale.customer snapshots on app startup — D-32 (gap K) |
+
+### Extension decisions (D-23 through D-32)
+
+**D-23 (section rename: "Orders"):**
+- Per-job accordion section renamed from "Recent Sales" → **"Orders"**. Industry-standard term (Etsy, Shopify) for "anything in the buying funnel — sale or pending quote".
+- Truncation: show last 5 by default; `View all (N)` expander reveals the full list. Search/filter bar lands when N > 10 (deferred — see D-33).
+- Sort: newest first by `sale.soldAt` for Sales / `quote.sentAt` for pending Quotes (mixed timeline).
+
+**D-24 (3-state UI status model):**
+- UI-visible statuses: **Pending** (amber pill) / **Sale** (green pill) / **Declined** (slate pill).
+- `QuoteStatus` enum stays 5-wide internally (`'sent' | 'accepted' | 'declined' | 'converted' | 'draft'`) for migration back-compat. The `'accepted'` value is a no-op runtime state — pre-extension data containing `'accepted'` is read as if it were `'sent'` (still actionable via Convert to Sale or Mark Declined).
+- `RuntimeQuoteStatus` narrows from `Exclude<QuoteStatus, 'draft'>` (4 states) to **`'sent' | 'declined' | 'converted'`** (3 states). Compile-time refusal of `'accepted'` at all runtime write sites (createQuote, Convert-to-Sale patch). Symmetric with the prior G6 lock.
+- `'draft'` stays migration-only; `'accepted'` becomes legacy-only.
+
+**D-25 ([Mark Accepted] removed; Convert to Sale is the accept action):**
+- The `[Mark Accepted]` button on Sent quotes is **removed entirely**. `handleMarkQuoteAccepted` is deleted.
+- The user's rationale: "if they accept, that just becomes a sale." There is no in-between Accepted-but-not-converted state worth tracking.
+- The Convert to Sale flow is unchanged — it remains the atomic Sale+Quote transaction from 16-12. It is now the SOLE positive transition out of Pending.
+
+**D-26 (converted Quote → no separate row; represented by Sale row):**
+- After Convert to Sale, the Quote row **disappears from the Orders list**. The Sale row that was created in the same transaction now shows `from Q-NNNN · Quoted 3 days ago` as informational subtext under the customer name.
+- This is the single biggest UX simplification — the "Converted" badge concept goes away entirely.
+- The Quote record itself still exists in `db.quotes` with `status='converted'` for audit/lookup purposes; the UI just doesn't surface it as a separate row.
+
+**D-27 (Edit Quote opens PrintQuoteModal in edit mode):**
+- New mode on `PrintQuoteModal`: `editingQuote?: Quote` prop. When set, the modal opens pre-filled with that Quote's customer + shipping; the title reads `Edit Quote — {jobTitle}` (no "Print" verb).
+- On Save in edit mode: `db.quotes.put(updatedQuote)` — does NOT bump `UserProfile.nextQuoteNumber` (the quote keeps its existing number).
+- After Save, the PDF re-downloads automatically (the user's intent: edit + re-send to the customer in one motion).
+- Edit Quote is available on **Pending** rows only — sits in the overflow `[⋯]` menu (per D-29).
+- Per WARNING I-07 Option B: the modal still does NOT import `db` directly. A new hook action `updateQuote(quote): Promise<Quote>` (already exists from 16-11 — just `db.quotes.put`) handles the write. No counter bump path needed since this is an update, not a create.
+
+**D-28 (decline reason: free-form, captured via modal):**
+- Clicking `[Mark Declined]` opens a small **modal** (not inline expander or `prompt()`) — consistent with the project's confirmation-modal convention (mirrors `deleteSaleConfirmId` / `deleteConfirmJobId` patterns in JobsManager).
+- Modal layout: title `Decline quote Q-NNNN`, single `<Textarea>` labeled `Reason (optional)`, `[Cancel]` + `[Confirm decline]` footer. Reason is **optional** — empty reason still writes the Declined status, just without the sub-line.
+- New optional field: `Quote.declineReason?: string`. No Dexie version bump (the schema string in `db.version(8)` only lists indexed fields; new optional non-indexed field is a runtime type addition only).
+- Declined row layout shows `Reason: {text}` as a `text-xs text-slate-400` sub-line under the standard meta line. Hidden when reason is empty.
+- **Future tags integration:** the user noted "we're adding tags soon" — when the tagging feature lands, `declineReason` can migrate to a tag like `declined:too-expensive` or stay as a free-form note. Out of scope for this extension; tracked as a future cleanup.
+
+**D-29 (action affordances: primary inline button + overflow menu):**
+- Per NN/g (cited in research): more than 1–2 inline buttons in a table row crowds the layout.
+- New pattern per status:
+  - **Pending** row: `[Convert to Sale]` (primary, blue) + `[⋯]` overflow menu with `Edit Quote` / `Mark Declined`
+  - **Declined** row: `[Reopen]` (slate / ghost) + `[⋯]` with `Edit reason` (optional; future)
+  - **Sale** row: existing Edit / Delete buttons in the expanded accordion — unchanged
+- Overflow menu component: small dropdown anchored to the `[⋯]` button. New shared primitive in `src/components/ui/OverflowMenu.tsx` OR inline ad-hoc using existing Tailwind classes — executor picks based on whether a reusable need is visible elsewhere.
+- `[Reopen]` semantics: clears `declineReason` + `decisionAt`, sets `status='sent'`. Quote becomes a Pending row again, fully editable.
+
+**D-30 (Sale row subtext is informational; not interactive):**
+- The `from Q-NNNN · Quoted 3 days ago` text under a Sale row's customer name is **plain text**, not a button or link.
+- The user's exact wording: "The subtext for a quote on a sale row is just to show when the quote was last created. It's information text. Only clicking Edit Quote (when applicable) opens it for editing and download again."
+- This deletes the prior `SaleBackRefLink` clickable button (added in 16-11) and replaces it with a `<span>` containing the same data.
+- Implementation note: the `from Q-NNNN` lookup still needs the same Quote-by-id resolution (via `useQuotes().quotesByJobId.get(jobId)?.find(q => q.id === sale.convertedFromQuoteId)`); just renders the result as text.
+
+**D-31 (Print Quote button styling — gap I fix):**
+- `variant="secondary"` → `variant="primary"` (blue). This makes the button the **headline secondary action** alongside `Record Sale` (green / primary success).
+- `Edit` (currently default `variant="primary"` blue) → `variant="ghost"` with border (visually de-emphasized; it's a less common action than Print Quote or Record Sale).
+- Result hierarchy: **Record Sale (green) > Print Quote (blue) > Edit (ghost-with-border) > Delete (red-tinted)**. Each button is visually distinct against the `bg-slate-700/50` accordion card.
+- Per user direction earlier — confirmed in this extension.
+
+**D-32 (Sale-only customer backfill — gap K fix):**
+- One-time backfill runs on app startup (in `useDatabase`'s init useEffect or a new dedicated init pass).
+- For each `Sale.customer` with non-empty `name` OR `email`: check `customersByEmail` (or by name match if no email). If no matching Library `Customer` exists, auto-create one with `lastUsedAt = sale.soldAt`.
+- Idempotent: subsequent runs find existing matches and no-op.
+- Result: Logan (or any pre-15.1 Sale-only customer) appears in the Library + the picker on next reload.
+- The picker itself in `PrintQuoteModal` does NOT change — its data source (`db.customers`) is now complete.
+- Implementation: small migration function `backfillCustomersFromSales(sales, customers): Customer[]` in `src/db/backfill.ts` (mirrors `backfillQuotesFromJobs` pattern). Called from `useDatabase`'s `useCustomers` hook init or a similar one-shot. Idempotent guard checks if backfill already ran (could store a flag in `settings`, or just dedupe by email lookup).
+
+### Deferred (NOT in scope of this extension)
+
+**D-33 (search bar on Orders — TODO):**
+- The user explicitly marked this as a TODO: "There should probably be a Search field on this page for that purpose [easy to find existing jobs to sell a new copy]."
+- Research recommends adding once a typical list exceeds ~10 rows. For most users this won't be hit immediately.
+- Tracked here so the v1.3 milestone has it on the backlog. Not built in this extension.
+
+**Phase 15.1 follow-ups (M, N from 16-VERIFICATION.md):**
+- M: Customer Library "Last used" vertical centering — CSS polish on `src/components/CustomerLibrary.tsx`.
+- N: CustomerCsvImportModal missing template download — additive feature, mirror `CsvImportModal.tsx:265-283`.
+- Both are pre-existing Phase 15.1 gaps, out of Phase 16 scope. Tracked in 16-VERIFICATION.md gap appendix for backlog visibility.
+
+### Files modified by the second extension (estimated)
+
+| File | Change |
+|------|--------|
+| `src/types.ts` | Add `Quote.declineReason?: string`; narrow `RuntimeQuoteStatus` from 4 → 3 states |
+| `src/components/JobsManager.tsx` | Merge RecentQuotesSection into Recent Sales render → unified "Orders" section; status pill simplification; remove Mark Accepted button + handler; add overflow menu; replace SaleBackRefLink (clickable) with informational subtext; change Print Quote variant + Edit variant; wire Decline modal state cluster |
+| `src/components/PrintQuoteModal.tsx` | Add `editingQuote?: Quote` prop + edit-mode behavior (no counter bump, pre-fill from existing Quote) |
+| `src/components/DeclineQuoteModal.tsx` | NEW — small modal mirroring CustomerEditModal chrome; captures optional `declineReason` |
+| `src/db/backfill.ts` | Add `backfillCustomersFromSales` pure helper + tests; called once on app load |
+| `src/hooks/useDatabase.ts` | Wire backfillCustomersFromSales call into useCustomers init |
+| `src/components/JobsManager.test.tsx` | Update tests for the new model (3 statuses, no Mark Accepted, Edit Quote flow, Decline modal flow) |
+| `src/components/PrintQuoteModal.test.tsx` | Add edit-mode tests |
+| `.planning/phases/16-printable-pdf-quote/16-VERIFICATION.md` | Mark gaps I, K, L as resolved_by their new plans; close phase if final UAT passes |
+
+### Implementation strategy (path A — inline, no new /gsd:plan-phase)
+
+User-confirmed path A: brief CONTEXT extension (this document) + inline execution. Estimated ~5 commits:
+1. Types + RuntimeQuoteStatus narrowing + Quote.declineReason field
+2. JobsManager: merge sections into Orders, simplify status pills, remove Mark Accepted, add overflow menu, switch Sale back-ref to info text, fix Print Quote button styling
+3. PrintQuoteModal: add edit mode
+4. New DeclineQuoteModal + wire to Mark Declined flow
+5. backfillCustomersFromSales + tests + wire into useDatabase
+
+### Sources
+
+- [16-VERIFICATION.md](.planning/phases/16-printable-pdf-quote/16-VERIFICATION.md) — gaps I–N from 2026-05-23 UAT
+- Research report (2026-05-23 chat transcript) — quote-to-sale UX patterns across FreshBooks, QuickBooks, Wave, Xero, Zoho, Shopify Polaris, NN/g data tables, Etsy seller dashboards
+- `src/components/JobsManager.tsx:588-595` — existing delete-confirm modal pattern that DeclineQuoteModal mirrors
+- `src/components/CustomerEditModal.tsx` — existing form-modal chrome that DeclineQuoteModal reuses
+
+</extension>
+
+---
+
 *Phase: 16-printable-pdf-quote*
-*Context gathered: 2026-05-22 (original) + 2026-05-23 (UAT extension)*
-*Extension trigger: 16-VERIFICATION.md gaps A–H — user verdict "extend Phase 16 to cover everything"*
+*Context gathered: 2026-05-22 (original) + 2026-05-23 (UAT extension + post-gap-closure UAT extension)*
+*Extension trigger: 16-VERIFICATION.md gaps A–H → gap-closure plans 16-06..16-12 → human UAT surfaced gaps I–N → second extension reframes the lifecycle UX*
