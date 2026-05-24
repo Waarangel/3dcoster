@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { backfillTagsOnJob, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales } from './backfill';
 import type { PrintJob, Sale, Customer } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -394,5 +394,53 @@ describe('reconcileCopiesSoldFromSales — self-heal job.copiesSold', () => {
 
   it('empty input — no jobs, no sales — returns empty', () => {
     expect(reconcileCopiesSoldFromSales([], [])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeTagsOnJob — Phase 15 D-12 reconcile (per [[reconcile-legacy-data]])
+//
+// Mirrors the backfillTagsOnJob describe block structure — six cases asserting
+// the D-02 normalization rules (lowercase + trim + dedupe + cap-at-10 + the
+// /[^a-z0-9\s\-_]/g whitelist), plus the idempotency short-circuit.
+// ---------------------------------------------------------------------------
+
+describe('normalizeTagsOnJob (Phase 15 D-12)', () => {
+  it('lowercases + trims existing tags', () => {
+    const job: { tags?: string[] } = { tags: ['PLA', '  Phone-Stand  '] };
+    const changed = normalizeTagsOnJob(job);
+    expect(changed).toBe(true);
+    expect(job.tags).toEqual(['pla', 'phone-stand']);
+  });
+
+  it('dedupes case-insensitively', () => {
+    const job: { tags?: string[] } = { tags: ['pla', 'PLA', 'Pla'] };
+    normalizeTagsOnJob(job);
+    expect(job.tags).toEqual(['pla']);
+  });
+
+  it('strips emoji and punctuation via /[^a-z0-9\\s\\-_]/g whitelist', () => {
+    const job: { tags?: string[] } = { tags: ['pla!!', 'phone💀stand', '@@@'] };
+    normalizeTagsOnJob(job);
+    expect(job.tags).toEqual(['pla', 'phonestand']);  // '@@@' → '' → dropped
+  });
+
+  it('caps at 10 tags, silently dropping the rest', () => {
+    const job: { tags?: string[] } = { tags: Array.from({ length: 15 }, (_, i) => `tag${i}`) };
+    normalizeTagsOnJob(job);
+    expect(job.tags).toHaveLength(10);
+  });
+
+  it('returns false (no mutation) when already canonical', () => {
+    const job: { tags?: string[] } = { tags: ['pla', 'phone-stand'] };
+    const changed = normalizeTagsOnJob(job);
+    expect(changed).toBe(false);
+    expect(job.tags).toEqual(['pla', 'phone-stand']);
+  });
+
+  it('returns false when tags is undefined (Phase 12 backfill not yet run)', () => {
+    const job: { tags?: string[] } = {};
+    const changed = normalizeTagsOnJob(job);
+    expect(changed).toBe(false);
   });
 });
