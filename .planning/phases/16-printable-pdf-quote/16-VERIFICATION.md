@@ -1,8 +1,8 @@
 ---
 phase: 16-printable-pdf-quote
-verified: 2026-05-23T19:00:00Z
-status: gaps_found
-score: 3/5 — gap-closure landed for A-H (plans 16-06..16-12); UAT surfaced 4 new Phase 16 gaps (I-L) + 2 Phase 15.1 follow-ups (M-N). Finding L is a fundamental D-19 reframe that may invalidate parts of plans 16-11/16-12.
+verified: 2026-05-23T20:45:00Z
+status: gaps_closed
+score: 5/5 — A-L all resolved by gap-closure plans 16-06..16-12 + second-extension commits (D-23..D-32). M-N deferred to Phase 15.1 backlog (out of Phase 16 scope). Final UAT verdict: "this is perfect. Approved."
 verified_by: automated + human-uat
 gaps:
   - id: A
@@ -46,6 +46,7 @@ gaps:
     severity: ux
     title: Print Quote button has no visible background — bg-slate-700 (secondary) blends into accordion card
     found_by: human-uat 2026-05-23
+    resolved_by: 16-ext2 commit 76afd8d (D-31)
     surface: src/components/JobsManager.tsx (JobCard accordion action row)
     detail: |
       Plan 16-07 set `variant="secondary"` per CONTEXT D-14. In practice
@@ -61,6 +62,7 @@ gaps:
     severity: ux
     title: Recent Quotes row looks clickable (hover affordance) but onClick does nothing
     found_by: human-uat 2026-05-23
+    resolved_by: 16-ext2 commit 76afd8d (D-23, D-29 — entire QuoteRow restructured; explicit action buttons + overflow menu replace the ambiguous-clickable row)
     surface: src/components/JobsManager.tsx (QuoteRow inline subcomponent)
     detail: |
       The <li> has bg-slate-800 + rounded styling that reads like a clickable
@@ -76,6 +78,7 @@ gaps:
     severity: ux/data
     title: PrintQuoteModal customer picker only searches db.customers (library), not Sale-only customers
     found_by: human-uat 2026-05-23
+    resolved_by: 16-ext2 commit 5f25d6b (D-32 — backfillCustomersFromSales runs once on app load via useCustomers init; picker data source unchanged)
     surface: src/components/PrintQuoteModal.tsx
     detail: |
       User typed "Logan" into the picker. Logan is clearly a customer on a
@@ -98,6 +101,7 @@ gaps:
     severity: scope/architecture (BLOCKING REFRAME)
     title: Recent Quotes should be merged into Recent Sales — drop the status lifecycle
     found_by: human-uat 2026-05-23
+    resolved_by: 16-ext2 commits eb0d128 + 0d15501 + b18e2dd + 76afd8d (D-23..D-30 — merged into "Orders" section, 3-state UI model, Mark Accepted removed, converted quotes represented by their Sale row only, Edit Quote + DeclineQuoteModal with reason, informational subtext replaces clickable back-ref)
     surface: src/components/JobsManager.tsx (RecentQuotesSection + QuoteRow + status pills) — affects plans 16-09 (status enum), 16-11 (section + handlers), 16-12 (Convert + back-ref)
     detail: |
       Verbatim user feedback: "I'm not sure why Recent Quotes is separate
@@ -452,6 +456,103 @@ If the user later decides any of D–G are too big for Phase 16 (e.g., the Quote
 
 ---
 
-*Automated chain run: 2026-05-23T11:19:00Z by gsd-executor (Plan 16-05 Task 1)*
-*Human UAT run: 2026-05-23T15:25:00Z by user (UAT halted at scope-gap discovery)*
+## Gap-Closure Verification (2026-05-23 evening — second extension)
+
+### Automated chain — all 18 static audits PASS
+
+| # | Check | Expected | Actual | Status |
+|---|-------|----------|--------|--------|
+| 1 | `npm run build` | exit 0 | exit 0 — all 7 build gates pass | ✓ |
+| 2 | dist main + pdf chunk sizes | main < 300 KB gz | main 57.7 KB gz · pdf 77.79 KB gz lazy | ✓ |
+| 3 | `from 'jspdf'` in src/ | 1 | 1 (src/pdf/generateQuotePdf.ts) | ✓ |
+| 4 | `from 'jspdf-autotable'` in src/ | 1 | 1 (src/pdf/generateQuotePdf.ts) | ✓ |
+| 5 | `await import('../pdf/generateQuotePdf')` | 1 | 1 (PrintQuoteModal.tsx — D-13 audit count locked at 1) | ✓ |
+| 6 | `doc.html\|doc.autoTable(` in src/pdf/ | 0 | 0 | ✓ |
+| 7 | `GeneratePdfButton` in CostCalculator.tsx | 0 | 0 (D-13) | ✓ |
+| 8 | `Print Quote` in JobsManager.tsx | ≥1 | 3 (D-14) | ✓ |
+| 9 | `Generate PDF` in JobsManager.tsx | 0 | 0 | ✓ |
+| 10 | `taxRate: tax.ratePercent` in CostCalculator.tsx | 2 | 2 (D-21) | ✓ |
+| 11 | `taxRate: taxRateOverride` in CostCalculator.tsx | 0 | 0 (D-21) | ✓ |
+| 12 | `db.version(8)` in database.ts | 1 | 1 (D-17) | ✓ |
+| 13 | unified "Orders" section heading | 1 | 1 (D-23) | ✓ |
+| 14 | `db.transaction` in JobsManager.tsx | ≥1 | 1 (D-20 Sale+Quote tx) | ✓ |
+| 15 | `db.transaction` in PrintQuoteModal.tsx | 0 | 0 (I-07 Option B lock) | ✓ |
+| 16 | `db.transaction` in useDatabase.ts | ≥1 | 1 (D-18 createQuote tx) | ✓ |
+| 17 | `shippingCost` in generateQuotePdf.ts | ≥2 | 6 (D-15) | ✓ |
+| 18 | `QuotePdfParams\|userProfile:` in generateQuotePdf.ts | 0 | 0 (D-17 G4) | ✓ |
+
+**Plus second-extension static audits (post-commits eb0d128/0d15501/b18e2dd/76afd8d/5f25d6b):**
+
+| Check | Expected | Actual | Status |
+|-------|----------|--------|--------|
+| `RuntimeQuoteStatus = Exclude<QuoteStatus, 'draft' \| 'accepted'>` in types.ts | present | present (D-24) | ✓ |
+| `Quote.declineReason?:` in types.ts | present | present (D-28) | ✓ |
+| `[Mark Accepted]` button in JobsManager.tsx | 0 | 0 (D-25 removed) | ✓ |
+| `<OrdersSection>` wrapper in JobsManager.tsx | present | present (D-23) | ✓ |
+| `editingQuote?:` prop on PrintQuoteModalProps | present | present (D-27) | ✓ |
+| `DeclineQuoteModal` component | exists + 5 tests pass | yes (D-28) | ✓ |
+| `backfillCustomersFromSales` helper + 8 tests | exists + tests green | yes (D-32) | ✓ |
+| Test suite total | green | 235 passed, 1 todo (was 177 pre-gap-closure) | ✓ |
+
+### Human UAT verdict — 2026-05-23T20:45Z
+
+Verbatim user: **"this is perfect. Approved"**
+
+The second-extension reframe (D-23 through D-32) was driven by a live demo session against `npm run dev`. The user iteratively reshaped the Quote workflow:
+
+1. Initial discovery: "I'm not sure why Recent Quotes is separate from Recent Sales." Surfaced gaps I–N.
+2. Reframe articulation: "Ultimately this is a print cost app. The idea of the quote is just useful for tracking which customers we have quoted, and which have become sales."
+3. Industry-research synthesis (FreshBooks, QuickBooks, Wave, Xero, Zoho, Etsy, Shopify Polaris, NN/g) validated the merged "Orders" pattern + "Convert to Sale" verbiage + Pending/Sale/Declined tri-state.
+4. Final flow lock: Cost calc → Save Job → (optional) Print Quote → if customer buys, Convert to Sale; if not, Mark Declined (with optional reason). One unified Orders list per job.
+5. Implementation: 5 commits over ~20 minutes, all gates green per commit.
+6. UAT confirmation against the running app: "this is perfect. Approved."
+
+### Decision coverage (D-13 through D-32)
+
+| Decision | Plan / Commit | Notes |
+|----------|---------------|-------|
+| D-13 | 16-06 | CostCalculator Generate PDF removed |
+| D-14 | 16-07 | JobsManager rename to Print Quote |
+| D-15 | 16-09 | Quote.shippingCost + PDF Shipping row |
+| D-16 | 16-10 | PrintQuoteModal customer picker (15.1 typeahead reuse) |
+| D-17 | 16-09 | Quote interface + v8 schema + migration + by-value PDF refactor + RuntimeQuoteStatus G6 lock |
+| D-18 | 16-10 | PrintQuoteModal UX + transactional Quote+counter write |
+| D-19 | 16-11 | Recent Quotes section + status pills + actions (superseded by D-23 in extension 2) |
+| D-20 | 16-12 | Convert to Sale + transactional Sale+Quote update |
+| D-21 | 16-08 | Tax-fallback bug fix + Phase 13 Sale audit |
+| D-22 | 16-09 | Tax base = sellingPrice (locked at PDF render + modal write) |
+| D-23 | 16-ext2 commit 76afd8d | Per-job section renamed to "Orders"; merged from prior Recent Quotes + Recent Sales |
+| D-24 | 16-ext2 commits eb0d128 + 76afd8d | 3-state UI model (Pending/Sale/Declined); RuntimeQuoteStatus narrows to 3 |
+| D-25 | 16-ext2 commit 76afd8d | [Mark Accepted] button removed — Convert to Sale is the accept action |
+| D-26 | 16-ext2 commit 76afd8d | Converted Quote no longer renders as its own row — represented by its Sale row only |
+| D-27 | 16-ext2 commit 0d15501 | PrintQuoteModal edit mode — re-download a Pending quote |
+| D-28 | 16-ext2 commits eb0d128 + b18e2dd + 76afd8d | Quote.declineReason field + DeclineQuoteModal + wiring |
+| D-29 | 16-ext2 commit 76afd8d | Primary inline button + overflow menu (NN/g pattern) |
+| D-30 | 16-ext2 commit 76afd8d | `from Q-NNNN` Sale subtext is informational text, not interactive |
+| D-31 | 16-ext2 commit 76afd8d | Print Quote → primary (blue); Edit → ghost+border (gap I fix) |
+| D-32 | 16-ext2 commit 5f25d6b | backfillCustomersFromSales — one-time backfill on app load (gap K fix) |
+| D-33 | DEFERRED to v1.3 | Search bar on Orders — research-recommended once typical list > 10 |
+
+### Requirement Status — Final
+
+| Req | Description | Status |
+|-----|-------------|--------|
+| PDF-01 | Generate PDF button on JobsManager (now "Print Quote") | **PASS** — D-14 rename + D-31 styling |
+| PDF-02 | PDF bytes start with %PDF- + contain expected sections | **PASS** — 25 PDF tests green; D-15 shipping row + D-22 tax base verified |
+| PDF-03 | No static jspdf imports in src/ outside src/pdf/ | **PASS** — `assert-no-static-jspdf` exit 0 |
+| PDF-04 | dist/index.html has no modulepreload for pdf chunk | **PASS** — `assert-no-pdf-preload` exit 0 |
+| PDF-05 | Main app chunk ≤ 300 KB gzipped | **PASS** — 57.7 KB gz |
+
+### Recommended Next Step
+
+**Phase 16 ready to close.** All gaps A–L resolved. M and N deferred to Phase 15.1 follow-up backlog.
+
+Phase 16 was the last phase in the v1.2 "Quote-to-Customer" milestone per ROADMAP. After phase-close:
+- Run `/gsd:audit-milestone v1.2` to validate milestone completion
+- Then `/gsd:complete-milestone v1.2` to archive and start v1.3 planning (search bar / Phase 15.1 cleanups can go in v1.3 backlog)
+
+---
+
+*Automated chain run: 2026-05-23T11:19:00Z by gsd-executor (Plan 16-05 Task 1) → re-run 2026-05-23T19:00:00Z (post-gap-closure) → re-run 2026-05-23T20:40:00Z (post-second-extension)*
+*Human UAT runs: 2026-05-23T15:25:00Z (initial — surfaced gaps A–H) → 2026-05-23T18:30:00Z (post-gap-closure — surfaced gaps I–N) → 2026-05-23T20:45:00Z (post-second-extension — "perfect. Approved")*
 *Phase: 16-printable-pdf-quote*
