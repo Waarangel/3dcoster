@@ -233,3 +233,46 @@ export function backfillCustomersFromSales(
   }
   return out;
 }
+
+/**
+ * reconcileCopiesSoldFromSales — self-heal job.copiesSold against the
+ * authoritative sum of Sale.quantity per job (second extension hotfix
+ * after the Convert-to-Sale regression that silently dropped the bump).
+ *
+ * Pure helper. Returns an array of { id, copiesSold } patches that the
+ * caller applies via db.jobs.update or bulkPut. Idempotent — returns
+ * an empty array when every job's copiesSold already matches its sales
+ * sum.
+ *
+ * Why this exists: useSales().addSale + the Convert-to-Sale transaction
+ * are the TWO write paths that bump job.copiesSold. Either one silently
+ * skipping the bump (as the original Convert path did) leaves jobs with
+ * stale counters that the break-even computation reads as gospel — the
+ * UI surfaces "0 sold" even when the Orders list visibly shows multiple
+ * sales. This reconcile runs once on app load so historical mistakes
+ * self-heal AND any future drift (manual DB edits, race conditions,
+ * test data) gets corrected on the next reload.
+ *
+ * Counter semantic: job.copiesSold = sum of Sale.quantity for every
+ * Sale with Sale.jobId === job.id. Sales whose jobId points at a deleted
+ * job are silently ignored (orphan-sale safety).
+ */
+export function reconcileCopiesSoldFromSales(
+  jobs: PrintJob[],
+  sales: Sale[],
+): Array<{ id: string; copiesSold: number }> {
+  const expectedByJobId = new Map<string, number>();
+  for (const sale of sales) {
+    const prev = expectedByJobId.get(sale.jobId) ?? 0;
+    expectedByJobId.set(sale.jobId, prev + sale.quantity);
+  }
+
+  const out: Array<{ id: string; copiesSold: number }> = [];
+  for (const job of jobs) {
+    const expected = expectedByJobId.get(job.id) ?? 0;
+    if (job.copiesSold !== expected) {
+      out.push({ id: job.id, copiesSold: expected });
+    }
+  }
+  return out;
+}

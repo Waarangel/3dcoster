@@ -3,13 +3,17 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
-import { backfillCustomersFromSales } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales } from '../db/backfill';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
 // be a harmless no-op, but skipping the Dexie reads is still a perf win for
 // every subsequent useCustomers mount in the same session.
 let saleCustomerBackfillRan = false;
+
+// Process-lifetime flag for the copiesSold reconcile (post-Convert-to-Sale
+// regression hotfix). Same one-per-page-load pattern as the customer backfill.
+let copiesSoldReconcileRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -435,6 +439,50 @@ export function useJobs() {
   useEffect(() => {
     db.jobs.count().then(() => setIsLoading(false));
   }, []);
+
+  // Second extension hotfix: self-heal job.copiesSold against the actual
+  // sum of Sale.quantity per job. Runs ONCE per page load. Reason: the
+  // Convert-to-Sale transaction (originally landed in plan 16-12, fixed
+  // forward-only in commit 80fdf7b) silently dropped the copiesSold bump
+  // for an entire ship cycle — jobs that converted Quotes via that path
+  // had stale counters, surfacing as "0 sold" with the Orders list visibly
+  // showing sales. This reconcile makes the next page load self-heal those
+  // historical mistakes AND guards against any future drift (manual DB
+  // edits, race conditions, test data).
+  //
+  // Idempotent: helper returns empty when every job already matches its
+  // sales sum, so subsequent loads pay zero write cost.
+  useEffect(() => {
+    if (copiesSoldReconcileRan) return;
+    if (jobs === undefined) return;  // wait for the first liveQuery emission
+    copiesSoldReconcileRan = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const allSales = await db.sales.toArray();
+        if (cancelled) return;
+        const patches = reconcileCopiesSoldFromSales(jobs, allSales);
+        if (patches.length > 0) {
+          // bulkPut needs the full row; fetch current then merge copiesSold.
+          await db.transaction('rw', db.jobs, async () => {
+            for (const patch of patches) {
+              const current = await db.jobs.get(patch.id);
+              if (current) {
+                await db.jobs.put({ ...current, copiesSold: patch.copiesSold, updatedAt: new Date() });
+              }
+            }
+          });
+        }
+      } catch (err) {
+        // Reconcile failures must NOT break the app — the UI still works
+        // against stale counters; users can manually edit a Sale to retrigger.
+        console.error('copiesSold reconcile failed:', err);
+        copiesSoldReconcileRan = false;  // allow retry on next mount
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobs === undefined]);
 
   const addJob = useCallback(async (job: PrintJob) => {
     await db.jobs.add(job);

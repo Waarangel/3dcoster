@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { backfillTagsOnJob, backfillQuotesFromJobs, backfillCustomersFromSales } from './backfill';
+import { backfillTagsOnJob, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales } from './backfill';
 import type { PrintJob, Sale, Customer } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -299,5 +299,100 @@ describe('backfillCustomersFromSales (D-32 / gap K)', () => {
     expect(out.length).toBe(1);
     expect(out[0].company).toBe('Patch Co');
     expect(out[0].address).toBe('12 Patch Ln');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reconcileCopiesSoldFromSales — second extension hotfix (post Convert-to-Sale regression)
+// ---------------------------------------------------------------------------
+
+describe('reconcileCopiesSoldFromSales — self-heal job.copiesSold', () => {
+  function makeJobC(overrides: Partial<PrintJob>): PrintJob {
+    return {
+      id: 'job-x',
+      name: 'Job X',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      filaments: [],
+      printTimeHours: 1,
+      printerInstanceId: 'p-1',
+      modelCost: 0,
+      prepTimeMinutes: 0,
+      postProcessingMinutes: 0,
+      materialsUsed: [],
+      failureRate: 0,
+      costPerUnit: 1,
+      sellingPrice: 10,
+      copiesSold: 0,
+      ...overrides,
+    } as PrintJob;
+  }
+  function makeSaleC(overrides: Partial<Sale>): Sale {
+    return {
+      id: 'sale-x',
+      jobId: 'job-x',
+      quantity: 1,
+      unitPrice: 10,
+      totalRevenue: 10,
+      soldAt: new Date(),
+      ...overrides,
+    } as Sale;
+  }
+
+  it('returns empty when every job.copiesSold already matches its sales sum (idempotent / no-op)', () => {
+    const jobs = [makeJobC({ id: 'a', copiesSold: 2 })];
+    const sales = [makeSaleC({ jobId: 'a', quantity: 1 }), makeSaleC({ id: 'sb', jobId: 'a', quantity: 1 })];
+    expect(reconcileCopiesSoldFromSales(jobs, sales)).toEqual([]);
+  });
+
+  it('emits a patch when job.copiesSold is BELOW the sales sum (the gap the regression created)', () => {
+    const jobs = [makeJobC({ id: 'a', copiesSold: 0 })];
+    const sales = [
+      makeSaleC({ id: 's1', jobId: 'a', quantity: 1 }),
+      makeSaleC({ id: 's2', jobId: 'a', quantity: 1 }),
+    ];
+    expect(reconcileCopiesSoldFromSales(jobs, sales)).toEqual([{ id: 'a', copiesSold: 2 }]);
+  });
+
+  it('emits a patch when job.copiesSold is ABOVE the sales sum (e.g. manual DB edit / deleted Sale that did not decrement)', () => {
+    const jobs = [makeJobC({ id: 'a', copiesSold: 5 })];
+    const sales = [makeSaleC({ id: 's1', jobId: 'a', quantity: 1 })];
+    expect(reconcileCopiesSoldFromSales(jobs, sales)).toEqual([{ id: 'a', copiesSold: 1 }]);
+  });
+
+  it('sums Sale.quantity (not Sale count) — a Sale of qty=3 counts as 3', () => {
+    const jobs = [makeJobC({ id: 'a', copiesSold: 0 })];
+    const sales = [makeSaleC({ jobId: 'a', quantity: 3 })];
+    expect(reconcileCopiesSoldFromSales(jobs, sales)).toEqual([{ id: 'a', copiesSold: 3 }]);
+  });
+
+  it('handles multiple jobs in one pass; only emits patches for the drifted ones', () => {
+    const jobs = [
+      makeJobC({ id: 'a', copiesSold: 0 }),  // drifted (expected 1)
+      makeJobC({ id: 'b', copiesSold: 2 }),  // correct
+      makeJobC({ id: 'c', copiesSold: 5 }),  // drifted (expected 0 — no sales)
+    ];
+    const sales = [
+      makeSaleC({ jobId: 'a', quantity: 1 }),
+      makeSaleC({ id: 's2', jobId: 'b', quantity: 2 }),
+    ];
+    const out = reconcileCopiesSoldFromSales(jobs, sales);
+    expect(out).toHaveLength(2);
+    expect(out).toContainEqual({ id: 'a', copiesSold: 1 });
+    expect(out).toContainEqual({ id: 'c', copiesSold: 0 });
+  });
+
+  it('orphan Sales (jobId pointing at a deleted job) are silently ignored — no spurious patches', () => {
+    const jobs = [makeJobC({ id: 'a', copiesSold: 0 })];
+    const sales = [
+      makeSaleC({ jobId: 'a', quantity: 1 }),
+      makeSaleC({ id: 'orphan', jobId: 'job-that-was-deleted', quantity: 99 }),
+    ];
+    const out = reconcileCopiesSoldFromSales(jobs, sales);
+    expect(out).toEqual([{ id: 'a', copiesSold: 1 }]);
+  });
+
+  it('empty input — no jobs, no sales — returns empty', () => {
+    expect(reconcileCopiesSoldFromSales([], [])).toEqual([]);
   });
 });
