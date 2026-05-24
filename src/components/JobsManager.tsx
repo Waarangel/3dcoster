@@ -57,14 +57,14 @@ type JobCardProps = {
   onEditQuote?: (quote: Quote) => void;
   /** Phase 16 ext2 D-28: opens DeclineQuoteModal for the given Pending Quote. */
   onDeclineQuote?: (quote: Quote) => void;
-  /** Phase 15 plan 05 D-01 surface b: whether the inline tag editor is open for this row. */
-  isEditingTags: boolean;
-  /** Phase 15 plan 05 D-01 surface b: open the inline tag editor for this row. */
-  onStartEditTags: (jobId: string) => void;
-  /** Phase 15 plan 05 D-01 surface b: close the inline tag editor without saving. */
-  onCancelEditTags: () => void;
-  /** Phase 15 plan 05 D-01 surface b: persist parsed tags via parseTagsInput. */
-  onSaveTags: (job: PrintJob, value: string) => Promise<void>;
+  /** Phase 15 plan 10 (Gap B) — whether the title-click inline edit panel is open for this row. */
+  isEditingPanel: boolean;
+  /** Phase 15 plan 10 (Gap B) — open the title-click inline edit panel (title-rename + tag editor in one). */
+  onStartEditPanel: (jobId: string) => void;
+  /** Phase 15 plan 10 (Gap B) — close the inline edit panel without saving. */
+  onCancelEditPanel: () => void;
+  /** Phase 15 plan 10 (Gap B) — persist parsed name + tags via parseTagsInput + db.jobs.put. */
+  onSavePanel: (job: PrintJob, value: { name: string; tagsInput: string }) => Promise<void>;
   style?: React.CSSProperties;
 };
 
@@ -354,34 +354,31 @@ const JobCard = memo(function JobCard({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
-  isEditingTags,
-  onStartEditTags,
-  onCancelEditTags,
-  onSaveTags,
+  isEditingPanel,
+  onStartEditPanel,
+  onCancelEditPanel,
+  onSavePanel,
   style,
 }: JobCardProps) {
-  // Phase 15 plan 05 D-01 surface b: local input value for the inline tag editor.
-  // Seeded from the job's current tags when the editor opens; resets via key
-  // change when isEditingTags flips. Kept LOCAL (not lifted) because exactly one
-  // editor can be open at a time per parent's editingTagsJobId — there is no
-  // cross-card coordination this state needs to participate in.
-  const [tagEditValue, setTagEditValue] = useState<string>(() => (job.tags ?? []).join(', '));
-  // Re-seed when entering edit mode so the input shows the current canonical tags.
+  // Phase 15 plan 10 (Gap B): local state for the unified title+tags inline edit panel.
+  // Both fields re-seed from the job's current values when the panel opens so that a
+  // job edited elsewhere in the meantime is never shown stale.
+  const [panelName, setPanelName] = useState(() => job.name);
+  const [panelTagsInput, setPanelTagsInput] = useState(() => (job.tags ?? []).join(', '));
+  // Re-seed when the panel transitions from closed → open.
+  // CRITICAL: do NOT call setPanelName / setPanelTagsInput outside this effect —
+  // that would race against user input.
   useEffect(() => {
-    if (isEditingTags) {
-      setTagEditValue((job.tags ?? []).join(', '));
+    if (isEditingPanel) {
+      setPanelName(job.name);
+      setPanelTagsInput((job.tags ?? []).join(', '));
     }
-  }, [isEditingTags, job.tags]);
-
-  const handleTagSave = useCallback(async () => {
-    await onSaveTags(job, tagEditValue);
-  }, [job, tagEditValue, onSaveTags]);
+  }, [isEditingPanel, job.name, job.tags]);
 
   return (
     <div
       style={style}
-      onClick={() => onToggleSelect(job.id)}
-      className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+      className={`p-4 rounded-lg border transition-colors ${
         isSelected
           ? 'bg-slate-700 border-blue-500'
           : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
@@ -389,8 +386,43 @@ const JobCard = memo(function JobCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h3 className="font-medium text-white">{job.name}</h3>
+          {/* Phase 15 plan 10 (Gap B) — title row: chevron button (selection toggle) +
+              title button (opens edit panel) + hover Tag icon + NewBadge + break-even pill.
+              The `group` class on the wrapper enables `group-hover:opacity-100` on the Tag icon. */}
+          <div className="group flex items-center gap-3">
+            {/* allow-raw-html: chevron icon button — small affordance (w-6 h-6), not a CTA; Button primitive would be visually incorrect for an icon-only toggle */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleSelect(job.id); }}
+              aria-label={isSelected ? "Collapse job details" : "Expand job details"}
+              aria-expanded={isSelected}
+              className="inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors shrink-0"
+            >
+              <ChevronRightIcon className={`w-4 h-4 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+            </button>
+            {/* allow-raw-html: title button — inline text affordance that renders job.name; Button primitive adds unwanted padding/border to what should be plain text */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onStartEditPanel(job.id); }}
+              aria-label="Edit job title and tags"
+              className="font-medium text-white text-left hover:text-blue-300 transition-colors"
+            >
+              {job.name}
+            </button>
+            <div className="relative">
+              {/* Tag icon — appears on hover of the title row; stays visible while the panel is open.
+                  NewBadge (tags) re-targeted from the prior pencil-button site (Gap B). */}
+              {/* allow-raw-html: tag icon button — small icon affordance (w-6 h-6); Button primitive dwarf the icon and add unwanted layout mass */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onStartEditPanel(job.id); }}
+                aria-label="Edit tags"
+                className={`inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-opacity ${isEditingPanel ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+              >
+                <TagIcon className="w-4 h-4" />
+              </button>
+              <NewBadge feature="tags" className="absolute -top-1 -right-1 pointer-events-none" />
+            </div>
             {info.isBreakEven ? (
               <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
                 Break-even reached
@@ -438,6 +470,75 @@ const JobCard = memo(function JobCard({
           </div>
         </div>
       </div>
+
+      {/* Phase 15 plan 10 (Gap B) — unified title+tags inline edit panel.
+          Sits OUTSIDE the {isSelected && (...)} accordion so it is reachable
+          from collapsed rows. The user can title-click any row and edit without
+          having to expand the accordion first. */}
+      {isEditingPanel && (
+        <div className="mt-3 pt-3 border-t border-slate-700" onClick={(e) => e.stopPropagation()}>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                <span>Title</span>
+              </label>
+              <Input
+                type="text"
+                value={panelName}
+                onChange={e => setPanelName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void onSavePanel(job, { name: panelName, tagsInput: panelTagsInput });
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onCancelEditPanel();
+                  }
+                }}
+                placeholder="Job name"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Tags</span>
+              </label>
+              <Input
+                type="text"
+                value={panelTagsInput}
+                onChange={e => setPanelTagsInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void onSavePanel(job, { name: panelName, tagsInput: panelTagsInput });
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onCancelEditPanel();
+                  }
+                }}
+                placeholder="phone-stand, pla, gloss"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="ghost"
+                btnSize="sm"
+                className="border border-slate-600"
+                onClick={(e) => { e.stopPropagation(); onCancelEditPanel(); }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                btnSize="sm"
+                onClick={(e) => { e.stopPropagation(); void onSavePanel(job, { name: panelName, tagsInput: panelTagsInput }); }}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isSelected && (
         <div className="mt-4 pt-4 border-t border-slate-600">
@@ -517,22 +618,6 @@ const JobCard = memo(function JobCard({
               </Button>
               <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
             </div>
-            {/* Phase 15 plan 05 D-01 surface b — inline tag editor affordance.
-                Pencil-only ghost button opens the editor row below the action
-                row. Hidden when the editor is already open to avoid duplicate
-                affordances. */}
-            {!isEditingTags && (
-              <Button
-                variant="ghost"
-                btnSize="sm"
-                className="border border-slate-600"
-                title="Edit tags"
-                aria-label="Edit tags"
-                onClick={(e) => { e.stopPropagation(); onStartEditTags(job.id); }}
-              >
-                <PencilIcon className="w-4 h-4" />
-              </Button>
-            )}
             {/* D-31: Edit demoted to ghost+border so the visual hierarchy reads Record Sale (green) > Print Quote (blue) > Edit (ghost) > Delete (red-tinted) */}
             <Button
               variant="ghost"
@@ -550,56 +635,6 @@ const JobCard = memo(function JobCard({
               Delete
             </Button>
           </div>
-
-          {/* Phase 15 plan 05 D-01 surface b — inline tag editor row.
-              Revealed below the action row when isEditingTags is true.
-              Persists via parseTagsInput (same parse helper as CostCalculator
-              Plan 15-03 — D-02 lock). NewBadge `tags` uses the LABEL-INLINE
-              pattern (NOT absolute-overlay) per D-13 + project memory rule:
-              the badge lives as a child of the label's flex container, just
-              like the Model URL precedent at CostCalculator.tsx:788-801. */}
-          {isEditingTags && (
-            <div className="mt-3 pt-3 border-t border-slate-700" onClick={(e) => e.stopPropagation()}>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Tags</span>
-                <NewBadge feature="tags" />
-              </label>
-              <div className="flex flex-wrap gap-2 items-start">
-                <Input
-                  type="text"
-                  value={tagEditValue}
-                  onChange={e => setTagEditValue(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      void handleTagSave();
-                    } else if (e.key === 'Escape') {
-                      e.preventDefault();
-                      onCancelEditTags();
-                    }
-                  }}
-                  placeholder="phone-stand, pla, gloss"
-                  className="flex-1 min-w-[200px]"
-                  autoFocus
-                />
-                <Button
-                  variant="primary"
-                  btnSize="sm"
-                  onClick={(e) => { e.stopPropagation(); void handleTagSave(); }}
-                >
-                  Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  btnSize="sm"
-                  className="border border-slate-600"
-                  onClick={(e) => { e.stopPropagation(); onCancelEditTags(); }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* D-23: Unified "Orders" section per job. OrdersSection internally
               decides whether to render the heading (when EITHER quotes OR sales
@@ -726,11 +761,11 @@ type JobRowProps = {
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
-  // Phase 15 plan 05 — parent-owned state for one-at-a-time tag edit
-  editingTagsJobId: string | null;
-  onStartEditTags: (jobId: string) => void;
-  onCancelEditTags: () => void;
-  onSaveTags: (job: PrintJob, value: string) => Promise<void>;
+  // Phase 15 plan 10 (Gap B) — parent-owned state for one-at-a-time inline edit panel
+  editingPanelJobId: string | null;
+  onStartEditPanel: (jobId: string) => void;
+  onCancelEditPanel: () => void;
+  onSavePanel: (job: PrintJob, value: { name: string; tagsInput: string }) => Promise<void>;
 };
 
 const JobRow = ({
@@ -752,10 +787,10 @@ const JobRow = ({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
-  editingTagsJobId,
-  onStartEditTags,
-  onCancelEditTags,
-  onSaveTags,
+  editingPanelJobId,
+  onStartEditPanel,
+  onCancelEditPanel,
+  onSavePanel,
 }: RowComponentProps<JobRowProps>) => {
   const job = jobs[index];
   const isSelected = selectedJobId === job.id;
@@ -777,10 +812,10 @@ const JobRow = ({
       onStartConversion={onStartConversion}
       onEditQuote={onEditQuote}
       onDeclineQuote={onDeclineQuote}
-      isEditingTags={editingTagsJobId === job.id}
-      onStartEditTags={onStartEditTags}
-      onCancelEditTags={onCancelEditTags}
-      onSaveTags={onSaveTags}
+      isEditingPanel={editingPanelJobId === job.id}
+      onStartEditPanel={onStartEditPanel}
+      onCancelEditPanel={onCancelEditPanel}
+      onSavePanel={onSavePanel}
       style={style}
     />
   );
@@ -810,20 +845,41 @@ function JobsListSkeleton() {
   );
 }
 
-// Phase 15 plan 05 — local PencilIcon (mirrors CustomerLibrary.tsx:352-365 verbatim).
-// Inline-local rather than exported because only the JobsManager inline tag
-// editor needs it, and project policy is to avoid one-off shared modules.
-function PencilIcon(props: SVGProps<SVGSVGElement>) {
+// Phase 15 plan 10 (Gap B) — ChevronRightIcon. Rotates 90° via CSS when the
+// row is expanded (mirrors the Sale row `group-open:rotate-90` chevron pattern).
+function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.8}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       viewBox="0 0 24 24"
       {...props}
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125" />
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  );
+}
+
+// Phase 15 plan 10 (Gap B) — TagIcon. Lucide-style tag shape; used as the
+// hover affordance on the title row for opening the inline edit panel.
+function TagIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
   );
 }
@@ -896,10 +952,10 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  // Phase 15 plan 05 D-01 surface b — one-at-a-time inline tag editor.
-  // Holds the job.id of the row whose pencil affordance was clicked, or null
-  // when no editor is open. Exclusive with all other rows.
-  const [editingTagsJobId, setEditingTagsJobId] = useState<string | null>(null);
+  // Phase 15 plan 10 (Gap B) — one-at-a-time title-click inline edit panel.
+  // Holds the job.id of the row whose title (or hover Tag icon) was clicked, or null
+  // when no panel is open. Exclusive with all other rows.
+  const [editingPanelJobId, setEditingPanelJobId] = useState<string | null>(null);
 
   // D-06 debounce — 250ms. No project-wide `useDebounce` hook exists (currently
   // single-surface only); PATTERNS.md No-Analog rule says don't extract until 2+ surfaces.
@@ -1410,25 +1466,28 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setDeleteConfirmJobId(id);
   }, []);
 
-  // Phase 15 plan 05 D-01 surface b — open the inline tag editor for a row.
-  const handleStartEditTags = useCallback((jobId: string) => {
-    setEditingTagsJobId(jobId);
+  // Phase 15 plan 10 (Gap B) — open the title-click inline edit panel for a row.
+  const handleStartEditPanel = useCallback((jobId: string) => {
+    setEditingPanelJobId(jobId);
   }, []);
 
-  // Phase 15 plan 05 D-01 surface b — close the inline editor without saving.
-  const handleCancelEditTags = useCallback(() => {
-    setEditingTagsJobId(null);
+  // Phase 15 plan 10 (Gap B) — close the inline edit panel without saving.
+  const handleCancelEditPanel = useCallback(() => {
+    setEditingPanelJobId(null);
   }, []);
 
-  // Phase 15 plan 05 D-01 surface b — persist parsed tags via parseTagsInput
+  // Phase 15 plan 10 (Gap B) — persist parsed name + tags via parseTagsInput
   // (the D-02 shared helper) and write to db.jobs.put with a refreshed
-  // updatedAt. Mirrors the Plan 15-01 reconcile write shape. The liveQuery
-  // re-emits and JobCard tag chips re-render automatically
-  // — no manual cache invalidation needed.
-  const handleSaveTags = useCallback(async (job: PrintJob, value: string) => {
-    const parsed = parseTagsInput(value);
-    await db.jobs.put({ ...job, tags: parsed, updatedAt: new Date() });
-    setEditingTagsJobId(null);
+  // updatedAt. Persists BOTH name and tags in one db.jobs.put.
+  // Empty-name guard: falls back to job.name when the trimmed input is empty
+  // (never persists a blank job name). The liveQuery re-emits and JobCard
+  // tag chips re-render automatically — no manual cache invalidation needed.
+  const handleSavePanel = useCallback(async (job: PrintJob, value: { name: string; tagsInput: string }) => {
+    const trimmedName = value.name.trim();
+    const safeName = trimmedName.length > 0 ? trimmedName : job.name;
+    const parsedTags = parseTagsInput(value.tagsInput);
+    await db.jobs.put({ ...job, name: safeName, tags: parsedTags, updatedAt: new Date() });
+    setEditingPanelJobId(null);
   }, []);
 
   const confirmDeleteJob = async () => {
@@ -1490,11 +1549,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onStartConversion: handleStartConversion,
     onEditQuote: handleStartEditQuote,
     onDeclineQuote: handleStartDecline,
-    editingTagsJobId,
-    onStartEditTags: handleStartEditTags,
-    onCancelEditTags: handleCancelEditTags,
-    onSaveTags: handleSaveTags,
-  }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTagsJobId, handleStartEditTags, handleCancelEditTags, handleSaveTags]);
+    editingPanelJobId,
+    onStartEditPanel: handleStartEditPanel,
+    onCancelEditPanel: handleCancelEditPanel,
+    onSavePanel: handleSavePanel,
+  }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingPanelJobId, handleStartEditPanel, handleCancelEditPanel, handleSavePanel]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1602,10 +1661,10 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       onStartConversion={handleStartConversion}
                       onEditQuote={handleStartEditQuote}
                       onDeclineQuote={handleStartDecline}
-                      isEditingTags={editingTagsJobId === job.id}
-                      onStartEditTags={handleStartEditTags}
-                      onCancelEditTags={handleCancelEditTags}
-                      onSaveTags={handleSaveTags}
+                      isEditingPanel={editingPanelJobId === job.id}
+                      onStartEditPanel={handleStartEditPanel}
+                      onCancelEditPanel={handleCancelEditPanel}
+                      onSavePanel={handleSavePanel}
                     />
                   );
                 })}
