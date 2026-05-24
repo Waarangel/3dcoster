@@ -1,35 +1,163 @@
 ---
 phase: 16-printable-pdf-quote
-verified: 2026-05-23T15:25:00Z
+verified: 2026-05-23T19:00:00Z
 status: gaps_found
-score: 2/5 — automated chain green; UAT surfaced scope gap + 1 pre-existing bug
+score: 3/5 — gap-closure landed for A-H (plans 16-06..16-12); UAT surfaced 4 new Phase 16 gaps (I-L) + 2 Phase 15.1 follow-ups (M-N). Finding L is a fundamental D-19 reframe that may invalidate parts of plans 16-11/16-12.
 verified_by: automated + human-uat
 gaps:
   - id: A
     severity: ux
     title: Remove "Generate PDF" from CostCalculator
+    resolved_by: 16-06
   - id: B
     severity: ux
     title: Rename "Generate PDF" → "Print Quote" + proper button styling in JobsManager
+    resolved_by: 16-07
+    note: Rename landed; STYLING NOT FIXED — see gap I (Print Quote button has no visible bg)
   - id: C
     severity: scope
     title: Add Shipping line — PDF Total must equal Subtotal + Shipping + Tax
+    resolved_by: 16-09
   - id: D
     severity: scope
     title: Customer picker before quote generation (pick existing / enter new)
+    resolved_by: 16-10
+    note: Picker landed; SEARCH SOURCE TOO NARROW — see gap K (picker should include Sale-only customers)
   - id: E
     severity: scope
     title: Quote entity with lifecycle (draft/sent/accepted/declined/converted)
+    resolved_by: 16-09
+    note: Entity landed; LIFECYCLE UX REFRAME — see gap L (user wants single merged view, not parallel lists with status pills)
   - id: F
     severity: scope
     title: Quote list view + per-customer quote-vs-sale status badges
+    resolved_by: 16-11
+    note: Section landed; REFRAME REQUESTED — see gap L (merge into Recent Sales, drop status lifecycle)
   - id: G
     severity: scope
     title: Convert Quote → Sale action
+    resolved_by: 16-12
+    note: Convert flow landed; works mechanically but the "Converted" badge concept is on the chopping block per gap L
   - id: H
     severity: bug
     title: Saved job.taxRate stores override, not resolved rate — PDF drops tax row when field blank
-deferred: []
+    resolved_by: 16-08
+  - id: I
+    severity: ux
+    title: Print Quote button has no visible background — bg-slate-700 (secondary) blends into accordion card
+    found_by: human-uat 2026-05-23
+    surface: src/components/JobsManager.tsx (JobCard accordion action row)
+    detail: |
+      Plan 16-07 set `variant="secondary"` per CONTEXT D-14. In practice
+      `bg-slate-700` is identical to the accordion's `bg-slate-700/50` card
+      background, so the Print Quote button reads as plain text — fails the
+      same affordance test that flagged the original ghost styling. Adjacent
+      buttons (Record Sale: green, Edit: blue, Delete: red-tinted) all pop.
+    fix_options:
+      - Add a border to the secondary variant globally
+      - Use `variant="primary"` for Print Quote (blue) and bump Edit to a different style
+      - Add a new neutral-with-border variant
+  - id: J
+    severity: ux
+    title: Recent Quotes row looks clickable (hover affordance) but onClick does nothing
+    found_by: human-uat 2026-05-23
+    surface: src/components/JobsManager.tsx (QuoteRow inline subcomponent)
+    detail: |
+      The <li> has bg-slate-800 + rounded styling that reads like a clickable
+      tile, but there's no onClick handler. User expects click to do
+      SOMETHING — likely either regenerate the PDF or open a "view quote
+      details" surface. Currently only the action buttons (Mark Accepted /
+      Mark Declined / Convert to Sale) are interactive.
+    fix_options:
+      - Add onClick that re-generates the Quote PDF (idempotent — same Quote, no counter bump)
+      - Remove the clickable affordance (no hover styling — make it visibly inert)
+      - Add a small "View PDF" action button to the action row
+  - id: K
+    severity: ux/data
+    title: PrintQuoteModal customer picker only searches db.customers (library), not Sale-only customers
+    found_by: human-uat 2026-05-23
+    surface: src/components/PrintQuoteModal.tsx
+    detail: |
+      User typed "Logan" into the picker. Logan is clearly a customer on a
+      Sale row (visible in Recent Sales: "Logan and Sean / logan@fleetstreet.com /
+      Fleet Street Barber"), but the picker says "No saved customers match".
+      Cause: Logan is only present as a Sale.customer snapshot; he is NOT in
+      the Customer Library (db.customers). Either (a) Phase 15.1's D-06
+      auto-create never fired for him (pre-15.1 Sale?), or (b) the picker's
+      data source is too narrow.
+      
+      User's mental model: "any customer I've ever interacted with should be
+      findable". The current picker matches Phase 15.1's library-only design,
+      but that surfaced this expectation gap.
+    fix_options:
+      - Picker queries union of db.customers + unique Sale.customer snapshots
+      - One-time backfill: scan all Sales, auto-create library Customers for any
+        whose name/email isn't already in db.customers
+      - Both
+  - id: L
+    severity: scope/architecture (BLOCKING REFRAME)
+    title: Recent Quotes should be merged into Recent Sales — drop the status lifecycle
+    found_by: human-uat 2026-05-23
+    surface: src/components/JobsManager.tsx (RecentQuotesSection + QuoteRow + status pills) — affects plans 16-09 (status enum), 16-11 (section + handlers), 16-12 (Convert + back-ref)
+    detail: |
+      Verbatim user feedback: "I'm not sure why Recent Quotes is separate
+      from Recent Sales. We just need the quote associated with the sale.
+      Not sure what converted is either. We need to know per customer if
+      they have an active quote or not. That's it."
+      
+      The current architecture (D-17/D-18/D-19/D-20) treats Quotes as
+      first-class entities with a 4-state lifecycle (sent/accepted/declined/
+      converted) surfaced as colored pills. The user's model is much simpler:
+      
+      - A Sale may have an originating Quote attached
+      - Per-customer summary: "has active quote? Y/N"
+      - Lifecycle states (sent/accepted/declined/converted) are not meaningful
+        product surface — just internal state at most
+      
+      Implications if accepted:
+      - Recent Quotes section in JobsManager → REMOVED (or collapsed to a
+        single inline indicator per Sale row)
+      - Status pills (Sent/Accepted/Declined/Converted) → REMOVED
+      - Mark Accepted / Mark Declined / Reopen handlers → REMOVED
+      - "Converted" badge + "→ Sale on {date}" annotation → REMOVED (Sale
+        row already shows the date, and the back-ref link from gap K covers
+        the Quote→Sale link)
+      - Convert to Sale flow → SIMPLIFIED (no status flip needed; just
+        Sale.convertedFromQuoteId = quote.id on save)
+      - Quote.status field → may still exist for audit purposes but isn't
+        UI-surfaced beyond "active vs. consumed"
+      
+      Decision needed via /gsd:discuss-phase 16 — this is a CONTEXT-extension
+      reframe of D-17/D-18/D-19/D-20.
+    fix_options:
+      - Accept reframe → discuss-phase → new plans 16-14..16-N to revert
+        Recent Quotes section, simplify Convert, etc.
+      - Defer reframe → keep current architecture, fix gaps I/J/K, ship as-is
+      - Hybrid → drop the status pills + Recent Quotes UI; keep the Quote
+        entity + status field for audit; surface only "active quote: Q-NNNN"
+        inline next to relevant Sales / on the job header
+  - id: M
+    severity: ux (Phase 15.1 follow-up, NOT Phase 16)
+    title: Customer Library "Last used: yesterday" text not vertically centered with Edit/Delete buttons
+    found_by: human-uat 2026-05-23
+    surface: src/components/CustomerLibrary.tsx
+    detail: |
+      Minor CSS issue on the Customer Library row layout — pre-existing,
+      not introduced by Phase 16. Tracked here for cross-phase backlog
+      visibility.
+  - id: N
+    severity: ux (Phase 15.1 follow-up, NOT Phase 16)
+    title: Customer CSV importer missing template download (Materials importer has one)
+    found_by: human-uat 2026-05-23
+    surface: src/components/CustomerCsvImportModal.tsx
+    detail: |
+      src/components/CsvImportModal.tsx (assets/printers importer) provides
+      "📦 Materials template" and "🖨️ Printers template" download buttons via
+      generateSampleCsv(). CustomerCsvImportModal.tsx has no equivalent.
+      Asymmetric UX — pre-existing Phase 15.1 gap. Tracked here for
+      cross-phase backlog visibility.
+deferred:
+  - L  # blocking reframe — needs /gsd:discuss-phase before any further code
 ---
 
 # Phase 16: Printable PDF Quote — Verification Report
