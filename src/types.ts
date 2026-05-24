@@ -187,16 +187,25 @@ export type QuoteStatus = 'sent' | 'accepted' | 'declined' | 'converted' | 'draf
 /**
  * Runtime-only Quote status (Phase 16 gap closure — BLOCKER I-03 fix, G6 lock).
  *
- * Excludes `'draft'` so the compiler REFUSES `status: 'draft'` at every NEW
- * Quote constructor call site. PrintQuoteModal (plan 16-10) and the
- * Convert-to-Sale Quote patch (plan 16-12) declare their write payload's
- * `status` field as `RuntimeQuoteStatus`. This is compile-time enforcement
- * of G6 ("runtime never writes draft"), NOT a JSDoc/comment-only convention.
+ * Narrowed to the 3 states the second-extension UX surface tracks (D-24):
+ * `'sent'` (Pending) / `'declined'` (Declined) / `'converted'` (Sale created).
  *
- * The migration helper in `src/db/backfill.ts` is the SOLE module allowed to
- * use the wider `QuoteStatus` when constructing the `'draft'` backfill rows.
+ * Excludes BOTH `'draft'` (migration-only) AND `'accepted'` (legacy — the
+ * pre-second-extension UI used Mark Accepted as an in-between state; D-25
+ * removed that button because accept = sale = Convert to Sale in one click).
+ * Pre-extension data containing `'accepted'` is still readable (Quote.status
+ * is the wider `QuoteStatus` on the interface) and reads as Pending in the
+ * UI — see JobsManager status-pill mapping.
+ *
+ * The compiler REFUSES `status: 'draft'` AND `status: 'accepted'` at every
+ * NEW Quote constructor / patch call site. PrintQuoteModal's createQuote
+ * (plan 16-10) and the Convert-to-Sale Quote patch (plan 16-12) declare
+ * their write payload's `status` field as `RuntimeQuoteStatus`.
+ *
+ * The migration helper in `src/db/backfill.ts` is the SOLE module allowed
+ * to use the wider `QuoteStatus` when constructing `'draft'` backfill rows.
  */
-export type RuntimeQuoteStatus = Exclude<QuoteStatus, 'draft'>;
+export type RuntimeQuoteStatus = Exclude<QuoteStatus, 'draft' | 'accepted'>;
 
 /**
  * First-class Quote entity (Phase 16 gap closure — D-17 G4 + G7 locks).
@@ -249,12 +258,19 @@ export interface Quote {
   createdAt: Date;
   /** For v1.2, sentAt === createdAt (PDF generation IS sent per G6 lock). */
   sentAt: Date;
-  /** Set when the user marks Accepted/Declined via the Recent Quotes section (plan 16-11). */
+  /** Set when the user marks Declined or Convert-to-Sale fires (second extension D-25 collapsed Accepted into Convert). */
   decisionAt?: Date;
   /** Set when Convert to Sale fires (plan 16-12). */
   convertedAt?: Date;
   /** FK to Sale.id on conversion (plan 16-12). */
   convertedToSaleId?: string;
+  /**
+   * Free-form reason captured via DeclineQuoteModal when the user clicks
+   * Mark Declined (second extension D-28). Optional — empty when the user
+   * declined without providing a reason. Cleared on Reopen.
+   * Future tags integration may migrate this into a structured tag.
+   */
+  declineReason?: string;
 }
 
 // A saved print job with break-even tracking
