@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
-import { backfillCustomersFromSales, reconcileCopiesSoldFromSales } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob } from '../db/backfill';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -14,6 +14,9 @@ let saleCustomerBackfillRan = false;
 // Process-lifetime flag for the copiesSold reconcile (post-Convert-to-Sale
 // regression hotfix). Same one-per-page-load pattern as the customer backfill.
 let copiesSoldReconcileRan = false;
+
+// Phase 15 D-12 — process-lifetime flag for the tag-normalization reconcile (sibling to copiesSoldReconcileRan).
+let tagsNormalizeRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -478,6 +481,51 @@ export function useJobs() {
         // against stale counters; users can manually edit a Sale to retrigger.
         console.error('copiesSold reconcile failed:', err);
         copiesSoldReconcileRan = false;  // allow retry on next mount
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobs === undefined]);
+
+  // Phase 15 D-12: silently normalize legacy tag rows on the first liveQuery
+  // emission. Phase 12's backfillTagsOnJob set tags=[] but did NOT enforce
+  // D-02 normalization (lowercase + trim + dedupe + cap-at-10 + whitelist
+  // /[^a-z0-9\s\-_]/g) because those rules didn't exist yet. Any pre-Phase-15
+  // record with hand-edited tags via DevTools could carry uppercase / untrimmed
+  // / punctuation-laced values that the chip filter would treat as distinct
+  // from their normalized equivalents.
+  //
+  // Runs ONCE per page load. Idempotent — `normalizeTagsOnJob` returns false
+  // for already-canonical tags, so subsequent loads pay zero write cost. The
+  // shallow-copy step (`const copy = { ...job, tags: [...job.tags] }`) is
+  // critical: we MUST NOT mutate the dexie-react-hooks liveQuery cache, only
+  // the copy we will write back via bulkPut.
+  useEffect(() => {
+    if (tagsNormalizeRan) return;
+    if (jobs === undefined) return;  // wait for the first liveQuery emission
+    tagsNormalizeRan = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const dirty: PrintJob[] = [];
+        for (const job of jobs) {
+          // Work on a SHALLOW COPY so we don't mutate the liveQuery cache.
+          const copy: PrintJob = { ...job, tags: job.tags ? [...job.tags] : undefined };
+          if (normalizeTagsOnJob(copy)) {
+            dirty.push({ ...copy, updatedAt: new Date() });
+          }
+        }
+        if (cancelled) return;
+        if (dirty.length > 0) {
+          await db.transaction('rw', db.jobs, async () => {
+            for (const job of dirty) await db.jobs.put(job);
+          });
+        }
+      } catch (err) {
+        // Reconcile failures must NOT break the app — the UI still works
+        // against un-normalized tags. Allow retry on next mount.
+        console.error('tag normalize reconcile failed:', err);
+        tagsNormalizeRan = false;
       }
     })();
     return () => { cancelled = true; };

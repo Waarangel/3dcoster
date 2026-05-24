@@ -11,6 +11,9 @@ export const featureReleases: Record<string, Date> = {
   'etsy-helper': new Date('2026-05-21'),
   'customer-library': new Date('2026-05-22'),
   'pdf-quote': new Date('2026-05-23'),
+  'tags': new Date('2026-05-24'),
+  'search-jobs': new Date('2026-05-24'),
+  'quick-duplicate': new Date('2026-05-24'),
   // Add new features here with their release date
 };
 
