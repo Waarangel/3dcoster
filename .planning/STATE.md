@@ -4,12 +4,12 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
-last_updated: "2026-05-24T14:42:09.419Z"
+last_updated: "2026-05-24T15:36:46.125Z"
 last_activity: 2026-05-24 -- Phase 15 execution started
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 32
+  total_plans: 38
   completed_plans: 31
   percent: 67
 ---
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 ## Current Position
 
 Phase: 15 (tags-search-quick-duplicate) — EXECUTING
-Plan: 1 of ?
+Plan: 1 of 6
 Status: Executing Phase 15
 Last activity: 2026-05-24 -- Phase 15 execution started
 
