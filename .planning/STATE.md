@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
-stopped_at: Phase 15 verification recorded — verdict gaps-found (3 gaps); phase remains OPEN pending gap closure
+stopped_at: Phase 15 verification recorded — verdict gaps-found (4 gaps after Gap D amendment); phase remains OPEN pending gap closure
 last_updated: "2026-05-24T18:00:00.000Z"
-last_activity: 2026-05-24 -- Phase 15 verification recorded — verdict gaps-found (3 gaps)
+last_activity: 2026-05-24 -- Phase 15 verification amended — Gap D added (Quick Duplicate UI withdrawn; 4 gaps total)
 progress:
   total_phases: 6
   completed_phases: 4
@@ -122,6 +122,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [v1.2 Phase 15-05]: D-12 tag normalize reconcile wired into useJobs init via tagsNormalizeRan module flag — mirrors copiesSoldReconcileRan exactly; shallow-copy jobs + tags array before mutation so liveQuery cache is never touched; error path swallows + resets flag for retry
 - [Phase ?]: [v1.2 Phase 15-05]: D-13 NewBadge wiring complete — 3 features.ts entries (tags/search-jobs/quick-duplicate, all 2026-05-24); 3 JSX consumers in JobsManager (tags label-inline, search-jobs + quick-duplicate absolute-overlay); plus tags label-inline already in CostCalculator from Plan 15-03; absolute-overlay count in JobsManager is exactly 3 (pdf-quote + 2 new), NOT 4
 - [v1.2 Phase 15 verification 2026-05-24]: verdict gaps-found — Gap A (CostCalc tag input removed), Gap B (title-click + hover icon tag editor), Gap C (chip filter withdrawn, TAGS-02 superseded by TAGS-03 per user product feedback). Phase 15 remains OPEN; completed_phases stays at 4; next command is `/gsd:plan-phase 15 --gaps`. Automated chain green (tsc 0 errors / 263 vitest pass / build clean / main chunk 62.0 KB gz). DUP-02 D-15 contract PASS; TAGS-03 search PASS; TAGS-01/TAGS-04/DUP-01 outstanding pending gap closure or live UAT.
+- [v1.2 Phase 15 verification amendment 2026-05-24]: Gap D added — Quick Duplicate `[⋯]` row-action UI WITHDRAWN per user product feedback (single-item overflow is the wrong pattern; labelless button with floating NEW badge is confusing). DUP-01 marked Withdrawn-from-v1.2 in REQUIREMENTS.md; ROADMAP SC#5 rescoped to helper-only (DUP-02 contract). The `duplicateJob` helper + 7-case Vitest contract stay locked for v1.3+ consumption (job-detail panel or batch-action menu). Gap-closure plan must remove `[⋯]` overflow + Duplicate menu item + post-duplicate scroll/highlight + `quick-duplicate` features.ts entry; MUST NOT touch `src/utils/duplicateJob.ts` or its tests. gaps_open: 3 → 4.
 
 ### Pending Todos
 

@@ -4,13 +4,15 @@ type: verification
 verified: 2026-05-24
 verdict: gaps-found
 requirements_evaluated: [TAGS-01, TAGS-02, TAGS-03, TAGS-04, DUP-01, DUP-02]
-gaps_open: 3
+withdrawn_requirements: [TAGS-02, DUP-01]
+gaps_open: 4
+amended: 2026-05-24
 ---
 
 # Phase 15 Verification — Tags, Search + Quick Duplicate
 
-**Verdict:** `gaps-found` (3 gaps — A, B, C)
-**Verified:** 2026-05-24
+**Verdict:** `gaps-found` (4 gaps — A, B, C, D)
+**Verified:** 2026-05-24 (amended same day to add Gap D)
 **Plan:** 15-06 (Wave 4 — checkpoint:human-verify)
 
 This is the audit trail for the Phase 15 UAT. Verdict is `gaps-found`. Phase 15 remains
@@ -48,7 +50,7 @@ One row per ROADMAP Phase 15 Success Criterion (SC#1..5).
 | **SC#2** | TAGS-02 — multi-select chip filter with AND logic across tags-in-use | **WITHDRAWN** | Superseded per Gap C. User product feedback: the chip-filter strip is redundant with the search bar (TAGS-03), which already substring-matches tag names. ROADMAP SC#2 will be marked withdrawn; REQUIREMENTS.md will mark TAGS-02 as `withdrawn` with reason "superseded by TAGS-03 search per user product feedback 2026-05-24". |
 | **SC#3** | TAGS-03 — case-insensitive substring search across title + customer + tags (250 ms debounce) | **PASS** | Automated chain green; user product feedback explicitly affirms the search input is the canonical filter mechanism. D-06 search scope (title + tag + Sale.customer.{name,email,company}; NOT address/notes) holds. |
 | **SC#4** | TAGS-04 — virtualized-list cache invalidation on filter/search change (no stale row heights) | **PASS PENDING UAT** | Automated chain green (tsc + Vitest exercise the pure helpers; the cache key is unit-coverage-free but type-checked). Live browser behavior NOT exercised — Task 2 paused at gap discovery before this could be visually validated. After Gap C lands, the D-05 cache key narrows from pipe-delimited tri-key (`selectedJobId\|selectedChipsKey\|debouncedSearchQuery`) to pipe-delimited bi-key (`selectedJobId\|debouncedSearchQuery`); re-verify in the gap-closure UAT pass. |
-| **SC#5** | DUP-01 + DUP-02 — Quick Duplicate from `[⋯]` row action + PII reset locked test contract | **PASS PENDING UAT** | Vitest D-15 contract passes (Plan 15-02: 7 cases including the locked assertion that `duplicateJob(job).customer === undefined`, `taxRate === undefined`, `copiesSold === 0`, `id !== source.id`, `tags` preserved). Live `[⋯] → Duplicate` UI flow with scroll+highlight NOT exercised in browser. Re-verify in gap-closure UAT. |
+| **SC#5** | DUP-01 + DUP-02 — Quick Duplicate from `[⋯]` row action + PII reset locked test contract | **SPLIT — DUP-02 PASS / DUP-01 WITHDRAWN** | Vitest D-15 contract passes (Plan 15-02: 7 cases — `duplicateJob(job).customer === undefined`, `taxRate === undefined`, `copiesSold === 0`, `id !== source.id`, `tags` preserved). The **helper (DUP-02) ships as-is**. The **row-action UI (DUP-01) is being WITHDRAWN** per Gap D (user product feedback: the `[⋯]` overflow pattern is wrong for a single-item menu; the row already carries Record Sale / Create Quote / Edit / Delete and gains nothing from a hidden affordance). The clone-and-tweak workflow is deferred to v1.3+ where a richer job-detail surface can host it. ROADMAP SC#5 will be rescoped to **"helper-only"** (no row-action UI requirement). |
 
 ---
 
@@ -64,13 +66,13 @@ One row per locked decision from `15-CONTEXT.md`.
 | **D-04** | AND combination across chip selections | **WITHDRAWN** | No chip strip → no combination semantics. Removed alongside D-03 chip row and TAGS-02. |
 | **D-05** | `useDynamicRowHeight` cache key = `selectedJobId\|selectedChipsKey\|debouncedSearchQuery` (pipe-delimited tri-key) | **RESHAPED** | Gap C removes the `selectedChipsKey` segment. Cache key narrows to `selectedJobId\|debouncedSearchQuery` after gap closure. Contract remains valid (pipe-delimited, collision-proof); just one fewer segment. |
 | **D-06** | Search scope: name + tags + Sale.customer.{name,email,company}; NOT address/notes | **PASS** | Confirmed canonical by user feedback #4. Already passing in shipped code (Plan 15-04 wires it through `salesByJob`). |
-| **D-07** | `[⋯]` overflow menu UX (single-item Duplicate; no modal; toast/highlight) | **PASS PENDING UAT** | Shipped in Plan 15-05 (overflowOpenJobId parent state; click-outside on window; 2s `ring-2 ring-blue-400` highlight). Live flow not yet exercised in browser — re-verify in gap-closure UAT. |
+| **D-07** | `[⋯]` overflow menu UX (single-item Duplicate; no modal; toast/highlight) | **WITHDRAWN** | Per Gap D: a single-item overflow menu is the wrong pattern. The pattern was carried forward from Phase 16 ext2 D-29 (Pending Quote rows with 3+ hidden actions) where overflow earns its keep; on JobsManager rows with one action it becomes a labelless mystery button. The entire `[⋯]` trigger + menu + click-outside handler is being REMOVED. |
 | **D-08** | Collision counter `(copy)` → `(copy 2)` → `(copy 99)` then silent cap | **PASS** | Vitest (Plan 15-02 — `nextCopyName` covered for the empty-list case, the `(copy)` collision case, and the `(copy 2)` collision case). |
 | **D-09** | DUP-02 explicit-allowlist — `customer`/`taxRate`/`taxAmount`/`copiesSold`/`quoteNumber` reset | **PASS** | Vitest (Plan 15-02 + D-15 locked contract). |
 | **D-10** | Filter empty state (`No jobs match your filter` + Clear-filters link, with filter UI staying visible) | **RESHAPED** | Empty state still fires for search misses; the "Clear filters" link becomes "Clear search" — or is removed if the search input grows an inline clear button. Gap-closure planning decides which. |
 | **D-11** | Chip rendering on JobCard summary line (mirrors AssetLibrary.tsx:192-198 styling exactly) | **PASS PENDING UAT** | Shipped in Plan 15-05; byte-identical chip class string per Plan 15-05 SUMMARY decisions. Re-verify visual parity with AssetLibrary in gap-closure UAT. |
 | **D-12** | Tag normalization reconcile (idempotent, one-per-page-load) wired into `useJobs` init | **PASS** | Wired in Plan 15-05 via `tagsNormalizeRan` module flag mirroring `copiesSoldReconcileRan`; will fire on next page load. UI-side correctness unverified live but contract is locked + Vitest-covered. |
-| **D-13** | NewBadge wiring (`tags` + `search-jobs` + `quick-duplicate`) | **RESHAPED** | `search-jobs` and `quick-duplicate` entries unchanged. The `tags` JSX consumer **moves** from the CostCalculator tag input label (removed by Gap A) and the JobsManager pencil-button (removed by Gap B) to a **new absolute-overlay** on the JobsManager hover tag icon (created by Gap B). `tags` entry in `src/features.ts` keeps its 2026-05-24 release date. |
+| **D-13** | NewBadge wiring (`tags` + `search-jobs` + `quick-duplicate`) | **RESHAPED** | `search-jobs` entry unchanged. The `tags` JSX consumer **moves** from the CostCalculator tag input label (removed by Gap A) and the JobsManager pencil-button (removed by Gap B) to a **new absolute-overlay** on the JobsManager hover tag icon (created by Gap B). The **`quick-duplicate` entry is REMOVED** from `src/features.ts` per Gap D (no row-action UI to badge); its JSX consumer on the `[⋯]` button is removed alongside the button itself. `tags` and `search-jobs` keep their 2026-05-24 release dates. |
 | **D-14** | Mobile chip strip scrolls horizontally at <640px | **WITHDRAWN** | No chip strip to make scrollable. Withdrawn with Gap C. |
 | **D-15** | DUP-02 locked Vitest contract | **PASS** | Plan 15-02 test asserts the full contract verbatim; passes in Task 1's Vitest run. |
 
@@ -86,17 +88,17 @@ Status of each of the 6 requirements this phase claims to address.
 | **TAGS-02** | **WITHDRAWN** | Superseded by TAGS-03 (search) per user product feedback 2026-05-24. To be marked `withdrawn` in REQUIREMENTS.md with reason. |
 | **TAGS-03** | **COMPLETE** | Search behavior shipped in Plan 15-04 (D-06 scope; 250 ms debounce; case-insensitive substring) and user explicitly affirmed it as the canonical filter mechanism. |
 | **TAGS-04** | **OUTSTANDING-PENDING-UAT** | Cache key narrows from tri-key to bi-key after Gap C closure (drops the chip segment). Live cache-invalidation flow NOT exercised in browser — re-verify in gap-closure UAT. |
-| **DUP-01** | **OUTSTANDING-PENDING-UAT** | Overflow-menu + post-duplicate scroll+highlight shipped in Plan 15-05; D-15 contract passes; live UI flow NOT exercised in browser — re-verify in gap-closure UAT. |
-| **DUP-02** | **COMPLETE** | D-15 locked Vitest contract passes (Plan 15-02). Pure-helper allowlist (`duplicateJob`) does not depend on Gaps A/B/C; ships as-is. |
+| **DUP-01** | **WITHDRAWN** | Row-action UI withdrawn per Gap D. The `[⋯]` overflow + Duplicate menu item + post-duplicate scroll/highlight + `quick-duplicate` NewBadge are all REMOVED. The clone-and-tweak workflow is deferred to v1.3+ where a richer job-detail surface can host it. REQUIREMENTS.md marks DUP-01 as `withdrawn-from-v1.2` with reason "UI deferred to v1.3+; helper (DUP-02) ships standalone for future consumers". |
+| **DUP-02** | **COMPLETE** | D-15 locked Vitest contract passes (Plan 15-02). Pure-helper allowlist (`duplicateJob`) does not depend on Gaps A/B/C/D; ships as-is. Will be consumed by a future v1.3+ surface (job-detail panel, batch-action menu, or wherever clone-and-tweak fits naturally). |
 
 ---
 
 ## Gaps
 
-Three product-design gaps surfaced during human UAT (2026-05-24). All are UX-shape gaps, not
-implementation defects — the underlying pure helpers are correct. Gap-closure planning
-should treat each as a **scope refinement** of the original D-01 / D-03 / D-04 / D-11 /
-D-13 / D-14 contracts.
+Four product-design gaps surfaced during human UAT (2026-05-24, amended same day to add
+Gap D). All are UX-shape gaps, not implementation defects — the underlying pure helpers
+are correct. Gap-closure planning should treat each as a **scope refinement** of the
+original D-01 / D-03 / D-04 / D-07 / D-11 / D-13 / D-14 contracts.
 
 ---
 
@@ -192,6 +194,60 @@ D-13 / D-14 contracts.
 
 ---
 
+### Gap D — Quick Duplicate row-action UI is poorly shaped and should be removed (helper stays)
+
+- **Severity:** scope-refinement (user product feedback) — withdraws DUP-01 (the UI requirement only; DUP-02 helper is unaffected)
+- **Symptom:** Plan 15-05 shipped a `[⋯]` overflow-menu button on every JobCard action row,
+  hosting a single `Duplicate` item. User product feedback (with screenshot): the button is
+  visually orphaned — labelless, iconless, with a floating NEW badge that adds confusion
+  rather than guidance. A single-item overflow is the wrong shape: overflow earns its keep
+  when ≥3 actions are hidden (the Phase 16 ext2 D-29 Pending Quote row, where this pattern
+  originated); a single hidden action is just an unlabeled mystery affordance.
+- **Underlying product question raised during UAT:** *"Why are we duplicating a job?"*
+  The answer is the clone-and-tweak workflow (start a near-identical job — same model,
+  different filament/customer/print speed — without retyping the cost inputs). But the user
+  judgment is that this workflow does not justify its own row-action button at v1.2 scope.
+  A richer surface (job-detail panel, batch-action menu, command palette) is a better host
+  and will be designed in v1.3+. The helper exists and is locked, so the workflow can be
+  re-surfaced cheaply later.
+- **Violates:**
+  - D-07 (`[⋯]` overflow menu UX) — pattern removed entirely
+  - D-13 (`quick-duplicate` NewBadge wiring) — entry + JSX consumer removed
+  - **WITHDRAWS** REQUIREMENT DUP-01 (the row-action UI requirement)
+  - **RESCOPES** ROADMAP Phase 15 Success Criterion #5 to "helper-only" — keeps the
+    locked Vitest contract (`duplicateJob(job).customer === undefined`, etc.) but drops
+    the live UI assertion
+- **Does NOT violate:**
+  - DUP-02 (the helper + locked Vitest contract) — these survive untouched in
+    `src/utils/duplicateJob.ts` and `src/utils/duplicateJob.test.ts`. The 7 passing tests
+    stay green.
+- **Recommended fix surface:**
+  - In `src/components/JobsManager.tsx`:
+    - Remove the `[⋯]` overflow-menu button from the JobCard action row.
+    - Remove the `overflowOpenJobId` parent state, the click-outside-on-window handler,
+      the dropdown menu DOM, and the post-duplicate scroll/highlight ring effect
+      (`ring-2 ring-blue-400` 2-second timeout).
+    - Remove the `Duplicate` menu item handler that calls `duplicateJob` + `nextCopyName`
+      + `bulkPut` + scroll-and-highlight.
+    - **Keep** the imports of `duplicateJob` and `nextCopyName` IF a different surface in
+      this file will consume them after gap closure (e.g. a Gap B inline panel "Duplicate"
+      button). If no consumer remains, remove the imports.
+  - In `src/utils/duplicateJob.ts` and `src/utils/duplicateJob.test.ts`:
+    - **DO NOT TOUCH.** These are the locked DUP-02 helper + tests. The 7 Vitest cases
+      must continue to pass.
+  - In `src/features.ts`:
+    - Remove the `quick-duplicate` entry (release-date row) — no consumer left.
+    - **Keep** the `tags` and `search-jobs` entries.
+  - Update `.planning/REQUIREMENTS.md`: mark **DUP-01** as `withdrawn-from-v1.2` with
+    reason "UI deferred to v1.3+ where a richer surface (job-detail panel, batch-action
+    menu) can host clone-and-tweak; DUP-02 helper ships standalone".
+  - Update `.planning/ROADMAP.md`: rescope Phase 15 Success Criterion #5 from
+    "user can quick-duplicate from row action" to "duplicateJob helper exists with locked
+    PII-reset contract (DUP-02)"; remove the row-action UI claim. Add a note that DUP-01
+    is deferred.
+
+---
+
 ## Product Intent Note (informational)
 
 This is **not a gap** — it is a guiding constraint that future planners must respect when
@@ -222,8 +278,8 @@ would not be. Gap-closure does **not** decide this; v1.3 planning will.
    `/gsd:complete-milestone v1.2`.
 
 2. **Next command:** `/gsd:plan-phase 15 --gaps` — this will read this VERIFICATION.md
-   and author gap-closure plans for Gap A, Gap B, and Gap C. The gap-closure planner has
-   the recommended fix surface for each gap encoded above.
+   and author gap-closure plans for Gap A, Gap B, Gap C, **and Gap D**. The gap-closure
+   planner has the recommended fix surface for each gap encoded above.
 
 3. **After gap-closure plans land + execute:** re-run Plan 15-06 (or equivalent verification
    wave) to UAT the rescoped surface. On `gap-free` verdict, advance STATE.md
@@ -231,13 +287,15 @@ would not be. Gap-closure does **not** decide this; v1.3 planning will.
 
 4. **REQUIREMENTS.md updates landing with this commit:**
    - TAGS-02 marked `Withdrawn` (superseded by TAGS-03 search per user product feedback)
+   - **DUP-01 marked `Withdrawn-from-v1.2`** (UI deferred to v1.3+; DUP-02 helper ships standalone) — added in the Gap D amendment
 
 5. **ROADMAP.md updates landing with this commit:**
    - Phase 15 Success Criterion #2 marked withdrawn
+   - **Phase 15 Success Criterion #5 rescoped** from "user can quick-duplicate from row action" to "duplicateJob helper exists with locked PII-reset contract" — added in the Gap D amendment
 
 ---
 
 *Verification authored: 2026-05-24*
 *Verifier: Plan 15-06 Task 3 (executor agent)*
 *Automated chain: Task 1 (commit `c464538`)*
-*Human UAT: Task 2 — verdict `approved-with-gaps` (3 gaps)*
+*Human UAT: Task 2 — verdict `approved-with-gaps` (initially 3 gaps; amended same day to add Gap D after UI critique of the `[⋯]` Quick Duplicate button)*

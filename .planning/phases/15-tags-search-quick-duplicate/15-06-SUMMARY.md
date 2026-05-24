@@ -8,7 +8,7 @@ dependency_graph:
     - "15-01 through 15-05 (full Phase 15 implementation surface — normalize/parse helpers, duplicateJob, CostCalc + JobsManager surfaces, reconcile wiring)"
   provides:
     - "Verdict gates milestone closure — `gaps-found` keeps Phase 15 OPEN; `/gsd:plan-phase 15 --gaps` is the next command"
-    - "15-VERIFICATION.md — canonical audit trail for Phase 15 (per-SC + per-decision tables + 3 gaps + product intent note)"
+    - "15-VERIFICATION.md — canonical audit trail for Phase 15 (per-SC + per-decision tables + 4 gaps + product intent note)"
     - "REQUIREMENTS.md update: TAGS-02 marked Withdrawn (superseded by TAGS-03)"
     - "ROADMAP.md update: Phase 15 SC#2 marked withdrawn"
     - "STATE.md update: last_activity + stopped_at + Decisions row + Session Continuity; completed_phases UNCHANGED (still 4)"
@@ -38,7 +38,7 @@ decisions:
   - "TAGS-02 marked Withdrawn in REQUIREMENTS.md with reason `superseded by TAGS-03 per user product feedback 2026-05-24` — REQUIREMENTS list checkbox flipped to [~] strike notation; traceability table reflects Withdrawn"
   - "ROADMAP.md Phase 15 SC#2 annotated with ~~strike~~ + WITHDRAWN note pointing at 15-VERIFICATION.md Gap C; SC#4 cache-key wording narrowed from tri-key to bi-key reflecting Gap C downstream effect"
   - "TAGS-01 / TAGS-04 / DUP-01 marked Pending in traceability (sub-status: outstanding-pending-gap-closure / outstanding-pending-uat) — gap-closure plans + a second verification pass close them"
-  - "STATE.md: completed_phases UNCHANGED at 4; percent UNCHANGED at 67; phase status flipped to `VERIFICATION RECORDED, GAPS FOUND`; one Decisions row appended summarizing the 3 gaps + the automated-chain green result"
+  - "STATE.md: completed_phases UNCHANGED at 4; percent UNCHANGED at 67; phase status flipped to `VERIFICATION RECORDED, GAPS FOUND`; one Decisions row appended summarizing the 4 gaps + the automated-chain green result"
 metrics:
   start_time: "2026-05-24T16:25:00Z"
   end_time: "2026-05-24T18:00:00Z"
@@ -47,12 +47,12 @@ metrics:
   files_created: 2
   files_modified: 3
 verdict: gaps-found
-gaps_count: 3
+gaps_count: 4
 ---
 
 # Phase 15 Plan 06: Verification (UAT) Summary
 
-**Verdict:** `gaps-found` (3 gaps — A, B, C).
+**Verdict:** `gaps-found` (4 gaps — A, B, C, D — amended 2026-05-24 to add Gap D after UI critique of `[⋯]` Quick Duplicate button).
 **Phase 15 stays OPEN.** Next command: `/gsd:plan-phase 15 --gaps`.
 
 Automated verification (tsc + Vitest + build + bundle) passed cleanly; the gaps are
@@ -62,9 +62,10 @@ product-design refinements surfaced during human UAT, not implementation defects
 
 Plan 15-06 ran the full automated verification chain for Phase 15 (tsc 0 errors / 263
 Vitest pass / build clean / 62.0 KB gz main chunk against the 300 KB gate) and recorded
-the human UAT verdict `gaps-found` in `15-VERIFICATION.md` — three gaps (Gap A: remove
+the human UAT verdict `gaps-found` in `15-VERIFICATION.md` — four gaps (Gap A: remove
 CostCalculator tag input; Gap B: replace pencil-button with title-click inline panel +
-hover tag icon; Gap C: withdraw the chip-filter row and supersede TAGS-02 with TAGS-03)
+hover tag icon; Gap C: withdraw the chip-filter row and supersede TAGS-02 with TAGS-03;
+**Gap D: remove the `[⋯]` Quick Duplicate row-action UI and withdraw DUP-01 from v1.2 — DUP-02 helper ships standalone**)
 keep Phase 15 OPEN pending gap closure.
 
 ## Task Execution
@@ -113,6 +114,8 @@ icon** (violates D-01 surface b UX intent). The tag editor should open via click
 job title (opens an inline panel containing title-rename + tag editor) and via a small
 hover-revealed tag icon. The pencil button is removed.
 
+**Gap D — Remove the `[⋯]` Quick Duplicate row-action UI** (violates D-07 + D-13 `quick-duplicate` entry; **WITHDRAWS DUP-01**; rescopes SC#5 to helper-only — DUP-02 contract). Surface fix is documented in 15-VERIFICATION.md Gap D. The `duplicateJob` helper + 7-case Vitest contract in `src/utils/duplicateJob.{ts,test.ts}` MUST NOT be touched — they ship standalone for future v1.3+ consumers (job-detail panel, batch-action menu).
+
 **Gap C — Withdraw the multi-select chip-filter row in JobsManager sub-header** (violates
 D-03 + D-04 + D-14; WITHDRAWS TAGS-02 and ROADMAP SC#2). The chip strip is redundant
 with the TAGS-03 search input. Removing it also narrows D-05's cache key from tri-key
@@ -134,7 +137,7 @@ from existing job fields.
 - [x] Per Success Criterion table has exactly 5 rows (SC#1..5)
 - [x] Per Decision table has exactly 15 rows (D-01..D-15)
 - [x] Requirement Closure section lists all 6 IDs (TAGS-01, TAGS-02, TAGS-03, TAGS-04, DUP-01, DUP-02)
-- [x] Gaps section enumerates exactly 3 gaps (A, B, C); each cites a violated D-XX or SC#
+- [x] Gaps section enumerates exactly 4 gaps (A, B, C, D); each cites a violated D-XX or SC#
 - [x] Product Intent Note captured verbatim
 - [x] Next Steps section names `/gsd:plan-phase 15 --gaps`
 - [x] REQUIREMENTS.md TAGS-02 marked `[~]` withdrawn + traceability updated
@@ -155,7 +158,7 @@ holds.
 ## Next Steps
 
 1. **Do NOT run `/gsd:complete-milestone v1.2`.** Phase 15 is OPEN.
-2. **Next command:** `/gsd:plan-phase 15 --gaps` — gap-closure plans for Gap A / Gap B / Gap C.
+2. **Next command:** `/gsd:plan-phase 15 --gaps` — gap-closure plans for Gap A / Gap B / Gap C / Gap D.
 3. **After gap closure execution:** re-run a verification wave (or extend this one) to
    close TAGS-01 / TAGS-04 / DUP-01 from Pending → Complete with live-UAT evidence.
 4. **Only after a `gap-free` verification verdict:** advance STATE.md to

@@ -42,7 +42,7 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 ### Quick duplicate
 
-- [x] **DUP-01**: User can quick-duplicate a saved job from JobsManager with a single row action; the duplicate appears in the list immediately
+- [~] **DUP-01**: ~~User can quick-duplicate a saved job from JobsManager with a single row action; the duplicate appears in the list immediately~~ — **Withdrawn-from-v1.2** (2026-05-24, Phase 15 Gap D). UI deferred to v1.3+ where a richer surface (job-detail panel, batch-action menu) can host the clone-and-tweak workflow. The DUP-02 helper ships standalone for future consumers.
 - [ ] **DUP-02**: An explicit-allowlist `duplicateJob()` function inherits cost inputs / tags / notes but RESETS `id` (new `crypto.randomUUID()`), `createdAt` (now), `customer` (undefined — PII reset), `taxRate` (undefined — falls back to current region/Settings default), `copiesSold` (0), and sale records. Unit test asserts `duplicateJob(job).customer === undefined`
 
 ### Printable PDF quote
@@ -146,7 +146,7 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | TAGS-02 | Phase 15 | Withdrawn (superseded by TAGS-03; 2026-05-24) |
 | TAGS-03 | Phase 15 | Complete |
 | TAGS-04 | Phase 15 | Pending (outstanding-pending-uat) |
-| DUP-01 | Phase 15 | Pending (outstanding-pending-uat) |
+| DUP-01 | Phase 15 | Withdrawn-from-v1.2 (Gap D 2026-05-24 — UI deferred to v1.3+) |
 | DUP-02 | Phase 15 | Complete |
 | CL-01 | Phase 15.1 | Complete |
 | CL-02 | Phase 15.1 | Complete |
