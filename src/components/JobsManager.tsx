@@ -890,14 +890,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
   const [deleteConfirmJobId, setDeleteConfirmJobId] = useState<string | null>(null);
 
-  // Phase 15 plan 04 (TAGS-02, TAGS-03, TAGS-04) — filter sub-header state.
+  // Phase 15 plan 04 (TAGS-03, TAGS-04) — filter sub-header state.
   // `searchQuery` is the raw input; `debouncedSearchQuery` lags by 250ms (D-06)
-  // and drives BOTH the filter memo AND the useDynamicRowHeight cache key (D-05).
-  // `selectedChips` holds the set of tags the user has clicked on in the chip filter row;
-  // AND-combined with search per D-04.
+  // and drives the search filter memo AND the useDynamicRowHeight cache key (D-05).
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [selectedChips, setSelectedChips] = useState<Set<string>>(() => new Set());
 
   // Phase 15 plan 05 D-01 surface b — one-at-a-time inline tag editor.
   // Holds the job.id of the row whose pencil affordance was clicked, or null
@@ -939,37 +936,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     return map;
   }, [allSales]);
 
-  // Phase 15 plan 04 — derive the in-use tag set with counts (D-03).
-  // Sorted alphabetically for predictable scan order. Counts shown as `pla · 3`.
-  const tagCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const job of jobs) {
-      for (const tag of job.tags ?? []) {
-        counts.set(tag, (counts.get(tag) ?? 0) + 1);
-      }
-    }
-    return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [jobs]);
-
-  // Stable string repr of the chip selection — feeds the D-05 cache key
-  // AND avoids new-Set-identity churn from `selectedChips` in dependency arrays.
-  const selectedChipsKey = useMemo(
-    () => [...selectedChips].sort().join(','),
-    [selectedChips]
-  );
-
-  // Chip filter — AND across all selected chips (D-04). A job must carry every selected tag.
-  const jobsAfterChipFilter = useMemo(() => {
-    if (selectedChips.size === 0) return jobs;
-    return jobs.filter(job => {
-      const jobTags = new Set(job.tags ?? []);
-      for (const chip of selectedChips) {
-        if (!jobTags.has(chip)) return false;
-      }
-      return true;
-    });
-  }, [jobs, selectedChips]);
-
   // Search filter (D-06 scope) — case-insensitive substring across:
   //   - job.name
   //   - every tag in job.tags
@@ -977,10 +943,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // EXCLUDED per D-06: Sale.customer.address, Sale.customer.notes, deprecated PrintJob.customer.
   // Reuses the existing `salesByJob` Map<jobId, Sale[]> built upstream from `allSales`
   // (no need to rebuild the join — D-06 sales-join requirement is satisfied via this shared Map).
+  // Gap C (2026-05-24): operates directly on `jobs` (no intermediate chip-filter memo).
   const searchedJobs = useMemo(() => {
     const q = debouncedSearchQuery.toLowerCase().trim();
-    if (!q) return jobsAfterChipFilter;
-    return jobsAfterChipFilter.filter(job => {
+    if (!q) return jobs;
+    return jobs.filter(job => {
       if (job.name.toLowerCase().includes(q)) return true;
       if (job.tags?.some(t => t.toLowerCase().includes(q))) return true;
       const jobSales = salesByJob.get(job.id) ?? [];
@@ -990,7 +957,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         (s.customer?.company || '').toLowerCase().includes(q)
       );
     });
-  }, [jobsAfterChipFilter, salesByJob, debouncedSearchQuery]);
+  }, [jobs, salesByJob, debouncedSearchQuery]);
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
@@ -1456,7 +1423,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // Phase 15 plan 05 D-01 surface b — persist parsed tags via parseTagsInput
   // (the D-02 shared helper) and write to db.jobs.put with a refreshed
   // updatedAt. Mirrors the Plan 15-01 reconcile write shape. The liveQuery
-  // re-emits and the chip filter row re-derives its tag counts automatically
+  // re-emits and JobCard tag chips re-render automatically
   // — no manual cache invalidation needed.
   const handleSaveTags = useCallback(async (job: PrintJob, value: string) => {
     const parsed = parseTagsInput(value);
@@ -1484,14 +1451,14 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // to its measured height. defaultRowHeight: 88 honors D-08's bias toward
   // fixed sizing for the pre-measurement initial render.
   //
-  // Phase 15 plan 04 (D-05 lock for TAGS-04): key now encodes
-  // selectedJobId + chip filter + debounced search — pipe-delimited so the
-  // three segments can never collide (e.g. `job123pla` vs `job12|3pla`).
-  // Any of the three changing invalidates the cache → react-window resets
+  // Phase 15 plan 04 (D-05 lock for TAGS-04), reshaped by Gap C (2026-05-24):
+  // key encodes selectedJobId + debounced search — pipe-delimited bi-key so the
+  // two segments can never collide (e.g. `job123foo` vs `job12|3foo`).
+  // Either changing invalidates the cache → react-window resets
   // row heights → the list scrolls to top (TAGS-04 cache invalidation contract).
   const rowHeightCache = useDynamicRowHeight({
     defaultRowHeight: 88,
-    key: `${selectedJobId ?? ''}|${selectedChipsKey}|${debouncedSearchQuery}`,
+    key: `${selectedJobId ?? ''}|${debouncedSearchQuery}`,
   });
 
   // Bundle everything the row needs through rowProps. react-window v2 does
@@ -1529,9 +1496,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onSaveTags: handleSaveTags,
   }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTagsJobId, handleStartEditTags, handleCancelEditTags, handleSaveTags]);
 
-  // Phase 15 plan 04 — handler that clears both filter dimensions in one click.
-  const clearFilters = useCallback(() => {
-    setSelectedChips(new Set());
+  // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
+  // (Gap C: TAGS-02 withdrawn 2026-05-24).
+  const clearSearch = useCallback(() => {
     setSearchQuery('');
   }, []);
 
@@ -1551,7 +1518,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
           />
         ) : (
           <>
-            {/* Phase 15 plan 04 — Sticky filter sub-header (D-03 layout).
+            {/* Phase 15 plan 04 — Sticky filter sub-header (search-input-only after Gap C).
                 Sits ABOVE the virtualized List per PATTERNS.md No-Analog note
                 (react-window's List doesn't natively render headers above rows;
                 page-level scroll provides the stickiness). */}
@@ -1584,47 +1551,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 <NewBadge feature="search-jobs" className="absolute -top-1 -right-1" />
               </div>
 
-              {/* D-03 chip filter row + D-14 mobile overflow-x.
-                  `overflow-x-auto sm:overflow-visible` keeps the chip strip swipe-scrollable
-                  at <640px and reverts to flex-wrap at sm+ (D-14 mobile lock). */}
-              {tagCounts.length > 0 && (
-                <div className="flex flex-nowrap sm:flex-wrap gap-1.5 items-center overflow-x-auto sm:overflow-visible">
-                  {tagCounts.map(([tag, count]) => {
-                    const isSelected = selectedChips.has(tag);
-                    return (
-                      // allow-raw-html: chip filter toggles are tiny tap targets — Button primitive would dwarf the row, mirrors the QuoteRow overflow trigger precedent
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => setSelectedChips(prev => {
-                          const next = new Set(prev);
-                          if (next.has(tag)) next.delete(tag);
-                          else next.add(tag);
-                          return next;
-                        })}
-                        className={
-                          isSelected
-                            ? 'text-xs px-1.5 py-0.5 rounded transition-colors bg-blue-500/30 text-blue-200 border border-blue-400/50 whitespace-nowrap shrink-0'
-                            : 'text-xs px-1.5 py-0.5 rounded transition-colors bg-slate-600/50 text-slate-400 hover:bg-slate-600/80 whitespace-nowrap shrink-0'
-                        }
-                        aria-pressed={isSelected}
-                      >
-                        {tag} · {count}
-                      </button>
-                    );
-                  })}
-                  {(selectedChips.size > 0 || searchQuery) && (
-                    // allow-raw-html: clear-filters is an inline text link, not a CTA Button — keeps the row compact
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="text-xs text-blue-300 hover:text-blue-200 underline ml-2 whitespace-nowrap shrink-0"
-                    >
-                      Clear filters
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* D-10 filter-empty-state — renders BELOW the (still-visible) filter sub-header,
@@ -1632,15 +1558,15 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 so the user can adjust without losing context. */}
             {searchedJobs.length === 0 && jobs.length > 0 ? (
               <div className="text-center py-12">
-                <h3 className="text-lg font-semibold text-white">No jobs match your filter</h3>
-                <p className="text-sm text-slate-400 mt-2">Try different search terms or chip selections.</p>
-                {/* allow-raw-html: inline link styling, not a CTA — mirrors the in-header Clear filters affordance */}
+                <h3 className="text-lg font-semibold text-white">No jobs match your search</h3>
+                <p className="text-sm text-slate-400 mt-2">Try a different search term, or clear search to see all jobs.</p>
+                {/* allow-raw-html: inline link styling, not a CTA — mirrors the search clear-X affordance on the input */}
                 <button
                   type="button"
-                  onClick={clearFilters}
+                  onClick={clearSearch}
                   className="mt-4 text-sm text-blue-300 hover:text-blue-200 underline"
                 >
-                  Clear filters
+                  Clear search
                 </button>
               </div>
             ) : searchedJobs.length > 100 ? (
