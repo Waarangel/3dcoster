@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales } from './backfill';
 import type { PrintJob, Sale, Customer } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -442,5 +442,53 @@ describe('normalizeTagsOnJob (Phase 15 D-12)', () => {
     const job: { tags?: string[] } = {};
     const changed = normalizeTagsOnJob(job);
     expect(changed).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseTagsInput — Phase 15 D-02 (input-path parse, shared with normalizeTagsOnJob)
+//
+// Six+ cases asserting the D-02 rules:
+//   - comma split → trim → lowercase → filter empty → whitelist /[^a-z0-9\s\-_]/g
+//   - dedupe via Set
+//   - cap-at-10
+//   - empty input → undefined (NOT [] — preserves "no tags ever set" semantic per D-02)
+//   - multi-word tags preserved (comma is the only delimiter; spaces stay inside a tag)
+// ---------------------------------------------------------------------------
+
+describe('parseTagsInput (Phase 15 D-02)', () => {
+  it('basic normalize — lowercases + trims + filters empty', () => {
+    expect(parseTagsInput('PLA, phone-stand,  GLOSS ')).toEqual(['pla', 'phone-stand', 'gloss']);
+  });
+
+  it('dedupes case-insensitively (Set after lowercase)', () => {
+    expect(parseTagsInput('a, A, a')).toEqual(['a']);
+  });
+
+  it('preserves multi-word tags — comma is the only delimiter, internal spaces stay', () => {
+    expect(parseTagsInput('phone stand, pla')).toEqual(['phone stand', 'pla']);
+  });
+
+  it('empty input returns undefined (NOT [])', () => {
+    expect(parseTagsInput('')).toBeUndefined();
+  });
+
+  it('whitespace-and-commas-only input returns undefined', () => {
+    expect(parseTagsInput('   ,,,  ')).toBeUndefined();
+  });
+
+  it('caps at 10 tags — extras silently dropped', () => {
+    const fifteen = Array.from({ length: 15 }, (_, i) => `tag${i}`).join(',');
+    const out = parseTagsInput(fifteen);
+    expect(out).toHaveLength(10);
+  });
+
+  it('strips emoji and punctuation via /[^a-z0-9\\s\\-_]/g whitelist — entries that strip to empty are dropped', () => {
+    // 'emoji💀' → 'emoji', '@@@' → '' (dropped)
+    expect(parseTagsInput('emoji💀,@@@')).toEqual(['emoji']);
+  });
+
+  it('returns undefined when every entry strips to empty', () => {
+    expect(parseTagsInput('💀,@@@,!!!')).toBeUndefined();
   });
 });
