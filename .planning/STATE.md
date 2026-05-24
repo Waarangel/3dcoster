@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
-last_updated: "2026-05-23T17:25:58.299Z"
-last_activity: 2026-05-23 -- Phase 16 execution started
+last_updated: "2026-05-24T14:42:09.419Z"
+last_activity: 2026-05-24 -- Phase 15 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 32
-  completed_plans: 23
+  completed_plans: 31
   percent: 67
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 16 — printable-pdf-quote
+**Current focus:** Phase 15 — tags-search-quick-duplicate
 
 ## Current Position
 
-Phase: 16 (printable-pdf-quote) — EXECUTING
-Plan: 1 of 13
-Status: Executing Phase 16
-Last activity: 2026-05-23 -- Phase 16 execution started
+Phase: 15 (tags-search-quick-duplicate) — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase 15
+Last activity: 2026-05-24 -- Phase 15 execution started
 
 ## Performance Metrics
 
