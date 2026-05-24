@@ -31,7 +31,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] **Phase 12: Schema Foundation** — Dexie v5→v6 migration adds v1.2 fields and wires the multi-tab reload guard (completed 2026-05-21)
 - [x] **Phase 13: Tax Model + UI Sweep** — Three-layer tax (region → Settings → per-job), tax breakdown row, unit tests, and compact/InfoTooltip sweep on touched forms (completed 2026-05-21)
 - [x] **Phase 14: Customer Details + Etsy Helper** — Customer fields on sold work (revised mid-UAT to per-Sale per D-21), Recent Sales accordion with customer block, conditional Etsy ToS collapsible checklist (gated on marketplace=etsy per D-22), and features.ts dead-badge audit holds (completed 2026-05-22)
-- [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset
+- [ ] **Phase 15: Tags, Search + Quick Duplicate** — Tag input + chip filter + free-text search in JobsManager, virtualized-list cache fix, and one-click duplicate with PII reset (initial round shipped with 4 gaps 2026-05-24; gap-closure round in flight)
 - [x] **Phase 15.1: Customer Library (INSERTED)** — Customers as first-class assets: new Customers tab with CRUD + virtualized list + CSV bulk import + combobox picker in the Record Sale modal (with email-match auto-link). Dexie v6→v7 introduces a dedicated `customers` store; per-Sale customer remains a by-value snapshot for byte-identical historical sales (completed 2026-05-22)
 - [ ] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification
 
@@ -101,13 +101,18 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
   3. A free-text search input in JobsManager filters by case-insensitive substring match across job title, customer name, and tags simultaneously
   4. When the filter or search changes, the virtualized list scrolls to the top and the `useDynamicRowHeight` cache is invalidated — no stale row heights or collapsed/overlapping cards after filtering; the cache key encodes `selectedJobId + searchQuery` (narrowed from tri-key to bi-key after SC#2 withdrawal)
   5. ~~User can quick-duplicate a saved job from a row action in JobsManager; the duplicate appears immediately in the list;~~ **(row-action UI WITHDRAWN 2026-05-24 per Gap D — DUP-01 deferred to v1.3+)** — narrowed to: a `duplicateJob()` helper exists in `src/utils/duplicateJob.ts` with a locked unit test asserting `duplicateJob(job).customer === undefined` (PII reset), and that `id`, `createdAt`, and `copiesSold` are reset to new values (DUP-02 — passes 7/7 cases including the D-15 contract); see `.planning/phases/15-tags-search-quick-duplicate/15-VERIFICATION.md` Gap D
-**Plans**: 6 plans
+**Plans**: 11 plans (6 original + 5 gap-closure)
 - [x] 15-01-PLAN.md — normalizeTagsOnJob pure helper in src/db/backfill.ts + 6 Vitest cases (D-02 + D-12) — TAGS-01 reconcile foundation (Wave 1, autonomous)
-- [x] 15-02-PLAN.md — duplicateJob + nextCopyName pure helpers in src/utils/duplicateJob.ts + D-15 locked test contract + by-value isolation tests (D-08 + D-09 + D-15) — DUP-02 (Wave 1, autonomous)
+- [x] 15-02-PLAN.md — duplicateJob + nextCopyName pure helpers in src/utils/duplicateJob.ts + D-15 locked test contract + by-value isolation tests (D-08 + D-09 + D-15) — DUP-02 (Wave 1, autonomous, LOCKED post-ship)
 - [x] 15-03-PLAN.md — parseTagsInput shared parser in src/db/backfill.ts + CostCalculator tag input field with NewBadge label-inline (D-01 + D-02 + D-13) — TAGS-01 input surface a (Wave 2, autonomous; depends on 15-01)
 - [x] 15-04-PLAN.md — JobsManager sticky sub-header (search bar + chip filter + AND logic + 250ms debounce + filter-empty-state) + extend useDynamicRowHeight cache key to pipe-delimited tri-key (D-03 + D-04 + D-05 + D-06 + D-10 + D-14) — TAGS-02 + TAGS-03 + TAGS-04 (Wave 2, autonomous; depends on 15-01)
 - [x] 15-05-PLAN.md — JobsManager JobCard tag chips + inline tag editor + [⋯] overflow menu with Duplicate + post-duplicate scroll/highlight + features.ts 3 entries + useJobs init wiring of normalizeTagsOnJob (D-07 + D-11 + D-12 + D-13) — TAGS-01 surface b + DUP-01 (Wave 3, autonomous; depends on 15-01, 15-02, 15-03, 15-04)
-- [ ] 15-06-PLAN.md — Automated chain (tsc + vitest + build) + human UAT against all 5 ROADMAP Success Criteria + all 15 D-XX decisions + VERIFICATION.md (Wave 4, has checkpoint:human-verify; depends on 15-01..15-05)
+- [x] 15-06-PLAN.md — Automated chain (tsc + vitest + build) + human UAT against all 5 ROADMAP Success Criteria + all 15 D-XX decisions + VERIFICATION.md (Wave 4, checkpoint:human-verify; depends on 15-01..15-05) — verdict `gaps-found` (4 gaps A/B/C/D)
+- [ ] 15-07-PLAN.md — **Gap A**: Remove CostCalculator tag input row (Wave 5 of gap closure, autonomous; gap_closure: true; files: src/components/CostCalculator.tsx)
+- [ ] 15-08-PLAN.md — **Gap D**: Remove `[⋯]` overflow menu + post-duplicate ring + features.ts `quick-duplicate` entry; DUP-02 helper + tests preserved byte-identically (Wave 5 of gap closure, autonomous, parallel-safe with 15-07; gap_closure: true; files: src/components/JobsManager.tsx, src/features.ts)
+- [ ] 15-09-PLAN.md — **Gap C**: Remove chip-filter row + selectedChips/tagCounts/jobsAfterChipFilter memos; narrow useDynamicRowHeight cache key from tri-key to pipe-delimited bi-key; rename "Clear filters" → "Clear search" (Wave 6 of gap closure, autonomous; depends on 15-08; gap_closure: true; files: src/components/JobsManager.tsx)
+- [ ] 15-10-PLAN.md — **Gap B**: Replace pencil-button tag editor with title-click inline panel (title + tags in one panel) + hover Tag icon affordance; re-target `feature="tags"` NewBadge to overlay the hover Tag icon; add explicit chevron-button for accordion selection toggle (Wave 7 of gap closure, autonomous; depends on 15-08, 15-09; gap_closure: true; files: src/components/JobsManager.tsx)
+- [ ] 15-11-PLAN.md — Gap-closure verification: automated chain + human UAT against Gap A/B/C/D surfaces + amend VERIFICATION.md with gap-free verdict + advance STATE.md to completed_phases=5, percent=83 (Wave 8 of gap closure, checkpoint:human-verify; depends on 15-07..15-10; gap_closure: true; files: .planning/phases/15-tags-search-quick-duplicate/15-VERIFICATION.md, .planning/STATE.md)
 **UI hint**: yes
 
 ### Phase 15.1: Customer Library (INSERTED)
@@ -163,7 +168,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
-| 15. Tags, Search + Quick Duplicate | 5/6 | In Progress|  |
+| 15. Tags, Search + Quick Duplicate | 6/11 | In Progress — gap-closure round (15-07..15-11) in flight|  |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
 | 16. Printable PDF Quote | 12/13 | In Progress|  |
 
@@ -188,10 +193,10 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | ETSY-02 | Phase 14 | Etsy |
 | UI-10 | Phase 13 | UI Sweep |
 | TAGS-01 | Phase 15 | Tags |
-| TAGS-02 | Phase 15 | Tags |
+| TAGS-02 | Phase 15 | Tags (Withdrawn 2026-05-24) |
 | TAGS-03 | Phase 15 | Tags |
 | TAGS-04 | Phase 15 | Tags |
-| DUP-01 | Phase 15 | Duplicate |
+| DUP-01 | Phase 15 | Duplicate (Withdrawn-from-v1.2 2026-05-24) |
 | DUP-02 | Phase 15 | Duplicate |
 | CL-01 | Phase 15.1 | Customer Library |
 | CL-02 | Phase 15.1 | Customer Library |
@@ -233,5 +238,6 @@ Phase 13 + Phase 14 both merged → required before:
 *Phase 12 plans created: 2026-05-21*
 *Phase 15.1 inserted: 2026-05-22 — CL-01..CL-05 authored during plan-phase*
 *Phase 15 plans created: 2026-05-24 — 6 plans across 4 waves authored from 15-CONTEXT.md (D-01..D-15)*
+*Phase 15 gap-closure plans created: 2026-05-24 — 5 plans (15-07..15-11) across waves 5-8 authored from 15-VERIFICATION.md Gap A/B/C/D + final gap-closure UAT*
 *Replaces: v1.1 Polish & Foundation roadmap (Phases 7–11, completed 2026-05-20)*
 *Phase numbering continues from v1.1 — v1.2 phases start at Phase 12*
