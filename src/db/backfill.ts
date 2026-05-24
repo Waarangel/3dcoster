@@ -30,6 +30,32 @@ export function backfillTagsOnJob(job: Record<string, unknown>): void {
 }
 
 /**
+ * D-02 maximum number of tags per job. Excess silently dropped after this cap
+ * (the input parser surfaces a one-time inline warning; the reconcile path is
+ * silent because it runs on app boot and has no UI surface).
+ *
+ * Centralized so `parseTagsInput` and `normalizeTagsOnJob` can never drift —
+ * both functions read THIS constant, not a hard-coded literal.
+ */
+const TAGS_MAX = 10;
+
+/**
+ * _normalizeTagToken — Phase 15 D-02 single-token transform.
+ *
+ * Shared private helper used by BOTH `parseTagsInput` (input path) and
+ * `normalizeTagsOnJob` (reconcile path) so the regex + the trim/lowercase
+ * sequence cannot drift. Returns the cleaned token, or '' when the token
+ * strips to empty (callers drop empty tokens before deduping).
+ *
+ * Whitelist: `/[^a-z0-9\s\-_]/g` — alphanumeric, whitespace, hyphen, underscore.
+ * Emoji, punctuation, HTML-like characters are stripped. The result is safe to
+ * render as plain text in React (no `<` or `>` can survive).
+ */
+function _normalizeTagToken(raw: string): string {
+  return raw.trim().toLowerCase().replace(/[^a-z0-9\s\-_]/g, '');
+}
+
+/**
  * normalizeTagsOnJob — Phase 15 D-12 reconcile (per [[reconcile-legacy-data]]).
  *
  * Phase 12's backfillTagsOnJob set tags=[] but never enforced D-02's normalization
@@ -42,8 +68,8 @@ export function backfillTagsOnJob(job: Record<string, unknown>): void {
  * is needed (caller decides whether to bulkPut), false otherwise.
  *
  * Mirrors the SAME normalization rules the CostCalculator + JobsManager inline
- * tag inputs apply on save (D-02). The shared normalizer SHOULD be extracted
- * to one place (this file is the natural home — the input parsers can import it).
+ * tag inputs apply on save (D-02). The shared transform lives in the private
+ * `_normalizeTagToken` helper above so input + reconcile paths cannot drift.
  *
  * No imports from `dexie` or `./database` — keeps this module jsdom-safe so the
  * sibling test can `import { normalizeTagsOnJob } from './backfill'` without
@@ -63,12 +89,12 @@ export function normalizeTagsOnJob(job: { tags?: string[] }): boolean {
   const seen = new Set<string>();
   for (const raw of job.tags) {
     if (typeof raw !== 'string') continue;
-    const normalized = raw.trim().toLowerCase().replace(/[^a-z0-9\s\-_]/g, '');
+    const normalized = _normalizeTagToken(raw);
     if (!normalized) continue;
     if (seen.has(normalized)) continue;
     seen.add(normalized);
     cleaned.push(normalized);
-    if (cleaned.length >= 10) break;  // D-02 cap
+    if (cleaned.length >= TAGS_MAX) break;  // D-02 cap
   }
   // Idempotency check — bail out without mutating when input is already canonical.
   if (cleaned.length === job.tags.length && cleaned.every((t, i) => t === job.tags![i])) {
@@ -76,6 +102,55 @@ export function normalizeTagsOnJob(job: { tags?: string[] }): boolean {
   }
   job.tags = cleaned;
   return true;
+}
+
+/**
+ * parseTagsInput — Phase 15 D-02 (tag input parse — shares the same normalization
+ * rules as normalizeTagsOnJob).
+ *
+ * Pipeline (D-02 line 39):
+ *   raw.split(',')
+ *     → .map(s => s.trim().toLowerCase())
+ *     → .filter(s => s.length > 0)
+ *     → whitelist strip /[^a-z0-9\s\-_]/g
+ *     → drop entries that strip to empty
+ *     → dedupe via Set<string>
+ *     → cap at TAGS_MAX (10)
+ *
+ * Empty input (or input where every entry strips to empty) returns `undefined`
+ * — NOT `[]` — to preserve the "no tags ever set" semantic per D-02 line 43.
+ * The Phase 12 backfill normalizes legacy `undefined`/non-array shapes to `[]`,
+ * but a freshly-saved job should leave the field `undefined` when the user
+ * typed nothing.
+ *
+ * Re-uses the private `_normalizeTagToken` helper and the `TAGS_MAX` constant
+ * with `normalizeTagsOnJob`. Single source of truth — the whitelist regex and
+ * the cap appear ONCE in this module.
+ *
+ * No imports from `dexie` or `./database` — keeps this module jsdom-safe.
+ *
+ * Examples:
+ *   parseTagsInput('PLA, phone-stand,  GLOSS ')             → ['pla', 'phone-stand', 'gloss']
+ *   parseTagsInput('a, a, a')                                → ['a']
+ *   parseTagsInput('phone stand, pla')                       → ['phone stand', 'pla'] (multi-word preserved)
+ *   parseTagsInput('')                                       → undefined
+ *   parseTagsInput('   ,,,  ')                               → undefined
+ *   parseTagsInput('emoji💀,@@@')                            → ['emoji']      ('@@@' strips to '' → dropped)
+ *   parseTagsInput(Array.from({length: 15}, (_,i)=>`t${i}`).join(',')) → length 10 (cap)
+ */
+export function parseTagsInput(raw: string): string[] | undefined {
+  if (typeof raw !== 'string' || raw.length === 0) return undefined;
+  const cleaned: string[] = [];
+  const seen = new Set<string>();
+  for (const part of raw.split(',')) {
+    const normalized = _normalizeTagToken(part);
+    if (!normalized) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    cleaned.push(normalized);
+    if (cleaned.length >= TAGS_MAX) break;  // D-02 cap — silent drop in helper, inline warning in the UI
+  }
+  return cleaned.length > 0 ? cleaned : undefined;
 }
 
 /**
