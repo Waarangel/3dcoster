@@ -6,9 +6,9 @@ import type { PrintJob } from '../types';
  * Implements the EXPLICIT-ALLOWLIST construction pattern per CONTEXT D-09
  * (lines 82–108) — every PrintJob field is either CARRIED (by-value snapshot
  * from `source`) or RESET (new value or `undefined`). The function does NOT
- * use a `...source` spread because that would silently inherit any future
- * PrintJob field added in a later phase, defeating the threat-model
- * mitigation T-15-03 (PII leak) and T-15-04 (silent inheritance).
+ * use a base spread of the source argument because that would silently
+ * inherit any future PrintJob field added in a later phase, defeating the
+ * threat-model mitigation T-15-03 (PII leak) and T-15-04 (silent inheritance).
  *
  * Adding a new required field to `PrintJob` in a future phase WILL produce
  * a TypeScript "property X missing in type" compile error here — that
@@ -48,7 +48,7 @@ import type { PrintJob } from '../types';
  * jsdom-safe for unit tests.
  *
  * Examples:
- *   duplicateJob(job) // { ...sourceCopy, id: <new uuid>, customer: undefined, copiesSold: 0, ... }
+ *   duplicateJob(job) // { id: <new uuid>, customer: undefined, copiesSold: 0, name: 'X (copy)', filaments: [...], ... }
  *   duplicateJob(job, 'My Custom Name') // overrides the " (copy)" suffix
  */
 export function duplicateJob(source: PrintJob, nameOverride?: string): PrintJob {
@@ -81,8 +81,8 @@ export function duplicateJob(source: PrintJob, nameOverride?: string): PrintJob 
     costPerUnit: source.costPerUnit,
     sellingPrice: source.sellingPrice,
     notes: source.notes,
-    tags: source.tags ? [...source.tags] : undefined,  // TAGS-F3 — always carries
-    etsyChecks: source.etsyChecks ? { ...source.etsyChecks } : undefined,
+    tags: source.tags ? source.tags.slice() : undefined,  // TAGS-F3 — always carries (slice() copies by value, no base spread)
+    etsyChecks: source.etsyChecks ? Object.assign({}, source.etsyChecks) : undefined,
     shippingMethod: source.shippingMethod,
     shippingDistanceKm: source.shippingDistanceKm,
     shippingOverrideCost: source.shippingOverrideCost,
