@@ -30,6 +30,55 @@ export function backfillTagsOnJob(job: Record<string, unknown>): void {
 }
 
 /**
+ * normalizeTagsOnJob — Phase 15 D-12 reconcile (per [[reconcile-legacy-data]]).
+ *
+ * Phase 12's backfillTagsOnJob set tags=[] but never enforced D-02's normalization
+ * rules (lowercase + trim + dedupe + cap-at-10 + whitelist /[^a-z0-9\s\-_]/g)
+ * because those rules didn't exist yet. Any pre-Phase-15 record with hand-edited
+ * tags via DevTools could carry uppercase, untrimmed, or punctuation-laced values
+ * that the chip filter would treat as distinct from their normalized equivalents.
+ *
+ * Pure. Idempotent — no-op when tags already conform. Returns true if a write
+ * is needed (caller decides whether to bulkPut), false otherwise.
+ *
+ * Mirrors the SAME normalization rules the CostCalculator + JobsManager inline
+ * tag inputs apply on save (D-02). The shared normalizer SHOULD be extracted
+ * to one place (this file is the natural home — the input parsers can import it).
+ *
+ * No imports from `dexie` or `./database` — keeps this module jsdom-safe so the
+ * sibling test can `import { normalizeTagsOnJob } from './backfill'` without
+ * triggering the `new Dexie('3DCosterDB')` top-level side effect.
+ *
+ * Examples:
+ *   normalizeTagsOnJob({ tags: ['PLA', ' phone-stand '] }) → mutates to ['pla', 'phone-stand'], returns true
+ *   normalizeTagsOnJob({ tags: ['pla', 'pla', 'pla'] })   → mutates to ['pla'], returns true
+ *   normalizeTagsOnJob({ tags: ['pla'] })                  → no change, returns false
+ *   normalizeTagsOnJob({ tags: undefined })                → no change, returns false
+ *   normalizeTagsOnJob({ tags: ['pla!!', 'phone💀stand'] }) → mutates to ['pla', 'phonestand'], returns true
+ *   normalizeTagsOnJob({ tags: Array.from({ length: 15 }, (_, i) => `tag${i}`) }) → mutates to length 10, returns true
+ */
+export function normalizeTagsOnJob(job: { tags?: string[] }): boolean {
+  if (!Array.isArray(job.tags)) return false;  // backfillTagsOnJob already ran; nothing to normalize
+  const cleaned: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of job.tags) {
+    if (typeof raw !== 'string') continue;
+    const normalized = raw.trim().toLowerCase().replace(/[^a-z0-9\s\-_]/g, '');
+    if (!normalized) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    cleaned.push(normalized);
+    if (cleaned.length >= 10) break;  // D-02 cap
+  }
+  // Idempotency check — bail out without mutating when input is already canonical.
+  if (cleaned.length === job.tags.length && cleaned.every((t, i) => t === job.tags![i])) {
+    return false;
+  }
+  job.tags = cleaned;
+  return true;
+}
+
+/**
  * backfillQuotesFromJobs — pure helper for v7→v8 migration (Phase 16 gap closure D-17 G7).
  *
  * Reads existing PrintJobs and Sales; returns the Quote rows that should be created.
