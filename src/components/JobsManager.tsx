@@ -1116,25 +1116,44 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         convertedFromQuoteId: convertingFromQuote?.id,
       };
       if (convertingFromQuote) {
-        // D-20 atomicity: Sale.add + Quote.put run in ONE Dexie transaction.
-        // Rollback semantics leave NEITHER persisted on any mid-transaction failure.
+        // D-20 atomicity: Sale.add + Quote.put + job.copiesSold bump run in ONE
+        // Dexie transaction. Rollback leaves NEITHER persisted on any mid-
+        // transaction failure.
+        //
+        // The job.copiesSold bump MUST live here (not via useSales().addSale)
+        // because addSale wraps its own implicit write — calling it inside this
+        // explicit transaction would either deadlock or fail to participate in
+        // the atomic rollback. So we inline the same logic: read the job, bump
+        // copiesSold, write back. Mirrors useSales.addSale's body verbatim.
+        // [DO NOT REMOVE THIS BUMP] — first ext2 ship silently dropped it,
+        // which made break-even progress stall whenever conversions happened
+        // without a parallel Record Sale.
         //
         // BLOCKER I-03 compile-time guard: the Quote patch declares
         // `status: RuntimeQuoteStatus` so TypeScript REFUSES `'draft'` at this
-        // call site. Symmetric with createQuote in useDatabase.ts — both runtime
-        // write sites narrow the status to the runtime-only enum.
+        // call site. Symmetric with createQuote in useDatabase.ts — both
+        // runtime write sites narrow the status to the runtime-only enum.
         const quotePatch: Quote & { status: RuntimeQuoteStatus } = {
           ...convertingFromQuote,
           status: 'converted',
           convertedAt: new Date(),
           convertedToSaleId: sale.id,
         };
-        await db.transaction('rw', db.sales, db.quotes, async () => {
+        await db.transaction('rw', db.sales, db.quotes, db.jobs, async () => {
           await db.sales.add(sale);
           await db.quotes.put(quotePatch);
+          const jobRow = await db.jobs.get(sale.jobId);
+          if (jobRow) {
+            await db.jobs.put({
+              ...jobRow,
+              copiesSold: jobRow.copiesSold + sale.quantity,
+              updatedAt: new Date(),
+            });
+          }
         });
       } else {
-        // Legacy non-conversion path — unchanged.
+        // Legacy non-conversion path — addSale internally bumps job.copiesSold
+        // (see useDatabase.ts:476-487). Do NOT duplicate the bump here.
         await addSale(sale);
       }
     }
