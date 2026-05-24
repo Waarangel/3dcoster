@@ -302,7 +302,7 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
           <h3 className="text-lg font-semibold text-white">
-            {isEdit ? `Edit Quote ${editingQuote ? `Q-${String(editingQuote.quoteNumber).padStart(4, '0')}` : ''} — ${job.name}` : `Print Quote — ${job.name}`}
+            {isEdit ? `Edit Quote ${editingQuote ? `Q-${String(editingQuote.quoteNumber).padStart(4, '0')}` : ''} — ${job.name}` : `Create Quote — ${job.name}`}
           </h3>
           <Button variant="ghost" btnSize="sm" onClick={onClose} aria-label="Close">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -495,7 +495,7 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
             onClick={() => { void handleGenerateQuote(); }}
             disabled={generateDisabled}
           >
-            {isGenerating ? (isEdit ? 'Saving…' : 'Generating…') : (isEdit ? 'Save & Re-download' : 'Generate Quote')}
+            {isGenerating ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save & Re-download' : 'Create Quote')}
           </Button>
         </div>
       </div>

@@ -208,22 +208,22 @@ describe('PrintQuoteModal — static architectural locks (BLOCKER I-01 + WARNING
 });
 
 describe('PrintQuoteModal — validation', () => {
-  it('Generate Quote button is disabled when both Name and Email are blank', async () => {
+  it('Create Quote button is disabled when both Name and Email are blank', async () => {
     await renderModal();
     const generateBtn = Array.from(container!.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim().startsWith('Generate Quote'),
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement | undefined;
     expect(generateBtn).toBeDefined();
     expect(generateBtn!.disabled).toBe(true);
   });
 
-  it('Generate Quote button enables when Name has content', async () => {
+  it('Create Quote button enables when Name has content', async () => {
     await renderModal();
     const nameInput = container!.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement | null;
     expect(nameInput).toBeTruthy();
     await act(async () => { typeIntoInput(nameInput!, 'Alice'); });
     const generateBtn = Array.from(container!.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim().startsWith('Generate Quote'),
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     expect(generateBtn.disabled).toBe(false);
   });
@@ -244,7 +244,7 @@ describe('PrintQuoteModal — D-22 tax-base lock + totals', () => {
     await act(async () => { typeIntoInput(shippingInput, '10'); });
     // Click Generate
     const generateBtn = Array.from(container!.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim().startsWith('Generate Quote'),
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     await act(async () => { generateBtn.click(); });
 
@@ -272,7 +272,7 @@ describe('PrintQuoteModal — happy path (Test 7)', () => {
     });
 
     const generateBtn = Array.from(container!.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim().startsWith('Generate Quote'),
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     await act(async () => { generateBtn.click(); });
 
@@ -297,7 +297,7 @@ describe('PrintQuoteModal — happy path (Test 7)', () => {
     await act(async () => { typeIntoInput(emailInput, 'marcus@example.com'); });
 
     const generateBtn = Array.from(container!.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim().startsWith('Generate Quote'),
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     await act(async () => { generateBtn.click(); });
 
