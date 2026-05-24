@@ -8,6 +8,7 @@ import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../uti
 import { calculateCost, calculateTax } from '../utils/costCalc';
 import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
 import { etsyChecklist, policySummaryAsOf, policyLink } from '../data/etsyToS';
+import { parseTagsInput } from '../db/backfill';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -115,6 +116,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [modelCostPerUnit, setModelCostPerUnit] = useState(() => getStoredValue('modelCostPerUnit', false));
   const [authorMinPrice, setAuthorMinPrice] = useState(() => getStoredValue('authorMinPrice', 0));
   const [modelUrl, setModelUrl] = useState(() => getStoredValue('modelUrl', ''));
+  // Phase 15 TAGS-01 — comma-separated tag input; parsed via the shared parseTagsInput helper
+  // on Save so the input path and the reconcile path (normalizeTagsOnJob) cannot drift.
+  const [tagsInput, setTagsInput] = useState(() => getStoredValue('tagsInput', ''));
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(() => getStoredValue('prepTimeMinutes', 0));
   const [postProcessingMinutes, setPostProcessingMinutes] = useState(() => getStoredValue('postProcessingMinutes', 0));
   const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
@@ -167,6 +171,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       modelCostPerUnit,
       authorMinPrice,
       modelUrl,
+      tagsInput,
       prepTimeMinutes,
       postProcessingMinutes,
       failureRate,
@@ -186,7 +191,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
   }, [
     editingJob, printName, filamentRows,
-    selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes, postProcessingMinutes,
+    selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, tagsInput, prepTimeMinutes, postProcessingMinutes,
     failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, taxRateOverride, lastEdited,
     shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace, etsyChecks
   ]);
@@ -201,6 +206,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setModelCostPerUnit(editingJob.modelCostPerUnit ?? false);
       setAuthorMinPrice(editingJob.authorMinPrice ?? 0);
       setModelUrl(editingJob.modelUrl ?? '');
+      // Phase 15 TAGS-01 — re-display saved tags joined by ', ' (comma-space) so editing round-trips.
+      setTagsInput(editingJob?.tags?.join(', ') ?? '');
       setPrepTimeMinutes(editingJob.prepTimeMinutes);
       setPostProcessingMinutes(editingJob.postProcessingMinutes);
       setFailureRate(editingJob.failureRate);
@@ -517,6 +524,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     setModelCostPerUnit(false);
     setAuthorMinPrice(0);
     setModelUrl('');
+    setTagsInput('');
     setPrepTimeMinutes(0);
     setPostProcessingMinutes(0);
     setFailureRate(5);
@@ -594,6 +602,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         shippingOverrideCost,
         packagingMaterials,
         marketplace,
+        tags: parseTagsInput(tagsInput),
       };
 
       onUpdateJob(updatedJob);
@@ -629,6 +638,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         shippingOverrideCost,
         packagingMaterials,
         marketplace,
+        tags: parseTagsInput(tagsInput),
         copiesSold: 0,
       };
 
@@ -841,6 +851,30 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
                 placeholder="0"
               />
+            </div>
+          </div>
+
+          {/* Tags row — Phase 15 TAGS-01. Mirrors the Model URL JSX shape (label-inline
+              NewBadge per D-13 + project memory rule; absolute-overlay reserved for buttons). */}
+          <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+            <div className="flex-1 min-w-[220px] max-w-md">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                <span>Tags</span>
+                <InfoTooltip text="Comma-separated. Lowercase, max 10. Use hyphens or spaces inside a tag — e.g. 'phone-stand, pla, gloss'." />
+                <NewBadge feature="tags" />
+              </label>
+              <Input
+                type="text"
+                value={tagsInput}
+                onChange={e => setTagsInput(e.target.value)}
+                placeholder="phone-stand, pla, gloss"
+              />
+              {(() => {
+                const parsed = parseTagsInput(tagsInput);
+                return parsed && parsed.length >= 10
+                  ? <p className="text-xs text-amber-400 mt-1">Maximum 10 tags — extras ignored</p>
+                  : null;
+              })()}
             </div>
           </div>
 
