@@ -3,6 +3,13 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
+import { backfillCustomersFromSales } from '../db/backfill';
+
+// Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
+// runs ONCE per page load. The helper is idempotent so a second pass would
+// be a harmless no-op, but skipping the Dexie reads is still a perf win for
+// every subsequent useCustomers mount in the same session.
+let saleCustomerBackfillRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -542,6 +549,39 @@ export function useCustomers() {
   // never re-flipped, briefly surfacing `customers: []` to consumers during
   // the next re-emission.
   const isLoading = customers === undefined;
+
+  // Second extension D-32 / gap K: one-time pass to populate the Customer
+  // Library with any customer that exists ONLY on a historical Sale.customer
+  // snapshot (typically pre-Phase 15.1 sales whose auto-create path never
+  // fired). Without this, the PrintQuoteModal customer picker can't find
+  // them — surfaced in UAT (user typed "Logan" → no match even though Logan
+  // was visibly on a Sale row). Guarded by a module-scope flag so it runs
+  // exactly once per page load; helper itself is idempotent regardless.
+  useEffect(() => {
+    if (saleCustomerBackfillRan) return;
+    if (customers === undefined) return;  // wait for the first liveQuery emission
+    saleCustomerBackfillRan = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const allSales = await db.sales.toArray();
+        if (cancelled) return;
+        const toInsert = backfillCustomersFromSales(allSales, customers);
+        if (toInsert.length > 0) {
+          await db.customers.bulkAdd(toInsert);
+        }
+      } catch (err) {
+        // Backfill failures must NOT break the app — the picker still works
+        // against whatever's already in db.customers. Log so it surfaces in
+        // DevTools but never throw to consumers.
+        console.error('Sale→Customer backfill (D-32) failed:', err);
+        // Reset the flag so the next mount can retry (DevTools wipe, etc.)
+        saleCustomerBackfillRan = false;
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customers === undefined]);  // re-evaluate only when isLoading flips, not on every emission
 
   // WR-03 fix: shallow-freeze the customers array at the hook boundary so
   // consumers cannot mutate the array reference returned by Dexie's

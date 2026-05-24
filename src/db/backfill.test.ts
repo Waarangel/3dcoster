@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { backfillTagsOnJob, backfillQuotesFromJobs } from './backfill';
-import type { PrintJob, Sale } from '../types';
+import { backfillTagsOnJob, backfillQuotesFromJobs, backfillCustomersFromSales } from './backfill';
+import type { PrintJob, Sale, Customer } from '../types';
 
 describe('backfillTagsOnJob', () => {
   it('sets tags=[] when the field is missing (most common v5 path)', () => {
@@ -184,5 +184,120 @@ describe('backfillQuotesFromJobs (D-17 G7 locked fixture)', () => {
     expect(quotes.length).toBe(1);
     expect(quotes[0].status).toBe('converted');
     expect(quotes[0].customerSnapshot.name).toBe('Legacy Larry');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// backfillCustomersFromSales — second extension D-32 (gap K fix)
+// ---------------------------------------------------------------------------
+
+function makeSale(overrides: Partial<Sale>): Sale {
+  return {
+    id: 'sale-x',
+    jobId: 'job-x',
+    quantity: 1,
+    unitPrice: 50,
+    totalRevenue: 50,
+    soldAt: new Date('2026-03-15'),
+    ...overrides,
+  } as Sale;
+}
+
+function makeExistingCustomer(overrides: Partial<Customer>): Customer {
+  return {
+    id: 'cust-' + Math.random().toString(36).slice(2, 9),
+    createdAt: new Date('2026-01-01'),
+    ...overrides,
+  } as Customer;
+}
+
+describe('backfillCustomersFromSales (D-32 / gap K)', () => {
+  it('returns empty array when there are no sales', () => {
+    expect(backfillCustomersFromSales([], [])).toEqual([]);
+  });
+
+  it("emits a Customer for a Sale.customer with name+email when not already in library", () => {
+    const sale = makeSale({
+      id: 's-logan',
+      customer: { name: 'Logan', email: 'logan@fleetstreet.com', company: 'Fleet Street Barber' },
+    });
+    const out = backfillCustomersFromSales([sale], []);
+    expect(out.length).toBe(1);
+    expect(out[0].name).toBe('Logan');
+    expect(out[0].email).toBe('logan@fleetstreet.com');
+    expect(out[0].company).toBe('Fleet Street Barber');
+    expect(out[0].lastUsedAt?.getTime()).toBe(sale.soldAt.getTime());
+  });
+
+  it("dedups against existing Library customer by email (case-insensitive, trimmed)", () => {
+    const existing = [makeExistingCustomer({ email: 'logan@fleetstreet.com', name: 'Logan' })];
+    const sale = makeSale({
+      customer: { name: 'Logan', email: 'LOGAN@fleetstreet.com  ' },  // capitalized + trailing space
+    });
+    const out = backfillCustomersFromSales([sale], existing);
+    expect(out).toEqual([]);
+  });
+
+  it("falls back to name-key dedup when Sale.customer has no email", () => {
+    const existing = [makeExistingCustomer({ name: 'Walk-in Buyer' })];
+    const sale = makeSale({ customer: { name: 'walk-in buyer' } });  // case-insensitive name match
+    const out = backfillCustomersFromSales([sale], existing);
+    expect(out).toEqual([]);
+  });
+
+  it("skips Sales with no usable identity (no customer, no customerName, OR only whitespace)", () => {
+    const s1 = makeSale({ customer: undefined });
+    const s2 = makeSale({ customer: { name: '   ', email: '' } });
+    const s3 = makeSale({ customerName: '   ' });
+    expect(backfillCustomersFromSales([s1, s2, s3], [])).toEqual([]);
+  });
+
+  it("falls back to legacy Sale.customerName when Sale.customer is undefined (pre-Phase-14 records)", () => {
+    const sale = makeSale({ customer: undefined, customerName: 'Legacy Larry' });
+    const out = backfillCustomersFromSales([sale], []);
+    expect(out.length).toBe(1);
+    expect(out[0].name).toBe('Legacy Larry');
+    expect(out[0].email).toBeUndefined();
+  });
+
+  it("aggregates multiple Sales for the same customer; lastUsedAt = most-recent soldAt", () => {
+    const oldSale = makeSale({
+      id: 's-old',
+      customer: { name: 'Repeat Buyer', email: 'repeat@test.com' },
+      soldAt: new Date('2026-01-01'),
+    });
+    const newSale = makeSale({
+      id: 's-new',
+      customer: { name: 'Repeat Buyer', email: 'repeat@test.com' },
+      soldAt: new Date('2026-04-01'),
+    });
+    const out = backfillCustomersFromSales([oldSale, newSale], []);
+    expect(out.length).toBe(1);  // single row, not two
+    expect(out[0].lastUsedAt?.toISOString().slice(0, 10)).toBe('2026-04-01');
+  });
+
+  it("idempotent — running the helper twice with the freshly-inserted Customers in existingCustomers emits nothing on the second pass", () => {
+    const sale = makeSale({ customer: { name: 'Once', email: 'once@test.com' } });
+    const firstPass = backfillCustomersFromSales([sale], []);
+    expect(firstPass.length).toBe(1);
+
+    // Simulate the just-inserted Customer being in the library now
+    const secondPass = backfillCustomersFromSales([sale], firstPass);
+    expect(secondPass).toEqual([]);
+  });
+
+  it("when multiple Sales for the same customer have partial field coverage, merges non-empty fields across them", () => {
+    const s1 = makeSale({
+      customer: { name: 'Patchy', email: 'patchy@test.com' },
+      soldAt: new Date('2026-01-01'),
+    });
+    const s2 = makeSale({
+      customer: { name: 'Patchy', email: 'patchy@test.com', company: 'Patch Co', address: '12 Patch Ln' },
+      soldAt: new Date('2026-02-01'),
+    });
+    const out = backfillCustomersFromSales([s1, s2], []);
+    expect(out.length).toBe(1);
+    expect(out[0].company).toBe('Patch Co');
+    expect(out[0].address).toBe('12 Patch Ln');
   });
 });

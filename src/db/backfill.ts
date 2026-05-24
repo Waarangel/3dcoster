@@ -1,4 +1,4 @@
-import type { PrintJob, Sale, Quote, QuoteStatus } from '../types';
+import type { PrintJob, Sale, Quote, QuoteStatus, Customer } from '../types';
 
 /**
  * Backfill `tags = []` on a job record that came from a pre-v6 schema.
@@ -119,6 +119,116 @@ export function backfillQuotesFromJobs(jobs: PrintJob[], sales: Sale[]): Quote[]
             convertedToSaleId: mostRecentSale.id,
           }
         : {}),
+    });
+  }
+  return out;
+}
+
+/**
+ * backfillCustomersFromSales — second extension D-32 (gap K fix).
+ *
+ * One-time pass to populate the Customer Library with any customer that
+ * exists ONLY on a historical Sale.customer snapshot (typically pre-Phase
+ * 15.1 sales whose auto-create path never fired). Without this, the
+ * PrintQuoteModal customer picker — which queries db.customers — can't
+ * find them, even though they're visibly present on Sale rows. The user
+ * surfaced this in UAT: typing "Logan" in the picker returned no match
+ * even though Logan was clearly on a Sale.
+ *
+ * Pure helper. Returns the Customer rows that should be inserted. The
+ * caller is responsible for the actual db.customers.bulkAdd. Mirrors the
+ * backfillQuotesFromJobs / backfillTagsOnJob pattern — no Dexie, no
+ * React, no IO — so jsdom can unit-test it without an IndexedDB shim.
+ *
+ * Idempotent: the dedup key is `(trimmed lowercase email) || (trimmed
+ * lowercase name)`. A subsequent call with the same Sales + the freshly-
+ * inserted Customers in `existingCustomers` returns an empty array.
+ *
+ * Skips Sales with NO usable identity:
+ *   - no Sale.customer object AND no Sale.customerName (legacy field)
+ *   - empty name AND empty email after trim
+ *
+ * lastUsedAt for the backfilled record = the most-recent Sale.soldAt for
+ * any Sale whose customer matched this dedup key — semantically "last
+ * used in business" per Phase 15.1 D-03.
+ */
+export function backfillCustomersFromSales(
+  sales: Sale[],
+  existingCustomers: Customer[],
+): Customer[] {
+  // Build the set of dedup keys already present in the library so we never
+  // emit a Customer that would duplicate one. The picker's dedup is by
+  // email, but a Sale may carry only a name with no email — fall back to
+  // a name-based key in that case (matches the picker's substring search
+  // surface; not a UNIQUE constraint, just a backfill collision-avoidance).
+  const existingKeys = new Set<string>();
+  for (const c of existingCustomers) {
+    const emailKey = (c.email || '').trim().toLowerCase();
+    if (emailKey) existingKeys.add(`email:${emailKey}`);
+    const nameKey = (c.name || '').trim().toLowerCase();
+    if (nameKey) existingKeys.add(`name:${nameKey}`);
+  }
+
+  // Aggregate Sales by dedup key so each emitted Customer carries the
+  // most-recent soldAt across all matching Sales (lastUsedAt semantic).
+  type Acc = {
+    key: string;
+    name?: string;
+    email?: string;
+    company?: string;
+    address?: string;
+    notes?: string;
+    lastSoldAt: Date;
+  };
+  const accByKey = new Map<string, Acc>();
+
+  for (const sale of sales) {
+    const cust = sale.customer;
+    const name = (cust?.name ?? sale.customerName ?? '').trim();
+    const email = (cust?.email ?? '').trim();
+    if (!name && !email) continue;  // Sale has no usable customer identity — skip
+
+    const emailKey = email.toLowerCase();
+    const nameKey = name.toLowerCase();
+    const dedupKey = emailKey ? `email:${emailKey}` : `name:${nameKey}`;
+
+    if (existingKeys.has(dedupKey)) continue;  // already in library
+
+    const soldAt = new Date(sale.soldAt);
+    const prev = accByKey.get(dedupKey);
+    if (prev) {
+      // Same dedup key across multiple Sales — keep the most-recent soldAt,
+      // and merge in any non-empty fields the prior entry was missing.
+      if (soldAt.getTime() > prev.lastSoldAt.getTime()) prev.lastSoldAt = soldAt;
+      if (!prev.name && name) prev.name = name;
+      if (!prev.email && email) prev.email = email;
+      if (!prev.company && cust?.company) prev.company = cust.company;
+      if (!prev.address && cust?.address) prev.address = cust.address;
+      if (!prev.notes && cust?.notes) prev.notes = cust.notes;
+    } else {
+      accByKey.set(dedupKey, {
+        key: dedupKey,
+        name: name || undefined,
+        email: email || undefined,
+        company: cust?.company,
+        address: cust?.address,
+        notes: cust?.notes,
+        lastSoldAt: soldAt,
+      });
+    }
+  }
+
+  const out: Customer[] = [];
+  for (const acc of accByKey.values()) {
+    out.push({
+      id: crypto.randomUUID(),
+      createdAt: acc.lastSoldAt,  // best-effort: we don't know when the customer was first added
+      lastUsedAt: acc.lastSoldAt,
+      name: acc.name,
+      email: acc.email,
+      company: acc.company,
+      address: acc.address,
+      notes: acc.notes,
     });
   }
   return out;
