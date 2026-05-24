@@ -7,6 +7,7 @@ import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyS
 import { ClipboardListIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
+import { DeclineQuoteModal } from './DeclineQuoteModal';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
@@ -48,39 +49,64 @@ type JobCardProps = {
   onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
-  /** Phase 16 plan 16-12: when provided, enables the Convert to Sale button on accepted Quotes in the Recent Quotes section. */
+  /** Phase 16 plan 16-12: when provided, enables the Convert to Sale button on Pending Quotes in the Orders section. */
   onStartConversion?: (quote: Quote) => void;
+  /** Phase 16 ext2 D-27: opens PrintQuoteModal in edit mode for the given Pending Quote. */
+  onEditQuote?: (quote: Quote) => void;
+  /** Phase 16 ext2 D-28: opens DeclineQuoteModal for the given Pending Quote. */
+  onDeclineQuote?: (quote: Quote) => void;
   style?: React.CSSProperties;
 };
 
 // ---------------------------------------------------------------------------
-// Phase 16 gap closure plan 16-11 — Quote lifecycle UI (D-19).
+// Phase 16 second extension — Orders section (D-23..D-32).
 //
-// QuoteStatusPill: small inline pill mapping QuoteStatus → color + label.
-// RecentQuotesSection: per-job section above Recent Sales; handles status
-//   transitions (Mark Accepted / Mark Declined / Reopen) via useQuotes.
-// SaleBackRefLink: tiny "← Q-NNNN" link rendered next to Recent Sales rows
-//   that have convertedFromQuoteId set; scrolls to the originating Quote row.
+// Replaces the prior parallel "Recent Quotes" + "Recent Sales" sections with
+// a single unified "Orders" section per job. The unified section renders:
+//   - Pending Quote rows (action: Convert to Sale + overflow [Edit / Decline])
+//   - Declined Quote rows (action: Reopen; shows declineReason sub-line)
+//   - Sale rows (existing accordion shape, with `from Q-NNNN` informational
+//     subtext if convertedFromQuoteId is set)
+// Sorted newest-first by sentAt / soldAt.
 //
-// All three subcomponents are inlined here (over a sibling file) because they
-// only consume JobsManager-local data flows. Each calls useQuotes itself so
-// JobCard's prop chain stays unchanged — dexie-react-hooks dedupes the
-// underlying liveQuery emitter, so the per-expanded-card cost is negligible.
+// Converted Quotes do NOT render as their own row — they're represented by
+// their Sale row only (D-26). Legacy 'accepted' rows (pre-extension data)
+// render as Pending (D-24).
+//
+// Each subcomponent calls useQuotes itself; dexie-react-hooks dedupes the
+// liveQuery emitter so the per-expanded-card cost is negligible. This keeps
+// JobCard's prop chain shallow.
 // ---------------------------------------------------------------------------
 
-const QUOTE_STATUS_STYLES: Record<QuoteStatus, { label: string; classes: string }> = {
-  sent:      { label: 'Sent',      classes: 'bg-slate-700 text-slate-300' },
-  accepted:  { label: 'Accepted',  classes: 'bg-emerald-700/30 text-emerald-300' },
-  declined:  { label: 'Declined',  classes: 'bg-red-700/30 text-red-300' },
-  converted: { label: 'Converted', classes: 'bg-blue-700/30 text-blue-300' },
-  // 'draft' is a legacy migration-only value (D-17 / G6 lock) — never written
-  // by runtime, but mapped here so the type is exhaustive and any future read
-  // path that surfaces a draft row gets a styled pill rather than crashing.
-  draft:     { label: 'Draft',     classes: 'bg-amber-700/30 text-amber-300' },
-};
+const QUOTE_PILL_STYLES = {
+  // 3 user-facing states per D-24 + 1 legacy mapping
+  pending:   { label: 'Pending',   classes: 'bg-amber-700/30 text-amber-300' },
+  sale:      { label: 'Sale',      classes: 'bg-emerald-700/30 text-emerald-300' },
+  declined:  { label: 'Declined',  classes: 'bg-slate-700 text-slate-300' },
+} as const;
 
-function QuoteStatusPill({ status }: { status: QuoteStatus }) {
-  const { label, classes } = QUOTE_STATUS_STYLES[status];
+type QuotePillKind = keyof typeof QUOTE_PILL_STYLES;
+
+// Quote.status (5-wide enum) → 3-pill mapping per D-24.
+// 'sent' and legacy 'accepted' both surface as Pending (the latter only
+// appears in pre-second-extension data; runtime no longer writes it).
+// 'converted' never appears as a separate row (D-26 — represented by Sale).
+// 'draft' is migration-only and filtered out at the section level.
+function quoteStatusToPill(status: QuoteStatus): QuotePillKind | null {
+  switch (status) {
+    case 'sent':
+    case 'accepted':
+      return 'pending';
+    case 'declined':
+      return 'declined';
+    case 'converted':
+    case 'draft':
+      return null;  // never rendered as a Quote row
+  }
+}
+
+function QuoteStatusPill({ kind }: { kind: QuotePillKind }) {
+  const { label, classes } = QUOTE_PILL_STYLES[kind];
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}>
       {label}
@@ -88,126 +114,213 @@ function QuoteStatusPill({ status }: { status: QuoteStatus }) {
   );
 }
 
-function scrollToQuoteRow(quoteId: string) {
-  const el = document.getElementById(`quote-row-${quoteId}`);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-export function RecentQuotesSection({ jobId, onStartConversion }: { jobId: string; onStartConversion?: (quote: Quote) => void }) {
-  const { quotesByJobId, updateQuote } = useQuotes();
-  const quotesForJob = quotesByJobId.get(jobId) ?? [];
-  // D-17 / G6: legacy 'draft' rows are NOT user-visible — runtime never writes them.
-  const visibleQuotes = quotesForJob.filter(q => q.status !== 'draft');
-  if (visibleQuotes.length === 0) return null;  // D-19: hide section entirely at zero
-
-  const sorted = [...visibleQuotes].sort(
-    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
-  );
-
-  return (
-    <section className="mt-4" aria-labelledby={`recent-quotes-heading-${jobId}`} onClick={(e) => e.stopPropagation()}>
-      <h4 id={`recent-quotes-heading-${jobId}`} className="text-sm font-medium text-slate-300 mb-2">
-        Recent Quotes
-      </h4>
-      <ul className="space-y-1">
-        {sorted.map(quote => (
-          <QuoteRow
-            key={quote.id}
-            quote={quote}
-            onMarkAccepted={async () => { await updateQuote({ ...quote, status: 'accepted', decisionAt: new Date() }); }}
-            onMarkDeclined={async () => { await updateQuote({ ...quote, status: 'declined', decisionAt: new Date() }); }}
-            onReopen={async () => { await updateQuote({ ...quote, status: 'sent', decisionAt: undefined }); }}
-            onConvert={onStartConversion ? () => onStartConversion(quote) : undefined}
-          />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 interface QuoteRowProps {
   quote: Quote;
-  onMarkAccepted: () => Promise<void>;
-  onMarkDeclined: () => Promise<void>;
-  onReopen: () => Promise<void>;
-  /** Phase 16 plan 16-12 (D-20): when provided, the Convert to Sale button is enabled and opens the Record Sale modal pre-filled from this Quote's snapshot. Undefined keeps the button disabled (plan 16-11 default). */
+  pillKind: QuotePillKind;
   onConvert?: () => void;
+  onEdit?: () => void;
+  onDecline?: () => void;
+  onReopen?: () => Promise<void>;
 }
 
-function QuoteRow({ quote, onMarkAccepted, onMarkDeclined, onReopen, onConvert }: QuoteRowProps) {
+function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: QuoteRowProps) {
   const customerLabel = quote.customerSnapshot.name || quote.customerSnapshot.email || 'No customer';
   const currency = quote.lineItemsSnapshot.currency;
   const total = quote.lineItemsSnapshot.sellingPrice + quote.lineItemsSnapshot.shippingCost + quote.lineItemsSnapshot.taxAmount;
+  const [overflowOpen, setOverflowOpen] = useState(false);
 
   return (
     <li
       id={`quote-row-${quote.id}`}
       className="text-sm bg-slate-800 px-3 py-2 rounded flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+      onClick={(e) => e.stopPropagation()}
     >
       <div className="min-w-0 flex-1">
-        <div className="font-semibold text-slate-100 truncate">
+        <div className="font-semibold text-slate-100 truncate flex items-center gap-2">
           {formatQuoteNumber(quote.quoteNumber)} · {customerLabel}
+          <QuoteStatusPill kind={pillKind} />
         </div>
         <div className="text-xs text-slate-400">
-          {formatRelativeDate(new Date(quote.sentAt))} · {formatCurrency(total, currency)}
+          Quoted {formatRelativeDate(new Date(quote.sentAt))} · {formatCurrency(total, currency)}
         </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <QuoteStatusPill status={quote.status} />
-        {quote.status === 'sent' && (
-          <>
-            <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onMarkAccepted(); }}>
-              Mark Accepted
-            </Button>
-            <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onMarkDeclined(); }}>
-              Mark Declined
-            </Button>
-          </>
+        {pillKind === 'declined' && quote.declineReason && (
+          <div className="text-xs text-slate-400 mt-0.5">
+            Reason: <span className="text-slate-300">{quote.declineReason}</span>
+          </div>
         )}
-        {quote.status === 'accepted' && (
+      </div>
+      <div className="flex items-center gap-2 shrink-0 relative">
+        {pillKind === 'pending' && (
           <>
             <Button
               variant="primary"
               btnSize="sm"
+              onClick={(e) => { e.stopPropagation(); onConvert?.(); }}
               disabled={!onConvert}
               title={onConvert ? undefined : 'Convert to Sale is only available inside JobsManager'}
-              onClick={onConvert ? (e) => { e.stopPropagation(); onConvert(); } : undefined}
             >
               Convert to Sale
             </Button>
-            <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onMarkDeclined(); }}>
-              Mark Declined
-            </Button>
+            {/* allow-raw-html: overflow toggle is a small icon button, not a CTA — Button primitive would dwarf the row */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setOverflowOpen(o => !o); }}
+              aria-label="More actions"
+              aria-haspopup="menu"
+              aria-expanded={overflowOpen}
+              className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-slate-700 text-slate-300"
+            >
+              ⋯
+            </button>
+            {overflowOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-1 z-10 min-w-[160px] bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1"
+              >
+                {/* allow-raw-html: native menuitem styling per WAI-ARIA menu pattern */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={(e) => { e.stopPropagation(); setOverflowOpen(false); onEdit?.(); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-slate-100"
+                >
+                  Edit Quote
+                </button>
+                {/* allow-raw-html: native menuitem styling per WAI-ARIA menu pattern */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={(e) => { e.stopPropagation(); setOverflowOpen(false); onDecline?.(); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-red-300"
+                >
+                  Mark Declined
+                </button>
+              </div>
+            )}
           </>
         )}
-        {quote.status === 'declined' && (
+        {pillKind === 'declined' && onReopen && (
           <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onReopen(); }}>
             Reopen
           </Button>
-        )}
-        {quote.status === 'converted' && quote.convertedAt && (
-          <span className="text-xs text-slate-400">→ Sale on {formatRelativeDate(new Date(quote.convertedAt))}</span>
         )}
       </div>
     </li>
   );
 }
 
-export function SaleBackRefLink({ convertedFromQuoteId, jobId }: { convertedFromQuoteId: string; jobId: string }) {
+/**
+ * Per-job Pending + Declined quote rows. Rendered ABOVE the Sale rows
+ * inside the JobCard's expanded Orders section. Converted quotes are
+ * filtered out (D-26 — represented by their Sale row only).
+ *
+ * Exported so unit tests can mount it directly without the JobsManager
+ * + react-window scaffolding.
+ */
+export function OrdersQuoteRows({
+  jobId,
+  onStartConversion,
+  onEditQuote,
+  onDeclineQuote,
+}: {
+  jobId: string;
+  onStartConversion?: (quote: Quote) => void;
+  onEditQuote?: (quote: Quote) => void;
+  onDeclineQuote?: (quote: Quote) => void;
+}) {
+  const { quotesByJobId, updateQuote } = useQuotes();
+  const quotesForJob = quotesByJobId.get(jobId) ?? [];
+  // Filter out 'converted' (D-26) and 'draft' (G6 legacy) rows — only Pending + Declined render here.
+  const visible = quotesForJob.filter(q => quoteStatusToPill(q.status) !== null);
+  if (visible.length === 0) return null;
+
+  const sorted = [...visible].sort(
+    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+  );
+
+  return (
+    <ul className="space-y-1">
+      {sorted.map(quote => {
+        const kind = quoteStatusToPill(quote.status)!;
+        return (
+          <QuoteRow
+            key={quote.id}
+            quote={quote}
+            pillKind={kind}
+            onConvert={onStartConversion && kind === 'pending' ? () => onStartConversion(quote) : undefined}
+            onEdit={onEditQuote && kind === 'pending' ? () => onEditQuote(quote) : undefined}
+            onDecline={onDeclineQuote && kind === 'pending' ? () => onDeclineQuote(quote) : undefined}
+            onReopen={kind === 'declined' ? async () => {
+              // D-29 Reopen: clears decisionAt + declineReason; flips back to 'sent'.
+              await updateQuote({ ...quote, status: 'sent', decisionAt: undefined, declineReason: undefined });
+            } : undefined}
+          />
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
+ * Informational text rendered next to a Sale's customer name when the
+ * Sale was created via Convert to Sale (D-30). Replaces the prior
+ * SaleBackRefLink clickable button — per user direction, this is purely
+ * informational ("when was the quote last created"), not interactive.
+ *
+ * Exported so unit tests can mount it directly.
+ */
+export function SaleFromQuoteSubtext({ convertedFromQuoteId, jobId }: { convertedFromQuoteId: string; jobId: string }) {
   const { quotesByJobId } = useQuotes();
   const linkedQuote = quotesByJobId.get(jobId)?.find(q => q.id === convertedFromQuoteId);
-  // Data anomaly (Quote deleted) — render nothing rather than a broken link.
-  if (!linkedQuote) return null;
+  if (!linkedQuote) return null;  // data anomaly — render nothing
   return (
-    // allow-raw-html: inline back-ref link, not a CTA button — Button primitive's min-h-[44px] would dwarf the row
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); scrollToQuoteRow(linkedQuote.id); }}
-      className="ml-2 text-xs text-blue-300 hover:underline"
-      title="Scroll to originating quote"
-    >
-      ← {formatQuoteNumber(linkedQuote.quoteNumber)}
-    </button>
+    <span className="ml-2 text-xs text-slate-400">
+      from {formatQuoteNumber(linkedQuote.quoteNumber)} · Quoted {formatRelativeDate(new Date(linkedQuote.sentAt))}
+    </span>
+  );
+}
+
+/**
+ * Wrapper that decides whether to render the per-job "Orders" section
+ * heading (D-23). Hides the entire section when both Pending/Declined
+ * quotes AND Sales are empty. The children prop renders the Sale rows
+ * (the JobCard owns that template because each Sale row's expanded
+ * customer details are interleaved with its action buttons; extracting
+ * it would be a separate refactor).
+ */
+function OrdersSection({
+  jobId,
+  recentSales,
+  onStartConversion,
+  onEditQuote,
+  onDeclineQuote,
+  children,
+}: {
+  jobId: string;
+  recentSales?: Sale[];
+  onStartConversion?: (quote: Quote) => void;
+  onEditQuote?: (quote: Quote) => void;
+  onDeclineQuote?: (quote: Quote) => void;
+  children?: React.ReactNode;  // Sale rows render block from JobCard
+}) {
+  const { quotesByJobId } = useQuotes();
+  const quotesForJob = quotesByJobId.get(jobId) ?? [];
+  const visibleQuotes = quotesForJob.filter(q => quoteStatusToPill(q.status) !== null);
+  const hasQuotes = visibleQuotes.length > 0;
+  const hasSales = (recentSales ?? []).length > 0;
+  if (!hasQuotes && !hasSales) return null;
+
+  return (
+    <div className="mt-4">
+      <h4 className="text-sm font-medium text-slate-300 mb-2">Orders</h4>
+      <OrdersQuoteRows
+        jobId={jobId}
+        onStartConversion={onStartConversion}
+        onEditQuote={onEditQuote}
+        onDeclineQuote={onDeclineQuote}
+      />
+      {children}
+    </div>
   );
 }
 
@@ -229,6 +342,8 @@ const JobCard = memo(function JobCard({
   onEditSale,
   onDeleteSale,
   onStartConversion,
+  onEditQuote,
+  onDeclineQuote,
   style,
 }: JobCardProps) {
   return (
@@ -346,8 +461,9 @@ const JobCard = memo(function JobCard({
               Record Sale
             </Button>
             <div className="relative">
+              {/* D-31: Print Quote promoted to primary (blue) so it visibly separates from the bg-slate-700/50 card */}
               <Button
-                variant="secondary"
+                variant="primary"
                 btnSize="sm"
                 disabled={isGeneratingPdf || job.sellingPrice <= 0}
                 title={job.sellingPrice <= 0 ? 'Set a selling price first' : undefined}
@@ -357,8 +473,11 @@ const JobCard = memo(function JobCard({
               </Button>
               <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
             </div>
+            {/* D-31: Edit demoted to ghost+border so the visual hierarchy reads Record Sale (green) > Print Quote (blue) > Edit (ghost) > Delete (red-tinted) */}
             <Button
+              variant="ghost"
               btnSize="sm"
+              className="border border-slate-600"
               onClick={(e) => { e.stopPropagation(); onEdit(job); }}
             >
               Edit
@@ -372,13 +491,21 @@ const JobCard = memo(function JobCard({
             </Button>
           </div>
 
-          {/* Phase 16 plan 16-11 (D-19) + plan 16-12 (D-20): Recent Quotes section + Convert to Sale */}
-          <RecentQuotesSection jobId={job.id} onStartConversion={onStartConversion} />
-
-          {recentSales && recentSales.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-slate-300 mb-2">Recent Sales</h4>
-              <div className="space-y-1">
+          {/* D-23: Unified "Orders" section per job. OrdersSection internally
+              decides whether to render the heading (when EITHER quotes OR sales
+              exist). Pending/Declined quote rows render above Sales rows.
+              Converted quotes don't render as separate rows (D-26) — they're
+              represented by their Sale row with `from Q-NNNN` informational
+              subtext (SaleFromQuoteSubtext per D-30). */}
+          <OrdersSection
+            jobId={job.id}
+            recentSales={recentSales}
+            onStartConversion={onStartConversion}
+            onEditQuote={onEditQuote}
+            onDeclineQuote={onDeclineQuote}
+          >
+            {recentSales && recentSales.length > 0 && (
+              <div className="space-y-1 mt-1">
                 {recentSales.slice(0, 5).map(sale => {
                   // Phase 14 revised (2026-05-22): customer is per-sale.
                   // Read from sale.customer (new) with fallback to sale.customerName (legacy).
@@ -404,9 +531,9 @@ const JobCard = memo(function JobCard({
                         <span className="flex items-center gap-2">
                           <span className="text-xs text-slate-500 group-open:rotate-90 transition-transform">▸</span>
                           {summaryLabel}
-                          {/* Phase 16 plan 16-11 (D-19): back-ref link to originating Quote, if any */}
+                          {/* D-30: informational subtext (NOT clickable). Replaces the prior SaleBackRefLink button. */}
                           {sale.convertedFromQuoteId && (
-                            <SaleBackRefLink convertedFromQuoteId={sale.convertedFromQuoteId} jobId={job.id} />
+                            <SaleFromQuoteSubtext convertedFromQuoteId={sale.convertedFromQuoteId} jobId={job.id} />
                           )}
                         </span>
                         <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
@@ -459,8 +586,8 @@ const JobCard = memo(function JobCard({
                   );
                 })}
               </div>
-            </div>
-          )}
+            )}
+          </OrdersSection>
         </div>
       )}
     </div>
@@ -487,6 +614,8 @@ type JobRowProps = {
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
   onStartConversion?: (quote: Quote) => void;
+  onEditQuote?: (quote: Quote) => void;
+  onDeclineQuote?: (quote: Quote) => void;
 };
 
 const JobRow = ({
@@ -506,6 +635,8 @@ const JobRow = ({
   onEditSale,
   onDeleteSale,
   onStartConversion,
+  onEditQuote,
+  onDeclineQuote,
 }: RowComponentProps<JobRowProps>) => {
   const job = jobs[index];
   const isSelected = selectedJobId === job.id;
@@ -525,6 +656,8 @@ const JobRow = ({
       onEditSale={onEditSale}
       onDeleteSale={onDeleteSale}
       onStartConversion={onStartConversion}
+      onEditQuote={onEditQuote}
+      onDeclineQuote={onDeclineQuote}
       style={style}
     />
   );
@@ -562,12 +695,23 @@ const PICKER_VISIBLE_LIMIT = 8;
 
 export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  // Print Quote modal state (plan 16-10). Holds the PrintJob whose modal is open, or null.
-  const [printQuoteModalJob, setPrintQuoteModalJob] = useState<PrintJob | null>(null);
+  // Print Quote modal state (plan 16-10 + D-27). Either:
+  //   - { job, mode: 'create' }  → PrintQuoteModal renders in create mode
+  //   - { job, mode: 'edit', editingQuote } → renders in edit mode (D-27)
+  // null = closed. The combined shape avoids a separate state slot for editing.
+  const [printQuoteModalState, setPrintQuoteModalState] = useState<
+    | { job: PrintJob; mode: 'create' }
+    | { job: PrintJob; mode: 'edit'; editingQuote: Quote }
+    | null
+  >(null);
+  // Decline modal state (D-28). The Quote being declined, or null when closed.
+  const [decliningQuote, setDecliningQuote] = useState<Quote | null>(null);
   // Convert to Sale state (plan 16-12, D-20). When non-null, the Record Sale modal
   // opens in "conversion" mode pre-populated from this Quote's snapshot; on save
   // the Sale write + Quote 'converted' patch run in one Dexie transaction.
   const [convertingFromQuote, setConvertingFromQuote] = useState<Quote | null>(null);
+  // useQuotes is also consumed by the Decline modal's onConfirm handler — see below.
+  const { updateQuote: updateQuoteFromHook } = useQuotes();
   // Per-job generating set kept as a stable empty Set so the JobCard prop chain
   // (`isGeneratingPdf={generatingJobIds.has(job.id)}`) keeps compiling without
   // touching every row component. The modal owns its own Generate button state.
@@ -1004,8 +1148,31 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // owns the multi-store Dexie transaction (quotes + customers + settings) so
   // this component never touches db directly.
   const handleGeneratePdf = useCallback((job: PrintJob) => {
-    setPrintQuoteModalJob(job);
+    setPrintQuoteModalState({ job, mode: 'create' });
   }, []);
+
+  // D-27: Edit Quote — opens PrintQuoteModal in edit mode for the given Pending Quote.
+  const handleStartEditQuote = useCallback((quote: Quote) => {
+    const job = jobs.find(j => j.id === quote.printJobId);
+    if (!job) return;  // data anomaly: quote points to a deleted job — silent no-op
+    setPrintQuoteModalState({ job, mode: 'edit', editingQuote: quote });
+  }, [jobs]);
+
+  // D-28: Mark Declined click → open DeclineQuoteModal to capture optional reason.
+  const handleStartDecline = useCallback((quote: Quote) => {
+    setDecliningQuote(quote);
+  }, []);
+
+  // D-28: DeclineQuoteModal onConfirm — writes status='declined' + decisionAt + declineReason atomically.
+  const handleConfirmDecline = useCallback(async ({ reason }: { reason: string }) => {
+    if (!decliningQuote) return;
+    await updateQuoteFromHook({
+      ...decliningQuote,
+      status: 'declined',
+      decisionAt: new Date(),
+      declineReason: reason || undefined,  // empty string → leave undefined for cleanliness
+    });
+  }, [decliningQuote, updateQuoteFromHook]);
 
   // Stable callbacks so React.memo on JobCard can skip rows whose data
   // didn't change. State setters are already stable; only derived handlers
@@ -1071,7 +1238,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onEditSale: handleEditSaleStable,
     onDeleteSale: handleDeleteSaleStable,
     onStartConversion: handleStartConversion,
-  }), [jobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion]);
+    onEditQuote: handleStartEditQuote,
+    onDeclineQuote: handleStartDecline,
+  }), [jobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline]);
 
   return (
     <div className="space-y-6">
@@ -1118,6 +1287,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   onEditSale={handleEditSaleStable}
                   onDeleteSale={handleDeleteSaleStable}
                   onStartConversion={handleStartConversion}
+                  onEditQuote={handleStartEditQuote}
+                  onDeclineQuote={handleStartDecline}
                 />
               );
             })}
@@ -1427,16 +1598,24 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         </div>
       )}
 
-      {/* Phase 16 gap closure plan 16-10: PrintQuoteModal — D-18 sole entry point for Quote creation */}
-      {printQuoteModalJob && (
+      {/* PrintQuoteModal — handles both create (D-18) and edit (D-27) modes via the shared state slot */}
+      {printQuoteModalState && (
         <PrintQuoteModal
-          job={printQuoteModalJob}
+          job={printQuoteModalState.job}
           userProfile={userProfile}
           isOpen={true}
-          onClose={() => setPrintQuoteModalJob(null)}
-          onQuoteCreated={() => { /* plan 16-11 may add scroll-to / focus-row here */ }}
+          onClose={() => setPrintQuoteModalState(null)}
+          onQuoteCreated={() => { /* no-op for now; could trigger a toast in a future plan */ }}
+          editingQuote={printQuoteModalState.mode === 'edit' ? printQuoteModalState.editingQuote : undefined}
         />
       )}
+
+      {/* D-28: DeclineQuoteModal — captures optional decline reason via free-form Textarea */}
+      <DeclineQuoteModal
+        quote={decliningQuote}
+        onConfirm={handleConfirmDecline}
+        onClose={() => setDecliningQuote(null)}
+      />
 
     </div>
   );
