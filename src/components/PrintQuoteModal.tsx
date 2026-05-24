@@ -33,11 +33,25 @@ export interface PrintQuoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onQuoteCreated: (quote: Quote) => void;
+  /**
+   * Second extension D-27: when set, the modal opens in EDIT mode for this
+   * Quote. Pre-fills customer + shipping from the Quote snapshot. On Save:
+   * updates the Quote via updateQuote (does NOT bump nextQuoteNumber) and
+   * re-downloads the PDF. The modal title flips to "Edit Quote".
+   *
+   * Only Pending quotes (status='sent') should be passed here — editing a
+   * converted Sale's quote doesn't make sense (the Sale was already created
+   * from that snapshot). The JobsManager overflow menu only exposes Edit
+   * Quote on Pending rows.
+   */
+  editingQuote?: Quote;
 }
 
-export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCreated }: PrintQuoteModalProps) {
+export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCreated, editingQuote }: PrintQuoteModalProps) {
   const { customers, customersByEmail } = useCustomers();
-  const { createQuote } = useQuotes();
+  const { createQuote, updateQuote } = useQuotes();
+
+  const isEdit = editingQuote !== undefined;
 
   // ─── State ────────────────────────────────────────────────────────────────
   const [quoteCustomerName, setQuoteCustomerName] = useState('');
@@ -62,22 +76,35 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
   const [error, setError] = useState<string | null>(null);
 
   // ─── Effects ──────────────────────────────────────────────────────────────
-  // Reset state on open (fresh-form every time).
+  // Reset state on open. In CREATE mode, fields are blank; in EDIT mode (D-27),
+  // they hydrate from editingQuote's snapshot so the user can adjust + re-send.
   useEffect(() => {
     if (isOpen) {
-      setQuoteCustomerName('');
-      setQuoteCustomerEmail('');
-      setQuoteCustomerCompany('');
-      setQuoteCustomerAddress('');
-      setQuoteShippingCost(0);
+      if (editingQuote) {
+        setQuoteCustomerName(editingQuote.customerSnapshot.name ?? '');
+        setQuoteCustomerEmail(editingQuote.customerSnapshot.email ?? '');
+        setQuoteCustomerCompany(editingQuote.customerSnapshot.company ?? '');
+        setQuoteCustomerAddress(editingQuote.customerSnapshot.address ?? '');
+        setQuoteShippingCost(editingQuote.lineItemsSnapshot.shippingCost);
+        // If the Quote already has a customerId, treat it as a stale picked link
+        // so the next Save re-bumps lastUsedAt on that record (and email-typed-over
+        // re-runs through dedup).
+        setPickedExistingCustomerId(editingQuote.customerId ?? null);
+      } else {
+        setQuoteCustomerName('');
+        setQuoteCustomerEmail('');
+        setQuoteCustomerCompany('');
+        setQuoteCustomerAddress('');
+        setQuoteShippingCost(0);
+        setPickedExistingCustomerId(null);
+      }
       setCustomerPickerQuery('');
       setCustomerPickerOpen(false);
       setCustomerPickerActiveIndex(0);
-      setPickedExistingCustomerId(null);
       setIsGenerating(false);
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, editingQuote]);
 
   // Close on Escape (mirrors CustomerEditModal).
   useEffect(() => {
@@ -206,19 +233,47 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
       const existingByEmail = trimmedEmail ? customersByEmail.get(trimmedEmail) : undefined;
       const existingCustomerId = pickedExistingCustomerId ?? existingByEmail?.id;
 
-      // Single await wraps the entire Dexie multi-store transaction inside the hook.
-      const quote = await createQuote({
-        job,
-        userProfile,
-        customerSnapshot,
-        existingCustomerId,
-        shippingCost: quoteShippingCost,
-        resolvedTaxRate: resolvedTax.rate,
-        taxAmount,
-      });
+      let quote: Quote;
+      if (editingQuote) {
+        // EDIT mode (D-27): mutate the existing Quote in place. NO counter
+        // bump — the Quote keeps its quoteNumber. Customer auto-create/
+        // bump is intentionally skipped here too; library hygiene happens
+        // at create time. updateQuote is bound to db.quotes.put.
+        quote = {
+          ...editingQuote,
+          customerId: existingCustomerId,
+          customerSnapshot,
+          lineItemsSnapshot: {
+            ...editingQuote.lineItemsSnapshot,
+            jobTitle: job.name,
+            sellingPrice: job.sellingPrice,
+            shippingCost: quoteShippingCost,
+            resolvedTaxRate: resolvedTax.rate,
+            taxAmount,
+            currency: userProfile.currency,
+            notes: job.notes ?? '',
+            terms: userProfile.defaultTerms ?? '',
+            countryAtSendTime: userProfile.address?.country,
+          },
+        };
+        await updateQuote(quote);
+      } else {
+        // CREATE mode: single await wraps the entire Dexie multi-store
+        // transaction inside the createQuote hook action.
+        quote = await createQuote({
+          job,
+          userProfile,
+          customerSnapshot,
+          existingCustomerId,
+          shippingCost: quoteShippingCost,
+          resolvedTaxRate: resolvedTax.rate,
+          taxAmount,
+        });
+      }
 
-      // Generate the PDF AFTER the Quote is persisted so the download is keyed off
-      // the freshly-written record (Quote.quoteNumber is now guaranteed present).
+      // Re-download the PDF in both modes (D-27 explicit for edit; existing
+      // for create). Tauri shows the native save dialog; web triggers
+      // the browser download.
       const { generateQuotePdf } = await import('../pdf/generateQuotePdf');
       await generateQuotePdf(quote);
 
@@ -246,7 +301,9 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
       <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">Print Quote — {job.name}</h3>
+          <h3 className="text-lg font-semibold text-white">
+            {isEdit ? `Edit Quote ${editingQuote ? `Q-${String(editingQuote.quoteNumber).padStart(4, '0')}` : ''} — ${job.name}` : `Print Quote — ${job.name}`}
+          </h3>
           <Button variant="ghost" btnSize="sm" onClick={onClose} aria-label="Close">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -438,7 +495,7 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
             onClick={() => { void handleGenerateQuote(); }}
             disabled={generateDisabled}
           >
-            {isGenerating ? 'Generating…' : 'Generate Quote'}
+            {isGenerating ? (isEdit ? 'Saving…' : 'Generating…') : (isEdit ? 'Save & Re-download' : 'Generate Quote')}
           </Button>
         </div>
       </div>

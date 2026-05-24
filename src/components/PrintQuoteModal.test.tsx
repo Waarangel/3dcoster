@@ -306,6 +306,89 @@ describe('PrintQuoteModal — happy path (Test 7)', () => {
   });
 });
 
+describe('PrintQuoteModal — edit mode (D-27)', () => {
+  it('Edit mode: pre-fills customer + shipping from editingQuote; Save calls updateQuote (NOT createQuote) and re-downloads PDF', async () => {
+    const updateQuoteSpy = vi.fn<(q: Quote) => Promise<void>>().mockResolvedValue();
+    // Surgical override: re-mock useQuotes for this test only to expose updateQuote spy.
+    const useDb = await import('../hooks/useDatabase');
+    const original = useDb.useQuotes;
+    (useDb as { useQuotes: typeof original }).useQuotes = () => ({
+      quotes: [],
+      quotesByJobId: new Map(),
+      isLoading: false,
+      addQuote: vi.fn(),
+      updateQuote: updateQuoteSpy,
+      deleteQuote: vi.fn(),
+      createQuote: createQuoteSpy,
+    });
+
+    const onClose = vi.fn();
+    const onQuoteCreated = vi.fn();
+    const editingQuote: Quote = {
+      id: 'quote-existing',
+      quoteNumber: 7,
+      printJobId: 'job-test',
+      customerId: undefined,
+      customerSnapshot: { name: 'Pre-Filled', email: 'pre@filled.test', company: 'Pf Co' },
+      lineItemsSnapshot: {
+        jobTitle: 'Test Print',
+        sellingPrice: 100,
+        shippingCost: 5,
+        resolvedTaxRate: 13,
+        taxAmount: 13,
+        currency: 'USD',
+        notes: '',
+        terms: '',
+        countryAtSendTime: undefined,
+      },
+      status: 'sent',
+      createdAt: new Date('2026-04-01'),
+      sentAt: new Date('2026-04-01'),
+    };
+
+    await act(async () => {
+      root!.render(<PrintQuoteModal
+        job={makeJob()}
+        userProfile={makeUserProfile()}
+        isOpen={true}
+        onClose={onClose}
+        onQuoteCreated={onQuoteCreated}
+        editingQuote={editingQuote}
+      />);
+    });
+
+    // Title flips to Edit Quote
+    expect(container!.textContent ?? '').toContain('Edit Quote Q-0007');
+
+    // Name field pre-filled
+    const nameInput = container!.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    expect(nameInput.value).toBe('Pre-Filled');
+
+    // Click Save & Re-download
+    const saveBtn = Array.from(container!.querySelectorAll('button')).find(
+      (b) => (b.textContent ?? '').trim().startsWith('Save & Re-download'),
+    ) as HTMLButtonElement;
+    expect(saveBtn).toBeDefined();
+    await act(async () => { saveBtn.click(); });
+
+    // EDIT path → updateQuote called; createQuote NOT called
+    expect(updateQuoteSpy).toHaveBeenCalledTimes(1);
+    expect(createQuoteSpy).not.toHaveBeenCalled();
+    expect(updateQuoteSpy.mock.calls[0][0].id).toBe('quote-existing');
+    expect(updateQuoteSpy.mock.calls[0][0].quoteNumber).toBe(7);  // unchanged
+    expect(updateQuoteSpy.mock.calls[0][0].customerSnapshot.name).toBe('Pre-Filled');
+
+    // PDF re-downloaded
+    expect(generateQuotePdfSpy).toHaveBeenCalledTimes(1);
+    // Lifecycle callbacks fired
+    expect(onQuoteCreated).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    // Restore original mock for sibling tests
+    (useDb as { useQuotes: typeof original }).useQuotes = original;
+  });
+});
+
 describe('PrintQuoteModal — cancel path safety (Test 8)', () => {
   it('Cancel does NOT invoke createQuote or generateQuotePdf', async () => {
     const onClose = vi.fn();
