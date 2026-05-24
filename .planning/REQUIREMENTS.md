@@ -42,7 +42,7 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 
 ### Quick duplicate
 
-- [ ] **DUP-01**: User can quick-duplicate a saved job from JobsManager with a single row action; the duplicate appears in the list immediately
+- [x] **DUP-01**: User can quick-duplicate a saved job from JobsManager with a single row action; the duplicate appears in the list immediately
 - [ ] **DUP-02**: An explicit-allowlist `duplicateJob()` function inherits cost inputs / tags / notes but RESETS `id` (new `crypto.randomUUID()`), `createdAt` (now), `customer` (undefined — PII reset), `taxRate` (undefined — falls back to current region/Settings default), `copiesSold` (0), and sale records. Unit test asserts `duplicateJob(job).customer === undefined`
 
 ### Printable PDF quote
@@ -146,7 +146,7 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | TAGS-02 | Phase 15 | Complete |
 | TAGS-03 | Phase 15 | Complete |
 | TAGS-04 | Phase 15 | Complete |
-| DUP-01 | Phase 15 | Pending |
+| DUP-01 | Phase 15 | Complete |
 | DUP-02 | Phase 15 | Pending |
 | CL-01 | Phase 15.1 | Complete |
 | CL-02 | Phase 15.1 | Complete |

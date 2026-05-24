@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
-last_updated: "2026-05-24T16:10:30.998Z"
+last_updated: "2026-05-24T16:23:30.415Z"
 last_activity: 2026-05-24
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 38
-  completed_plans: 35
+  completed_plans: 36
   percent: 67
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 ## Current Position
 
 Phase: 15 (tags-search-quick-duplicate) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-05-24
 
@@ -70,6 +70,7 @@ Last activity: 2026-05-24
 | Phase 13 P06 | 3min | 2 tasks | 3 files |
 | Phase 15 P15-03 | 4min | 2 tasks | 3 files |
 | Phase 15 P04 | 5 | 1 tasks | 1 files |
+| Phase 15 P05 | 7 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,10 @@ Recent decisions affecting current work:
 - [Phase ?]: [v1.2 Phase 15-04]: D-05 cache-key tri-key shipped — useDynamicRowHeight invalidates on selectedJobId|chip-filter|debounced-search; react-window resets row heights and scrolls to top on any filter change (TAGS-04 contract)
 - [Phase ?]: [v1.2 Phase 15-04]: searchedJobs reuses existing salesByJob Map (all sales) instead of building a parallel index from per-selected-job sales — caught a latent D-06 bug where the plan's literal pattern would have missed customer matches on non-selected jobs
 - [Phase ?]: [v1.2 Phase 15-04]: Filter sub-header sits OUTSIDE react-window List (page-level sticky), per PATTERNS.md No-Analog rule — react-window v2 List has no native header slot above virtualized rows
+- [Phase ?]: [v1.2 Phase 15-05]: JobCard tag chips D-11 shipped — byte-identical to AssetLibrary chip styling; non-interactive <span> in mt-1 flex-wrap wrapper between filament/print-time meta and price block
+- [Phase ?]: [v1.2 Phase 15-05]: [⋯] Quick Duplicate (D-07 + DUP-01) shipped — overflowOpenJobId parent state enforces one-menu-open-at-a-time; click-outside on window closes; handleDuplicate composes nextCopyName + duplicateJob + db.jobs.add; 2s ring-2 ring-blue-400 highlight on new row substitutes for toast (No-Analog rule)
+- [Phase ?]: [v1.2 Phase 15-05]: D-12 tag normalize reconcile wired into useJobs init via tagsNormalizeRan module flag — mirrors copiesSoldReconcileRan exactly; shallow-copy jobs + tags array before mutation so liveQuery cache is never touched; error path swallows + resets flag for retry
+- [Phase ?]: [v1.2 Phase 15-05]: D-13 NewBadge wiring complete — 3 features.ts entries (tags/search-jobs/quick-duplicate, all 2026-05-24); 3 JSX consumers in JobsManager (tags label-inline, search-jobs + quick-duplicate absolute-overlay); plus tags label-inline already in CostCalculator from Plan 15-03; absolute-overlay count in JobsManager is exactly 3 (pdf-quote + 2 new), NOT 4
 
 ### Pending Todos
 
@@ -130,6 +135,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-24T16:10:30.992Z
+Last session: 2026-05-24T16:22:58.753Z
 Stopped at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
 Resume file: None
