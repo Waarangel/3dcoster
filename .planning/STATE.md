@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
-last_updated: "2026-05-24T15:36:46.125Z"
-last_activity: 2026-05-24 -- Phase 15 execution started
+last_updated: "2026-05-24T16:00:50.584Z"
+last_activity: 2026-05-24
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 38
-  completed_plans: 31
+  completed_plans: 34
   percent: 67
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 ## Current Position
 
 Phase: 15 (tags-search-quick-duplicate) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 15
-Last activity: 2026-05-24 -- Phase 15 execution started
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-05-24
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Last activity: 2026-05-24 -- Phase 15 execution started
 | Phase 06-3mf-multi-plate-project-import P01 | 10min | 2 tasks | 4 files |
 | Phase 06-3mf-multi-plate-project-import P02 | 8min | 2 tasks | 2 files |
 | Phase 13 P06 | 3min | 2 tasks | 3 files |
+| Phase 15 P15-03 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [v1.2 Phase 13-06]: UI-10 audit complete — featureReleases registry pruned from 12 to 4 entries; default-tax-rate (2026-05-21) added to resolve Plan 03's orphan JSX; Pitfall 6 sequencing (JSX-first, cross-repo gate, then registry) successfully enforced
 - [v1.2 Phase 14 closure 2026-05-22]: All 4 requirements (CUST-01, CUST-02, ETSY-01, ETSY-02) verified PASS against the LOCKED revised contract D-21..D-24 (14-CONTEXT.md). Mid-UAT scope reversal: customer details moved from PrintJob to Sale (D-21); Etsy section now conditional on `marketplace === 'etsy'` (D-22); Recent Sales list became a `<details>`-based accordion with per-sale customer block (D-23); features.ts entries kept their original 2026-05-21 ship dates but JSX consumers moved (D-24 — customer-details now in JobsManager Record Sale modal, etsy-helper still in CostCalculator but conditionally rendered). Pre-existing bug fix-up: shipping/packaging/marketplace now persist on PrintJob so Edit re-hydrates true cost (commit `7b14260`). New affordances: Edit + Delete buttons on sale rows (commits `c56870f`, `5ec4aa7`). Dexie schema unchanged (v6); main bundle 49.8 KB gzipped; 110/110 tests passing.
 - [v1.2 Phase 16 dependency update — 2026-05-22]: Phase 16 PDF customer block MUST now pull from `Sale.customer` (with `sale.customerName` legacy-read fallback), NOT from `PrintJob.customer`. Phase 16 plan-phase MUST read 14-VERIFICATION.md as part of its `<read_first>` to pick up this revised contract. ETSY-02 PDF-exclusion contract is unchanged (Phase 16 must still exclude `PrintJob.etsyChecks`).
+- [Phase 15]: [v1.2 Phase 15-03]: parseTagsInput shares the D-02 transform with normalizeTagsOnJob via _normalizeTagToken private helper — whitelist regex appears in executable code exactly once (backfill.ts:55); TAGS_MAX=10 constant centralizes the D-02 cap. Empty input returns undefined NOT [] per D-02 line 43 lock.
+- [Phase 15]: [v1.2 Phase 15-03]: Tags NewBadge uses label-inline (NOT absolute-overlay) per D-13 + project memory rule — mirrors Model URL pattern exactly; absolute-overlay reserved for square icon buttons in Plans 15-04 and 15-05.
 
 ### Pending Todos
 
@@ -123,6 +126,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-23T16:30:17.756Z
+Last session: 2026-05-24T15:57:24.493Z
 Stopped at: Phase 16 extension context captured (D-13..D-22 for gaps A-H)
-Resume file: .planning/phases/16-printable-pdf-quote/16-CONTEXT.md
+Resume file: None
