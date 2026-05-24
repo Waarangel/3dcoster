@@ -356,10 +356,27 @@ Zero new commits past the Plan 15-02 baseline. Both files byte-identical to pre-
 **Required behavior for Round 2:**
 
 1. **Title click → edit in place.** The title text itself (the `<button>` that currently shows the job name) should become an `<input>` in the same location, replacing the text node. No new row appears. Pressing Enter saves; Escape cancels.
-2. **Tag chips → editable chip row in place.** The existing tag chip strip (rendered below the filament meta line) should become editable in place — each chip gains a small ✕ to remove it, and an "add tag" affordance (a small `+` chip or a tiny inline input) appears at the end of the strip. No separate panel ever drops down.
-3. **Tag icon hover affordance — keep.** The small Tag icon next to the title on hover stays as the shortcut into tag edit. Clicking it focuses the tag-edit affordance (the "add tag" input or the chip strip) directly. NewBadge `tags` continues to overlay the Tag icon.
-4. **Chevron, action row, accordion behavior — keep.** Chevron toggles expansion. Card-body clicks do not toggle. Action row stays Record Sale / Create Quote / Edit / Delete.
-5. **No dropped-down panel anywhere.** Remove `editPanelOpenJobId`, `editPanelDraftName`, `editPanelDraftTags`, the panel JSX, the handlers (`handleOpenPanel`, `handleSavePanel`, `handleCancelPanel`) — replace with inline-edit state scoped to each editable surface.
+
+2. **Tag chips render INLINE BESIDE the title, not below it.** (Refined 2026-05-24 post-Round-1.) The current JobCard layout renders tag chips in their own strip below the filament meta line — that placement is rejected. Tag chips must instead render inline in the title row, in this order: `[chevron] [title] [tag chip] [tag chip] [tag chip] [add-tag +] [Tag icon on hover] [break-even pill]`. The existing standalone chip strip below filament meta is REMOVED.
+
+3. **Tag chip hover interactions — ✕ to remove, `+` to add.**
+   - Each tag chip shows a small **✕** on hover (single click removes that tag from the job; persists atomically via `db.jobs.put({...job, tags: newTags})`).
+   - At the **end of the chip strip**, a small **`+` affordance** is always visible (or fades in on title-row hover — pick one, document it). Clicking the `+` produces a small inline `<input>` where the user types a new tag name and commits with Enter (or blur). Escape cancels.
+   - With tag cap at 10 (D-02), the `+` hides when `job.tags.length === 10` and reappears when a tag is removed.
+
+4. **Placeholder text for the add-tag input must suggest domain-relevant tag use-cases.** (Refined 2026-05-24 post-Round-1.) When the `+` opens its inline input, the `placeholder` attribute should suggest the KIND of tags users might apply — status / popularity / lifecycle indicators. Example value: `"trending, popular, out of date"`. The placeholder is suggestive, not prescriptive — it tells the user what tags are FOR. Do not hard-code "phone-stand, pla, gloss"-style content-specific examples; those vary per job. The placeholder string is a constant in JobsManager.tsx; if the Round 2 planner wants it externalized to a constants file, that is acceptable.
+
+5. **Tag icon hover affordance — keep, but its role narrows.** The small Tag icon next to the title on hover stays as a discoverability shortcut, but with the inline-chip pattern it now scrolls the title-row affordances into focus (or focuses the `+` directly). NewBadge `tags` continues to overlay the Tag icon. If the planner determines the icon is redundant once chips render inline (chips themselves are the affordance), the icon MAY be removed in Round 2 — but the NewBadge then needs a new host (re-target to the chip strip or to the `+`). Decide and document.
+
+6. **Chevron, action row, accordion behavior — keep.** Chevron toggles expansion. Card-body clicks do not toggle. Action row stays Record Sale / Create Quote / Edit / Delete.
+
+7. **No dropped-down panel anywhere.** Remove `editPanelOpenJobId`, `editPanelDraftName`, `editPanelDraftTags`, the panel JSX, the handlers (`handleOpenPanel`, `handleSavePanel`, `handleCancelPanel`) — replace with inline-edit state scoped to each editable surface (title input scoped to one `editingTitleJobId`; add-tag input scoped to one `addingTagJobId`).
+
+### Open questions for the Round 2 planner
+
+- **Title-row overflow with many tags:** with up to 10 chips inline plus the title, the chip strip can push the break-even pill off the row on narrow screens. Decide: wrap chips below the title (acceptable — still "inline with title row" semantically), truncate chips with `…` overflow indicator, or scroll horizontally. The planner picks one and documents it as a D-XX decision before Round 2 plans are authored.
+- **Add-tag input width / position:** the `+` opens an inline `<input>` — does it grow to fill remaining row width, or stay narrow (e.g., 8ch)? Planner picks.
+- **Mobile / narrow-screen behavior:** with title + chips + Tag icon + break-even pill, narrow viewports get crowded. Planner picks the wrap/truncate strategy from the previous bullet and confirms it works at 320px+ viewport widths (existing breakpoint per Phase 13 UI sweep).
 
 **Recommended fix surface:**
 - `src/components/JobsManager.tsx` — replace the title `<button>` with conditional title-input rendering; replace the read-only tag chip strip with an editable chip row.
@@ -368,12 +385,17 @@ Zero new commits past the Plan 15-02 baseline. Both files byte-identical to pre-
 - Preserve all locked files: `src/utils/duplicateJob.ts`, `src/utils/duplicateJob.test.ts`, `src/db/backfill.ts`, `src/features.ts` (the `tags` feature key stays as-is).
 
 **Acceptance contract for Round 2:**
-- `grep -cE 'editPanelOpenJobId\|editPanelDraftName\|editPanelDraftTags\|handleSavePanel\|handleCancelPanel' src/components/JobsManager.tsx` → 0
-- A test (manual or component-test) that the title-input replaces the title text in place when clicked (no new row appears, layout above/below is unchanged)
-- A test that tag chips become editable in place (each chip has a ✕; an "add tag" affordance appears at the end of the strip)
-- Tag icon hover affordance + NewBadge overlay both preserved
+- `grep -cE 'editPanelOpenJobId\|editPanelDraftName\|editPanelDraftTags\|handleSavePanel\|handleCancelPanel' src/components/JobsManager.tsx` → 0 (panel-based edit fully removed)
+- The standalone tag chip strip rendered today below the filament meta line is REMOVED — tag chips render inline in the title row instead
+- The title row contains, in DOM order: chevron → title (or title-input when editing) → tag chip(s) → `+` add-tag affordance → Tag icon (on hover, if retained) → break-even pill
+- Each tag chip has a hover `<button aria-label="Remove tag X">✕</button>` that calls `db.jobs.put({...job, tags: tags.filter(t => t !== X)})` on click
+- The `+` add-tag affordance opens an inline `<input>` whose `placeholder` attribute is a domain-relevant suggestion such as `"trending, popular, out of date"`. The exact string is decided by the Round 2 planner but MUST be a usage suggestion, not a content example
+- The title-input replaces the title text in place when clicked — no new row appears, layout above/below the title row is unchanged
+- A new UI test or component test asserts: (a) title-input renders in the title row when title is clicked, (b) chip ✕ removes a tag, (c) `+` opens an input with the suggested-usage placeholder, (d) tag cap of 10 is enforced (the `+` hides at 10 tags)
+- Tag icon hover affordance + NewBadge overlay both preserved OR explicitly re-targeted (Round 2 planner decides; if removed, NewBadge moves to a new host)
 - Vitest still passes ≥ 263 / 1 / 0; bundle gate still ≤ 300 KB gz
 - LOCKED files still byte-identical (no new commits on `duplicateJob.ts`, `duplicateJob.test.ts`)
+- Round 2 includes a D-XX decision documenting the title-row overflow strategy (wrap / truncate / scroll) for >5 chips on narrow viewports
 
 ---
 

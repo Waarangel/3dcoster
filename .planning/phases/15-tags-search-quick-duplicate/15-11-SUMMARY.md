@@ -73,14 +73,17 @@ User UAT verdict per gap:
 | **C** — Chip-filter row gone, "Clear search" CTA | **PASS** (implied by overall verdict and Gap B being the only blocker) |
 | **D** — `[⋯]` overflow trigger gone, no post-duplicate ring | **PASS** (implied) |
 
-### Gap E contract (from clarifying questions)
+### Gap E contract (from clarifying questions + refinement)
 
-The user clarified the required shape via two follow-up choices:
+The user clarified the required shape via two follow-up choices, then refined three details after seeing the proposed contract:
 
-1. **Edit-in-place for both title and tags.** Title click → title text becomes an `<input>` in the same location (no new row drops down). Tag chips → each chip gains a ✕ to remove it; an "add tag" affordance (small `+` chip or inline input) appears at the end of the strip. **No separate panel ever drops down.**
-2. **Tag icon hover affordance stays.** The small Tag icon next to the title on hover remains as a shortcut into tag edit; clicking it focuses the tag-edit affordance directly. NewBadge `tags` continues to overlay the Tag icon.
+1. **Edit-in-place for both title and tags.** Title click → title text becomes an `<input>` in the same location (no new row drops down). Tag chips become editable in place. **No separate panel ever drops down.**
+2. **Tag icon hover affordance stays** (with the caveat that Round 2 may re-evaluate once chips render inline).
+3. **REFINED — Tag chips render INLINE BESIDE the title, not below it.** The current standalone chip strip below filament meta is removed; chips render in the title row in DOM order: chevron → title → tag chips → `+` → Tag icon → break-even pill.
+4. **REFINED — Hover ✕ on chip removes it; `+` at end of strip opens an inline input to add.** No labelled form field; the `+` itself is the affordance.
+5. **REFINED — Add-tag input placeholder must be a domain-relevant usage suggestion**, e.g. `"trending, popular, out of date"`. Not a content example.
 
-See VERIFICATION.md `## Gap-Closure Round 1 (2026-05-24 amendment)` → "Gap E" section for the full Round 2 acceptance contract.
+See VERIFICATION.md `## Gap-Closure Round 1 (2026-05-24 amendment)` → "Gap E" section for the full Round 2 acceptance contract, including the three open questions the Round 2 planner must resolve (title-row overflow strategy for >5 chips, add-tag input width, narrow-viewport behavior at 320px).
 
 ---
 
