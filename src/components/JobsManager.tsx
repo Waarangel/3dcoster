@@ -13,7 +13,6 @@ import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
 import { parseTagsInput } from '../db/backfill';
-import { duplicateJob, nextCopyName } from '../utils/duplicateJob';
 
 interface JobsManagerProps {
   jobs: PrintJob[];
@@ -58,14 +57,6 @@ type JobCardProps = {
   onEditQuote?: (quote: Quote) => void;
   /** Phase 16 ext2 D-28: opens DeclineQuoteModal for the given Pending Quote. */
   onDeclineQuote?: (quote: Quote) => void;
-  /** Phase 15 plan 05 D-07: triggers the Quick Duplicate flow for this job. */
-  onDuplicate: (job: PrintJob) => Promise<void>;
-  /** Phase 15 plan 05 D-07: scroll+highlight ring after a duplicate writes. */
-  isHighlighted: boolean;
-  /** Phase 15 plan 05 D-07: whether the [⋯] overflow menu is open for this row. */
-  overflowOpen: boolean;
-  /** Phase 15 plan 05 D-07: toggle the [⋯] overflow menu for this row. */
-  onToggleOverflow: (jobId: string) => void;
   /** Phase 15 plan 05 D-01 surface b: whether the inline tag editor is open for this row. */
   isEditingTags: boolean;
   /** Phase 15 plan 05 D-01 surface b: open the inline tag editor for this row. */
@@ -363,10 +354,6 @@ const JobCard = memo(function JobCard({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
-  onDuplicate,
-  isHighlighted,
-  overflowOpen,
-  onToggleOverflow,
   isEditingTags,
   onStartEditTags,
   onCancelEditTags,
@@ -398,7 +385,7 @@ const JobCard = memo(function JobCard({
         isSelected
           ? 'bg-slate-700 border-blue-500'
           : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-      } ${isHighlighted ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-900' : ''}`}
+      }`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -562,40 +549,6 @@ const JobCard = memo(function JobCard({
             >
               Delete
             </Button>
-            {/* Phase 15 plan 05 D-07 — [⋯] overflow trigger + Duplicate menu.
-                Mirrors the QuoteRow precedent at JobsManager.tsx:164-199.
-                Parent owns `overflowOpenJobId` so only one menu opens across
-                the whole list at any time. */}
-            <div className="relative">
-              {/* allow-raw-html: overflow toggle is a small icon button, not a CTA — Button primitive would dwarf the row; mirrors QuoteRow precedent */}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onToggleOverflow(job.id); }}
-                aria-label="More actions"
-                aria-haspopup="menu"
-                aria-expanded={overflowOpen}
-                className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-slate-700 text-slate-300"
-              >
-                ⋯
-              </button>
-              <NewBadge feature="quick-duplicate" className="absolute -top-1 -right-1" />
-              {overflowOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full mt-1 z-10 min-w-[160px] bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1"
-                >
-                  {/* allow-raw-html: native menuitem styling per WAI-ARIA menu pattern, mirrors QuoteRow */}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={(e) => { e.stopPropagation(); onToggleOverflow(job.id); void onDuplicate(job); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-slate-100"
-                  >
-                    Duplicate
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Phase 15 plan 05 D-01 surface b — inline tag editor row.
@@ -773,11 +726,7 @@ type JobRowProps = {
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
-  // Phase 15 plan 05 — parent-owned state for one-at-a-time overflow + tag edit + highlight
-  overflowOpenJobId: string | null;
-  onToggleOverflow: (jobId: string) => void;
-  onDuplicate: (job: PrintJob) => Promise<void>;
-  highlightedJobId: string | null;
+  // Phase 15 plan 05 — parent-owned state for one-at-a-time tag edit
   editingTagsJobId: string | null;
   onStartEditTags: (jobId: string) => void;
   onCancelEditTags: () => void;
@@ -803,10 +752,6 @@ const JobRow = ({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
-  overflowOpenJobId,
-  onToggleOverflow,
-  onDuplicate,
-  highlightedJobId,
   editingTagsJobId,
   onStartEditTags,
   onCancelEditTags,
@@ -832,10 +777,6 @@ const JobRow = ({
       onStartConversion={onStartConversion}
       onEditQuote={onEditQuote}
       onDeclineQuote={onDeclineQuote}
-      onDuplicate={onDuplicate}
-      isHighlighted={highlightedJobId === job.id}
-      overflowOpen={overflowOpenJobId === job.id}
-      onToggleOverflow={onToggleOverflow}
       isEditingTags={editingTagsJobId === job.id}
       onStartEditTags={onStartEditTags}
       onCancelEditTags={onCancelEditTags}
@@ -958,19 +899,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedChips, setSelectedChips] = useState<Set<string>>(() => new Set());
 
-  // Phase 15 plan 05 D-07 — one-at-a-time overflow menu across the entire list.
-  // Holds the job.id of the row whose [⋯] menu is open, or null when closed.
-  // Click-outside handler below resets to null so the menu closes when the user
-  // clicks anywhere else on the page (canonical click-outside pattern).
-  const [overflowOpenJobId, setOverflowOpenJobId] = useState<string | null>(null);
-
-  // Phase 15 plan 05 D-07 — post-duplicate highlight ring.
-  // Set to the new job's id after duplicateJob writes; cleared by a 2s timer.
-  // The JobCard root applies `ring-2 ring-blue-400` when its id matches —
-  // the lower-risk substitute for a toast per PATTERNS.md No-Analog note
-  // (no toast infrastructure exists in this project).
-  const [highlightedJobId, setHighlightedJobId] = useState<string | null>(null);
-
   // Phase 15 plan 05 D-01 surface b — one-at-a-time inline tag editor.
   // Holds the job.id of the row whose pencil affordance was clicked, or null
   // when no editor is open. Exclusive with all other rows.
@@ -982,18 +910,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     const t = setTimeout(() => setDebouncedSearchQuery(searchQuery), 250);
     return () => clearTimeout(t);
   }, [searchQuery]);
-
-  // Phase 15 plan 05 D-07 — click-outside closes the [⋯] overflow menu.
-  // The trigger's e.stopPropagation() keeps the toggle working; any other
-  // click on the page bubbles up to window and clears the open row.
-  // No-op when no menu is open (the guard avoids attaching a listener for
-  // every render).
-  useEffect(() => {
-    if (!overflowOpenJobId) return;
-    const handler = () => setOverflowOpenJobId(null);
-    window.addEventListener('click', handler);
-    return () => window.removeEventListener('click', handler);
-  }, [overflowOpenJobId]);
 
   const { sales, addSale, updateSale, deleteSale } = useSales(selectedJobId || undefined);
   const { sales: allSales } = useSales();
@@ -1527,39 +1443,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setDeleteConfirmJobId(id);
   }, []);
 
-  // Phase 15 plan 05 D-07 — Quick Duplicate handler.
-  // Composes nextCopyName + duplicateJob from src/utils/duplicateJob (Plan
-  // 15-02). nextCopyName collision-checks against the current job names so
-  // the duplicate gets a free " (copy N)" suffix; duplicateJob applies the
-  // D-09 explicit-allowlist construction (PII reset, copiesSold=0, fresh id +
-  // createdAt). Persists via db.jobs.add (the same primitive useJobs().addJob
-  // wraps; called directly here so we don't need to thread an addJob prop
-  // from App.tsx for this single use). The fresh createdAt floats the duplicate
-  // to the top of the descending-by-createdAt list on the next liveQuery emit;
-  // setHighlightedJobId + the 2s timer apply the visual confirmation per D-07
-  // ("scrolls to and highlights"). The list naturally re-renders with the new
-  // row at index 0 so no manual scrollTo is needed.
-  const handleDuplicate = useCallback(async (source: PrintJob) => {
-    const existingNames = new Set(jobs.map(j => j.name));
-    const newName = nextCopyName(source.name, existingNames);
-    const dup = duplicateJob(source, newName);
-    await db.jobs.add(dup);
-    setHighlightedJobId(dup.id);
-    setTimeout(() => setHighlightedJobId(null), 2000);
-  }, [jobs]);
-
-  // Phase 15 plan 05 D-07 — toggle the [⋯] menu open/closed for a given row.
-  // Idempotent: clicking the same row's trigger twice closes the menu (open
-  // → null), clicking a different row's trigger transfers the open state.
-  const handleToggleOverflow = useCallback((jobId: string) => {
-    setOverflowOpenJobId(prev => (prev === jobId ? null : jobId));
-  }, []);
-
   // Phase 15 plan 05 D-01 surface b — open the inline tag editor for a row.
-  // Closes the [⋯] menu if it's open on the same row (visual cleanliness).
   const handleStartEditTags = useCallback((jobId: string) => {
     setEditingTagsJobId(jobId);
-    setOverflowOpenJobId(null);
   }, []);
 
   // Phase 15 plan 05 D-01 surface b — close the inline editor without saving.
@@ -1618,9 +1504,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
 
   // Phase 15 plan 04 — feed `searchedJobs` (the chip+search filtered list) to the
   // virtualized rows so JobRow's `jobs[index]` resolves against the visible set.
-  // Phase 15 plan 05 — extend with one-at-a-time overflow / tag-edit / highlight
-  // state so JobCard renders the [⋯] menu, inline tag editor, and ring on the
-  // correct row without per-row local state for cross-card coordination.
+  // Phase 15 plan 05 — extend with one-at-a-time tag-edit state so JobCard renders
+  // the inline tag editor on the correct row without per-row local state.
   const rowProps = useMemo<JobRowProps>(() => ({
     jobs: searchedJobs,
     selectedJobId,
@@ -1638,15 +1523,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onStartConversion: handleStartConversion,
     onEditQuote: handleStartEditQuote,
     onDeclineQuote: handleStartDecline,
-    overflowOpenJobId,
-    onToggleOverflow: handleToggleOverflow,
-    onDuplicate: handleDuplicate,
-    highlightedJobId,
     editingTagsJobId,
     onStartEditTags: handleStartEditTags,
     onCancelEditTags: handleCancelEditTags,
     onSaveTags: handleSaveTags,
-  }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, overflowOpenJobId, handleToggleOverflow, handleDuplicate, highlightedJobId, editingTagsJobId, handleStartEditTags, handleCancelEditTags, handleSaveTags]);
+  }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTagsJobId, handleStartEditTags, handleCancelEditTags, handleSaveTags]);
 
   // Phase 15 plan 04 — handler that clears both filter dimensions in one click.
   const clearFilters = useCallback(() => {
@@ -1795,10 +1676,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       onStartConversion={handleStartConversion}
                       onEditQuote={handleStartEditQuote}
                       onDeclineQuote={handleStartDecline}
-                      onDuplicate={handleDuplicate}
-                      isHighlighted={highlightedJobId === job.id}
-                      overflowOpen={overflowOpenJobId === job.id}
-                      onToggleOverflow={handleToggleOverflow}
                       isEditingTags={editingTagsJobId === job.id}
                       onStartEditTags={handleStartEditTags}
                       onCancelEditTags={handleCancelEditTags}
