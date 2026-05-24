@@ -97,9 +97,9 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 **Requirements**: TAGS-01, TAGS-02, TAGS-03, TAGS-04, DUP-01, DUP-02
 **Success Criteria** (what must be TRUE):
   1. User can add comma-separated tags to a saved job; tags are lowercased, trimmed, deduplicated, and capped at a maximum count; they persist as `tags: string[]` on the job record
-  2. JobsManager shows a multi-select chip filter sourced from all tags in use across saved jobs; selecting one or more chips filters the list with AND logic
+  2. ~~JobsManager shows a multi-select chip filter sourced from all tags in use across saved jobs; selecting one or more chips filters the list with AND logic~~ — **WITHDRAWN 2026-05-24** per user product feedback (chip strip redundant with TAGS-03 search); see `.planning/phases/15-tags-search-quick-duplicate/15-VERIFICATION.md` Gap C
   3. A free-text search input in JobsManager filters by case-insensitive substring match across job title, customer name, and tags simultaneously
-  4. When the filter or search changes, the virtualized list scrolls to the top and the `useDynamicRowHeight` cache is invalidated — no stale row heights or collapsed/overlapping cards after filtering; the cache key encodes `selectedJobId + filterTagKey + searchQuery`
+  4. When the filter or search changes, the virtualized list scrolls to the top and the `useDynamicRowHeight` cache is invalidated — no stale row heights or collapsed/overlapping cards after filtering; the cache key encodes `selectedJobId + searchQuery` (narrowed from tri-key to bi-key after SC#2 withdrawal)
   5. User can quick-duplicate a saved job from a row action in JobsManager; the duplicate appears immediately in the list; a unit test asserts that `duplicateJob(job).customer === undefined` (PII reset), and that `id`, `createdAt`, and `copiesSold` are reset to new values
 **Plans**: 6 plans
 - [x] 15-01-PLAN.md — normalizeTagsOnJob pure helper in src/db/backfill.ts + 6 Vitest cases (D-02 + D-12) — TAGS-01 reconcile foundation (Wave 1, autonomous)
