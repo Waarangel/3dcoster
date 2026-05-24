@@ -108,8 +108,8 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 15-04-PLAN.md — JobsManager sticky sub-header (search bar + chip filter + AND logic + 250ms debounce + filter-empty-state) + extend useDynamicRowHeight cache key to pipe-delimited tri-key (D-03 + D-04 + D-05 + D-06 + D-10 + D-14) — TAGS-02 + TAGS-03 + TAGS-04 (Wave 2, autonomous; depends on 15-01)
 - [x] 15-05-PLAN.md — JobsManager JobCard tag chips + inline tag editor + [⋯] overflow menu with Duplicate + post-duplicate scroll/highlight + features.ts 3 entries + useJobs init wiring of normalizeTagsOnJob (D-07 + D-11 + D-12 + D-13) — TAGS-01 surface b + DUP-01 (Wave 3, autonomous; depends on 15-01, 15-02, 15-03, 15-04)
 - [x] 15-06-PLAN.md — Automated chain (tsc + vitest + build) + human UAT against all 5 ROADMAP Success Criteria + all 15 D-XX decisions + VERIFICATION.md (Wave 4, checkpoint:human-verify; depends on 15-01..15-05) — verdict `gaps-found` (4 gaps A/B/C/D)
-- [ ] 15-07-PLAN.md — **Gap A**: Remove CostCalculator tag input row (Wave 5 of gap closure, autonomous; gap_closure: true; files: src/components/CostCalculator.tsx)
-- [ ] 15-08-PLAN.md — **Gap D**: Remove `[⋯]` overflow menu + post-duplicate ring + features.ts `quick-duplicate` entry; DUP-02 helper + tests preserved byte-identically (Wave 5 of gap closure, autonomous, parallel-safe with 15-07; gap_closure: true; files: src/components/JobsManager.tsx, src/features.ts)
+- [x] 15-07-PLAN.md — **Gap A**: Remove CostCalculator tag input row (Wave 5 of gap closure, autonomous; gap_closure: true; files: src/components/CostCalculator.tsx)
+- [x] 15-08-PLAN.md — **Gap D**: Remove `[⋯]` overflow menu + post-duplicate ring + features.ts `quick-duplicate` entry; DUP-02 helper + tests preserved byte-identically (Wave 5 of gap closure, autonomous, parallel-safe with 15-07; gap_closure: true; files: src/components/JobsManager.tsx, src/features.ts)
 - [ ] 15-09-PLAN.md — **Gap C**: Remove chip-filter row + selectedChips/tagCounts/jobsAfterChipFilter memos; narrow useDynamicRowHeight cache key from tri-key to pipe-delimited bi-key; rename "Clear filters" → "Clear search" (Wave 6 of gap closure, autonomous; depends on 15-08; gap_closure: true; files: src/components/JobsManager.tsx)
 - [ ] 15-10-PLAN.md — **Gap B**: Replace pencil-button tag editor with title-click inline panel (title + tags in one panel) + hover Tag icon affordance; re-target `feature="tags"` NewBadge to overlay the hover Tag icon; add explicit chevron-button for accordion selection toggle (Wave 7 of gap closure, autonomous; depends on 15-08, 15-09; gap_closure: true; files: src/components/JobsManager.tsx)
 - [ ] 15-11-PLAN.md — Gap-closure verification: automated chain + human UAT against Gap A/B/C/D surfaces + amend VERIFICATION.md with gap-free verdict + advance STATE.md to completed_phases=5, percent=83 (Wave 8 of gap closure, checkpoint:human-verify; depends on 15-07..15-10; gap_closure: true; files: .planning/phases/15-tags-search-quick-duplicate/15-VERIFICATION.md, .planning/STATE.md)
@@ -168,7 +168,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
-| 15. Tags, Search + Quick Duplicate | 6/11 | In Progress — gap-closure round (15-07..15-11) in flight|  |
+| 15. Tags, Search + Quick Duplicate | 8/11 | In Progress|  |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
 | 16. Printable PDF Quote | 12/13 | In Progress|  |
 
