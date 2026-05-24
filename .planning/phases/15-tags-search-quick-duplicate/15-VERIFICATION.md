@@ -5,7 +5,9 @@ verified: 2026-05-24
 verdict: gaps-found
 requirements_evaluated: [TAGS-01, TAGS-02, TAGS-03, TAGS-04, DUP-01, DUP-02]
 withdrawn_requirements: [TAGS-02, DUP-01]
-gaps_open: 4
+gaps_open: 1
+gaps_closed: [A, C, D]
+gap_closure_round: 1
 amended: 2026-05-24
 ---
 
@@ -299,3 +301,93 @@ would not be. Gap-closure does **not** decide this; v1.3 planning will.
 *Verifier: Plan 15-06 Task 3 (executor agent)*
 *Automated chain: Task 1 (commit `c464538`)*
 *Human UAT: Task 2 — verdict `approved-with-gaps` (initially 3 gaps; amended same day to add Gap D after UI critique of the `[⋯]` Quick Duplicate button)*
+
+---
+
+## Gap-Closure Round 1 (2026-05-24 amendment)
+
+**Plans landed:** 15-07 (Gap A), 15-08 (Gap D), 15-09 (Gap C), 15-10 (Gap B attempt), 15-11 (this verification).
+
+**Outcome:** 3 of 4 gaps closed (A, C, D). **Gap B regresses into a new Gap E** — the shipped Gap B fix (title-click inline edit panel below the title row) was rejected at UAT as "a weird expand field". User wants edit-in-place: title becomes an `<input>` where the title sits, tag chips become an editable chip row in place, no separate panel ever appears. Tag icon hover affordance stays as a shortcut into tag edit.
+
+### Round 1 Automated Chain (Plan 15-11 Task 1)
+
+Captured to `/tmp/15-gap-closure-{tsc,vitest,build,bundle}.log`.
+
+| Step | Command | Result |
+|------|---------|--------|
+| TypeScript | `npx tsc -b` | exit 0, 0 errors |
+| Vitest | `npm test -- --run` | **263 passed / 1 todo / 0 failed** (18 test files) |
+| Build | `npm run build` | clean (`✓ built in 2.31s`); all 5 assertion scripts passed |
+| Bundle gate | main chunk gz | **60.8 KB** (`dist/assets/index-WZRhf7n2.js`, 257 KB raw) — Phase 11 gate is 300 KB → 239 KB headroom |
+
+### DUP-02 LOCKED File Integrity
+
+`git log --oneline -- src/utils/duplicateJob.ts src/utils/duplicateJob.test.ts`:
+```
+13c6e1a refactor(15-02): satisfy D-09 grep -c '...source' === 0 acceptance criterion
+6ae4a4d test(15-02): add D-15 locked contract + by-value isolation + nextCopyName tests
+940935b feat(15-02): add explicit-allowlist duplicateJob + nextCopyName pure helpers
+```
+
+Zero new commits past the Plan 15-02 baseline. Both files byte-identical to pre-gap-closure state. DUP-02 contract preserved.
+
+### Per-Gap Closure Status After Round 1
+
+| Gap | Status | Evidence |
+|-----|--------|----------|
+| **A** — CostCalculator tag input | **CLOSED** | `grep -cE 'tagsInput\|setTagsInput\|parseTagsInput\|feature="tags"' src/components/CostCalculator.tsx` → 0. Plan 15-07 commits `45d98c0` + `690e0be`. Form still saves jobs; Update branch passes through `editingJob.tags` unchanged. |
+| **B** — JobsManager tag editor reshape | **REOPENED AS GAP E** | Plan 15-10 shipped a title-click panel that opens BELOW the title row with two inputs + Save/Cancel. User UAT verdict: "It's close. The functionality is there, but it should be inline, not a weird expand field for title and tags." The dropped-down panel is the wrong shape. See Gap E below for the new contract. |
+| **C** — Chip-filter row removal | **CLOSED** | `grep -cE 'selectedChips\|tagCounts\|jobsAfterChipFilter\|clearFilters' src/components/JobsManager.tsx` → 0. Cache key narrowed to bi-key (`selectedJobId\|debouncedSearchQuery`). Filter-empty-state reads "No jobs match your search" with "Clear search" CTA. Plan 15-09 commit `c03fbb5`. |
+| **D** — `[⋯]` Quick Duplicate UI | **CLOSED** | `grep -cE 'overflowOpenJobId\|handleDuplicate\|handleToggleOverflow\|highlightedJobId\|feature="quick-duplicate"\|ring-2 ring-blue-400' src/components/JobsManager.tsx` → 0. `'quick-duplicate':` removed from features.ts. DUP-02 LOCKED files untouched. Plan 15-08 commits `0f4c8d3` + `14ec22d`. |
+
+### Gap E — Title + tag edit must be edit-in-place, not a dropped-down panel
+
+**Severity:** medium (UX shape).
+
+**Observed (after Plan 15-10):**
+- Hover on title row reveals a Tag icon ✓ (good — keep)
+- Clicking the Tag icon OR the title text opens an inline edit panel **below the title row** with two `<input>` fields (Title + Tags) and a Cancel/Save pair.
+- The panel is structurally outside `{isSelected && (...)}` — visible whether expanded or not.
+
+**User feedback (2026-05-24):**
+> "It's close. The functionality is there, but it should be inline, not a weird expand field for title and tags."
+
+**Required behavior for Round 2:**
+
+1. **Title click → edit in place.** The title text itself (the `<button>` that currently shows the job name) should become an `<input>` in the same location, replacing the text node. No new row appears. Pressing Enter saves; Escape cancels.
+2. **Tag chips → editable chip row in place.** The existing tag chip strip (rendered below the filament meta line) should become editable in place — each chip gains a small ✕ to remove it, and an "add tag" affordance (a small `+` chip or a tiny inline input) appears at the end of the strip. No separate panel ever drops down.
+3. **Tag icon hover affordance — keep.** The small Tag icon next to the title on hover stays as the shortcut into tag edit. Clicking it focuses the tag-edit affordance (the "add tag" input or the chip strip) directly. NewBadge `tags` continues to overlay the Tag icon.
+4. **Chevron, action row, accordion behavior — keep.** Chevron toggles expansion. Card-body clicks do not toggle. Action row stays Record Sale / Create Quote / Edit / Delete.
+5. **No dropped-down panel anywhere.** Remove `editPanelOpenJobId`, `editPanelDraftName`, `editPanelDraftTags`, the panel JSX, the handlers (`handleOpenPanel`, `handleSavePanel`, `handleCancelPanel`) — replace with inline-edit state scoped to each editable surface.
+
+**Recommended fix surface:**
+- `src/components/JobsManager.tsx` — replace the title `<button>` with conditional title-input rendering; replace the read-only tag chip strip with an editable chip row.
+- Reuse `parseTagsInput` from `src/db/backfill.ts` for the "add tag" affordance.
+- Persist with the same atomic `db.jobs.put({...job, name, tags})` pattern.
+- Preserve all locked files: `src/utils/duplicateJob.ts`, `src/utils/duplicateJob.test.ts`, `src/db/backfill.ts`, `src/features.ts` (the `tags` feature key stays as-is).
+
+**Acceptance contract for Round 2:**
+- `grep -cE 'editPanelOpenJobId\|editPanelDraftName\|editPanelDraftTags\|handleSavePanel\|handleCancelPanel' src/components/JobsManager.tsx` → 0
+- A test (manual or component-test) that the title-input replaces the title text in place when clicked (no new row appears, layout above/below is unchanged)
+- A test that tag chips become editable in place (each chip has a ✕; an "add tag" affordance appears at the end of the strip)
+- Tag icon hover affordance + NewBadge overlay both preserved
+- Vitest still passes ≥ 263 / 1 / 0; bundle gate still ≤ 300 KB gz
+- LOCKED files still byte-identical (no new commits on `duplicateJob.ts`, `duplicateJob.test.ts`)
+
+---
+
+## Next Steps (after Round 1)
+
+1. **Do NOT mark Phase 15 complete.** Phase 15 remains OPEN. STATE.md stays at `completed_phases: 4`, `percent: 67`. Do not run `/gsd:complete-milestone v1.2`.
+
+2. **Next command:** `/gsd:plan-phase 15 --gaps` — re-read this VERIFICATION.md, author Round 2 gap-closure plans targeting Gap E only (Gaps A, C, D are closed; do not re-plan them). The Round 2 plan replaces the dropped-down panel with edit-in-place affordances per the Gap E contract above.
+
+3. **After Round 2 lands + executes:** re-run Plan 15-11 (or equivalent) to UAT the edit-in-place surfaces. On `gap-free` verdict, advance STATE.md `completed_phases` to 5 and `percent` to 83.
+
+---
+
+*Round 1 amendment authored: 2026-05-24*
+*Verifier: Plan 15-11 Task 2 (orchestrator-handled checkpoint)*
+*Automated chain: Plan 15-11 Task 1 (logs at /tmp/15-gap-closure-*.log)*
+*Human UAT: Plan 15-11 Task 2 — verdict `approved-with-gaps` (3 closed, 1 new — Gap E)*
