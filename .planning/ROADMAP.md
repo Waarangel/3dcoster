@@ -204,7 +204,13 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   7. **WR-02 (Phase 18)**: `@tauri-apps/api` version skew resolved — either (a) bump `@tauri-apps/plugin-fs` + `@tauri-apps/plugin-dialog` to versions whose `peerDep`/`deps` line up with the pinned `@tauri-apps/api` 2.10.x, OR (b) bump the Rust `tauri` crate to 2.11.x and re-pin `@tauri-apps/api` to ^2.11.0, OR (c) document the dual-copy as accepted with `npm dedupe` semantics validated. Result: only ONE copy of `@tauri-apps/api` ships in the built bundle (verify via `find dist -name '*.js' -exec grep -l '@tauri-apps/api/core' {} \;` or confirm `node_modules/@tauri-apps/plugin-{fs,dialog}/node_modules` is empty)
   8. **WR-03 (Phase 18)**: `src/pdf/generateQuotePdf.ts` forbidden-path substring check tightened from `msg.toLowerCase().includes('forbidden path')` to `msg.toLowerCase().startsWith('forbidden path:')` (the Rust `PathForbidden` error format is anchored and always has the colon; eliminates false-positive matches on unrelated errors containing the phrase)
 
-**Plans**: ~6 plans (one per `/gsd:validate-phase` for 13/15/15.1/17 + one for Phase 13 visual UAT closure + one for the 3 Phase 18 review carryovers bundled as a single low-risk hygiene plan)
+**Plans**: 6 plans
+  - [ ] 24-01-PLAN.md — NYQ-01: `/gsd:validate-phase 13` State A flag flip (draft → passed)
+  - [ ] 24-02-PLAN.md — NYQ-02: `/gsd:validate-phase 15` State B reconstruction from 12 SUMMARYs
+  - [ ] 24-03-PLAN.md — NYQ-03: `/gsd:validate-phase 15.1` State B reconstruction from 5 SUMMARYs
+  - [ ] 24-04-PLAN.md — NYQ-04: `/gsd:validate-phase 17` State B trivial — inherits global guards
+  - [ ] 24-05-PLAN.md — NYQ-05: Phase 13 visual UAT closure — 2 smoke tests + rubber-stamp note
+  - [ ] 24-06-PLAN.md — Phase 18 WR-01/02/03 bundled hygiene plan — TS edits + Tauri 2.11.x bump (with conditional fallback)
 
 **UI hint**: no (documentation + UAT)
 
@@ -249,7 +255,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 21. CSV + URL security | 0/3 | Not started | — |
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
 | 23. Test coverage hardening | 0/4 | Not started | — |
-| 24. Nyquist contracts + Phase 13 visual UAT | 0/5 | Not started | — |
+| 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 0/6 | Not started | — |
 | 25. Doc + hygiene + polish + bundle health | 0/5 | Not started | — |
 
 **Total**: 8 phases, ~34 plans, ~5-7 working days of focused work.
