@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
-stopped_at: Phase 15 gap-closure Round 2 surface SHIPPED (Plan 15-12) — Gap E edit-in-place title + inline chip strip implemented; awaiting Round 2 UAT before advancing completed_phases
-last_updated: "2026-05-25T00:20:00.000Z"
-last_activity: 2026-05-25 — Plan 15-12 executed (Gap E Round 2). 267 Vitest pass / 1 todo / 0 failed (+4 new Gap E component tests); main chunk 61.5 KB gz; all 7 LOCKED files (DUP-02 helper+tests, features.ts, CostCalculator.tsx, backfill.ts, useDatabase.ts, types.ts) byte-identical. Next: re-run Plan 15-11 (or equivalent) for Round 2 UAT against Gap E acceptance contract.
+stopped_at: Phase 15 COMPLETE — Round 2 UAT verdict `gap-free` (8/8 tests passed). All 5 gaps closed (A, B-as-E, C, D, E). Milestone v1.2 close gated only on Phase 16 (currently 12/13).
+last_updated: "2026-05-25T00:45:00.000Z"
+last_activity: 2026-05-25 — Phase 15 closed gap-free after Round 2 UAT. Gap E (edit-in-place title + inline chip strip) validated against 8-test acceptance contract. VERIFICATION.md amended with final verdict; ROADMAP.md Progress Table marks Phase 15 Complete. Tag color options raised + self-deferred by user → captured in 15-UAT.md as v1.3+ candidate.
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 43
-  completed_plans: 42
-  percent: 67
+  completed_plans: 43
+  percent: 83
 ---
 
 # Project State
@@ -25,9 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 
 ## Current Position
 
-Phase: 15 (tags-search-quick-duplicate) — GAP CLOSURE ROUND 2 SURFACE SHIPPED; AWAITING UAT
-Plan: 12 of 12 (Round 2 surface plan complete; awaiting Round 2 UAT verdict)
-Status: Plan 15-12 executed cleanly — panel removed (13 identifiers → 0), edit-in-place title input replaces title text in same DOM slot, tag chips render inline in title row with hover ✕ remove + `+` add-tag affordance (placeholder "trending, popular, out of date" per D-16), 10-tag cap enforced, Tag icon + NewBadge `feature="tags"` preserved per D-18. All 7 LOCKED files byte-identical. Gates: tsc exit 0, vitest 267/1/0, build 61.5 KB gz. Next command: re-run Plan 15-11 (or equivalent verification cycle) to UAT against Gap E acceptance contract. On `gap-free` verdict, advance completed_phases→5, percent→83.
+Phase: 15 (tags-search-quick-duplicate) — COMPLETE (gap-free, 2026-05-25)
+Plan: 12 of 12 complete. Round 2 UAT verdict gap-free (8/8 tests passed).
+Status: Phase 15 closed. All 5 gaps closed across 2 rounds (A, B-as-E, C, D, E). Vitest 267 passed / 1 todo; build 61.5 KB gz; 7 LOCKED files byte-identical from pre-15-12 baseline. Deferred idea captured: tag color options (raised + self-deferred during UAT — v1.3+ candidate).
+Next: Phase 16 (Printable PDF Quote — currently 12/13) must close before milestone v1.2 close. Once Phase 16 closes, run `/gsd:audit-milestone v1.2` → `/gsd:complete-milestone v1.2`.
 Last activity: 2026-05-25
 
 ## Performance Metrics

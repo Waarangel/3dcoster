@@ -2,13 +2,15 @@
 phase: 15-tags-search-quick-duplicate
 type: verification
 verified: 2026-05-24
-verdict: gaps-found
+verdict: gap-free
 requirements_evaluated: [TAGS-01, TAGS-02, TAGS-03, TAGS-04, DUP-01, DUP-02]
 withdrawn_requirements: [TAGS-02, DUP-01]
-gaps_open: 1
-gaps_closed: [A, C, D]
-gap_closure_round: 1
-amended: 2026-05-24
+gaps_open: 0
+gaps_closed: [A, B, C, D, E]
+gap_closure_round: 2
+amended: 2026-05-25
+final_verdict_date: 2026-05-25
+final_verdict_uat: 15-UAT.md (Round 2)
 ---
 
 # Phase 15 Verification — Tags, Search + Quick Duplicate
@@ -413,3 +415,86 @@ Zero new commits past the Plan 15-02 baseline. Both files byte-identical to pre-
 *Verifier: Plan 15-11 Task 2 (orchestrator-handled checkpoint)*
 *Automated chain: Plan 15-11 Task 1 (logs at /tmp/15-gap-closure-*.log)*
 *Human UAT: Plan 15-11 Task 2 — verdict `approved-with-gaps` (3 closed, 1 new — Gap E)*
+
+---
+
+## Gap-Closure Round 2 (2026-05-25 amendment) — FINAL gap-free verdict
+
+**Plans landed:** 15-12 (Gap E surface + component tests).
+
+**Outcome:** Gap E **CLOSED**. Phase 15 is now **gap-free**. All 5 gaps (A, B-as-E, C, D) closed across Round 1 + Round 2. Phase 15 ready for milestone close.
+
+### Round 2 Automated Chain (Plan 15-12 execution)
+
+| Step | Command | Result |
+|------|---------|--------|
+| TypeScript | `npx tsc -b` | exit 0, 0 errors |
+| Vitest | `npm test -- --run` | **267 passed / 1 todo / 0 failed** (+4 new Gap E component tests vs 263 baseline) |
+| Build | `npm run build` | clean (`✓ built in 2.29s`); 5 build-time assertion scripts passed |
+| Bundle gate | main chunk gz | **61.5 KB** (`dist/assets/index-s79wb1dE.js`) — Phase 11 gate is 300 KB → 238.5 KB headroom |
+
+### Round 2 LOCKED File Integrity
+
+`git diff 4745586..HEAD` on the 7 locked artifacts:
+- `src/utils/duplicateJob.ts` → empty
+- `src/utils/duplicateJob.test.ts` → empty
+- `src/features.ts` → empty (release dates byte-identical)
+- `src/components/CostCalculator.tsx` → empty (Gap A preserved)
+- `src/db/backfill.ts` → empty
+- `src/hooks/useDatabase.ts` → empty (D-12 reconcile preserved)
+- `src/types.ts` → empty
+
+DUP-02 contract preserved across both rounds.
+
+### Round 2 Human UAT (15-UAT.md)
+
+User UAT against the 8-test Gap E acceptance contract:
+
+| Test | Result |
+|------|--------|
+| 1. Inline chip strip renders in title row (chevron → title → chips → + → Tag icon → break-even pill) | PASS |
+| 2. Hover ✕ removes a tag (immediate, no modal) | PASS |
+| 3. `+` add-tag opens narrow inline input with `placeholder="trending, popular, out of date"` (D-16) | PASS |
+| 4. Title click → edit in place (input replaces text at same DOM slot; Enter saves, Escape cancels, blur saves-if-nonempty) | PASS |
+| 5. 10-tag cap: `+` hides at 10, reappears after ✕ remove | PASS |
+| 6. Tag icon hover + NewBadge `feature="tags"` preserved (D-18); icon opens `+` input | PASS |
+| 7. Narrow-viewport wrap (≤400px): chips wrap below title; no scrollbar, no truncation (D-16) | PASS |
+| 8. Gap A / C / D regressions stay closed (no CC tag input; no chip-filter row; no `[⋯]` overflow) | PASS |
+
+**User verdict verbatim:** *"all approved. Well done. I could ask about colour options for tags, but I don't think it is important"*
+
+The tag-color question was raised and explicitly self-deferred by the user — NOT a gap. Captured as a deferred idea in `15-UAT.md` for potential v1.3+ pickup.
+
+### Per-Gap Closure Status (FINAL)
+
+| Gap | Status | Round | Evidence |
+|-----|--------|-------|----------|
+| **A** — CostCalculator tag input | **CLOSED** | 1 (Plan 15-07) | `feature="tags"` count in CostCalculator.tsx === 0; preserved through Round 2 (empty git diff) |
+| **B** (reopened as E) | **CLOSED** (as Gap E) | 2 (Plan 15-12) | See Gap E |
+| **C** — Chip-filter row | **CLOSED** | 1 (Plan 15-09) | `selectedChips|tagCounts|jobsAfterChipFilter` === 0; bi-key cache key intact; "Clear search" CTA present |
+| **D** — `[⋯]` Quick Duplicate UI | **CLOSED** | 1 (Plan 15-08) | `feature="quick-duplicate"` === 0; `'quick-duplicate':` absent from features.ts; DUP-02 helper+tests preserved |
+| **E** — Edit-in-place (replaces Round 1 Gap B panel) | **CLOSED** | 2 (Plan 15-12) | All 13 panel identifiers === 0; 8/8 human UAT pass; 4/4 new component tests pass; D-16/D-17/D-18 documented; LOCKED file integrity verified |
+
+### Requirement Closure (FINAL)
+
+| ID | Status | Reason |
+|----|--------|--------|
+| **TAGS-01** | **COMPLETE** | JobsManager edit-in-place surface (Plan 15-12) — input lifecycle (lowercase, trim, dedupe, emoji strip, cap-at-10, empty→undefined) shipped; CostCalculator surface withdrawn by Gap A |
+| **TAGS-02** | **WITHDRAWN** | Superseded by TAGS-03 search per user product feedback 2026-05-24 (Gap C closed Round 1) |
+| **TAGS-03** | **COMPLETE** | Shipped Plan 15-04 |
+| **TAGS-04** | **COMPLETE** | Cache key bi-key (selectedJobId|debouncedSearchQuery) per Gap C narrowing |
+| **DUP-01** | **WITHDRAWN-FROM-V1.2** | Row-action UI deferred to v1.3+; helper (DUP-02) ships standalone (Gap D closed Round 1) |
+| **DUP-02** | **COMPLETE** | Plan 15-02 D-15 locked contract; preserved byte-identical through both gap-closure rounds |
+
+### Next Steps (after Round 2 — final)
+
+1. **Phase 15 is COMPLETE.** Advance STATE.md `completed_phases: 4 → 5`, `percent: 67 → 83`.
+2. Mark Phase 15 as `Complete` in ROADMAP.md Progress Table with completion date 2026-05-25.
+3. Milestone close blocked only on Phase 16 (Printable PDF Quote — currently 12/13). Once Phase 16 closes, run `/gsd:complete-milestone v1.2`.
+
+---
+
+*Round 2 amendment authored: 2026-05-25*
+*Verifier: /gsd:verify-work 15 (conversational UAT)*
+*Automated chain: Plan 15-12 execution (commits 7430011 + cb5aef9)*
+*Human UAT: 15-UAT.md — 8/8 tests passed; verdict `gap-free`*
