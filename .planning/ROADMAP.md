@@ -239,7 +239,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 18. Tauri fs:scope fix | 1/1 | Complete | 2026-05-25 |
+| 18. Tauri fs:scope fix | 1/1 | Complete    | 2026-05-25 |
 | 19. Modal primitive + a11y migration | 0/6 | Not started | — |
 | 20. Dexie atomicity audit | 0/4 | Not started | — |
 | 21. CSV + URL security | 0/3 | Not started | — |

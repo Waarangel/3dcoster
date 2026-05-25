@@ -11,7 +11,7 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Desktop / Tauri
 
-- [ ] **DESK-01**: Tauri `fs:scope` and `save()` dialog reconciled — desktop user can save a PDF anywhere the dialog allows without `writeFile` throwing a scope-denied error. Fix is one of: broaden `fs:scope` to `$HOME/**`, OR pass a `defaultPath` scoped to `$DOWNLOAD` and document the restriction. Closes [CODE-AUDIT #1](v1.2-CODE-AUDIT.md) (CRITICAL).
+- [x] **DESK-01**: Tauri `fs:scope` and `save()` dialog reconciled — desktop user can save a PDF anywhere the dialog allows without `writeFile` throwing a scope-denied error. Fix is one of: broaden `fs:scope` to `$HOME/**`, OR pass a `defaultPath` scoped to `$DOWNLOAD` and document the restriction. Closes [CODE-AUDIT #1](v1.2-CODE-AUDIT.md) (CRITICAL).
 
 ### Accessibility (A11Y)
 

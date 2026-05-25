@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: executing
-stopped_at: "Phase 18 complete — ready for Phase 19 (Modal primitive + a11y) or any of 20, 21, 24"
-last_updated: "2026-05-25T12:00:00Z"
+status: ready_to_plan
+stopped_at: Phase 18 complete (1/1) — ready to discuss Phase 19
+last_updated: 2026-05-25T15:54:01.352Z
 last_activity: "2026-05-25 -- Phase 18 plan 01 complete; DESK-01 closed; UAT-D Result A validated audit"
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 1
-  completed_plans: 1
-  percent: 3
+  completed_plans: 72
+  percent: 13
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 18 — tauri-fs-scope-fix
+**Current focus:** Phase 19 — modal primitive + a11y migration
 
 ## Current Position
 
-Phase: 18 (tauri-fs-scope-fix) — COMPLETE
-Plan: 1 of 1 — COMPLETE
-Status: Phase 18 complete; v1.3 milestone in progress
+Phase: 19
+Plan: Not started
+Status: Ready to plan
 Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security), or 24 (Nyquist contracts). Phase 19 must complete before Phase 22.
-Last activity: 2026-05-25 -- Phase 18 plan 01 complete; DESK-01 closed
+Last activity: 2026-05-25
 
 ## v1.3 Phase Order Reference
 
@@ -48,7 +48,7 @@ Last activity: 2026-05-25 -- Phase 18 plan 01 complete; DESK-01 closed
 
 **Velocity:**
 
-- Total plans completed: 26
+- Total plans completed: 27
 - Average duration: —
 - Total execution time: —
 
@@ -63,6 +63,7 @@ Last activity: 2026-05-25 -- Phase 18 plan 01 complete; DESK-01 closed
 | 13 | 6 | - | - |
 | 14 | 4 | - | - |
 | 15.1 | 5 | - | - |
+| 18 | 1 | - | - |
 
 **Recent Trend:**
 
