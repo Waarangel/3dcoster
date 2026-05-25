@@ -333,8 +333,10 @@ export async function generateQuotePdf(quote: Quote): Promise<void> {
   } catch (err) {
     // Tauri fs plugin scope-denial error format: "forbidden path: {pathbuf}"
     // Source: plugins-workspace/v2/plugins/fs/src/error.rs — PathForbidden variant.
+    // Anchored to the trailing colon to exclude false-positive matches on errors
+    // that contain the substring elsewhere (e.g., "operation not permitted on forbidden path component").
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.toLowerCase().includes('forbidden path')) {
+    if (msg.toLowerCase().startsWith('forbidden path:')) {
       throw new Error(
         `Cannot save to "${savePath}" — this location is restricted. ` +
         `Try saving to Downloads, Documents, or Desktop instead.`,

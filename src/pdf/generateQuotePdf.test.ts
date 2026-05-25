@@ -517,10 +517,7 @@ describe('generateQuotePdf', () => {
       );
 
       await expect(generateQuotePdf(makeQuote())).rejects.toThrow(
-        /this location is restricted/,
-      );
-      await expect(generateQuotePdf(makeQuote())).rejects.toThrow(
-        /\/Users\/x\/Desktop\/foo\.pdf/,
+        /Cannot save to "\/Users\/x\/Desktop\/foo\.pdf" — this location is restricted/,
       );
     });
 
