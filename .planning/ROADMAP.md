@@ -35,7 +35,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] **Phase 14: Customer Details + Etsy Helper** — Customer fields on sold work (revised mid-UAT to per-Sale per D-21), Recent Sales accordion with customer block, conditional Etsy ToS collapsible checklist (gated on marketplace=etsy per D-22), and features.ts dead-badge audit holds (completed 2026-05-22)
 - [x] **Phase 15: Tags, Search + Quick Duplicate** — Tag input (JobsManager edit-in-place only — CostCalculator surface withdrawn) + free-text search (D-06 scope: title + tags + Sale.customer.{name,email,company}) + virtualized-list cache fix (bi-key) + duplicateJob helper with PII reset (locked DUP-02 contract; row-action UI deferred to v1.3+). Closed gap-free 2026-05-25 after 2 rounds of gap closure (5 gaps total: A, B-as-E, C, D, E).
 - [x] **Phase 15.1: Customer Library (INSERTED)** — Customers as first-class assets: new Customers tab with CRUD + virtualized list + CSV bulk import + combobox picker in the Record Sale modal (with email-match auto-link). Dexie v6→v7 introduces a dedicated `customers` store; per-Sale customer remains a by-value snapshot for byte-identical historical sales (completed 2026-05-22)
-- [ ] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification
+- [x] **Phase 16: Printable PDF Quote** — Lazy-loaded jsPDF quote generation, CI modulePreload assertion, font strategy, 300 KB gate verification (completed 2026-05-23)
 
 ---
 
@@ -202,7 +202,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
 | 15. Tags, Search + Quick Duplicate | 12/12 | Complete    | 2026-05-25 |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
-| 16. Printable PDF Quote | 12/13 | In Progress|  |
+| 16. Printable PDF Quote | 12/12 | Complete    | 2026-05-23 |
 
 ---
 

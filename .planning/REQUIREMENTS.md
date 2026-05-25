@@ -43,15 +43,15 @@ Requirements for milestone v1.2. Each maps to exactly one roadmap phase. All req
 ### Quick duplicate
 
 - [~] **DUP-01**: ~~User can quick-duplicate a saved job from JobsManager with a single row action; the duplicate appears in the list immediately~~ — **Withdrawn-from-v1.2** (2026-05-24, Phase 15 Gap D). UI deferred to v1.3+ where a richer surface (job-detail panel, batch-action menu) can host the clone-and-tweak workflow. The DUP-02 helper ships standalone for future consumers.
-- [ ] **DUP-02**: An explicit-allowlist `duplicateJob()` function inherits cost inputs / tags / notes but RESETS `id` (new `crypto.randomUUID()`), `createdAt` (now), `customer` (undefined — PII reset), `taxRate` (undefined — falls back to current region/Settings default), `copiesSold` (0), and sale records. Unit test asserts `duplicateJob(job).customer === undefined`
+- [x] **DUP-02**: An explicit-allowlist `duplicateJob()` function inherits cost inputs / tags / notes but RESETS `id` (new `crypto.randomUUID()`), `createdAt` (now), `customer` (undefined — PII reset), `taxRate` (undefined — falls back to current region/Settings default), `copiesSold` (0), and sale records. Unit test asserts `duplicateJob(job).customer === undefined`
 
 ### Printable PDF quote
 
-- [ ] **PDF-01**: User can generate a printable PDF quote from a saved job via a "Generate PDF" button on the cost calculator and JobsManager; PDF downloads via browser save (web) and Tauri file dialog (desktop)
-- [ ] **PDF-02**: The PDF contains: 3DCoster header, quote number (auto-incremented per user, persisted in `UserProfile.nextQuoteNumber`), valid-until date (default +30 days), customer block (omitted if empty), line items, Subtotal / Tax / Total, notes/terms section, and "Made with 3DCoster — 3dcoster.vercel.app" footer
-- [ ] **PDF-03**: `jspdf` + `jspdf-autotable` load only via dynamic `import()` triggered by the "Generate PDF" button; no static `import 'jspdf'` appears anywhere in `src/`
-- [ ] **PDF-04**: `vite.config.ts` sets `build.modulePreload: false`; a CI assertion (`scripts/assert-no-pdf-preload.mjs`) greps `dist/index.html` for any `modulepreload` referencing the pdf chunk and fails the build if matched
-- [ ] **PDF-05**: Main app chunk remains under 300 KB gzipped after the PDF library is added — the existing Phase 11 `scripts/assert-bundle-size.mjs` continues to pass
+- [x] **PDF-01**: User can generate a printable PDF quote from a saved job via a "Generate PDF" button on the cost calculator and JobsManager; PDF downloads via browser save (web) and Tauri file dialog (desktop)
+- [x] **PDF-02**: The PDF contains: 3DCoster header, quote number (auto-incremented per user, persisted in `UserProfile.nextQuoteNumber`), valid-until date (default +30 days), customer block (omitted if empty), line items, Subtotal / Tax / Total, notes/terms section, and "Made with 3DCoster — 3dcoster.vercel.app" footer
+- [x] **PDF-03**: `jspdf` + `jspdf-autotable` load only via dynamic `import()` triggered by the "Generate PDF" button; no static `import 'jspdf'` appears anywhere in `src/`
+- [x] **PDF-04**: `vite.config.ts` sets `build.modulePreload: false`; a CI assertion (`scripts/assert-no-pdf-preload.mjs`) greps `dist/index.html` for any `modulepreload` referencing the pdf chunk and fails the build if matched
+- [x] **PDF-05**: Main app chunk remains under 300 KB gzipped after the PDF library is added — the existing Phase 11 `scripts/assert-bundle-size.mjs` continues to pass
 
 ### Etsy ToS compliance helper
 
@@ -153,11 +153,11 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | CL-03 | Phase 15.1 | Complete |
 | CL-04 | Phase 15.1 | Complete |
 | CL-05 | Phase 15.1 | Complete |
-| PDF-01 | Phase 16 | Pending |
-| PDF-02 | Phase 16 | Pending |
-| PDF-03 | Phase 16 | Pending |
-| PDF-04 | Phase 16 | Pending |
-| PDF-05 | Phase 16 | Pending |
+| PDF-01 | Phase 16 | Complete |
+| PDF-02 | Phase 16 | Complete |
+| PDF-03 | Phase 16 | Complete |
+| PDF-04 | Phase 16 | Complete |
+| PDF-05 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 30 total (25 original + 5 CL-XX inserted for Phase 15.1)
