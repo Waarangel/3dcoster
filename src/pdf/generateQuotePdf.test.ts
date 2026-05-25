@@ -1,6 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Quote, JobCustomer, Currency } from '../types';
-import { generateQuotePdfBytes } from './generateQuotePdf';
+import { generateQuotePdfBytes, generateQuotePdf } from './generateQuotePdf';
+
+// Mock Tauri plugin modules at the top level — required for the writeFile error mapping tests.
+// These are hoisted by Vitest's module mock system and only take effect when __IS_TAURI__ is stubbed true.
+vi.mock('@tauri-apps/plugin-dialog', () => ({
+  save: vi.fn(),
+}));
+vi.mock('@tauri-apps/plugin-fs', () => ({
+  writeFile: vi.fn(),
+}));
 
 // ---------------------------------------------------------------------------
 // Fixture helper — single makeQuote builder per D-17 G4 strict by-value rule.
@@ -480,6 +489,58 @@ describe('generateQuotePdf', () => {
         }),
       );
       expect(pdfExtractText(bytes)).toContain('VAT (22%)');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // writeFile error mapping (Task 2 — DESK-01 defensive catch)
+  // -------------------------------------------------------------------------
+
+  describe('writeFile error mapping', () => {
+    beforeEach(() => {
+      // Activate Tauri branch for these tests
+      vi.stubGlobal('__IS_TAURI__', true);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.clearAllMocks();
+    });
+
+    it('rewrites "forbidden path" error to actionable message including the savePath', async () => {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      const fakePath = '/Users/x/Desktop/foo.pdf';
+      vi.mocked(save).mockResolvedValue(fakePath);
+      vi.mocked(writeFile).mockRejectedValue(
+        new Error(`forbidden path: ${fakePath}`),
+      );
+
+      await expect(generateQuotePdf(makeQuote())).rejects.toThrow(
+        /this location is restricted/,
+      );
+      await expect(generateQuotePdf(makeQuote())).rejects.toThrow(
+        /\/Users\/x\/Desktop\/foo\.pdf/,
+      );
+    });
+
+    it('passes through unrelated writeFile errors unchanged', async () => {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      const fakePath = '/Users/x/Desktop/foo.pdf';
+      vi.mocked(save).mockResolvedValue(fakePath);
+      vi.mocked(writeFile).mockRejectedValue(new Error('disk full'));
+
+      await expect(generateQuotePdf(makeQuote())).rejects.toThrow(/disk full/);
+    });
+
+    it('resolves silently without calling writeFile when save dialog is cancelled', async () => {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      vi.mocked(save).mockResolvedValue(null);
+
+      await expect(generateQuotePdf(makeQuote())).resolves.toBeUndefined();
+      expect(vi.mocked(writeFile)).not.toHaveBeenCalled();
     });
   });
 
