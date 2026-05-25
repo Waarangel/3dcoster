@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: ready_to_plan
-stopped_at: Phase 24 complete (6/6) — ready to discuss Phase 25
-last_updated: 2026-05-25T21:01:02.581Z
-last_activity: 2026-05-25 -- Phase 24 execution started
+status: planning
+stopped_at: Phase 25 context gathered
+last_updated: "2026-05-25T21:16:27.492Z"
+last_activity: 2026-05-25
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 78
-  percent: 13
+  completed_plans: 7
+  percent: 25
 ---
 
 # Project State
@@ -158,6 +158,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-25T16:54:25.314Z
-Stopped at: Phase 24 context gathered
-Resume file: .planning/phases/24-nyquist-contracts-phase-13-visual-uat-phase-18-review-carryo/24-CONTEXT.md
+Last session: 2026-05-25T21:16:27.486Z
+Stopped at: Phase 25 context gathered
+Resume file: .planning/phases/25-doc-hygiene-polish-bundle-health/25-CONTEXT.md
