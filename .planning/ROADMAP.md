@@ -40,7 +40,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 - [ ] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases
 - [ ] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary
 - [ ] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract
-- [ ] **Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT; close Phase 18 review WR-01/02/03 (test fragility, `@tauri-apps/api` dedupe, tighter `forbidden path` match)
+- [x] **Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT; close Phase 18 review WR-01/02/03 (test fragility, `@tauri-apps/api` dedupe, tighter `forbidden path` match) (completed 2026-05-25)
 - [ ] **Phase 25: Doc + hygiene + polish + bundle health** — Doc state lag (D6/D7); HYG-01 generatingJobIds slot; HYG-04 onQuoteCreated; HYG-05 image5 comment; HYG-10 stale todo cleanup; POL-01..POL-04 (CustomerLibrary alignment, CSV template button, autotable cast, overflow-menu close); QuoteStatusPill aria; Rollup circular-chunk fix; vendor chunk classification (optional)
 
 ---
@@ -210,7 +210,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   - [x] 24-03-PLAN.md — NYQ-03: `/gsd:validate-phase 15.1` State B reconstruction from 5 SUMMARYs
   - [x] 24-04-PLAN.md — NYQ-04: `/gsd:validate-phase 17` State B trivial — inherits global guards
   - [x] 24-05-PLAN.md — NYQ-05: Phase 13 visual UAT closure — 2 smoke tests + rubber-stamp note
-  - [ ] 24-06-PLAN.md — Phase 18 WR-01/02/03 bundled hygiene plan — TS edits + Tauri 2.11.x bump (with conditional fallback)
+  - [x] 24-06-PLAN.md — Phase 18 WR-01/02/03 bundled hygiene plan — TS edits + Tauri 2.11.x bump (with conditional fallback)
 
 **UI hint**: no (documentation + UAT)
 
@@ -255,7 +255,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 21. CSV + URL security | 0/3 | Not started | — |
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
 | 23. Test coverage hardening | 0/4 | Not started | — |
-| 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 5/6 | In Progress|  |
+| 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete   | 2026-05-25 |
 | 25. Doc + hygiene + polish + bundle health | 0/5 | Not started | — |
 
 **Total**: 8 phases, ~34 plans, ~5-7 working days of focused work.
