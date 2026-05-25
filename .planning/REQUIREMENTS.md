@@ -79,11 +79,11 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Nyquist contracts (NYQ)
 
-- [ ] **NYQ-01**: `.planning/phases/13-tax-model-ui-sweep/13-VALIDATION.md` completed — `status: passed`, `nyquist_compliant: true`, `wave_0_complete: true`. Run `/gsd:validate-phase 13`. Closes [TECH-DEBT D1](v1.2-TECH-DEBT.md).
-- [ ] **NYQ-02**: `.planning/phases/15-tags-search-quick-duplicate/15-VALIDATION.md` authored. Run `/gsd:validate-phase 15`. Closes [TECH-DEBT D2](v1.2-TECH-DEBT.md).
-- [ ] **NYQ-03**: `.planning/phases/15.1-customer-library/15.1-VALIDATION.md` authored. Run `/gsd:validate-phase 15.1`. Closes [TECH-DEBT D3](v1.2-TECH-DEBT.md).
-- [ ] **NYQ-04**: `.planning/phases/17-close-gap-pdf-04-fix-rollup-circular-chunk-that-defeats-jspd/17-VALIDATION.md` authored. Likely trivially satisfied by the existing 8-gate build chain + new `scripts/assert-no-static-pdf-import.mjs` gate. Run `/gsd:validate-phase 17`. Closes [TECH-DEBT D4](v1.2-TECH-DEBT.md).
-- [ ] **NYQ-05**: Phase 13 visual-contract 8 UAT items completed; `13-VERIFICATION.md` flipped from `human_needed` to `passed`. (4 days in production + 4+ phases stacked on top without bug reports gives confidence; this is the formal close.) Closes [TECH-DEBT D5](v1.2-TECH-DEBT.md).
+- [x] **NYQ-01**: `.planning/phases/13-tax-model-ui-sweep/13-VALIDATION.md` completed — `status: passed`, `nyquist_compliant: true`, `wave_0_complete: true`. Run `/gsd:validate-phase 13`. Closes [TECH-DEBT D1](v1.2-TECH-DEBT.md).
+- [x] **NYQ-02**: `.planning/phases/15-tags-search-quick-duplicate/15-VALIDATION.md` authored. Run `/gsd:validate-phase 15`. Closes [TECH-DEBT D2](v1.2-TECH-DEBT.md).
+- [x] **NYQ-03**: `.planning/phases/15.1-customer-library/15.1-VALIDATION.md` authored. Run `/gsd:validate-phase 15.1`. Closes [TECH-DEBT D3](v1.2-TECH-DEBT.md).
+- [x] **NYQ-04**: `.planning/phases/17-close-gap-pdf-04-fix-rollup-circular-chunk-that-defeats-jspd/17-VALIDATION.md` authored. Likely trivially satisfied by the existing 8-gate build chain + new `scripts/assert-no-static-pdf-import.mjs` gate. Run `/gsd:validate-phase 17`. Closes [TECH-DEBT D4](v1.2-TECH-DEBT.md).
+- [x] **NYQ-05**: Phase 13 visual-contract 8 UAT items completed; `13-VERIFICATION.md` flipped from `human_needed` to `passed`. (4 days in production + 4+ phases stacked on top without bug reports gives confidence; this is the formal close.) Closes [TECH-DEBT D5](v1.2-TECH-DEBT.md).
 
 ### Polish (POL)
 
