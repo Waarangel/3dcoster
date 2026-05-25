@@ -23,14 +23,19 @@ export function FeaturesPage() {
       {/* Comparison Table */}
       <section className="py-12 px-6">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-white text-center mb-8">How We Compare</h2>
+          <h2 className="text-2xl font-bold text-white text-center mb-3">How We Compare</h2>
+          <p className="text-slate-400 text-center mb-8 max-w-2xl mx-auto">
+            Most 3D printing software ends at "what did this print cost?" 3DCoster also handles
+            quotes, customer details, marketplace fees, shipping, taxes, and sales tracking — the
+            stuff a real selling workflow needs.
+          </p>
 
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-slate-700">
                   <th className="text-left py-4 px-4 text-slate-400 font-medium">Feature</th>
-                  <th className="py-4 px-4 text-center">
+                  <th className="py-4 px-4 text-center bg-blue-500/5">
                     <div className="text-white font-semibold">3DCoster</div>
                     <div className="text-green-400 text-sm">Free</div>
                   </th>
@@ -49,86 +54,205 @@ export function FeaturesPage() {
                 </tr>
               </thead>
               <tbody className="text-sm">
+
+                {/* ───── Section: Cost calculation ───── */}
+                <tr className="bg-slate-800/40 border-b border-slate-700">
+                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                    Cost calculation
+                  </td>
+                </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Material cost calculation</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                 </tr>
                 <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Multi-filament cost (per-filament weight + price)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">G-code / 3MF import (Bambu, Prusa, Cura, Orca)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Electricity costs</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Printer depreciation</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Nozzle &amp; parts wear</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Failed-print loss factor</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Labor time tracking (prep + post-processing)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Multi-currency (18 currencies)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Break-even analysis</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+
+                {/* ───── Section: Sales &amp; business management ───── */}
+                <tr className="bg-slate-800/40 border-b border-slate-700">
+                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                    Sales &amp; business management
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Customer library (CRUD + CSV import)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Sales tracking with per-sale customer snapshot</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Marketplace fees (Etsy / eBay / Amazon Handmade)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Shipping management (8 carriers + local delivery)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Tax / VAT (region default + per-job override)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Printer depreciation</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-slate-300">Editable tags + free-text search across jobs</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                </tr>
+
+                {/* ───── Section: Quotes &amp; compliance ───── */}
+                <tr className="bg-slate-800/40 border-b border-slate-700">
+                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                    Quotes &amp; compliance
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Printable PDF quotes (auto-numbered, valid-until date)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Quote &rarr; Sale conversion (with status tracking)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Marketplace fees (Etsy, etc.)</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-slate-300">Etsy ToS compliance helper</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
-                <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Labor time tracking</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+
+                {/* ───── Section: Platform &amp; access ───── */}
+                <tr className="bg-slate-800/40 border-b border-slate-700">
+                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                    Platform &amp; access
+                  </td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Filament library management</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                 </tr>
                 <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Break-even analysis</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                </tr>
-                <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Works offline</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-slate-300">Works offline (PWA + IndexedDB)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">Web only</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Desktop app</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-slate-300">Desktop app (Windows + macOS)</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Open source</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">No account required</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 text-slate-300 font-medium">Price</td>
-                  <td className="py-4 px-4 text-center text-green-400 font-bold">Free forever</td>
+                  <td className="py-4 px-4 text-center text-green-400 font-bold bg-blue-500/5">Free forever</td>
                   <td className="py-4 px-4 text-center text-slate-400">Free</td>
                   <td className="py-4 px-4 text-center text-slate-400">$228+/year</td>
                   <td className="py-4 px-4 text-center text-slate-400">$65+/year</td>
@@ -136,6 +260,12 @@ export function FeaturesPage() {
               </tbody>
             </table>
           </div>
+
+          <p className="text-xs text-slate-500 mt-4 text-center">
+            Competitor feature availability checked May 2026 against public docs and pricing pages.
+            "Limited" indicates partial coverage (e.g., a calculator includes the field but not a
+            full workflow). Pricing in USD.
+          </p>
         </div>
       </section>
 
@@ -194,13 +324,19 @@ export function FeaturesPage() {
                   <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span><strong>Marketplace fees</strong> that eat your margins</span>
+                  <span><strong>Marketplace fees, shipping &amp; tax</strong> baked into the price</span>
                 </li>
                 <li className="flex items-start gap-3 text-slate-200">
                   <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span><strong>Break-even points</strong> for smart pricing</span>
+                  <span><strong>Customer library + PDF quotes</strong> for the selling workflow</span>
+                </li>
+                <li className="flex items-start gap-3 text-slate-200">
+                  <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span><strong>Sales tracking</strong> with break-even &amp; expansion signals</span>
                 </li>
               </ul>
             </div>
