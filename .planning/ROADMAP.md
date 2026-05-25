@@ -235,13 +235,14 @@ Phase 13 + Phase 14 both merged → required before:
 
 ### Phase 17: Close gap: PDF-04 — fix Rollup circular chunk that defeats jsPDF lazy-loading + tax rounding divergence
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Close the v1.2 milestone's last open blocker (PDF-04 lazy-load defeated by Rollup chunk ordering) and one warning (tax rounding divergence between PrintQuoteModal and CostCalculator) before `/gsd:complete-milestone v1.2`. Reorder `vite.config.ts` `manualChunks` so the `/src/pdf/` + `/jspdf/` + `/jspdf-autotable/` check fires BEFORE the `node_modules` catch-all (D-01); add `scripts/assert-no-static-pdf-import.mjs` build-output CI gate to prevent regressions of this class (D-02); replace inline `subtotal * (resolvedTax.rate / 100)` in `PrintQuoteModal.tsx:196` with `calculateTax(subtotal, resolvedTax.rate).taxAmount` so the two quote-relevant surfaces compute byte-identical taxAmount (D-03); tick the six stale `[ ]` REQUIREMENTS.md checkboxes (DUP-02 + PDF-01..PDF-05) and finalize ROADMAP.md Phase 16 row to `12/12 | Complete | 2026-05-23` (D-05 + D-06).
+**Requirements**: PDF-04 (ticks `[x]` after this phase ships); DUP-02 + PDF-01..PDF-03 + PDF-05 (housekeeping ticks; satisfied per earlier phase verification)
 **Depends on:** Phase 16
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 17 to break down)
+- [ ] 17-01-PLAN.md — Wave 1 code fixes: vite.config.ts manualChunks reorder (D-01) + scripts/assert-no-static-pdf-import.mjs + package.json build-script wire-in (D-02) + PrintQuoteModal.tsx tax helper substitution (D-03)
+- [ ] 17-02-PLAN.md — Wave 2 housekeeping: REQUIREMENTS.md 6 checkbox ticks (D-05) + ROADMAP.md Phase 16 row + bullet flip (D-06); depends on 17-01 build verification passing
 
 ---
 
@@ -251,5 +252,6 @@ Plans:
 *Phase 15 plans created: 2026-05-24 — 6 plans across 4 waves authored from 15-CONTEXT.md (D-01..D-15)*
 *Phase 15 gap-closure plans created: 2026-05-24 — 5 plans (15-07..15-11) across waves 5-8 authored from 15-VERIFICATION.md Gap A/B/C/D + final gap-closure UAT*
 *Phase 15 gap-closure Round 2 plan created: 2026-05-24 — 1 plan (15-12) authored from 15-VERIFICATION.md Gap E acceptance contract (Round 1 Gap B rejected at UAT; Round 2 resolves D-16/D-17/D-18 for edit-in-place surface)*
+*Phase 17 plans created: 2026-05-25 — 2 plans (17-01 code fixes + 17-02 doc housekeeping) authored from 17-CONTEXT.md (D-01..D-08) + 17-PATTERNS.md*
 *Replaces: v1.1 Polish & Foundation roadmap (Phases 7–11, completed 2026-05-20)*
 *Phase numbering continues from v1.1 — v1.2 phases start at Phase 12*
