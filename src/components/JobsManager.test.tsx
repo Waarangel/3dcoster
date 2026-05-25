@@ -477,12 +477,58 @@ describe('JobCard edit-in-place (Gap E)', () => {
     expect(gapEContainer.querySelector('button[aria-label="Add tag"]')).toBeNull();
     expect(gapEContainer.querySelector('input[aria-label="Add tag"]')).toBeNull();
 
-    // The Tag icon hover shortcut DOES still exist (D-18 — Tag icon kept as NewBadge anchor)
-    const tagShortcut = gapEContainer.querySelector('button[aria-label="Add tag via shortcut"]');
-    expect(tagShortcut).not.toBeNull();
+    // Tag icon (the empty-state affordance) is ALSO hidden — it only shows when
+    // tags.length === 0, never alongside chips. At the cap, the user removes via ✕
+    // before adding more.
+    expect(gapEContainer.querySelector('button[aria-label="Add tag via shortcut"]')).toBeNull();
 
     // All 10 chips are rendered (D-11: render every tag, no max-visible cap)
     const chipRemoveButtons = gapEContainer.querySelectorAll('button[aria-label^="Remove tag "]');
     expect(chipRemoveButtons).toHaveLength(10);
+  });
+
+  it('(e) when job.tags.length === 0, the Tag icon is the always-visible add-tag affordance and the + button is hidden', () => {
+    const job = makeMinimalJob({ tags: undefined });
+    const onStartAddTag = vi.fn();
+
+    renderJobCard({ job, onStartAddTag, isAddingTag: false });
+
+    // Empty state: + button is HIDDEN (the Tag icon takes its role)
+    expect(gapEContainer.querySelector('button[aria-label="Add tag"]')).not.toBeNull();
+    // The Tag icon button uses aria-label="Add tag" too (single affordance per state).
+    // We assert there is exactly ONE element with this label — the Tag icon — and that
+    // it contains an SVG (not a text "+" character).
+    const addButtons = gapEContainer.querySelectorAll('button[aria-label="Add tag"]');
+    expect(addButtons).toHaveLength(1);
+    const addButton = addButtons[0] as HTMLButtonElement;
+    expect(addButton.querySelector('svg')).not.toBeNull();
+    expect(addButton.textContent).not.toBe('+');
+
+    // No add-tag input rendered (not in addingTag state)
+    expect(gapEContainer.querySelector('input[aria-label="Add tag"]')).toBeNull();
+
+    // No chip ✕ buttons (no chips to remove)
+    expect(gapEContainer.querySelectorAll('button[aria-label^="Remove tag "]').length).toBe(0);
+
+    // Clicking the Tag icon opens the add-tag flow via handleStartAddTag
+    act(() => {
+      addButton.click();
+    });
+    expect(onStartAddTag).toHaveBeenCalledWith('job-1');
+  });
+
+  it('(f) tags=undefined and tags=[] both behave as empty state — Tag icon visible, + hidden', () => {
+    // Sanity check: both shapes hit the same `(tags?.length ?? 0) === 0` branch.
+    const jobUndef = makeMinimalJob({ tags: undefined });
+    renderJobCard({ job: jobUndef });
+    const undefBtn = gapEContainer.querySelector<HTMLButtonElement>('button[aria-label="Add tag"]');
+    expect(undefBtn).not.toBeNull();
+    expect(undefBtn?.querySelector('svg')).not.toBeNull();
+
+    const jobEmpty = makeMinimalJob({ tags: [] });
+    renderJobCard({ job: jobEmpty });
+    const emptyBtn = gapEContainer.querySelector<HTMLButtonElement>('button[aria-label="Add tag"]');
+    expect(emptyBtn).not.toBeNull();
+    expect(emptyBtn?.querySelector('svg')).not.toBeNull();
   });
 });

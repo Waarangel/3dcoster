@@ -466,53 +466,59 @@ export const JobCard = memo(function JobCard({
                 </button>
               </span>
             ))}
-            {/* + add-tag affordance — hidden when tags.length === 10 (D-02 cap) */}
-            {(job.tags?.length ?? 0) < 10 && (
-              isAddingTag ? (
-                // allow-raw-html: add-tag inline — 12ch narrow affordance; Input primitive too wide for chip-row baseline
-                <input
-                  type="text"
-                  value={addTagDraft}
-                  autoFocus
-                  onChange={e => setAddTagDraft(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') { e.preventDefault(); void onSubmitAddTag(job, addTagDraft); }
-                    if (e.key === 'Escape') { e.preventDefault(); onCancelAddTag(); }
-                  }}
-                  onBlur={() => {
-                    if (addTagDraft.trim().length > 0) void onSubmitAddTag(job, addTagDraft);
-                    else onCancelAddTag();
-                  }}
-                  placeholder={ADD_TAG_PLACEHOLDER}
-                  aria-label="Add tag"
-                  className="max-w-[12ch] px-2 py-0.5 text-xs rounded bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                /* allow-raw-html: + add-tag button — w-5 h-5 icon affordance; Button primitive would not fit in the inline chip-row baseline */
+            {/* Add-tag input (shared by + and Tag-icon affordances) — opens whenever isAddingTag is true. */}
+            {isAddingTag && (
+              // allow-raw-html: add-tag inline — 12ch narrow affordance; Input primitive too wide for chip-row baseline
+              <input
+                type="text"
+                value={addTagDraft}
+                autoFocus
+                onChange={e => setAddTagDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { e.preventDefault(); void onSubmitAddTag(job, addTagDraft); }
+                  if (e.key === 'Escape') { e.preventDefault(); onCancelAddTag(); }
+                }}
+                onBlur={() => {
+                  if (addTagDraft.trim().length > 0) void onSubmitAddTag(job, addTagDraft);
+                  else onCancelAddTag();
+                }}
+                placeholder={ADD_TAG_PLACEHOLDER}
+                aria-label="Add tag"
+                className="max-w-[12ch] px-2 py-0.5 text-xs rounded bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            )}
+            {/* + add-tag button — shows only when the job has 1-9 tags. Hidden at 0 (Tag icon takes its role)
+                and hidden at the D-02 cap of 10. Also hidden when isAddingTag (the input replaces it). */}
+            {!isAddingTag && (job.tags?.length ?? 0) >= 1 && (job.tags?.length ?? 0) < 10 && (
+              /* allow-raw-html: + add-tag button — w-5 h-5 icon affordance; Button primitive would not fit in the inline chip-row baseline */
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onStartAddTag(job.id); }}
+                aria-label="Add tag"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-sm leading-none transition-colors"
+              >
+                +
+              </button>
+            )}
+            {/* Tag icon — empty-state affordance only. Shows when the job has zero tags so a new user
+                sees a labelled-by-aria, always-visible add affordance with the NEW badge. Hidden when
+                the row has any chips (the + at the end of the strip takes over) or while isAddingTag is
+                true (the input has the focus). NewBadge stays on this icon — it surfaces during the
+                row's empty state, which is exactly when discovery matters most. */}
+            {!isAddingTag && (job.tags?.length ?? 0) === 0 && (
+              <div className="relative">
+                {/* allow-raw-html: tag icon button — small icon affordance (w-6 h-6); Button primitive would dwarf the icon and add unwanted layout mass */}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onStartAddTag(job.id); }}
                   aria-label="Add tag"
-                  className="inline-flex items-center justify-center w-5 h-5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-sm leading-none transition-colors"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
                 >
-                  +
+                  <TagIcon className="w-4 h-4" />
                 </button>
-              )
+                <NewBadge feature="tags" className="absolute -top-1 -right-1 pointer-events-none" />
+              </div>
             )}
-            {/* Tag icon hover affordance — KEPT per Round 2 D-18; NewBadge overlay KEPT.
-                Now opens the + add-tag inline input (no panel anywhere). */}
-            <div className="relative">
-              {/* allow-raw-html: tag icon button — small icon affordance (w-6 h-6); Button primitive would dwarf the icon and add unwanted layout mass */}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onStartAddTag(job.id); }}
-                aria-label="Add tag via shortcut"
-                className={`inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-opacity ${isAddingTag ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
-              >
-                <TagIcon className="w-4 h-4" />
-              </button>
-              <NewBadge feature="tags" className="absolute -top-1 -right-1 pointer-events-none" />
-            </div>
             {info.isBreakEven ? (
               <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
                 Break-even reached
