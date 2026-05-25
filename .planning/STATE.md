@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.3
-milestone_name: "v1.3 Hardening"
-status: defined
-stopped_at: v1.3 scoped from v1.2 audit; 8 phases (18-25), 51 requirements, ~34 plans planned
-last_updated: "2026-05-25T14:00:00.000Z"
-last_activity: 2026-05-25 -- v1.3 Hardening milestone scoped
+milestone_name: v1.3 Hardening
+status: executing
+stopped_at: "Phase 18 plan 01 — Tasks 1+2 committed; awaiting Task 3 human-verify UAT checkpoint"
+last_updated: "2026-05-25T11:36:00Z"
+last_activity: "2026-05-25 -- Phase 18 Tasks 1+2 complete; checkpoint:human-verify at Task 3"
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 34
+  total_plans: 1
   completed_plans: 0
   percent: 0
 ---
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** v1.3 Hardening — close every actionable finding from the v1.2 code + tech-debt audit so v1.4+ feature work ships on a clean foundation. No new user-facing features.
+**Current focus:** Phase 18 — tauri-fs-scope-fix
 
 ## Current Position
 
-Phase: 18 (next to plan) — Tauri fs:scope fix
-Plan: 0 of 1
-Status: v1.3 milestone defined; no phase started yet. Audit-driven scope locked in REQUIREMENTS.md + ROADMAP.md.
+Phase: 18 (tauri-fs-scope-fix) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 18
 Next: `/gsd:plan-phase 18` to start Phase 18 (Tauri fs:scope fix — XS, CRITICAL desktop closure). Or pick any independent phase: 18, 20, 21, or 24 can run first (19 must complete before 22).
-Last activity: 2026-05-25 -- v1.3 Hardening milestone scoped
+Last activity: 2026-05-25 -- Phase 18 execution started
 
 ## v1.3 Phase Order Reference
 
