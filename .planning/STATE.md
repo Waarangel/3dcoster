@@ -4,8 +4,8 @@ milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
 stopped_at: Phase 15 verification recorded — verdict gaps-found (3 gaps); phase remains OPEN
-last_updated: "2026-05-25T10:32:32.342Z"
-last_activity: 2026-05-25 -- Phase 17 planning complete
+last_updated: "2026-05-25T12:06:46.581Z"
+last_activity: 2026-05-25 -- Phase 17 execution started
 progress:
   total_phases: 7
   completed_phases: 5
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-20)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 15 — tags-search-quick-duplicate
+**Current focus:** Phase 17 — close-gap-pdf-04-fix-rollup-circular-chunk-that-defeats-jspd
 
 ## Current Position
 
-Phase: 15 (tags-search-quick-duplicate) — COMPLETE (gap-free, 2026-05-25)
-Plan: 12 of 12 complete. Round 2 UAT verdict gap-free (8/8 tests passed).
-Status: Ready to execute
+Phase: 17 (close-gap-pdf-04-fix-rollup-circular-chunk-that-defeats-jspd) — EXECUTING
+Plan: 1 of 2
+Status: Executing Phase 17
 Next: Phase 16 (Printable PDF Quote — currently 12/13) must close before milestone v1.2 close. Once Phase 16 closes, run `/gsd:audit-milestone v1.2` → `/gsd:complete-milestone v1.2`.
-Last activity: 2026-05-25 -- Phase 17 planning complete
+Last activity: 2026-05-25 -- Phase 17 execution started
 
 ## Performance Metrics
 
