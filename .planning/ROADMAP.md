@@ -59,7 +59,8 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   3. The change does not broaden surface for any other Tauri command (only `fs:scope` for `writeFile` is touched)
   4. `npm run build && npm run tauri build` exits 0
 
-**Plans**: ~1 plan (this is a single small change + UAT)
+**Plans**: 1 plan
+  - 18-01: Replace fs:scope with per-permission inline scope on fs:allow-write-file ($HOME/**/*) + defensive try/catch around writeFile in generateQuotePdf.ts (with new unit test) + manual UAT (3 positive flows + negative control)
 
 **UI hint**: no (configuration change)
 

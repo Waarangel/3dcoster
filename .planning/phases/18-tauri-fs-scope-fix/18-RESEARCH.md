@@ -411,22 +411,13 @@ UAT-D (Negative control — verify error path):
 | A5 | Auto-allow `scope.allow_file(&path)` in `tauri-plugin-dialog@2.7.1` is still present (read from current `v2` branch source). | Summary | If the project pins to a tauri-plugin-dialog version where this was removed, the audit's bug becomes reliably reproducible AND Option C becomes load-bearing. Either way the recommended fix still works. |
 | A6 | Phase 18 does not need a version bump and release. | Runtime State Inventory | This is a discuss-phase decision. The audit explicitly classifies this CRITICAL — there's a case for cutting a release to push the fix to existing desktop users, but that's a project-level call, not a research call. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Has anyone reproduced the audit's bug in practice?**
-   - What we know: The audit asserts the bug exists via static code reading. Discussion #9195 confirms similar errors do occur in Tauri 2 with `readTextFile`. The dialog plugin's auto-allow `scope.allow_file()` should prevent it for `writeFile`-after-`save()`, but corner cases (symlinks, Windows UNC paths, paths the dialog returns but can't `into_path()`) might slip through.
-   - What's unclear: Does the user-reported "Could not generate quote" error actually trace to scope denial, or to something else (jsPDF generation throwing, Gatekeeper, dialog cancellation race)?
-   - Recommendation: Have discuss-phase ask the user to attempt a reproduction in the current installed v1.3.1 build before applying the fix. If non-reproducible, the phase becomes preventive + UX-improving rather than bug-fixing — still valuable, but framed honestly.
+1. **Has anyone reproduced the audit's bug in practice?** **RESOLVED → UAT-D will answer at execution.** Plan 18-01 Task 3 includes an explicit negative-control step (revert capability change via `git stash`, re-run UAT, observe failure or non-failure). Result A (failure observed) confirms the audit was real; Result B (no failure) confirms the fix is preventive hardening. Either way DESK-01 is closed; the outcome is recorded in `18-SUMMARY.md` for institutional knowledge.
 
-2. **Should Phase 18 trigger a version bump + release?**
-   - What we know: CRITICAL severity in the audit. UpdateBanner pushes new versions to existing desktop users.
-   - What's unclear: Whether the fix is urgent enough to warrant a standalone release, or should ride along with Phase 19+ (Modal a11y) for a bundled v1.3.x bump.
-   - Recommendation: discuss-phase decision. From a release-discipline standpoint, bundling makes sense (release fewer times, more substance per release). From a CRITICAL-closure standpoint, ship now. Surface for user decision.
+2. **Should Phase 18 trigger a version bump + release?** **RESOLVED → bundle with the v1.3 milestone.** v1.3 Hardening is a coherent unit; releasing 8 separate `v1.3.x` desktop builds (one per phase) would over-notify users and dilute the release narrative. Phase 18 ships into the v1.3 release at milestone close (`/gsd:complete-milestone v1.3`). If a real exploitable case emerges before v1.3 ships, this can be revisited and a standalone `v1.3.x` desktop release cut.
 
-3. **Does the project want a regression guard (e.g., grep gate) on `default.json`?**
-   - What we know: The audit cites permissiveness drift as a risk. A grep gate in `npm run build` could refuse to build if `default.json` contains identifiers outside an allowlist.
-   - What's unclear: Whether the project wants build-script guards beyond what `tauri-build` already provides (schema validation).
-   - Recommendation: Out of scope for Phase 18 (one-line fix), but a candidate for Phase 25's polish/hygiene batch. Decline for now.
+3. **Does the project want a regression guard (e.g., grep gate) on `default.json`?** **RESOLVED → defer to Phase 25 polish batch.** Out of scope for Phase 18 (one-line fix); will be considered as a candidate hygiene item in Phase 25's "Doc + hygiene + polish + bundle health" plan. `tauri-build`'s existing schema validation provides the baseline.
 
 ## Environment Availability
 
