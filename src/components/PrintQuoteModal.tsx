@@ -3,6 +3,7 @@ import type { PrintJob, UserProfile, Quote, Customer } from '../types';
 import { useQuotes, useCustomers } from '../hooks/useDatabase';
 import { resolveTaxRate, taxLabelFor } from '../utils/taxResolution';
 import { formatCurrency } from '../utils/currency';
+import { calculateTax } from '../utils/costCalc';
 import { Button, Input, Textarea, InfoTooltip } from './ui';
 
 // ---------------------------------------------------------------------------
@@ -192,8 +193,10 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
 
   const subtotal = job.sellingPrice;
   // D-22: tax base is sellingPrice ONLY — shipping is NEVER in the base.
+  // Phase 17 D-03: route through calculateTax helper for byte-identical rounding
+  // parity with CostCalculator.tsx (TAX-05 lock — Math.round(price * rate) / 100).
   const taxAmount = useMemo(
-    () => subtotal * (resolvedTax.rate / 100),
+    () => calculateTax(subtotal, resolvedTax.rate).taxAmount,
     [subtotal, resolvedTax.rate]
   );
   const total = subtotal + quoteShippingCost + taxAmount;
