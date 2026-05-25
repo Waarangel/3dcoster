@@ -79,6 +79,18 @@ export default defineConfig(({ mode }) => ({
     modulePreload: false,
     rollupOptions: {
       output: {
+        // Phase 17 D-01 supplement (Rule 2 deviation — missing critical functionality):
+        // Disable Rollup's hoistTransitiveImports (default `true`). With the default,
+        // every chunk that imports `./index-*.js` also gets a SIDE-EFFECT static
+        // `import"./pdf-*.js"` injected at its top (Rollup pre-fetching its transitive
+        // chunk dependencies). That hoisting defeats the PDF-04 lazy-load goal —
+        // marketing-page visitors would eagerly fetch the 523 KB pdf chunk. Setting
+        // this `false` keeps the lazy-load boundary tight: the pdf chunk is fetched
+        // only when its dynamic `import()` in PrintQuoteModal actually fires (on
+        // "Generate PDF" click). The reorder below is necessary but not sufficient
+        // without this — the new assert-no-static-pdf-import.mjs CI gate would
+        // otherwise trip on all 6 marketing-page chunks.
+        hoistTransitiveImports: false,
         // Vendor chunk splitting per D-01: 3 named chunks for React, Dexie, and other deps.
         // Function-style is clearer than object-style for the conditional logic and keeps the
         // file self-contained (no helper to test in isolation).
@@ -87,16 +99,19 @@ export default defineConfig(({ mode }) => ({
         // undefined for non-node_modules ids — Rollup then bundles them into the default
         // main/lazy chunks (preserves the existing React.lazy route splits, D-03).
         manualChunks(id) {
+          // Route all PDF dependencies to the lazily-loaded pdf chunk (Phase 16 D-01, Phase 17 D-01 reorder).
+          // CRITICAL ORDER: this check MUST come BEFORE the node_modules block —
+          // jspdf + jspdf-autotable live under node_modules and would otherwise be
+          // claimed by 'vendor' first, defeating the lazy-load goal (PDF-04).
+          // /src/pdf/ matches the generator module. Surrounding slashes prevent
+          // false matches on substrings.
+          if (id.includes('/src/pdf/') || id.includes('/jspdf/') || id.includes('/jspdf-autotable/')) {
+            return 'pdf';
+          }
           if (id.includes('node_modules')) {
             if (id.includes('/react/') || id.includes('/react-dom/')) return 'react-vendor';
             if (id.includes('/dexie/') || id.includes('/dexie-react-hooks/')) return 'dexie-vendor';
             return 'vendor';
-          }
-          // Route all PDF dependencies to the lazily-loaded pdf chunk (Phase 16 D-01).
-          // /jspdf/ and /jspdf-autotable/ match node_modules paths; /src/pdf/ matches the
-          // generator module. Surrounding slashes prevent false matches on substrings.
-          if (id.includes('/src/pdf/') || id.includes('/jspdf/') || id.includes('/jspdf-autotable/')) {
-            return 'pdf';
           }
         },
       },
