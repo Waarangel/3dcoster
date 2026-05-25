@@ -8,7 +8,6 @@
     "shell:default",
     "window-state:default",
     "dialog:allow-save",
-    "fs:allow-write-file",
-    { "identifier": "fs:scope", "allow": [{ "path": "$DOWNLOAD/*" }] }
+    { "identifier": "fs:allow-write-file", "allow": [{ "path": "$HOME/**/*" }] }
   ]
 }
