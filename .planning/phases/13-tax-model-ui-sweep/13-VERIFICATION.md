@@ -1,9 +1,12 @@
 ---
 phase: 13-tax-model-ui-sweep
 verified: 2026-05-21T13:35:00Z
-status: human_needed
+status: passed
 score: 6/6 must-haves verified
 overrides_applied: 0
+uat_closed: 2026-05-25
+uat_closure_phase: 24-nyquist-contracts-phase-13-visual-uat-phase-18-review-carryover
+uat_closure_req: NYQ-05
 ---
 
 # Phase 13: Tax Model + UI Sweep Verification Report
@@ -11,8 +14,8 @@ overrides_applied: 0
 **Phase Goal:** Users can set, override, and see a tax rate on every job with correct rounding and order-of-operations, backed by a region default — and all currency/numeric inputs across touched forms use the compact/InfoTooltip pattern in one pass
 
 **Verified:** 2026-05-21T13:35:00Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Status:** passed (UAT closed 2026-05-25 per Phase 24 NYQ-05)
+**Re-verification:** No — initial verification + UAT closure 2026-05-25
 
 ## Goal Achievement
 
@@ -177,9 +180,31 @@ The roadmap criterion explicitly says "the order-of-operations guard that assert
 Plan 13-01 must_haves D-01 stated "32 rows" but the file ships 31 rows. Plan 13-01 SUMMARY documents this as an auto-fixed plan-criteria bug — Sweden (SEK/SE) serves dual duty as both the SEK currency-keyed lookup row AND one of the 27 EU member states; listing it twice would be dead code (the second .find() match would never fire). All behavioral tests (US/GBP/AU/CA/EUR/ZAR/SE branches) pass and TAX-03 success criteria are satisfied behaviorally.
 
 **Status reasoning:**
-Despite 6/6 truths verified and all requirements satisfied programmatically, the phase produces visible UI surfaces (Settings field, per-job input, Cost Breakdown row, badges, grid layout) where the visual contract is critical — particularly the NewBadge layout (CLAUDE.md memory flags this as a strict UX gate) and the new 4-column Set Financial Targets grid. Status is `human_needed` to formally request human UAT confirmation per the 8 items above. The plan-level summaries and 13-VALIDATION.md explicitly deferred these to "phase wrap-up UAT" and they are now harvested into the verification surface.
+Despite 6/6 truths verified and all requirements satisfied programmatically, the phase produces visible UI surfaces (Settings field, per-job input, Cost Breakdown row, badges, grid layout) where the visual contract is critical — particularly the NewBadge layout (CLAUDE.md memory flags this as a strict UX gate) and the new 4-column Set Financial Targets grid. Status was initially `human_needed` to formally request human UAT confirmation per the 8 items above. The plan-level summaries and 13-VALIDATION.md explicitly deferred these to "phase wrap-up UAT" and they were harvested into the verification surface. Status flipped to `passed` on 2026-05-25 per Phase 24 NYQ-05 (see UAT Closure section below).
+
+## UAT Closure (Phase 24 NYQ-05) — 2026-05-25
+
+The 8 deferred visual UAT items above are formally closed per Phase 24 NYQ-05 with the following disposition:
+
+### Smoke-Tested (2 items)
+
+| # | Item | Result | Evidence |
+|---|------|--------|----------|
+| 1 | Default Tax Rate field in Settings — render + IndexedDB persistence across modal close/reopen + full app reload | PASS | Verified manually in `npm run dev` on 2026-05-25: value `20` typed into Settings → Costs & Rates → Default Tax Rate; persisted across modal close/reopen; persisted across hard-reload (Cmd-Shift-R); cleared correctly to empty (NOT `0`) — `undefined`-on-empty semantics confirmed at SettingsModal.tsx:291. All 9 sub-checks PASS, attested by signal `pass-1`. |
+| 2 | Per-job Tax Rate input round-trip — set on save, reads back on reopen from `editingJob?.taxRate` | PASS | Verified manually in `npm run dev` on 2026-05-25: rate=`20` entered on a test job with sellingPrice=`10`; Cost Breakdown immediately showed `Tax (20.0%) $2.00` + `Total (with Tax) $12.00`; job saved; reopened via JobsManager showed per-job Tax Rate `20` rehydrated from IndexedDB (CostCalculator.tsx:129 `useState(() => editingJob?.taxRate)`); Cost Breakdown still showed `Tax (20.0%) $2.00` + `Total (with Tax) $12.00` post-reopen. All 8 sub-checks PASS, attested by signal `pass-2`. |
+
+### Rubber-Stamped — In-Prod Evidence (6 items)
+
+The remaining 6 items — **#3 Tax row hides at 0%**, **#4 Fallback chain visual verification — tooltip provenance (4 scenarios)**, **#5 Set Financial Targets grid layout (4 columns on md+)**, **#6 NewBadge `default-tax-rate` renders without pushing siblings**, **#7 Stale NewBadge sites no longer render (7 surfaces)**, and **#8 UI-08 compact width visual consistency (5 components / 60 compact inputs)** — are rubber-stamped against in-prod evidence rather than re-smoke-tested.
+
+In-prod validated since 2026-05-21 across phases 14, 15, 15.1, 16, and 17 with zero bug reports — formally accepted as passed per Phase 24 NYQ-05.
+
+The phases stacked on top of Phase 13 (Phase 14: Customer block on Sale + Etsy helper; Phase 15: Tags + search + duplicate; Phase 15.1: Customer Library; Phase 16: PDF generation; Phase 17: PDF-04 / Rollup circular chunk + tax rounding parity) all exercised these visual surfaces during their own UAT cycles, and no regressions were reported by the user across the 2026-05-21 → 2026-05-25 in-prod window.
+
+Phase 13 visual contract is now formally closed.
 
 ---
 
 _Verified: 2026-05-21T13:35:00Z_
 _Verifier: Claude (gsd-verifier)_
+_UAT closed: 2026-05-25 (Phase 24 NYQ-05)_
