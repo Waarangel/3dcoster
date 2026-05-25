@@ -110,6 +110,7 @@ Not yet defined. Will be scoped via `/gsd:new-milestone` after v1.3 Hardening sh
 - ✓ **DUP-02** — `duplicateJob()` helper with locked 7-case Vitest contract (PII reset, by-value isolation) (Phase 15) — **DUP-01 withdrawn-from-v1.2** (UI deferred to v1.3+ richer surface)
 - ✓ **CL-01..CL-05** — Customers tab with virtualized list + CSV bulk import (Skip/Update duplicates) + Record Sale combobox picker with email auto-link; per-Sale snapshot stays by-value (Phase 15.1)
 - ✓ **PDF-01..PDF-05** — lazy-loaded jsPDF quote (300 KB gz gate intact) with PrintQuoteModal + Recent Quotes accordion + Convert-to-Sale flow; Dexie v7→v8 introduces Quote interface; PDF-04 closed by Phase 17 manualChunks reorder + CI gate
+- ✓ **NYQ-01..NYQ-05** — Nyquist validation contracts authored for Phases 13/15/15.1/17 + Phase 13 visual UAT closed (2 IndexedDB smoke tests + 6 rubber-stamped against phases 14-17 in-prod evidence); Phase 18 review carryover WR-01/02/03 also closed (collapsed forbidden-path test, Tauri 2.11.x crate + `@tauri-apps/api ^2.11.0` dedup, `startsWith('forbidden path:')` anchored matcher) (Phase 24)
 
 ### Active (v1.3 Hardening)
 
@@ -206,4 +207,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-25 — v1.3 Hardening milestone scoped from the v1.2 code + tech-debt audit. 8 phases (18–25), 51 requirements, ~34 plans, ~5-7 working days of focused work. Every REQ closes an audit finding; no new user-facing features. Run `/gsd:plan-phase 18` to start.*
+*Last updated: 2026-05-25 — Phase 24 complete (NYQ-01..05 + WR-01/02/03 carryover). v1.3 Hardening milestone scoped from the v1.2 code + tech-debt audit. 8 phases (18–25), 51 requirements, ~34 plans, ~5-7 working days of focused work. Every REQ closes an audit finding; no new user-facing features. Next: Phase 25 (doc + hygiene + polish + bundle health).*
