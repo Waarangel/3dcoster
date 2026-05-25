@@ -8,16 +8,39 @@
 
 Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
 
-## Current State: v1.2 Quote-to-Customer SHIPPED 2026-05-25
+## Current Milestone: v1.3 Hardening
 
-3DCoster is now a complete quote-to-customer tool. Users can attach customer details to sales, manage a Customer Library with CSV bulk import, generate lazy-loaded PDF quotes with proper tax handling (three-layer model), tag and search their job history, and self-check Etsy ToS compliance — all local-first, all free-tier.
+**Goal:** Close every actionable finding from the v1.2 code + tech-debt audit so v1.4+ feature work ships on a clean foundation. No new user-facing features in this milestone — every requirement maps back to an audit finding.
 
-**Shipped this milestone** (7 phases, 45 plans, 6 days): Three-layer tax model · Per-Sale customer details · Customer Library (inserted Phase 15.1) with CSV import + combobox picker · Edit-in-place tags + free-text search · Printable PDF quote flow with Quote ↔ Sale linkage and Convert-to-Sale · Etsy ToS helper conditional on `marketplace === 'etsy'` · Dexie v5→v6→v7→v8 migrations · UI consistency sweep + `features.ts` registry pruned.
+**Driver:** [v1.2-CODE-AUDIT.md](v1.2-CODE-AUDIT.md) (31 severity-classified findings — 3 CRITICAL · 7 HIGH · 14 MEDIUM · 7 LOW) + [v1.2-TECH-DEBT.md](v1.2-TECH-DEBT.md) (12 hygiene + 4 test debt + 7 milestone-audit deferrals).
 
-Full delivery map: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md). Audit: [milestones/v1.2-MILESTONE-AUDIT.md](milestones/v1.2-MILESTONE-AUDIT.md) (verdict: `tech_debt` — 0 blockers, 7 deferred items).
+**Target phases:** 18–25 (8 phases, ~34 plans, ~5-7 working days)
+- Phase 18: Tauri `fs:scope` fix (CRITICAL desktop bug)
+- Phase 19: `<Modal>` primitive + 10-surface a11y migration (closes 2 CRITICAL + most A11Y)
+- Phase 20: Dexie atomicity audit (closes HIGH data-integrity gaps)
+- Phase 21: CSV + URL security (closes HIGH formula-injection + XSS)
+- Phase 22: JobsManager decomposition + perf (biggest scope — extract RecordSaleModal + useCustomerPicker)
+- Phase 23: Test coverage hardening (3 Customer-UI test files; catches email-lowercase divergence bug)
+- Phase 24: Nyquist contracts + Phase 13 visual UAT (5 doc closures)
+- Phase 25: Doc + hygiene + polish + bundle health (final batch)
+
+Full delivery map: [ROADMAP.md](ROADMAP.md). Requirements: [REQUIREMENTS.md](REQUIREMENTS.md).
+
+**Why this slot:** v1.2 shipped 7 phases over 6 days with 2 rounds of gap closure on Phase 15 and 2 extension cycles on Phase 16. The audit surfaced predictable gap-closure residue (large functions, duplicated picker logic, withdrawn-requirement orphans) alongside systemic accessibility gaps that were never addressed phase-by-phase. v1.3 cleans the slate before the next feature cycle — pays compounding interest on every v1.4+ change to the same surfaces.
 
 <details>
-<summary>Original v1.2 scope (target features, archived)</summary>
+<summary>v1.2 Quote-to-Customer SHIPPED 2026-05-25 (collapsed)</summary>
+
+3DCoster grew from a personal cost calculator into a complete quote-to-customer tool. Users can attach customer details to sales, manage a Customer Library with CSV bulk import, generate lazy-loaded PDF quotes with proper tax handling (three-layer model), tag and search their job history, and self-check Etsy ToS compliance — all local-first, all free-tier.
+
+**Shipped** (7 phases, 45 plans, 6 days): Three-layer tax model · Per-Sale customer details · Customer Library (inserted Phase 15.1) with CSV import + combobox picker · Edit-in-place tags + free-text search · Printable PDF quote flow with Quote ↔ Sale linkage and Convert-to-Sale · Etsy ToS helper conditional on `marketplace === 'etsy'` · Dexie v5→v6→v7→v8 migrations · UI consistency sweep + `features.ts` registry pruned.
+
+Full delivery map: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md). Audit: [milestones/v1.2-MILESTONE-AUDIT.md](milestones/v1.2-MILESTONE-AUDIT.md) (verdict: `tech_debt` — 0 blockers, 7 deferred items, all rolled into v1.3).
+
+</details>
+
+<details>
+<summary>Original v1.2 target features (archived)</summary>
 
 **Goal:** Turn 3DCoster from a personal cost calculator into a tool that produces professional, customer-ready quotes — with proper tax handling, customer details, an organized job library, and a real PDF deliverable.
 
@@ -30,20 +53,17 @@ Full delivery map: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md). Aud
 - Etsy ToS compliance helper — inline checklist / guidance for sellers, surfaced on the job edit screen and the PDF
 - UI consistency sweep — Input `compact` rollout, `<InfoTooltip>` replacing descriptive placeholders, `features.ts` dead-badge cleanup
 
-**Shipped variations:** TAGS-02 chip filter withdrawn (redundant with TAGS-03 search). DUP-01 row-action UI withdrawn-from-v1.2 (deferred to v1.3+); helper DUP-02 ships standalone for future consumers. Customer details moved from PrintJob → Sale mid-UAT (D-21). Etsy section gated on marketplace=etsy (D-22). Customer Library (Phase 15.1) inserted mid-milestone. Phase 17 inserted as closure for PDF-04 Rollup chunk-ordering regression surfaced by audit.
+**Shipped variations:** TAGS-02 chip filter withdrawn (redundant with TAGS-03 search). DUP-01 row-action UI withdrawn-from-v1.2 (deferred to v1.4+); helper DUP-02 ships standalone for future consumers. Customer details moved from PrintJob → Sale mid-UAT (D-21). Etsy section gated on marketplace=etsy (D-22). Customer Library (Phase 15.1) inserted mid-milestone. Phase 17 inserted as closure for PDF-04 Rollup chunk-ordering regression surfaced by audit.
 
 </details>
 
-## Next Milestone Goals: v1.3 TBD
+## Next Milestone Goals: v1.4 TBD
 
-Not yet defined. Will be scoped via `/gsd:new-milestone` informed by customer-facing usage of v1.2.
+Not yet defined. Will be scoped via `/gsd:new-milestone` after v1.3 Hardening ships, informed by customer-facing usage of v1.2 features.
 
-**Carry-over candidates** (from v1.2 tech debt, see audit):
-- Run `/gsd:validate-phase` for 4 missing/draft Nyquist contracts (Phases 13, 15, 15.1, 17)
-- DUP-01 row-action UI (richer surface — job-detail panel or batch-action menu)
-- Tag color options · Customer CSV importer template-download · Customer Library row vertical centering
-- Rollup `vendor → react-vendor → vendor` circular-chunk warning · vendor chunk size (179 KB gz, non-blocking)
-- Phase 13 visual-contract UAT items (8 deferred) · Phase 14 REQUIREMENTS.md doc-drift for CUST-01/CUST-02
+**Carry-over feature candidates** (NOT in v1.3 — v1.3 is hardening-only):
+- TAGS-F4 — tag color picker (raised + self-deferred in Phase 15 Round 2 UAT)
+- DUP-F1 — DUP-01 row-action UI in a richer surface (job-detail panel or batch-action menu); helper DUP-02 + locked test contract are ready for consumption
 
 ## Requirements
 
@@ -91,9 +111,21 @@ Not yet defined. Will be scoped via `/gsd:new-milestone` informed by customer-fa
 - ✓ **CL-01..CL-05** — Customers tab with virtualized list + CSV bulk import (Skip/Update duplicates) + Record Sale combobox picker with email auto-link; per-Sale snapshot stays by-value (Phase 15.1)
 - ✓ **PDF-01..PDF-05** — lazy-loaded jsPDF quote (300 KB gz gate intact) with PrintQuoteModal + Recent Quotes accordion + Convert-to-Sale flow; Dexie v7→v8 introduces Quote interface; PDF-04 closed by Phase 17 manualChunks reorder + CI gate
 
-### Active (v1.3 — to be defined)
+### Active (v1.3 Hardening)
 
-Run `/gsd:new-milestone` to scope. Requirements are gathered during the new-milestone workflow and tracked in `REQUIREMENTS.md`. Validated requirements move here after milestone completion.
+v1.3 is a hardening-only milestone — every REQ closes an audit finding from [v1.2-CODE-AUDIT.md](v1.2-CODE-AUDIT.md) or [v1.2-TECH-DEBT.md](v1.2-TECH-DEBT.md). 51 requirements across 10 categories tracked in [REQUIREMENTS.md](REQUIREMENTS.md); 8-phase delivery in [ROADMAP.md](ROADMAP.md).
+
+Category summary (severity from audit):
+- **DESK** (1): Tauri `fs:scope` fix — 1 CRITICAL
+- **A11Y** (9): Modal primitive + focus trap + virtualized-list roles + label pairing — 2 CRITICAL + 3 HIGH + 4 MEDIUM
+- **SEC** (3): CSV formula-injection escape + `modelUrl` validation — 2 HIGH + 1 MEDIUM
+- **DATA** (6): Dexie atomicity in `addSale`/`createQuote`/`backfillQuotesFromJobs` + defensive trio — 1 HIGH + 2 MEDIUM + 3 LOW
+- **TEST** (6): 3 Customer-UI test files + fake-indexeddb migration + DUP-02 split — 3 HIGH + 3 LOW
+- **HYG** (10): JobsManager decomposition (`<RecordSaleModal>` + `<SaleRow>` + `useCustomerPicker` hook) + dead code cleanup — 1 HIGH + 4 MEDIUM + 5 LOW
+- **DOC** (2): v1.2 archive doc-state lag — 2 LOW
+- **PERF** (7): pre-computed maps + memoization + bundle health — 3 MEDIUM + 4 LOW
+- **NYQ** (5): 4 missing/draft Nyquist contracts + Phase 13 visual UAT closure
+- **POL** (4): Customer Library alignment, CSV template button, autotable cast, overflow-menu close — 2 MEDIUM + 2 LOW
 
 ### Out of Scope (carried forward)
 
@@ -174,4 +206,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-25 after v1.2 Quote-to-Customer milestone close. 7 phases (12, 13, 14, 15, 15.1, 16, 17) and 45 plans shipped across 6 days. Audit verdict `tech_debt` (0 blockers, 7 deferred items — primarily 4 missing/draft Nyquist contracts). Next: `/gsd:new-milestone` to scope v1.3.*
+*Last updated: 2026-05-25 — v1.3 Hardening milestone scoped from the v1.2 code + tech-debt audit. 8 phases (18–25), 51 requirements, ~34 plans, ~5-7 working days of focused work. Every REQ closes an audit finding; no new user-facing features. Run `/gsd:plan-phase 18` to start.*

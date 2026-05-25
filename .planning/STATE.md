@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: "v1.2 Quote-to-Customer shipped 2026-05-25 — awaiting /gsd:new-milestone for v1.3"
-status: between_milestones
-stopped_at: v1.2 milestone archived; REQUIREMENTS.md removed for fresh next-milestone cycle
-last_updated: "2026-05-25T13:30:00.000Z"
-last_activity: 2026-05-25 -- v1.2 milestone closed via /gsd:complete-milestone
+milestone: v1.3
+milestone_name: "v1.3 Hardening"
+status: defined
+stopped_at: v1.3 scoped from v1.2 audit; 8 phases (18-25), 51 requirements, ~34 plans planned
+last_updated: "2026-05-25T14:00:00.000Z"
+last_activity: 2026-05-25 -- v1.3 Hardening milestone scoped
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 45
-  completed_plans: 45
-  percent: 100
+  total_phases: 8
+  completed_phases: 0
+  total_plans: 34
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,15 +21,28 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Between milestones — v1.2 Quote-to-Customer archived; awaiting `/gsd:new-milestone` for v1.3 scope.
+**Current focus:** v1.3 Hardening — close every actionable finding from the v1.2 code + tech-debt audit so v1.4+ feature work ships on a clean foundation. No new user-facing features.
 
 ## Current Position
 
-Phase: — (between milestones)
-Plan: —
-Status: v1.2 milestone closed 2026-05-25; archives under `.planning/milestones/v1.2-*.md`.
-Next: `/gsd:new-milestone` to scope v1.3 (carry-over candidates listed in `PROJECT.md` Next Milestone Goals). v1.3 phase numbering starts at **Phase 18**.
-Last activity: 2026-05-25 -- v1.2 milestone closed via /gsd:complete-milestone
+Phase: 18 (next to plan) — Tauri fs:scope fix
+Plan: 0 of 1
+Status: v1.3 milestone defined; no phase started yet. Audit-driven scope locked in REQUIREMENTS.md + ROADMAP.md.
+Next: `/gsd:plan-phase 18` to start Phase 18 (Tauri fs:scope fix — XS, CRITICAL desktop closure). Or pick any independent phase: 18, 20, 21, or 24 can run first (19 must complete before 22).
+Last activity: 2026-05-25 -- v1.3 Hardening milestone scoped
+
+## v1.3 Phase Order Reference
+
+| Phase | Theme | Severity | Effort | Dependencies |
+|-------|-------|----------|--------|--------------|
+| 18 | Tauri fs:scope fix | CRITICAL | XS (~30 min) | none |
+| 19 | `<Modal>` primitive + a11y migration | 2 CRITICAL + most A11Y | M (~1 day) | none |
+| 20 | Dexie atomicity audit | 1 HIGH + 2 MED + 3 LOW | S (~0.5-1 day) | none |
+| 21 | CSV + URL security | 2 HIGH + 1 MED | S (~0.5 day) | none |
+| 22 | JobsManager decomposition + perf | HYG + PERF batch | L (~1-2 days) | Phase 19 |
+| 23 | Test coverage hardening | 3 HIGH (missing tests) | M (~1 day) | Phase 22 (soft) |
+| 24 | Nyquist contracts + Phase 13 visual UAT | 5 NYQ items | M (~1 day, mostly doc) | none, parallel-safe |
+| 25 | Doc + hygiene + polish + bundle health | final batch | S (~1 day) | Phases 19, 20, 21, 22, 23 |
 
 ## Performance Metrics
 
