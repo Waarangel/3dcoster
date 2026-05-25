@@ -498,3 +498,30 @@ The tag-color question was raised and explicitly self-deferred by the user — N
 *Verifier: /gsd:verify-work 15 (conversational UAT)*
 *Automated chain: Plan 15-12 execution (commits 7430011 + cb5aef9)*
 *Human UAT: 15-UAT.md — 8/8 tests passed; verdict `gap-free`*
+
+---
+
+## Post-Close Polish — Empty-State Tag Icon (2026-05-25)
+
+After the gap-free verdict landed, the user raised one small UX refinement during a final pass:
+
+> *"if no tags present, show a tag icon that is clickable like the +. Only show + if there is at least 1 tag present"*
+
+**Status:** Approved + shipped post-close as commit `b8bbd2f`. NOT a gap regression — Phase 15 remains `gap-free`.
+
+**Title-row add-tag affordance state machine (final):**
+
+| `job.tags.length` | Visible affordance | NewBadge `feature="tags"` |
+|---|---|---|
+| 0 | Tag icon (always-visible) | on Tag icon |
+| 1–9 | `+` button (end of chip strip) | hidden |
+| 10 (cap) | none | hidden |
+
+**Test delta:** +2 tests (e + f). Vitest 269 / 1 / 0 (up from 267 at gap-free close). All 7 LOCKED files still byte-identical from pre-15-12 baseline.
+
+**User verdict verbatim:** *"approved. Commit"* (2026-05-25)
+
+---
+
+*Empty-state polish recorded: 2026-05-25*
+*Commit: `b8bbd2f` — polish(15): empty-state Tag icon replaces + when job has no tags*

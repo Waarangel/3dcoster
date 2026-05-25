@@ -68,3 +68,23 @@ verbatim: "all approved. Well done. I could ask about colour options for tags, b
 ## Deferred Ideas Captured During UAT
 
 - **Tag color options** — user raised the question of letting users pick a color per tag during Round 2 UAT, then explicitly self-deferred ("I don't think it is important"). NOT a gap; logged here so the idea isn't lost. If demand surfaces later, this would be a small enhancement: extend `PrintJob.tags` from `string[]` to `Array<{ name: string; color?: string }>` OR keep tags as strings and maintain a separate `tagColors: Record<string, string>` map; either approach is a v1.3+ candidate. The current uniform chip styling (`bg-slate-600/50 text-slate-400`) — D-11 byte-identical lock — would relax to allow per-tag color overrides.
+
+## Post-Close Polish — Empty-State Tag Icon (commit `b8bbd2f`)
+
+After the gap-free verdict landed, the user raised one UX refinement: when a job has zero tags, show the Tag icon as the always-visible add-tag affordance instead of the small `+` button. The `+` only appears when the job has 1+ tags.
+
+**Decision:** Tag icon is hidden entirely when chips exist (1+ tags); `+` takes over at end of strip. At the D-02 cap of 10, both are hidden — the user removes a tag via ✕ first.
+
+**Title-row add-tag affordance state machine:**
+
+| `job.tags.length` | Visible affordance | NewBadge `feature="tags"` |
+|---|---|---|
+| 0 | Tag icon (always-visible) | on Tag icon |
+| 1–9 | `+` button (end of chip strip) | hidden (Tag icon is gone) |
+| 10 (cap) | none | hidden |
+
+**Files changed:** `src/components/JobsManager.tsx`, `src/components/JobsManager.test.tsx` (+2 new tests: `(e)` 0 tags → Tag icon visible / `+` hidden; `(f)` `tags: undefined` vs `tags: []` both hit empty-state branch).
+
+**Gates:** `tsc -b` exit 0; vitest 269 / 1 / 0 (was 267); build 2.23s, main chunk 61.5 KB gz; 7 LOCKED files byte-identical from pre-15-12 baseline. Verdict still `gap-free`.
+
+**User verdict verbatim:** *"approved. Commit"* (2026-05-25)
