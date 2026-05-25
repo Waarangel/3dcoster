@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
 status: executing
-stopped_at: "Phase 18 plan 01 — Tasks 1+2 committed; awaiting Task 3 human-verify UAT checkpoint"
-last_updated: "2026-05-25T11:36:00Z"
-last_activity: "2026-05-25 -- Phase 18 Tasks 1+2 complete; checkpoint:human-verify at Task 3"
+stopped_at: "Phase 18 complete — ready for Phase 19 (Modal primitive + a11y) or any of 20, 21, 24"
+last_updated: "2026-05-25T12:00:00Z"
+last_activity: "2026-05-25 -- Phase 18 plan 01 complete; DESK-01 closed; UAT-D Result A validated audit"
 progress:
   total_phases: 8
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 3
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-25)
 
 ## Current Position
 
-Phase: 18 (tauri-fs-scope-fix) — EXECUTING
-Plan: 1 of 1
-Status: Executing Phase 18
-Next: `/gsd:plan-phase 18` to start Phase 18 (Tauri fs:scope fix — XS, CRITICAL desktop closure). Or pick any independent phase: 18, 20, 21, or 24 can run first (19 must complete before 22).
-Last activity: 2026-05-25 -- Phase 18 execution started
+Phase: 18 (tauri-fs-scope-fix) — COMPLETE
+Plan: 1 of 1 — COMPLETE
+Status: Phase 18 complete; v1.3 milestone in progress
+Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security), or 24 (Nyquist contracts). Phase 19 must complete before Phase 22.
+Last activity: 2026-05-25 -- Phase 18 plan 01 complete; DESK-01 closed
 
 ## v1.3 Phase Order Reference
 
@@ -104,6 +104,8 @@ Last activity: 2026-05-25 -- Phase 18 execution started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.3 Phase 18 plan 01 — 2026-05-25]: Option C (per-permission inline scope on fs:allow-write-file, $HOME/**/*) chosen; UAT-D Result A confirmed audit bug was real and reproducible; @tauri-apps/api pinned to 2.10.1 to align with Rust crate 2.10.2; DESK-01 closed
+
 - [v1.0 Phase 01]: Clean removal of filamentId/filamentGrams — no deprecated optional stubs (locked decision)
 - [v1.0 Phase 01]: Dexie v5 migration returns modify() promise to ensure complete record conversion
 - [v1.0 Phase 02]: Export getMaterialDensity from gcodeParser.ts — fixes pre-existing PLA-only density bug for nozzle wear and enables Phase 3 reuse
@@ -153,6 +155,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-24T22:13:32.177Z
-Stopped at: Phase 15 verification recorded — verdict gaps-found (3 gaps); phase remains OPEN
+Last session: 2026-05-25T12:00:00Z
+Stopped at: Phase 18 complete — DESK-01 closed; commits f6b790b (Task 1), 589f774 (Task 2), e14732a (mid-plan STATE), plus SUMMARY/STATE/ROADMAP final commit
 Resume file: None

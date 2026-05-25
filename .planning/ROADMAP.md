@@ -34,7 +34,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 
 ## Phases
 
-- [ ] **Phase 18: Tauri fs:scope fix** — Reconcile `fs:scope` with unrestricted `save()` dialog so desktop users can save PDFs anywhere
+- [x] **Phase 18: Tauri fs:scope fix** — Reconcile `fs:scope` with unrestricted `save()` dialog so desktop users can save PDFs anywhere
 - [ ] **Phase 19: Modal primitive + a11y migration** — Build `<Modal>` (role=dialog, aria-modal, focus-trap, focus-return, useId-labeled), migrate 10 modal surfaces, plus virtualized-list ARIA + InfoTooltip useId + close-button labels + form-label pairing + CollapsibleSection aria-controls fix
 - [ ] **Phase 20: Dexie atomicity audit** — Wrap `addSale` in transaction; move `createQuote` nextQuoteNumber read inside transaction; fix `backfillQuotesFromJobs` currency hardcode; defensive trio (parsePositiveNumber, versionchange async close, getSetting validator)
 - [ ] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases
@@ -60,7 +60,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   4. `npm run build && npm run tauri build` exits 0
 
 **Plans**: 1 plan
-  - 18-01: Replace fs:scope with per-permission inline scope on fs:allow-write-file ($HOME/**/*) + defensive try/catch around writeFile in generateQuotePdf.ts (with new unit test) + manual UAT (3 positive flows + negative control)
+  - [x] 18-01: Replace fs:scope with per-permission inline scope on fs:allow-write-file ($HOME/**/*) + defensive try/catch around writeFile in generateQuotePdf.ts (with new unit test) + manual UAT (3 positive flows + negative control) — COMPLETE 2026-05-25
 
 **UI hint**: no (configuration change)
 
@@ -239,7 +239,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 18. Tauri fs:scope fix | 0/1 | Not started | — |
+| 18. Tauri fs:scope fix | 1/1 | Complete | 2026-05-25 |
 | 19. Modal primitive + a11y migration | 0/6 | Not started | — |
 | 20. Dexie atomicity audit | 0/4 | Not started | — |
 | 21. CSV + URL security | 0/3 | Not started | — |
