@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: ready_to_plan
-stopped_at: Phase 18 complete (1/1) — ready to discuss Phase 19
-last_updated: 2026-05-25T15:54:01.352Z
-last_activity: "2026-05-25 -- Phase 18 plan 01 complete; DESK-01 closed; UAT-D Result A validated audit"
+status: planning
+stopped_at: Phase 18 complete — DESK-01 closed; commits f6b790b (Task 1), 589f774 (Task 2), e14732a (mid-plan STATE), plus SUMMARY/STATE/ROADMAP final commit
+last_updated: "2026-05-25T16:32:39.610Z"
+last_activity: 2026-05-25
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 1
-  completed_plans: 72
+  completed_plans: 1
   percent: 13
 ---
 
@@ -99,6 +99,7 @@ Last activity: 2026-05-25
 - v1.1 shipped 2026-05-20 — all 5 phases complete
 - v1.2 Phases 12–16 defined 2026-05-20 (Quote-to-Customer)
 - Phase 17 added 2026-05-25 mid-milestone — closure phase for PDF-04 (Rollup circular chunk defeats jsPDF lazy-loading) + tax rounding divergence (PrintQuoteModal vs CostCalculator). Surfaced by /gsd:audit-milestone v1.2.
+- Phase 24 edited: added Phase 18 code review carryover (WR-01/02/03) to Phase 24 scope
 
 ### Decisions
 

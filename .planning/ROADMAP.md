@@ -27,7 +27,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 4. **Phase 21 (CSV + URL security)** — independent security batch; closes HIGH formula-injection
 5. **Phase 22 (JobsManager decomposition + perf)** — biggest scope; depends on Phase 19's Modal primitive; closes complexity + duplication + perf
 6. **Phase 23 (Test coverage)** — adds 3 Customer-UI tests + reveals the email-lowercase divergence bug; runs after Phase 22 if components are refactored, OR independent otherwise
-7. **Phase 24 (Nyquist contracts + Phase 13 visual UAT)** — doc-only, parallel-safe with code phases
+7. **Phase 24 (Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover)** — doc-only + small WR fixes, parallel-safe with code phases
 8. **Phase 25 (Doc + hygiene + polish + bundle health)** — final cleanup batch; ordered last so accumulated v1.3 work informs it
 
 ---
@@ -40,7 +40,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 - [ ] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases
 - [ ] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary
 - [ ] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract
-- [ ] **Phase 24: Nyquist contracts + Phase 13 visual UAT** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT
+- [ ] **Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT; close Phase 18 review WR-01/02/03 (test fragility, `@tauri-apps/api` dedupe, tighter `forbidden path` match)
 - [ ] **Phase 25: Doc + hygiene + polish + bundle health** — Doc state lag (D6/D7); HYG-01 generatingJobIds slot; HYG-04 onQuoteCreated; HYG-05 image5 comment; HYG-10 stale todo cleanup; POL-01..POL-04 (CustomerLibrary alignment, CSV template button, autotable cast, overflow-menu close); QuoteStatusPill aria; Rollup circular-chunk fix; vendor chunk classification (optional)
 
 ---
@@ -187,11 +187,12 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 
 **UI hint**: no
 
-### Phase 24: Nyquist contracts + Phase 13 visual UAT
+### Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover
 
-**Goal**: All 4 missing/draft Nyquist contracts authored; Phase 13's `human_needed` verification status flipped to `passed` after the deferred visual-contract UAT is performed
+**Goal**: All 4 missing/draft Nyquist contracts authored; Phase 13's `human_needed` verification status flipped to `passed` after the deferred visual-contract UAT is performed; Phase 18 code review warnings (WR-01/02/03) resolved so PDF error mapping and Tauri version pinning carry no fragility into v1.4
 **Depends on**: None (parallel-safe with all code phases)
 **Requirements**: NYQ-01, NYQ-02, NYQ-03, NYQ-04, NYQ-05
+**Carryover findings**: [18-REVIEW.md](phases/18-tauri-fs-scope-fix/18-REVIEW.md) WR-01, WR-02, WR-03
 **Success Criteria** (what must be TRUE):
 
   1. `.planning/phases/13-tax-model-ui-sweep/13-VALIDATION.md` has `status: passed`, `nyquist_compliant: true`, `wave_0_complete: true` (from `/gsd:validate-phase 13`)
@@ -199,8 +200,11 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   3. `.planning/phases/15.1-customer-library/15.1-VALIDATION.md` exists and is `nyquist_compliant: true`
   4. `.planning/phases/17-close-gap-pdf-04-fix-rollup-circular-chunk-that-defeats-jspd/17-VALIDATION.md` exists and is `nyquist_compliant: true` (likely trivially satisfied by existing 8-gate build chain + `scripts/assert-no-static-pdf-import.mjs`)
   5. Phase 13's 8 deferred visual-contract UAT items completed; `13-VERIFICATION.md` `status` flipped from `human_needed` to `passed` (4 days of in-prod use + 4+ subsequent phases stacked on top with zero bug reports gives high confidence this is a formality)
+  6. **WR-01 (Phase 18)**: `src/pdf/generateQuotePdf.test.ts` forbidden-path test collapsed to a single `generateQuotePdf()` invocation with a combined regex (removes sticky-mock fragility against future `mockResolvedValueOnce` migration)
+  7. **WR-02 (Phase 18)**: `@tauri-apps/api` version skew resolved — either (a) bump `@tauri-apps/plugin-fs` + `@tauri-apps/plugin-dialog` to versions whose `peerDep`/`deps` line up with the pinned `@tauri-apps/api` 2.10.x, OR (b) bump the Rust `tauri` crate to 2.11.x and re-pin `@tauri-apps/api` to ^2.11.0, OR (c) document the dual-copy as accepted with `npm dedupe` semantics validated. Result: only ONE copy of `@tauri-apps/api` ships in the built bundle (verify via `find dist -name '*.js' -exec grep -l '@tauri-apps/api/core' {} \;` or confirm `node_modules/@tauri-apps/plugin-{fs,dialog}/node_modules` is empty)
+  8. **WR-03 (Phase 18)**: `src/pdf/generateQuotePdf.ts` forbidden-path substring check tightened from `msg.toLowerCase().includes('forbidden path')` to `msg.toLowerCase().startsWith('forbidden path:')` (the Rust `PathForbidden` error format is anchored and always has the colon; eliminates false-positive matches on unrelated errors containing the phrase)
 
-**Plans**: ~5 plans (one per `/gsd:validate-phase` + one for Phase 13 visual UAT closure)
+**Plans**: ~6 plans (one per `/gsd:validate-phase` for 13/15/15.1/17 + one for Phase 13 visual UAT closure + one for the 3 Phase 18 review carryovers bundled as a single low-risk hygiene plan)
 
 **UI hint**: no (documentation + UAT)
 
