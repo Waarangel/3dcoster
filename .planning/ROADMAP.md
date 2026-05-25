@@ -209,7 +209,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   - [x] 24-02-PLAN.md — NYQ-02: `/gsd:validate-phase 15` State B reconstruction from 12 SUMMARYs
   - [x] 24-03-PLAN.md — NYQ-03: `/gsd:validate-phase 15.1` State B reconstruction from 5 SUMMARYs
   - [x] 24-04-PLAN.md — NYQ-04: `/gsd:validate-phase 17` State B trivial — inherits global guards
-  - [ ] 24-05-PLAN.md — NYQ-05: Phase 13 visual UAT closure — 2 smoke tests + rubber-stamp note
+  - [x] 24-05-PLAN.md — NYQ-05: Phase 13 visual UAT closure — 2 smoke tests + rubber-stamp note
   - [ ] 24-06-PLAN.md — Phase 18 WR-01/02/03 bundled hygiene plan — TS edits + Tauri 2.11.x bump (with conditional fallback)
 
 **UI hint**: no (documentation + UAT)
@@ -255,7 +255,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 21. CSV + URL security | 0/3 | Not started | — |
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
 | 23. Test coverage hardening | 0/4 | Not started | — |
-| 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 4/6 | In Progress|  |
+| 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 5/6 | In Progress|  |
 | 25. Doc + hygiene + polish + bundle health | 0/5 | Not started | — |
 
 **Total**: 8 phases, ~34 plans, ~5-7 working days of focused work.
