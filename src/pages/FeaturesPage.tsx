@@ -25,9 +25,10 @@ export function FeaturesPage() {
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-white text-center mb-3">How We Compare</h2>
           <p className="text-slate-400 text-center mb-8 max-w-2xl mx-auto">
-            Plenty of free 3D print cost calculators exist. Most stop at the print itself.
+            Lots of 3D print cost calculators exist. Most stop at the print itself.
             3DCoster keeps going — customer details, marketplace fees, shipping, taxes,
             PDF quotes, and sales tracking — the stuff a real selling workflow needs.
+            All of it free, with no Pro tier hiding the business features.
           </p>
 
           <div className="overflow-x-auto">
@@ -44,12 +45,12 @@ export function FeaturesPage() {
                     <div className="text-slate-500 text-sm">Free</div>
                   </th>
                   <th className="py-4 px-4 text-center">
-                    <div className="text-slate-300 font-medium">PesoPrint</div>
+                    <div className="text-slate-300 font-medium">Calc3dprint</div>
                     <div className="text-slate-500 text-sm">Free</div>
                   </th>
                   <th className="py-4 px-4 text-center">
-                    <div className="text-slate-300 font-medium">3DPrintPriceCalculator</div>
-                    <div className="text-slate-500 text-sm">Free</div>
+                    <div className="text-slate-300 font-medium">LayerMath</div>
+                    <div className="text-slate-500 text-sm">Free + £5-9/mo</div>
                   </th>
                 </tr>
               </thead>
@@ -72,15 +73,15 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-slate-300">Multi-filament cost (per-filament weight + price)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (Pro)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Slicer file import (G-code / 3MF / STL)</td>
+                  <td className="py-4 px-4 text-slate-300">Slicer file import (G-code / 3MF, multi-slicer)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes (G-code &amp; 3MF)</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">Limited (STL)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (G-code)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (G-code)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Electricity costs</td>
@@ -118,18 +119,18 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                 </tr>
                 <tr className="border-b border-slate-800">
-                  <td className="py-4 px-4 text-slate-300">Multi-currency (18 currencies)</td>
-                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-slate-300">Multi-currency support</td>
+                  <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes (18)</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">Limited (beta)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (5)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (5)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Break-even analysis</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
                 </tr>
 
                 {/* ───── Section: Sales &amp; business management ───── */}
@@ -149,29 +150,36 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-slate-300">Save jobs with sales history per job</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited (quote storage)</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited (SKU manager, Pro)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Marketplace fees (Etsy / eBay / Amazon Handmade)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited (Etsy)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (Etsy/eBay/Amazon)</td>
+                </tr>
+                <tr className="border-b border-slate-800">
+                  <td className="py-4 px-4 text-slate-300">Live Etsy order sync (90-day API import)</td>
+                  <td className="py-4 px-4 text-center text-slate-500 bg-blue-500/5">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (£5/mo)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Shipping management (8 carriers + local delivery)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited (cost field only)</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited (cost field only)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Tax / VAT (region default + per-job override)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (Pro)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Editable tags + free-text search across jobs</td>
@@ -191,7 +199,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-slate-300">Printable PDF quotes (auto-numbered, valid-until date)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited (PDF export, no auto-#)</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
@@ -219,14 +227,14 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-slate-300">Filament library management</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
-                  <td className="py-4 px-4 text-center text-slate-500">Limited (presets)</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (Pro)</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Works offline (PWA + IndexedDB)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">Web only</td>
-                  <td className="py-4 px-4 text-center text-slate-500">Web only</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes (local parsing)</td>
                   <td className="py-4 px-4 text-center text-slate-500">Web only</td>
                 </tr>
                 <tr className="border-b border-slate-800">
@@ -248,23 +256,24 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
-                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Free: yes / Paid: no</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 text-slate-300 font-medium">Price</td>
                   <td className="py-4 px-4 text-center text-green-400 font-bold bg-blue-500/5">Free forever</td>
                   <td className="py-4 px-4 text-center text-slate-400">Free</td>
                   <td className="py-4 px-4 text-center text-slate-400">Free</td>
-                  <td className="py-4 px-4 text-center text-slate-400">Free</td>
+                  <td className="py-4 px-4 text-center text-slate-400">Free / £5 / £9 mo</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
           <p className="text-xs text-slate-500 mt-4 text-center">
-            Competitor feature availability checked May 2026 against each tool's public page.
-            "Limited" indicates partial coverage (e.g., the field is collected but not woven
-            through a full workflow).
+            Competitor feature availability checked May 2026 against each tool's public pricing
+            and features pages. "Limited" indicates partial coverage (e.g., the field is collected
+            but not woven through a full workflow). "(Pro)" indicates a feature gated behind
+            LayerMath's £9/mo Pro tier; "(£5/mo)" indicates LayerMath's Etsy Seller tier.
           </p>
         </div>
       </section>
