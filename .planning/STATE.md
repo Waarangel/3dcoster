@@ -1,35 +1,35 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: milestone
-status: completed
-stopped_at: Phase 15 verification recorded — verdict gaps-found (3 gaps); phase remains OPEN
-last_updated: "2026-05-25T12:52:58.023Z"
-last_activity: 2026-05-25 -- Phase 17 marked complete
+milestone: none
+milestone_name: "v1.2 Quote-to-Customer shipped 2026-05-25 — awaiting /gsd:new-milestone for v1.3"
+status: between_milestones
+stopped_at: v1.2 milestone archived; REQUIREMENTS.md removed for fresh next-milestone cycle
+last_updated: "2026-05-25T13:30:00.000Z"
+last_activity: 2026-05-25 -- v1.2 milestone closed via /gsd:complete-milestone
 progress:
   total_phases: 7
-  completed_phases: 6
-  total_plans: 46
+  completed_phases: 7
+  total_plans: 45
   completed_plans: 45
-  percent: 86
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-20)
+See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 17 — close-gap-pdf-04-fix-rollup-circular-chunk-that-defeats-jspd
+**Current focus:** Between milestones — v1.2 Quote-to-Customer archived; awaiting `/gsd:new-milestone` for v1.3 scope.
 
 ## Current Position
 
-Phase: 17 — COMPLETE
-Plan: 1 of 2
-Status: Phase 17 complete
-Next: Phase 16 (Printable PDF Quote — currently 12/13) must close before milestone v1.2 close. Once Phase 16 closes, run `/gsd:audit-milestone v1.2` → `/gsd:complete-milestone v1.2`.
-Last activity: 2026-05-25 -- Phase 17 marked complete
+Phase: — (between milestones)
+Plan: —
+Status: v1.2 milestone closed 2026-05-25; archives under `.planning/milestones/v1.2-*.md`.
+Next: `/gsd:new-milestone` to scope v1.3 (carry-over candidates listed in `PROJECT.md` Next Milestone Goals). v1.3 phase numbering starts at **Phase 18**.
+Last activity: 2026-05-25 -- v1.2 milestone closed via /gsd:complete-milestone
 
 ## Performance Metrics
 
