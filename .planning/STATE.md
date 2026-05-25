@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.2
-milestone_name: Quote-to-Customer
-status: executing
+milestone_name: milestone
+status: completed
 stopped_at: Phase 15 verification recorded — verdict gaps-found (3 gaps); phase remains OPEN
-last_updated: "2026-05-25T12:06:46.581Z"
-last_activity: 2026-05-25 -- Phase 17 execution started
+last_updated: "2026-05-25T12:52:58.023Z"
+last_activity: 2026-05-25 -- Phase 17 marked complete
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 46
-  completed_plans: 43
-  percent: 71
+  completed_plans: 45
+  percent: 86
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 
 ## Current Position
 
-Phase: 17 (close-gap-pdf-04-fix-rollup-circular-chunk-that-defeats-jspd) — EXECUTING
+Phase: 17 — COMPLETE
 Plan: 1 of 2
-Status: Executing Phase 17
+Status: Phase 17 complete
 Next: Phase 16 (Printable PDF Quote — currently 12/13) must close before milestone v1.2 close. Once Phase 16 closes, run `/gsd:audit-milestone v1.2` → `/gsd:complete-milestone v1.2`.
-Last activity: 2026-05-25 -- Phase 17 execution started
+Last activity: 2026-05-25 -- Phase 17 marked complete
 
 ## Performance Metrics
 
