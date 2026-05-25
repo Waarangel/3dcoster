@@ -233,6 +233,16 @@ Phase 13 + Phase 14 both merged → required before:
 **Phase 16 hard gate:** Both Phase 13 and Phase 14 must be merged before Phase 16 can start.
 **Phase 15.1 hard gate:** Phases 14 (Sale.customer shape) and 15 (JobsManager Record Sale modal stable) must be merged before Phase 15.1 can start.
 
+### Phase 17: Close gap: PDF-04 — fix Rollup circular chunk that defeats jsPDF lazy-loading + tax rounding divergence
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 17 to break down)
+
 ---
 
 *Roadmap created: 2026-05-20*

@@ -84,6 +84,7 @@ Last activity: 2026-05-25
 - v1.1 Phases 7–11 redefined 2026-05-19 as Polish & Foundation (Quote-to-Customer deferred to v1.2)
 - v1.1 shipped 2026-05-20 — all 5 phases complete
 - v1.2 Phases 12–16 defined 2026-05-20 (Quote-to-Customer)
+- Phase 17 added 2026-05-25 mid-milestone — closure phase for PDF-04 (Rollup circular chunk defeats jsPDF lazy-loading) + tax rounding divergence (PrintQuoteModal vs CostCalculator). Surfaced by /gsd:audit-milestone v1.2.
 
 ### Decisions
 
