@@ -13,9 +13,11 @@ provides:
   - assert-no-static-pdf-import.mjs CI gate (catches regression class)
   - byte-identical tax rounding parity between CostCalculator and PrintQuoteModal
 affects:
-  - vite.config.ts (manualChunks ordering + hoistTransitiveImports flag)
+  - vite.config.ts (manualChunks ordering + hoistTransitiveImports flag + utils chunk for src/utils + vite/preload-helper)
   - package.json (build script chain — 8 gates now)
   - dist/assets/*-Page*.js chunks (no longer side-effect-import pdf chunk)
+  - dist/assets/index-*.js entry chunk (no longer named-imports pdf chunk for shared symbols)
+  - dist/assets/utils-*.js (new chunk holding src/utils/* + __vitePreload helper)
 tech-stack:
   added: []
   patterns:
@@ -31,7 +33,9 @@ key-files:
 decisions:
   - "Phase 17 D-01: pdf-id check fires BEFORE node_modules check in manualChunks (so jspdf lands in pdf chunk, not vendor)"
   - "Phase 17 D-01 supplement (Rule 2 deviation): added build.rollupOptions.output.hoistTransitiveImports:false — reorder alone was necessary but not sufficient; without this flag the new gate would trip on all 6 marketing-page chunks"
+  - "Phase 17 D-01 Wave 1 extension (user-approved): added utils chunk rule routing /src/utils/ + vite/preload-helper.js BEFORE the pdf check — breaks the chunk-graph cycle where shared utility files were claimed by pdf, forcing the entry chunk to static-import them back"
   - "Phase 17 D-02: new assert-no-static-pdf-import.mjs gate runs LAST in build chain (after the cheap modulepreload check), per the cheap-fail-fast convention"
+  - "Phase 17 D-02 Wave 1 extension: gate regex broadened from import-only to (?:import|from)-of-pdf, and index-*.js no longer skipped — gate now enforces no-static-imports-to-pdf everywhere except the pdf chunk itself"
   - "Phase 17 D-03: PrintQuoteModal.tsx tax math now routes through calculateTax helper — byte-identical with CostCalculator.tsx (TAX-05 lock)"
 metrics:
   duration_minutes: 18
@@ -150,13 +154,20 @@ dist/assets/index-CT99EgUb.js
 
 This deviation does NOT introduce new threat surface (consistent with the plan's `<threat_model>` T-17-01 disposition). The flag tightens the lazy-load boundary that PDF-04 already required; it does not loosen any existing invariant. `assert-no-pdf-preload.mjs` still passes (no modulepreload links in HTML). `assert-bundle-size.mjs` still passes (main chunk 61.5 KB gz, unchanged).
 
-**2. [Out-of-scope discovery — not fixed] `index-*.js` named-import from pdf chunk**
+**2. [Wave 1 extension — orchestrator post-merge fix, commit `f1227e0`] `index-*.js` named-import from pdf chunk**
 
-- **Found during:** Task 1 root-cause investigation.
-- **Issue:** `dist/assets/index-CT99EgUb.js` STILL contains a static named import: `import{g as _s, a as bs, r as It, k as Ft, m as vs, l as Hs, t as Os, b as Ws, f as jt, _ as ct, c as zt, C as Ze, d as qs, U as Vs, e as Qs, h as Ks}from"./pdf-xR_hYSi9.js"`. Sixteen utility symbols (formatCurrency, formatQuoteNumber, kmToMiles, milesToKm, etc. from `src/utils/currency.ts` + `src/utils/format.ts`, plus the `__vitePreload` runtime helper `qo`) live in the pdf chunk because Rollup's chunk-graph optimizer picked pdf as the "owner" of these shared utilities when generateQuotePdf.ts imported them.
-- **Scope:** This means the pdf chunk IS still loaded eagerly with index (because index static-imports from it). The plan's gate explicitly EXCLUDES `index-*.js` via `INDEX_CHUNK_PATTERN`, so this is OUT OF SCOPE for the gate's narrow definition.
-- **Why not fixed in this plan:** The fix requires an architectural change (adding another `manualChunks` rule to route `src/utils/*` to its own chunk, OR refactoring `src/pdf/generateQuotePdf.ts` to not transitively import shared utilities). Both are outside the plan's `files_modified` scope. Per CLAUDE.md's "scope boundary" rule, this is logged here as a deferred discovery rather than auto-fixed.
-- **Recommended follow-up:** Open a small follow-up plan to either (a) add `if (id.includes('/src/utils/')) return 'utils';` to `manualChunks` (split utility helpers into their own chunk), or (b) inline the few utility calls inside `src/pdf/generateQuotePdf.ts` so the chunk-graph optimizer no longer hoists them to pdf. This is the SECOND half of PDF-04 lazy-load enforcement — the first half (marketing pages clean) is now locked by the gate; the second half (index doesn't eagerly load pdf) needs its own plan.
+- **Found during:** Orchestrator post-merge verification — agent's deferred discovery was confirmed via direct `grep` against the built bundle. The dynamic `import("./pdf-...")` was effectively a no-op cache hit because the entry chunk ALSO static-imported the chunk for shared symbols.
+- **Original issue:** `dist/assets/index-CT99EgUb.js` contained a static named import: `import{g as Hs, a as bs, r as It, k as Ft, m as vs, l as Os, t as Ws, b as qs, f as jt, _ as ct, c as zt, C as Ze, d as Vs, U as Qs, e as Ks, h as Ys}from"./pdf-xR_hYSi9.js"`. Sixteen utility symbols (formatCurrency, formatQuoteNumber, kmToMiles, milesToKm, etc. from `src/utils/currency.ts` + `src/utils/format.ts`, plus the `__vitePreload` runtime helper) lived in the pdf chunk because Rollup's chunk-graph optimizer picked pdf as the "owner" when generateQuotePdf.ts transitively imported them.
+- **Fix (user-approved scope extension, NOT a follow-up):** Two surgical changes folded into a new commit on the same plan:
+  1. **`vite.config.ts` — new manualChunks rule ABOVE the pdf check:** `if (id.includes('/src/utils/') || id.includes('vite/preload-helper.js')) return 'utils';`. The first clause routes shared utility files to a dedicated utils chunk; the second clause routes Vite's `\0vite/preload-helper.js` virtual module (the `__vitePreload` runtime helper) into the same chunk, so the entry chunk no longer needs to static-import it back from pdf.
+  2. **`scripts/assert-no-static-pdf-import.mjs` — broadened regex + dropped index-*.js skip:** Pattern changed from `/import\s*["']\.\/pdf-[\w-]+\.js["']/` to `/(?:import|from)\s*["']\.\/pdf-[\w-]+\.js["']/` so it ALSO catches named/default/namespace/re-export static forms (`from"./pdf-..."`), not just side-effect imports. Removed the `INDEX_CHUNK_PATTERN` skip — index-*.js is now scanned alongside everything else. Dynamic `import("./pdf-...")` is still allowed (the `(` after `import` prevents matching `\s*["']`).
+- **Post-extension verification:**
+  - `grep -cE '(import|from)\s*"\./pdf-' dist/assets/index-*.js` → `0` (entry chunk clean)
+  - `grep -c 'import("\./pdf-' dist/assets/index-*.js` → `1` (dynamic import survives)
+  - `grep -cE '(import|from)\s*"\./pdf-' dist/assets/utils-*.js` → `0` (utils chunk clean)
+  - All 6 marketing-page chunks + Header chunk → `0` (still clean)
+  - Bundle sizes: pdf chunk dropped from 197.86 to 194.54 KB gz; main chunk dropped from 62.94 to 54.6 KB gz; new utils chunk 10.91 KB gz
+- **PDF-04 status:** now fully closed. The pdf chunk loads ONLY when the dynamic `import()` in PrintQuoteModal fires on "Generate PDF" click. No eager fetch via marketing pages, entry chunk, or any non-pdf chunk.
 
 ### No Other Deviations
 
@@ -182,7 +193,11 @@ Verified all artifacts and commits exist before finalizing this summary:
 - `scripts/assert-no-static-pdf-import.mjs` — created, 56 lines — FOUND (verified via `wc -l`)
 - `package.json` — `build` script ends with `&& node scripts/assert-no-static-pdf-import.mjs` — FOUND
 - `src/components/PrintQuoteModal.tsx` — `calculateTax` import added, useMemo body swapped — FOUND (verified via final `git diff` against base)
-- Commit `36ea662` — FOUND in `git log`
-- Commit `4456539` — FOUND in `git log`
-- Commit `6fd0938` — FOUND in `git log`
-- `npm run build` exits 0 with both `✓ pdf chunk:` lines printed — VERIFIED in Task 3 build run
+- Commit `36ea662` — FOUND in `git log` (Task 1: manualChunks reorder + hoistTransitiveImports)
+- Commit `4456539` — FOUND in `git log` (Task 2: assert-no-static-pdf-import.mjs + package.json wiring)
+- Commit `6fd0938` — FOUND in `git log` (Task 3: PrintQuoteModal calculateTax)
+- Commit `b1c84c1` — FOUND in `git log` (original SUMMARY.md)
+- Commit `b9df66e` — FOUND in `git log` (orchestrator merge of worktree-agent-abc8b1482283b0aeb)
+- Commit `f1227e0` — FOUND in `git log` (Wave 1 extension: utils chunk + tightened CI gate)
+- `npm run build` exits 0 with `✓ main chunk: 54.6 KB gzipped (under 300 KB)`, `✓ pdf chunk: no modulepreload link in dist/index.html`, `✓ pdf chunk: no static import from any non-pdf chunk in dist/assets/` printed — VERIFIED in extension build run
+- Entry chunk `dist/assets/index-D23BnXF4.js` has 0 static refs to pdf chunk and 1 dynamic `import("./pdf-CGCE5ODn.js")` — VERIFIED via grep against built bundle
