@@ -269,7 +269,7 @@ Phase 13 + Phase 14 both merged → required before:
 **Goal:** Close the v1.2 milestone's last open blocker (PDF-04 lazy-load defeated by Rollup chunk ordering) and one warning (tax rounding divergence between PrintQuoteModal and CostCalculator) before `/gsd:complete-milestone v1.2`. Reorder `vite.config.ts` `manualChunks` so the `/src/pdf/` + `/jspdf/` + `/jspdf-autotable/` check fires BEFORE the `node_modules` catch-all (D-01); add `scripts/assert-no-static-pdf-import.mjs` build-output CI gate to prevent regressions of this class (D-02); replace inline `subtotal * (resolvedTax.rate / 100)` in `PrintQuoteModal.tsx:196` with `calculateTax(subtotal, resolvedTax.rate).taxAmount` so the two quote-relevant surfaces compute byte-identical taxAmount (D-03); tick the six stale `[ ]` REQUIREMENTS.md checkboxes (DUP-02 + PDF-01..PDF-05) and finalize ROADMAP.md Phase 16 row to `12/12 | Complete | 2026-05-23` (D-05 + D-06).
 **Requirements**: PDF-04 (ticks `[x]` after this phase ships); DUP-02 + PDF-01..PDF-03 + PDF-05 (housekeeping ticks; satisfied per earlier phase verification)
 **Depends on:** Phase 16
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -278,7 +278,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 17-02-PLAN.md — Wave 2 housekeeping: REQUIREMENTS.md 6 checkbox ticks (D-05) + ROADMAP.md Phase 16 row + bullet flip (D-06); depends on 17-01 build verification passing
+- [x] 17-02-PLAN.md — Wave 2 housekeeping: REQUIREMENTS.md 6 checkbox ticks (D-05) + ROADMAP.md Phase 16 row + bullet flip (D-06); depends on 17-01 build verification passing
 
 ---
 
