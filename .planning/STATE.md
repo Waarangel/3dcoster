@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
-stopped_at: Phase 15 COMPLETE — Round 2 UAT verdict `gap-free` (8/8 tests passed). All 5 gaps closed (A, B-as-E, C, D, E). Milestone v1.2 close gated only on Phase 16 (currently 12/13).
-last_updated: "2026-05-25T00:45:00.000Z"
-last_activity: 2026-05-25 — Phase 15 closed gap-free after Round 2 UAT. Gap E (edit-in-place title + inline chip strip) validated against 8-test acceptance contract. VERIFICATION.md amended with final verdict; ROADMAP.md Progress Table marks Phase 15 Complete. Tag color options raised + self-deferred by user → captured in 15-UAT.md as v1.3+ candidate.
+stopped_at: Phase 15 verification recorded — verdict gaps-found (3 gaps); phase remains OPEN
+last_updated: "2026-05-25T10:32:32.342Z"
+last_activity: 2026-05-25 -- Phase 17 planning complete
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 5
-  total_plans: 43
+  total_plans: 46
   completed_plans: 43
-  percent: 83
+  percent: 71
 ---
 
 # Project State
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 
 Phase: 15 (tags-search-quick-duplicate) — COMPLETE (gap-free, 2026-05-25)
 Plan: 12 of 12 complete. Round 2 UAT verdict gap-free (8/8 tests passed).
-Status: Phase 15 closed. All 5 gaps closed across 2 rounds (A, B-as-E, C, D, E). Vitest 267 passed / 1 todo; build 61.5 KB gz; 7 LOCKED files byte-identical from pre-15-12 baseline. Deferred idea captured: tag color options (raised + self-deferred during UAT — v1.3+ candidate).
+Status: Ready to execute
 Next: Phase 16 (Printable PDF Quote — currently 12/13) must close before milestone v1.2 close. Once Phase 16 closes, run `/gsd:audit-milestone v1.2` → `/gsd:complete-milestone v1.2`.
-Last activity: 2026-05-25
+Last activity: 2026-05-25 -- Phase 17 planning complete
 
 ## Performance Metrics
 
