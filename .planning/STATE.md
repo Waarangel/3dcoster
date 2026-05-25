@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quote-to-Customer
 status: executing
-stopped_at: Phase 15 gap-closure Round 1 complete — 3 gaps closed (A, C, D); 1 new gap (E) surfaced; phase remains OPEN pending Round 2
-last_updated: "2026-05-24T18:50:00.000Z"
-last_activity: 2026-05-24 — Phase 15 gap-closure Round 1 landed (Plans 15-07..15-11). UAT closed Gaps A/C/D; rejected Gap B fix as wrong UX shape (panel dropdown vs edit-in-place) — recorded as new Gap E in VERIFICATION.md
+stopped_at: Phase 15 gap-closure Round 2 surface SHIPPED (Plan 15-12) — Gap E edit-in-place title + inline chip strip implemented; awaiting Round 2 UAT before advancing completed_phases
+last_updated: "2026-05-25T00:20:00.000Z"
+last_activity: 2026-05-25 — Plan 15-12 executed (Gap E Round 2). 267 Vitest pass / 1 todo / 0 failed (+4 new Gap E component tests); main chunk 61.5 KB gz; all 7 LOCKED files (DUP-02 helper+tests, features.ts, CostCalculator.tsx, backfill.ts, useDatabase.ts, types.ts) byte-identical. Next: re-run Plan 15-11 (or equivalent) for Round 2 UAT against Gap E acceptance contract.
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 43
-  completed_plans: 41
+  completed_plans: 42
   percent: 67
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-20)
 
 ## Current Position
 
-Phase: 15 (tags-search-quick-duplicate) — GAP CLOSURE ROUND 1 COMPLETE, ROUND 2 PENDING
-Plan: 11 of 11 (Round 1 complete; awaiting Round 2 for Gap E)
-Status: Gap-closure Round 1 outcome — Gaps A/C/D closed, Gap E surfaced (title + tag edit must be edit-in-place, not dropped-down panel). Next command: `/gsd:plan-phase 15 --gaps`.
-Last activity: 2026-05-24
+Phase: 15 (tags-search-quick-duplicate) — GAP CLOSURE ROUND 2 SURFACE SHIPPED; AWAITING UAT
+Plan: 12 of 12 (Round 2 surface plan complete; awaiting Round 2 UAT verdict)
+Status: Plan 15-12 executed cleanly — panel removed (13 identifiers → 0), edit-in-place title input replaces title text in same DOM slot, tag chips render inline in title row with hover ✕ remove + `+` add-tag affordance (placeholder "trending, popular, out of date" per D-16), 10-tag cap enforced, Tag icon + NewBadge `feature="tags"` preserved per D-18. All 7 LOCKED files byte-identical. Gates: tsc exit 0, vitest 267/1/0, build 61.5 KB gz. Next command: re-run Plan 15-11 (or equivalent verification cycle) to UAT against Gap E acceptance contract. On `gap-free` verdict, advance completed_phases→5, percent→83.
+Last activity: 2026-05-25
 
 ## Performance Metrics
 

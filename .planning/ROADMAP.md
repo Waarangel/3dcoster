@@ -113,7 +113,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 - [x] 15-09-PLAN.md — **Gap C**: Remove chip-filter row + selectedChips/tagCounts/jobsAfterChipFilter memos; narrow useDynamicRowHeight cache key from tri-key to pipe-delimited bi-key; rename "Clear filters" → "Clear search" (Wave 6 of gap closure, autonomous; depends on 15-08; gap_closure: true; files: src/components/JobsManager.tsx)
 - [x] 15-10-PLAN.md — **Gap B**: Replace pencil-button tag editor with title-click inline panel (title + tags in one panel) + hover Tag icon affordance; re-target `feature="tags"` NewBadge to overlay the hover Tag icon; add explicit chevron-button for accordion selection toggle (Wave 7 of gap closure, autonomous; depends on 15-08, 15-09; gap_closure: true; files: src/components/JobsManager.tsx)
 - [x] 15-11-PLAN.md — Gap-closure Round 1 verification: automated chain + human UAT against Gap A/B/C/D surfaces; verdict approved-with-gaps — Gaps A/C/D closed, Gap B reopens as Gap E (Wave 8 of gap closure, checkpoint:human-verify; depends on 15-07..15-10; gap_closure: true; files: .planning/phases/15-tags-search-quick-duplicate/15-VERIFICATION.md, .planning/STATE.md)
-- [ ] 15-12-PLAN.md — **Gap E** (Round 2): Replace Plan-15-10 dropped-down panel with edit-in-place title + inline chip strip with hover ✕ + `+` add-tag affordance with usage-suggesting placeholder + tag cap of 10. Round 2 D-16/D-17/D-18 lock overflow strategy (wrap), add-tag input width (narrow 12ch), Tag icon + NewBadge anchor (preserved). Component tests (4 cases — a/b/c/d) appended. (Wave 1 of Round 2, autonomous; depends on 15-10; gap_closure: true; gap_closure_round: 2; files: src/components/JobsManager.tsx, src/components/JobsManager.test.tsx)
+- [x] 15-12-PLAN.md — **Gap E** (Round 2): Replace Plan-15-10 dropped-down panel with edit-in-place title + inline chip strip with hover ✕ + `+` add-tag affordance with usage-suggesting placeholder + tag cap of 10. Round 2 D-16/D-17/D-18 lock overflow strategy (wrap), add-tag input width (narrow 12ch), Tag icon + NewBadge anchor (preserved). Component tests (4 cases — a/b/c/d) appended. Shipped 2026-05-25 — gates: tsc exit 0, vitest 267/1/0, build 61.5 KB gz; 7 LOCKED files byte-identical. Awaiting Round 2 UAT. (Wave 1 of Round 2, autonomous; depends on 15-10; gap_closure: true; gap_closure_round: 2; files: src/components/JobsManager.tsx, src/components/JobsManager.test.tsx)
 **UI hint**: yes
 
 ### Phase 15.1: Customer Library (INSERTED)
@@ -169,7 +169,7 @@ UI-08/09/10 all fold into Phase 13 (touches CostCalculator, Settings, AssetLibra
 | 12. Schema Foundation | 4/4 | Complete    | 2026-05-21 |
 | 13. Tax Model + UI Sweep | 6/6 | Complete    | 2026-05-21 |
 | 14. Customer Details + Etsy Helper | 4/4 | Complete    | 2026-05-22 |
-| 15. Tags, Search + Quick Duplicate | 11/12 | In Progress (Round 2 — Gap E) |  |
+| 15. Tags, Search + Quick Duplicate | 12/12 | In Progress (Round 2 UAT pending) |  |
 | 15.1. Customer Library (INSERTED) | 5/5 | Complete    | 2026-05-22 |
 | 16. Printable PDF Quote | 12/13 | In Progress|  |
 
