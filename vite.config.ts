@@ -99,6 +99,25 @@ export default defineConfig(({ mode }) => ({
         // undefined for non-node_modules ids — Rollup then bundles them into the default
         // main/lazy chunks (preserves the existing React.lazy route splits, D-03).
         manualChunks(id) {
+          // Route shared utility helpers + Vite's preload runtime helper to their own
+          // chunk (Phase 17 Wave 1 extension).
+          // CRITICAL ORDER: this check MUST come BEFORE the pdf check below — if it
+          // ran after, Rollup's chunk-graph optimizer would still claim files like
+          // src/utils/currency.ts and src/utils/format.ts for the pdf chunk (because
+          // src/pdf/generateQuotePdf.ts transitively imports them), forcing the entry
+          // chunk to statically `import{...}from"./pdf-*.js"` for the shared symbols.
+          // That eager static import defeats PDF-04 lazy-loading even with
+          // hoistTransitiveImports:false (the side-effect form is gone but the named
+          // form remains). Explicit utils chunk keeps shared helpers out of pdf.
+          //
+          // vite/preload-helper.js is Vite's virtual module containing __vitePreload.
+          // The entry chunk needs this to perform the dynamic import() that loads the
+          // pdf chunk. If left to Rollup's default placement, it lands inside the pdf
+          // chunk — and then the entry chunk must static-import it back from pdf,
+          // defeating the lazy-load. Routing it to utils breaks the cycle.
+          if (id.includes('/src/utils/') || id.includes('vite/preload-helper.js')) {
+            return 'utils';
+          }
           // Route all PDF dependencies to the lazily-loaded pdf chunk (Phase 16 D-01, Phase 17 D-01 reorder).
           // CRITICAL ORDER: this check MUST come BEFORE the node_modules block —
           // jspdf + jspdf-autotable live under node_modules and would otherwise be
