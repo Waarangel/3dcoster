@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import type { Quote } from '../types';
+import type { Quote, PrintJob } from '../types';
 
 // ---------------------------------------------------------------------------
 // JobsManager Orders section — Phase 16 second extension (D-23..D-32).
@@ -52,7 +52,14 @@ vi.mock('../hooks/useDatabase', () => ({
   }),
 }));
 
-const { OrdersQuoteRows, SaleFromQuoteSubtext } = await import('./JobsManager');
+// Mock the Dexie db so JobCard's onSaveTitle / onSubmitAddTag / onRemoveTag
+// handlers (which call db.jobs.put inside the parent JobsManager) can be
+// observed without standing up a real IndexedDB.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const dbJobsPutSpy = vi.fn<(job: any) => Promise<void>>().mockResolvedValue(undefined);
+vi.mock('../db/database', () => ({ db: { jobs: { put: dbJobsPutSpy } } }));
+
+const { OrdersQuoteRows, SaleFromQuoteSubtext, JobCard, ADD_TAG_PLACEHOLDER } = await import('./JobsManager');
 
 function makeQuote(overrides: Partial<Quote> = {}): Quote {
   const now = new Date('2026-05-23T12:00:00Z');
@@ -272,5 +279,210 @@ describe('SaleFromQuoteSubtext — D-30 (informational, not interactive)', () =>
       root!.render(<SaleFromQuoteSubtext convertedFromQuoteId="q-missing" jobId="job-1" />);
     });
     expect(container!.textContent ?? '').toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JobCard edit-in-place (Gap E) — Phase 15 Round 2
+//
+// Tests assert the four acceptance contract bullets (a/b/c/d) from
+// 15-VERIFICATION.md "Acceptance contract for Round 2".
+// ---------------------------------------------------------------------------
+
+function makeMinimalJob(overrides: Partial<PrintJob> = {}): PrintJob {
+  return {
+    id: 'job-1',
+    name: 'Test Job',
+    createdAt: new Date('2026-05-24T00:00:00Z'),
+    updatedAt: new Date('2026-05-24T00:00:00Z'),
+    filaments: [],
+    printTimeHours: 1,
+    printerInstanceId: 'p-1',
+    modelCost: 0,
+    prepTimeMinutes: 0,
+    postProcessingMinutes: 0,
+    materialsUsed: [],
+    failureRate: 0,
+    costPerUnit: 1,
+    sellingPrice: 10,
+    copiesSold: 0,
+    tags: undefined,
+    ...overrides,
+  } as PrintJob;
+}
+
+function makeBreakEvenInfo() {
+  return {
+    revenueEarned: 0,
+    profitPerUnit: 9,
+    breakEvenCopies: 1,
+    remainingToBreakEven: 1,
+    isBreakEven: false,
+  };
+}
+
+describe('JobCard edit-in-place (Gap E)', () => {
+  let gapEContainer: HTMLDivElement;
+  let gapERoot: Root;
+
+  beforeEach(() => {
+    gapEContainer = document.createElement('div');
+    document.body.appendChild(gapEContainer);
+    gapERoot = createRoot(gapEContainer);
+    dbJobsPutSpy.mockClear();
+  });
+
+  afterEach(() => {
+    act(() => { gapERoot.unmount(); });
+    gapEContainer.remove();
+  });
+
+  function renderJobCard(opts: {
+    job: PrintJob;
+    isEditingTitle?: boolean;
+    isAddingTag?: boolean;
+    onStartEditTitle?: (jobId: string) => void;
+    onStartAddTag?: (jobId: string) => void;
+    onSubmitAddTag?: (job: PrintJob, tagRaw: string) => Promise<void>;
+    onRemoveTag?: (job: PrintJob, tag: string) => Promise<void>;
+  }) {
+    const noop = () => undefined;
+    const noopAsync = async () => undefined;
+    act(() => {
+      gapERoot.render(
+        <JobCard
+          job={opts.job}
+          isSelected={false}
+          info={makeBreakEvenInfo()}
+          recentSales={undefined}
+          isGeneratingPdf={false}
+          getFilamentName={() => 'PLA'}
+          onToggleSelect={noop}
+          onOpenSaleForm={noop}
+          onEdit={noop}
+          onDelete={noop}
+          onGeneratePdf={noop}
+          onEditSale={noop}
+          onDeleteSale={noop}
+          onStartConversion={undefined}
+          onEditQuote={undefined}
+          onDeclineQuote={undefined}
+          isEditingTitle={opts.isEditingTitle ?? false}
+          onStartEditTitle={opts.onStartEditTitle ?? noop}
+          onCancelEditTitle={noop}
+          onSaveTitle={noopAsync}
+          isAddingTag={opts.isAddingTag ?? false}
+          onStartAddTag={opts.onStartAddTag ?? noop}
+          onCancelAddTag={noop}
+          onSubmitAddTag={opts.onSubmitAddTag ?? noopAsync}
+          onRemoveTag={opts.onRemoveTag ?? noopAsync}
+        />,
+      );
+    });
+  }
+
+  it('(a) renders an inline title input in the title row when the title button is clicked', () => {
+    const job = makeMinimalJob({ name: 'Phone Stand' });
+    const onStartEditTitle = vi.fn();
+
+    // Render with isEditingTitle=false initially — title shows as button
+    renderJobCard({ job, onStartEditTitle, isEditingTitle: false });
+
+    const titleButton = gapEContainer.querySelector<HTMLButtonElement>(
+      'button[aria-label="Edit job title"]',
+    );
+    expect(titleButton).not.toBeNull();
+    expect(titleButton?.textContent).toBe('Phone Stand');
+    expect(gapEContainer.querySelector('input[aria-label="Edit job title"]')).toBeNull();
+
+    // Click the title button — parent should be told to open the title input
+    act(() => {
+      titleButton!.click();
+    });
+    expect(onStartEditTitle).toHaveBeenCalledWith('job-1');
+    expect(onStartEditTitle).toHaveBeenCalledTimes(1);
+
+    // Re-render with isEditingTitle=true — title is now an input in the title row
+    renderJobCard({ job, onStartEditTitle, isEditingTitle: true });
+    const titleInput = gapEContainer.querySelector<HTMLInputElement>(
+      'input[aria-label="Edit job title"]',
+    );
+    expect(titleInput).not.toBeNull();
+    expect(titleInput?.value).toBe('Phone Stand');
+    // The title button is gone — replaced in place by the input
+    expect(gapEContainer.querySelector('button[aria-label="Edit job title"]')).toBeNull();
+  });
+
+  it('(b) chip ✕ button calls onRemoveTag with the chip tag', () => {
+    const job = makeMinimalJob({ tags: ['pla', 'phone-stand'] });
+    const onRemoveTag = vi.fn<(job: PrintJob, tag: string) => Promise<void>>().mockResolvedValue(undefined);
+
+    renderJobCard({ job, onRemoveTag });
+
+    // Each chip carries a ✕ button with aria-label="Remove tag <tag>"
+    const removePla = gapEContainer.querySelector<HTMLButtonElement>(
+      'button[aria-label="Remove tag pla"]',
+    );
+    const removePhoneStand = gapEContainer.querySelector<HTMLButtonElement>(
+      'button[aria-label="Remove tag phone-stand"]',
+    );
+    expect(removePla).not.toBeNull();
+    expect(removePhoneStand).not.toBeNull();
+
+    act(() => {
+      removePla!.click();
+    });
+    expect(onRemoveTag).toHaveBeenCalledWith(job, 'pla');
+    expect(onRemoveTag).toHaveBeenCalledTimes(1);
+  });
+
+  it('(c) clicking + opens an inline add-tag input with the D-16 usage-suggesting placeholder', () => {
+    const job = makeMinimalJob({ tags: ['pla'] });
+    const onStartAddTag = vi.fn();
+
+    // Initial render — no input visible, + button present
+    renderJobCard({ job, onStartAddTag, isAddingTag: false });
+    const plusButton = gapEContainer.querySelector<HTMLButtonElement>(
+      'button[aria-label="Add tag"]',
+    );
+    expect(plusButton).not.toBeNull();
+    expect(plusButton?.textContent).toBe('+');
+    expect(gapEContainer.querySelector('input[aria-label="Add tag"]')).toBeNull();
+
+    act(() => {
+      plusButton!.click();
+    });
+    expect(onStartAddTag).toHaveBeenCalledWith('job-1');
+
+    // Re-render with isAddingTag=true — input replaces the + button
+    renderJobCard({ job, onStartAddTag, isAddingTag: true });
+    const addInput = gapEContainer.querySelector<HTMLInputElement>(
+      'input[aria-label="Add tag"]',
+    );
+    expect(addInput).not.toBeNull();
+    // The placeholder uses the EXPORTED constant — we assert via the constant
+    // reference so the test never duplicates the literal string.
+    expect(addInput?.placeholder).toBe(ADD_TAG_PLACEHOLDER);
+    // Sanity check: the constant value itself matches the Round 2 D-16 lock.
+    expect(ADD_TAG_PLACEHOLDER).toBe('trending, popular, out of date');
+  });
+
+  it('(d) when job.tags.length === 10 (D-02 cap), the + add-tag affordance is hidden', () => {
+    const tags = Array.from({ length: 10 }, (_, i) => `tag${i}`);
+    const job = makeMinimalJob({ tags });
+
+    renderJobCard({ job });
+
+    // No + button, no add-tag input — the affordance is fully hidden at the cap
+    expect(gapEContainer.querySelector('button[aria-label="Add tag"]')).toBeNull();
+    expect(gapEContainer.querySelector('input[aria-label="Add tag"]')).toBeNull();
+
+    // The Tag icon hover shortcut DOES still exist (D-18 — Tag icon kept as NewBadge anchor)
+    const tagShortcut = gapEContainer.querySelector('button[aria-label="Add tag via shortcut"]');
+    expect(tagShortcut).not.toBeNull();
+
+    // All 10 chips are rendered (D-11: render every tag, no max-visible cap)
+    const chipRemoveButtons = gapEContainer.querySelectorAll('button[aria-label^="Remove tag "]');
+    expect(chipRemoveButtons).toHaveLength(10);
   });
 });

@@ -57,14 +57,24 @@ type JobCardProps = {
   onEditQuote?: (quote: Quote) => void;
   /** Phase 16 ext2 D-28: opens DeclineQuoteModal for the given Pending Quote. */
   onDeclineQuote?: (quote: Quote) => void;
-  /** Phase 15 plan 10 (Gap B) — whether the title-click inline edit panel is open for this row. */
-  isEditingPanel: boolean;
-  /** Phase 15 plan 10 (Gap B) — open the title-click inline edit panel (title-rename + tag editor in one). */
-  onStartEditPanel: (jobId: string) => void;
-  /** Phase 15 plan 10 (Gap B) — close the inline edit panel without saving. */
-  onCancelEditPanel: () => void;
-  /** Phase 15 plan 10 (Gap B) — persist parsed name + tags via parseTagsInput + db.jobs.put. */
-  onSavePanel: (job: PrintJob, value: { name: string; tagsInput: string }) => Promise<void>;
+  /** Phase 15 Round 2 (Gap E) — whether the title edit-in-place field is open for this row. */
+  isEditingTitle: boolean;
+  /** Phase 15 Round 2 (Gap E) — open the inline title edit field. */
+  onStartEditTitle: (jobId: string) => void;
+  /** Phase 15 Round 2 (Gap E) — close the inline title edit field without saving. */
+  onCancelEditTitle: () => void;
+  /** Phase 15 Round 2 (Gap E) — persist the new (trimmed, empty-guarded) title via db.jobs.put. */
+  onSaveTitle: (job: PrintJob, name: string) => Promise<void>;
+  /** Phase 15 Round 2 (Gap E) — whether the inline add-tag field is open for this row. */
+  isAddingTag: boolean;
+  /** Phase 15 Round 2 (Gap E) — open the inline add-tag field at the end of the chip strip. */
+  onStartAddTag: (jobId: string) => void;
+  /** Phase 15 Round 2 (Gap E) — close the inline add-tag field without committing. */
+  onCancelAddTag: () => void;
+  /** Phase 15 Round 2 (Gap E) — parse one tag via parseTagsInput, merge-dedupe-cap into job.tags, persist via db.jobs.put. */
+  onSubmitAddTag: (job: PrintJob, tagRaw: string) => Promise<void>;
+  /** Phase 15 Round 2 (Gap E) — remove a tag from job.tags via db.jobs.put. */
+  onRemoveTag: (job: PrintJob, tag: string) => Promise<void>;
   style?: React.CSSProperties;
 };
 
@@ -337,7 +347,9 @@ function OrdersSection({
 // Module-scope, memoized job card. CR-01 fix: row component identity is now
 // stable across parent renders, so react-window's internal memo wrapper
 // caches correctly and rows only re-render when their props change.
-const JobCard = memo(function JobCard({
+// Exported so JobsManager.test.tsx can mount it directly (mirrors the
+// OrdersQuoteRows / SaleFromQuoteSubtext export-for-test pattern).
+export const JobCard = memo(function JobCard({
   job,
   isSelected,
   info,
@@ -354,26 +366,34 @@ const JobCard = memo(function JobCard({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
-  isEditingPanel,
-  onStartEditPanel,
-  onCancelEditPanel,
-  onSavePanel,
+  isEditingTitle,
+  onStartEditTitle,
+  onCancelEditTitle,
+  onSaveTitle,
+  isAddingTag,
+  onStartAddTag,
+  onCancelAddTag,
+  onSubmitAddTag,
+  onRemoveTag,
   style,
 }: JobCardProps) {
-  // Phase 15 plan 10 (Gap B): local state for the unified title+tags inline edit panel.
-  // Both fields re-seed from the job's current values when the panel opens so that a
-  // job edited elsewhere in the meantime is never shown stale.
-  const [panelName, setPanelName] = useState(() => job.name);
-  const [panelTagsInput, setPanelTagsInput] = useState(() => (job.tags ?? []).join(', '));
-  // Re-seed when the panel transitions from closed → open.
-  // CRITICAL: do NOT call setPanelName / setPanelTagsInput outside this effect —
-  // that would race against user input.
+  // Phase 15 Round 2 (Gap E): local draft state for edit-in-place affordances.
+  // titleDraft re-seeds from job.name on every isEditingTitle transition (so a
+  // job renamed elsewhere is never shown stale). addTagDraft always starts empty.
+  const [titleDraft, setTitleDraft] = useState(() => job.name);
+  const [addTagDraft, setAddTagDraft] = useState('');
+  // Re-seed titleDraft when the title-edit transitions from closed → open.
   useEffect(() => {
-    if (isEditingPanel) {
-      setPanelName(job.name);
-      setPanelTagsInput((job.tags ?? []).join(', '));
+    if (isEditingTitle) {
+      setTitleDraft(job.name);
     }
-  }, [isEditingPanel, job.name, job.tags]);
+  }, [isEditingTitle, job.name]);
+  // Re-seed addTagDraft to empty when the add-tag input transitions from closed → open.
+  useEffect(() => {
+    if (isAddingTag) {
+      setAddTagDraft('');
+    }
+  }, [isAddingTag]);
 
   return (
     <div
@@ -386,10 +406,12 @@ const JobCard = memo(function JobCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          {/* Phase 15 plan 10 (Gap B) — title row: chevron button (selection toggle) +
-              title button (opens edit panel) + hover Tag icon + NewBadge + break-even pill.
-              The `group` class on the wrapper enables `group-hover:opacity-100` on the Tag icon. */}
-          <div className="group flex items-center gap-3">
+          {/* Phase 15 Round 2 (Gap E) — title row: chevron (selection toggle) +
+              title-or-input (edit in place) + inline chip strip with hover ✕ +
+              + add-tag affordance (or inline input) + hover Tag icon + break-even pill.
+              D-16: flex-wrap so chips overflow gracefully on narrow viewports.
+              The `group` class enables `group-hover:opacity-100` on the Tag icon. */}
+          <div className="group flex items-center gap-3 flex-wrap">
             {/* allow-raw-html: chevron icon button — small affordance (w-6 h-6), not a CTA; Button primitive would be visually incorrect for an icon-only toggle */}
             <button
               type="button"
@@ -400,24 +422,92 @@ const JobCard = memo(function JobCard({
             >
               <ChevronRightIcon className={`w-4 h-4 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
             </button>
-            {/* allow-raw-html: title button — inline text affordance that renders job.name; Button primitive adds unwanted padding/border to what should be plain text */}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onStartEditPanel(job.id); }}
-              aria-label="Edit job title and tags"
-              className="font-medium text-white text-left hover:text-blue-300 transition-colors"
-            >
-              {job.name}
-            </button>
-            <div className="relative">
-              {/* Tag icon — appears on hover of the title row; stays visible while the panel is open.
-                  NewBadge (tags) re-targeted from the prior pencil-button site (Gap B). */}
-              {/* allow-raw-html: tag icon button — small icon affordance (w-6 h-6); Button primitive dwarf the icon and add unwanted layout mass */}
+            {isEditingTitle ? (
+              // allow-raw-html: title edit-in-place — raw input keeps the in-place visual (no Button primitive padding/border mass)
+              <input
+                type="text"
+                value={titleDraft}
+                autoFocus
+                onChange={e => setTitleDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { e.preventDefault(); void onSaveTitle(job, titleDraft); }
+                  if (e.key === 'Escape') { e.preventDefault(); onCancelEditTitle(); }
+                }}
+                onBlur={() => {
+                  if (titleDraft.trim().length > 0) void onSaveTitle(job, titleDraft);
+                  else onCancelEditTitle();
+                }}
+                aria-label="Edit job title"
+                className="font-medium text-white bg-slate-800 border border-blue-500 rounded px-2 py-0.5 outline-none min-w-[8rem]"
+              />
+            ) : (
+              /* allow-raw-html: title button — inline text affordance that renders job.name; Button primitive adds unwanted padding/border to what should be plain text */
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onStartEditPanel(job.id); }}
-                aria-label="Edit tags"
-                className={`inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-opacity ${isEditingPanel ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+                onClick={(e) => { e.stopPropagation(); onStartEditTitle(job.id); }}
+                aria-label="Edit job title"
+                className="font-medium text-white text-left hover:text-blue-300 transition-colors"
+              >
+                {job.name}
+              </button>
+            )}
+            {/* Inline chip strip — each chip has hover ✕ (D-11 base styling preserved byte-identically) */}
+            {(job.tags ?? []).map(tag => (
+              <span key={tag} className="relative group/chip inline-flex items-center text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
+                <span>{tag}</span>
+                {/* allow-raw-html: chip ✕ button — tiny (w-3.5 h-3.5) icon affordance; Button primitive would dwarf the chip */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); void onRemoveTag(job, tag); }}
+                  aria-label={`Remove tag ${tag}`}
+                  className="ml-1 -mr-0.5 inline-flex items-center justify-center w-3.5 h-3.5 rounded-sm hover:bg-slate-500/60 hover:text-slate-100 transition-opacity opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 text-[10px] leading-none"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+            {/* + add-tag affordance — hidden when tags.length === 10 (D-02 cap) */}
+            {(job.tags?.length ?? 0) < 10 && (
+              isAddingTag ? (
+                // allow-raw-html: add-tag inline — 12ch narrow affordance; Input primitive too wide for chip-row baseline
+                <input
+                  type="text"
+                  value={addTagDraft}
+                  autoFocus
+                  onChange={e => setAddTagDraft(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.preventDefault(); void onSubmitAddTag(job, addTagDraft); }
+                    if (e.key === 'Escape') { e.preventDefault(); onCancelAddTag(); }
+                  }}
+                  onBlur={() => {
+                    if (addTagDraft.trim().length > 0) void onSubmitAddTag(job, addTagDraft);
+                    else onCancelAddTag();
+                  }}
+                  placeholder={ADD_TAG_PLACEHOLDER}
+                  aria-label="Add tag"
+                  className="max-w-[12ch] px-2 py-0.5 text-xs rounded bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                />
+              ) : (
+                /* allow-raw-html: + add-tag button — w-5 h-5 icon affordance; Button primitive would not fit in the inline chip-row baseline */
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onStartAddTag(job.id); }}
+                  aria-label="Add tag"
+                  className="inline-flex items-center justify-center w-5 h-5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-sm leading-none transition-colors"
+                >
+                  +
+                </button>
+              )
+            )}
+            {/* Tag icon hover affordance — KEPT per Round 2 D-18; NewBadge overlay KEPT.
+                Now opens the + add-tag inline input (no panel anywhere). */}
+            <div className="relative">
+              {/* allow-raw-html: tag icon button — small icon affordance (w-6 h-6); Button primitive would dwarf the icon and add unwanted layout mass */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onStartAddTag(job.id); }}
+                aria-label="Add tag via shortcut"
+                className={`inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-opacity ${isAddingTag ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
               >
                 <TagIcon className="w-4 h-4" />
               </button>
@@ -449,19 +539,9 @@ const JobCard = memo(function JobCard({
               <span className="text-slate-500 italic">No filament data</span>
             )} | {job.printTimeHours}h
           </div>
-          {/* Phase 15 plan 05 D-11 — tag chips on JobCard summary line.
-              Byte-identical styling to AssetLibrary.tsx:192-198 (D-11 LOCK).
-              Non-interactive — plain <span>, no onClick. Every tag rendered,
-              no max-visible cap. */}
-          {job.tags && job.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {job.tags.map(tag => (
-                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Phase 15 Round 2 (Gap E) — standalone chip strip REMOVED.
+              Tag chips now render INLINE in the title row above (with hover ✕).
+              D-11 styling is preserved on the inline chips (text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400). */}
         </div>
         <div className="text-right">
           <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
@@ -471,74 +551,9 @@ const JobCard = memo(function JobCard({
         </div>
       </div>
 
-      {/* Phase 15 plan 10 (Gap B) — unified title+tags inline edit panel.
-          Sits OUTSIDE the {isSelected && (...)} accordion so it is reachable
-          from collapsed rows. The user can title-click any row and edit without
-          having to expand the accordion first. */}
-      {isEditingPanel && (
-        <div className="mt-3 pt-3 border-t border-slate-700" onClick={(e) => e.stopPropagation()}>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">
-                <span>Title</span>
-              </label>
-              <Input
-                type="text"
-                value={panelName}
-                onChange={e => setPanelName(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    void onSavePanel(job, { name: panelName, tagsInput: panelTagsInput });
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    onCancelEditPanel();
-                  }
-                }}
-                placeholder="Job name"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Tags</span>
-              </label>
-              <Input
-                type="text"
-                value={panelTagsInput}
-                onChange={e => setPanelTagsInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    void onSavePanel(job, { name: panelName, tagsInput: panelTagsInput });
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    onCancelEditPanel();
-                  }
-                }}
-                placeholder="phone-stand, pla, gloss"
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="ghost"
-                btnSize="sm"
-                className="border border-slate-600"
-                onClick={(e) => { e.stopPropagation(); onCancelEditPanel(); }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                btnSize="sm"
-                onClick={(e) => { e.stopPropagation(); void onSavePanel(job, { name: panelName, tagsInput: panelTagsInput }); }}
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Phase 15 Round 2 (Gap E) — the dropped-down panel block is GONE.
+          Edit-in-place affordances (inline title field + chip X + add-tag) live
+          directly in the title row above; no separate panel ever appears. */}
 
       {isSelected && (
         <div className="mt-4 pt-4 border-t border-slate-600">
@@ -761,11 +776,16 @@ type JobRowProps = {
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
-  // Phase 15 plan 10 (Gap B) — parent-owned state for one-at-a-time inline edit panel
-  editingPanelJobId: string | null;
-  onStartEditPanel: (jobId: string) => void;
-  onCancelEditPanel: () => void;
-  onSavePanel: (job: PrintJob, value: { name: string; tagsInput: string }) => Promise<void>;
+  // Phase 15 Round 2 (Gap E) — parent-owned exclusive per-row edit-in-place state
+  editingTitleJobId: string | null;
+  onStartEditTitle: (jobId: string) => void;
+  onCancelEditTitle: () => void;
+  onSaveTitle: (job: PrintJob, name: string) => Promise<void>;
+  addingTagJobId: string | null;
+  onStartAddTag: (jobId: string) => void;
+  onCancelAddTag: () => void;
+  onSubmitAddTag: (job: PrintJob, tagRaw: string) => Promise<void>;
+  onRemoveTag: (job: PrintJob, tag: string) => Promise<void>;
 };
 
 const JobRow = ({
@@ -787,10 +807,15 @@ const JobRow = ({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
-  editingPanelJobId,
-  onStartEditPanel,
-  onCancelEditPanel,
-  onSavePanel,
+  editingTitleJobId,
+  onStartEditTitle,
+  onCancelEditTitle,
+  onSaveTitle,
+  addingTagJobId,
+  onStartAddTag,
+  onCancelAddTag,
+  onSubmitAddTag,
+  onRemoveTag,
 }: RowComponentProps<JobRowProps>) => {
   const job = jobs[index];
   const isSelected = selectedJobId === job.id;
@@ -812,10 +837,15 @@ const JobRow = ({
       onStartConversion={onStartConversion}
       onEditQuote={onEditQuote}
       onDeclineQuote={onDeclineQuote}
-      isEditingPanel={editingPanelJobId === job.id}
-      onStartEditPanel={onStartEditPanel}
-      onCancelEditPanel={onCancelEditPanel}
-      onSavePanel={onSavePanel}
+      isEditingTitle={editingTitleJobId === job.id}
+      onStartEditTitle={onStartEditTitle}
+      onCancelEditTitle={onCancelEditTitle}
+      onSaveTitle={onSaveTitle}
+      isAddingTag={addingTagJobId === job.id}
+      onStartAddTag={onStartAddTag}
+      onCancelAddTag={onCancelAddTag}
+      onSubmitAddTag={onSubmitAddTag}
+      onRemoveTag={onRemoveTag}
       style={style}
     />
   );
@@ -908,6 +938,17 @@ function SearchIcon(props: SVGProps<SVGSVGElement>) {
 // overflow-footer threshold can never drift out of sync.
 const PICKER_VISIBLE_LIMIT = 8;
 
+// Phase 15 Round 2 (Gap E, D-16) — usage-suggesting placeholder for the inline
+// add-tag input. NOT a content example (no "phone-stand, pla, gloss" — those
+// vary per job); rather, this suggests the KIND of tags users should apply
+// (status / popularity / lifecycle indicators) per the verbatim Product Intent
+// Note in 15-VERIFICATION.md: "Tags are meant to be descriptive of what is
+// going on with jobs. For example, trending, bestseller, etc."
+//
+// Exported so the Gap E component tests can assert the placeholder is wired
+// onto the inline add-tag field without duplicating the literal string.
+export const ADD_TAG_PLACEHOLDER = 'trending, popular, out of date';
+
 export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   // Print Quote modal state (plan 16-10 + D-27). Either:
@@ -952,10 +993,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  // Phase 15 plan 10 (Gap B) — one-at-a-time title-click inline edit panel.
-  // Holds the job.id of the row whose title (or hover Tag icon) was clicked, or null
-  // when no panel is open. Exclusive with all other rows.
-  const [editingPanelJobId, setEditingPanelJobId] = useState<string | null>(null);
+  // Phase 15 Round 2 (Gap E) — edit-in-place state. Each slot is exclusive across
+  // the row list; both can be set on the SAME row simultaneously (user could be
+  // renaming the title AND adding a tag), but never on DIFFERENT rows.
+  const [editingTitleJobId, setEditingTitleJobId] = useState<string | null>(null);
+  const [addingTagJobId, setAddingTagJobId] = useState<string | null>(null);
 
   // D-06 debounce — 250ms. No project-wide `useDebounce` hook exists (currently
   // single-surface only); PATTERNS.md No-Analog rule says don't extract until 2+ surfaces.
@@ -1466,28 +1508,69 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setDeleteConfirmJobId(id);
   }, []);
 
-  // Phase 15 plan 10 (Gap B) — open the title-click inline edit panel for a row.
-  const handleStartEditPanel = useCallback((jobId: string) => {
-    setEditingPanelJobId(jobId);
+  // Phase 15 Round 2 (Gap E) — Title edit-in-place handlers.
+  const handleStartEditTitle = useCallback((jobId: string) => {
+    setEditingTitleJobId(jobId);
   }, []);
 
-  // Phase 15 plan 10 (Gap B) — close the inline edit panel without saving.
-  const handleCancelEditPanel = useCallback(() => {
-    setEditingPanelJobId(null);
+  const handleCancelEditTitle = useCallback(() => {
+    setEditingTitleJobId(null);
   }, []);
 
-  // Phase 15 plan 10 (Gap B) — persist parsed name + tags via parseTagsInput
-  // (the D-02 shared helper) and write to db.jobs.put with a refreshed
-  // updatedAt. Persists BOTH name and tags in one db.jobs.put.
-  // Empty-name guard: falls back to job.name when the trimmed input is empty
-  // (never persists a blank job name). The liveQuery re-emits and JobCard
-  // tag chips re-render automatically — no manual cache invalidation needed.
-  const handleSavePanel = useCallback(async (job: PrintJob, value: { name: string; tagsInput: string }) => {
-    const trimmedName = value.name.trim();
-    const safeName = trimmedName.length > 0 ? trimmedName : job.name;
-    const parsedTags = parseTagsInput(value.tagsInput);
-    await db.jobs.put({ ...job, name: safeName, tags: parsedTags, updatedAt: new Date() });
-    setEditingPanelJobId(null);
+  // Empty-name guard: trim, fall back to job.name if empty; skip the write when
+  // the safe name equals job.name (avoid noop write + updatedAt bump).
+  const handleSaveTitle = useCallback(async (job: PrintJob, name: string) => {
+    const trimmed = name.trim();
+    const safeName = trimmed.length > 0 ? trimmed : job.name;
+    if (safeName !== job.name) {
+      await db.jobs.put({ ...job, name: safeName, updatedAt: new Date() });
+    }
+    setEditingTitleJobId(null);
+  }, []);
+
+  // Phase 15 Round 2 (Gap E) — Add-tag inline input handlers.
+  const handleStartAddTag = useCallback((jobId: string) => {
+    setAddingTagJobId(jobId);
+  }, []);
+
+  const handleCancelAddTag = useCallback(() => {
+    setAddingTagJobId(null);
+  }, []);
+
+  // Uses parseTagsInput to share the D-02 normalize pipeline. Takes the first
+  // parsed token (commas are treated as separators per D-02 — only the first
+  // token is added). Dedupes against existing tags and enforces D-02 cap-at-10.
+  const handleSubmitAddTag = useCallback(async (job: PrintJob, tagRaw: string) => {
+    const parsed = parseTagsInput(tagRaw);
+    const newTag = parsed?.[0];
+    if (!newTag) {
+      setAddingTagJobId(null);
+      return;
+    }
+    const existing = job.tags ?? [];
+    if (existing.includes(newTag)) {
+      setAddingTagJobId(null);
+      return;
+    }
+    if (existing.length >= 10) {
+      setAddingTagJobId(null);
+      return;
+    }
+    const merged = [...existing, newTag];
+    await db.jobs.put({ ...job, tags: merged, updatedAt: new Date() });
+    setAddingTagJobId(null);
+  }, []);
+
+  // Phase 15 Round 2 (Gap E) — Chip ✕ removal handler.
+  // Persists `tags: undefined` (NOT `tags: []`) when the filtered result is empty
+  // (D-02 line 43 "empty input → tags: undefined" semantic). Defensive guard
+  // against race conditions where the chip ✕ fires twice for the same tag.
+  const handleRemoveTag = useCallback(async (job: PrintJob, tag: string) => {
+    const existing = job.tags ?? [];
+    if (!existing.includes(tag)) return;
+    const next = existing.filter(t => t !== tag);
+    const nextTags = next.length > 0 ? next : undefined;
+    await db.jobs.put({ ...job, tags: nextTags, updatedAt: new Date() });
   }, []);
 
   const confirmDeleteJob = async () => {
@@ -1549,11 +1632,16 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onStartConversion: handleStartConversion,
     onEditQuote: handleStartEditQuote,
     onDeclineQuote: handleStartDecline,
-    editingPanelJobId,
-    onStartEditPanel: handleStartEditPanel,
-    onCancelEditPanel: handleCancelEditPanel,
-    onSavePanel: handleSavePanel,
-  }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingPanelJobId, handleStartEditPanel, handleCancelEditPanel, handleSavePanel]);
+    editingTitleJobId,
+    onStartEditTitle: handleStartEditTitle,
+    onCancelEditTitle: handleCancelEditTitle,
+    onSaveTitle: handleSaveTitle,
+    addingTagJobId,
+    onStartAddTag: handleStartAddTag,
+    onCancelAddTag: handleCancelAddTag,
+    onSubmitAddTag: handleSubmitAddTag,
+    onRemoveTag: handleRemoveTag,
+  }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1661,10 +1749,15 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       onStartConversion={handleStartConversion}
                       onEditQuote={handleStartEditQuote}
                       onDeclineQuote={handleStartDecline}
-                      isEditingPanel={editingPanelJobId === job.id}
-                      onStartEditPanel={handleStartEditPanel}
-                      onCancelEditPanel={handleCancelEditPanel}
-                      onSavePanel={handleSavePanel}
+                      isEditingTitle={editingTitleJobId === job.id}
+                      onStartEditTitle={handleStartEditTitle}
+                      onCancelEditTitle={handleCancelEditTitle}
+                      onSaveTitle={handleSaveTitle}
+                      isAddingTag={addingTagJobId === job.id}
+                      onStartAddTag={handleStartAddTag}
+                      onCancelAddTag={handleCancelAddTag}
+                      onSubmitAddTag={handleSubmitAddTag}
+                      onRemoveTag={handleRemoveTag}
                     />
                   );
                 })}
