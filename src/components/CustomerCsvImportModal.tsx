@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from './ui';
+import { Button, Modal } from './ui';
 import {
   parseCustomerCsv,
   buildCustomersForImport,
@@ -43,7 +43,7 @@ export function CustomerCsvImportModal({
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset on close (mirrors CsvImportModal.tsx:33-43).
+  // Reset on close — Modal unmounts children, but explicit reset is clearer.
   useEffect(() => {
     if (!isOpen) {
       setStep('upload');
@@ -55,16 +55,6 @@ export function CustomerCsvImportModal({
       setIsImporting(false);
     }
   }, [isOpen]);
-
-  // Escape to close (mirrors CsvImportModal.tsx:46-53).
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
 
   // ---- File processing ----------------------------------------------------
   // WR-06 fix: cap raw CSV size at 5 MB so a stray Excel/log file renamed
@@ -179,85 +169,70 @@ export function CustomerCsvImportModal({
   }, [parseResult, importCount, existingCustomers, selected, duplicateMode, onImportCustomers, onClose]);
 
   // ---- Render --------------------------------------------------------------
-  if (!isOpen) return null;
+  const title = (
+    <span className="flex items-center gap-3">
+      {step === 'preview' && (
+        <Button
+          variant="ghost"
+          btnSize="sm"
+          onClick={() => { setStep('upload'); setParseResult(null); setError(null); }}
+          aria-label="Back to upload"
+          title="Back to upload"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </Button>
+      )}
+      {step === 'upload' ? 'Import customers from CSV' : 'Preview customer import'}
+    </span>
+  );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-3xl max-h-[85vh] flex flex-col shadow-xl">
-        {/* Header */}
-        <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            {step === 'preview' && (
-              <Button
-                variant="ghost"
-                btnSize="sm"
-                onClick={() => { setStep('upload'); setParseResult(null); setError(null); }}
-                aria-label="Back to upload"
-                title="Back to upload"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Button>
-            )}
-            <h3 className="text-lg font-semibold text-white">
-              {step === 'upload' ? 'Import customers from CSV' : 'Preview customer import'}
-            </h3>
-          </div>
-          <Button variant="ghost" btnSize="sm" onClick={onClose} aria-label="Close">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="xl">
+      {/* Body */}
+      <div className="p-4">
+        {step === 'upload' && (
+          <UploadStep
+            isDragOver={isDragOver}
+            error={error}
+            fileInputRef={fileInputRef}
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={handleDrop}
+            onFileSelect={handleFileSelect}
+          />
+        )}
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {step === 'upload' && (
-            <UploadStep
-              isDragOver={isDragOver}
-              error={error}
-              fileInputRef={fileInputRef}
-              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={handleDrop}
-              onFileSelect={handleFileSelect}
-            />
-          )}
-
-          {step === 'preview' && parseResult && (
-            <PreviewStep
-              parseResult={parseResult}
-              stats={stats}
-              selected={selected}
-              duplicateMode={duplicateMode}
-              onToggleRow={toggleRow}
-              onDuplicateModeChange={setDuplicateMode}
-              error={error}
-            />
-          )}
-        </div>
-
-        {/* Footer (preview only) */}
-        {step === 'preview' && (
-          <div className="shrink-0 flex items-center justify-between p-4 border-t border-slate-700">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button
-              variant="primary"
-              onClick={handleImport}
-              disabled={importCount === 0 || isImporting}
-            >
-              {isImporting
-                ? 'Importing...'
-                : `Import ${importCount} customer${importCount !== 1 ? 's' : ''}`}
-            </Button>
-          </div>
+        {step === 'preview' && parseResult && (
+          <PreviewStep
+            parseResult={parseResult}
+            stats={stats}
+            selected={selected}
+            duplicateMode={duplicateMode}
+            onToggleRow={toggleRow}
+            onDuplicateModeChange={setDuplicateMode}
+            error={error}
+          />
         )}
       </div>
-    </div>
+
+      {/* Footer (preview only) */}
+      {step === 'preview' && (
+        <div className="flex items-center justify-between p-4 border-t border-slate-700">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="primary"
+            onClick={handleImport}
+            disabled={importCount === 0 || isImporting}
+          >
+            {isImporting
+              ? 'Importing...'
+              : `Import ${importCount} customer${importCount !== 1 ? 's' : ''}`}
+          </Button>
+        </div>
+      )}
+    </Modal>
   );
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Quote } from '../types';
-import { Button, Textarea } from './ui';
+import { Button, Textarea, Modal } from './ui';
 import { formatQuoteNumber } from '../utils/format';
 
 // ---------------------------------------------------------------------------
@@ -41,7 +41,8 @@ export function DeclineQuoteModal({ quote, onConfirm, onClose }: DeclineQuoteMod
 
   const isOpen = quote !== null;
 
-  // Reset state when modal opens (mirrors CustomerEditModal).
+  // Reset state when modal opens (Modal unmounts children on close, but we still
+  // need fresh state on each open).
   useEffect(() => {
     if (isOpen) {
       setReason('');
@@ -49,18 +50,6 @@ export function DeclineQuoteModal({ quote, onConfirm, onClose }: DeclineQuoteMod
       setError(null);
     }
   }, [isOpen]);
-
-  // Close on Escape (mirrors CustomerEditModal).
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
-
-  if (!isOpen || !quote) return null;
 
   const handleConfirm = async () => {
     setError(null);
@@ -76,63 +65,51 @@ export function DeclineQuoteModal({ quote, onConfirm, onClose }: DeclineQuoteMod
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={quote ? `Decline quote ${formatQuoteNumber(quote.quoteNumber)}` : ''}
+      size="md"
     >
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md shadow-xl">
-        {/* Header */}
-        <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">
-            Decline quote {formatQuoteNumber(quote.quoteNumber)}
-          </h3>
-          <Button variant="ghost" btnSize="sm" onClick={onClose} aria-label="Close">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
+      {/* Body */}
+      <div className="p-4 space-y-3">
+        <p className="text-sm text-slate-300">
+          Mark this quote as declined?{' '}
+          <span className="text-slate-400">You can reopen it later if the customer changes their mind.</span>
+        </p>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1" htmlFor="decline-reason-input">
+            Reason (optional)
+          </label>
+          <Textarea
+            id="decline-reason-input"
+            rows={3}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. Too expensive, timing didn't work, went with someone else…"
+          />
         </div>
-
-        {/* Body */}
-        <div className="p-4 space-y-3">
-          <p className="text-sm text-slate-300">
-            Mark this quote as declined?{' '}
-            <span className="text-slate-400">You can reopen it later if the customer changes their mind.</span>
-          </p>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1" htmlFor="decline-reason-input">
-              Reason (optional)
-            </label>
-            <Textarea
-              id="decline-reason-input"
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Too expensive, timing didn't work, went with someone else…"
-            />
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-sm text-red-400">
+            {error}
           </div>
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-sm text-red-400">
-              {error}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 pt-2 border-t border-slate-700">
-          <Button variant="secondary" btnSize="md" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            btnSize="md"
-            onClick={() => { void handleConfirm(); }}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving…' : 'Confirm decline'}
-          </Button>
-        </div>
+        )}
       </div>
-    </div>
+
+      {/* Footer */}
+      <div className="flex justify-end gap-2 p-4 pt-2 border-t border-slate-700">
+        <Button variant="secondary" btnSize="md" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          btnSize="md"
+          onClick={() => { void handleConfirm(); }}
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving…' : 'Confirm decline'}
+        </Button>
+      </div>
+    </Modal>
   );
 }

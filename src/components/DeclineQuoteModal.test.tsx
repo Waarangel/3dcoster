@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 function buttonByText(text: string): HTMLButtonElement | undefined {
-  return Array.from(container!.querySelectorAll('button')).find(
+  return Array.from(document.body.querySelectorAll('button')).find(
     (b) => (b.textContent ?? '').trim() === text,
   ) as HTMLButtonElement | undefined;
 }
@@ -63,14 +63,15 @@ describe('DeclineQuoteModal', () => {
     await act(async () => {
       root!.render(<DeclineQuoteModal quote={null} onConfirm={vi.fn()} onClose={vi.fn()} />);
     });
-    expect(container!.textContent ?? '').toBe('');
+    // Modal portals to document.body; closed Modal renders nothing → no [role="dialog"]
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it('renders with the quote number in the title when quote is provided', async () => {
     await act(async () => {
       root!.render(<DeclineQuoteModal quote={makeQuote()} onConfirm={vi.fn()} onClose={vi.fn()} />);
     });
-    expect(container!.textContent ?? '').toContain('Decline quote Q-0042');
+    expect(document.body.textContent ?? '').toContain('Decline quote Q-0042');
   });
 
   it('Confirm decline with reason → onConfirm called with trimmed reason; onClose called', async () => {
@@ -79,7 +80,7 @@ describe('DeclineQuoteModal', () => {
     await act(async () => {
       root!.render(<DeclineQuoteModal quote={makeQuote()} onConfirm={onConfirm} onClose={onClose} />);
     });
-    const textarea = container!.querySelector('textarea') as HTMLTextAreaElement;
+    const textarea = document.body.querySelector('textarea') as HTMLTextAreaElement;
     await act(async () => { typeInto(textarea, '  Too expensive  '); });
 
     const confirmBtn = buttonByText('Confirm decline');
