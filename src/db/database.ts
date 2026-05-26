@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote } from '../types';
-import { backfillTagsOnJob, backfillQuotesFromJobs } from './backfill';
+import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency } from './backfill';
 
 // Settings stored as key-value pairs
 interface Setting {
@@ -121,9 +121,69 @@ db.version(8).stores({
 }).upgrade(async tx => {
   const jobs = await tx.table('jobs').toArray();
   const sales = await tx.table('sales').toArray();
-  const quotes = backfillQuotesFromJobs(jobs, sales);
+  // DATA-03 forward fix: read user's currency from tx-scoped settings;
+  // brand-new installs (no settings row yet) default to 'USD' — matches
+  // current behavior for users who reach v8 without having opened settings.
+  const settingsRow = await tx.table('settings').get('userProfile');
+  let currency = 'USD';
+  if (settingsRow) {
+    try {
+      currency = (JSON.parse(settingsRow.value) as UserProfile).currency;
+    } catch {
+      // Corrupt settings → fall through to 'USD'. The v9 reconcile (added below)
+      // re-stamps these quotes if the user has a valid currency at next open.
+    }
+  }
+  const quotes = backfillQuotesFromJobs(jobs, sales, currency);
   if (quotes.length > 0) {
     await tx.table('quotes').bulkAdd(quotes);
+  }
+});
+
+// v9: DATA-03 reconcile — re-stamp any quote whose lineItemsSnapshot.currency
+// is still 'USD' for a non-USD user. Closes the legacy-data gap left by the
+// Phase 16 v8 hardcode. Per [[feedback_reconcile_legacy_data]] standing rule:
+// every schema/behavior change touching a derived field ships with a one-time
+// reconcile helper, not a forward-only fix. Schema string IDENTICAL to v8 —
+// only the version number changes. Three layers of no-op guards keep this
+// cheap for new users, USD users, and already-reconciled users.
+//
+// Plan-order constraint (RESEARCH.md): the async versionchange handler below
+// MUST be registered before this stanza ships — when v9 lands, every other
+// open tab fires versionchange. The async handler awaits db.close() so
+// in-flight transactions in those tabs complete or roll back cleanly.
+db.version(9).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+  customers: 'id, name, email, lastUsedAt',
+  quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+}).upgrade(async tx => {
+  // Layer 1: no settings → brand-new device. Nothing to reconcile.
+  const settingsRow = await tx.table('settings').get('userProfile');
+  if (!settingsRow) return;
+
+  // Layer 2: corrupt settings → bail silently. Won't make it worse.
+  let userCurrency: string;
+  try {
+    userCurrency = (JSON.parse(settingsRow.value) as UserProfile).currency;
+  } catch {
+    return;
+  }
+
+  // Layer 3 (inside helper): currency === 'USD' → no drift possible. Helper
+  // returns []. Single quotes scan + zero writes.
+  const quotes = await tx.table('quotes').toArray();
+  const patched = reconcileQuoteCurrency(quotes, userCurrency);
+  if (patched.length === 0) return;
+
+  await tx.table('quotes').bulkPut(patched);
+
+  if (import.meta.env.DEV) {
+    console.info(`[v9 reconcile] patched ${patched.length} quotes from USD → ${userCurrency}`);
   }
 });
 

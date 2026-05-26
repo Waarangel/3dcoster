@@ -1,4 +1,4 @@
-import type { PrintJob, Sale, Quote, QuoteStatus, Customer } from '../types';
+import type { PrintJob, Sale, Quote, QuoteStatus, Customer, Currency } from '../types';
 
 /**
  * Backfill `tags = []` on a job record that came from a pre-v6 schema.
@@ -176,15 +176,13 @@ export function parseTagsInput(raw: string): string[] | undefined {
  *      for legacy. No `convertedToSaleId`.
  *  - PrintJobs WITHOUT quoteNumber are SKIPPED — no Quote emitted, the PrintJob row is untouched.
  *
- * Currency sentinel: the migration runs inside the Dexie upgrade callback, where there is no
- * UserProfile access. We default `currency` to 'USD' for backfilled rows. The PDF generator
- * will never render these rows in v1.2 because the runtime UI only surfaces status='sent'/'accepted'/
- * 'declined'/'converted' Quotes (and the 'converted' ones are silent re-renders of the originating
- * Sale's PDF only, which doesn't yet exist) — so the wrong-currency render path is unreachable.
+ * Currency is supplied by the caller. The v8 upgrade callback in database.ts reads
+ * userProfile.currency from the tx-scoped settings record; brand-new installs (no settings
+ * row) pass 'USD' as the safe default.
  *
  * Timestamps: createdAt = sentAt = new Date(job.createdAt) (best-effort lift from the job).
  */
-export function backfillQuotesFromJobs(jobs: PrintJob[], sales: Sale[]): Quote[] {
+export function backfillQuotesFromJobs(jobs: PrintJob[], sales: Sale[], currency: string): Quote[] {
   // Index sales by jobId for O(1) lookup (vs nested filter per job which is O(n×m)).
   const salesByJobId = new Map<string, Sale[]>();
   for (const sale of sales) {
@@ -228,8 +226,7 @@ export function backfillQuotesFromJobs(jobs: PrintJob[], sales: Sale[]): Quote[]
         shippingCost: 0,
         resolvedTaxRate: job.taxRate ?? 0,
         taxAmount: job.taxAmount ?? 0,
-        // Currency sentinel — migration runs without UserProfile access. See module JSDoc.
-        currency: 'USD',
+        currency: currency as Currency,
         notes: job.notes ?? '',
         terms: '',
         countryAtSendTime: undefined,
@@ -243,6 +240,38 @@ export function backfillQuotesFromJobs(jobs: PrintJob[], sales: Sale[]): Quote[]
             convertedToSaleId: mostRecentSale.id,
           }
         : {}),
+    });
+  }
+  return out;
+}
+
+/**
+ * reconcileQuoteCurrency — Phase 20 DATA-03 v9 reconcile helper.
+ *
+ * Pure. Idempotent. No Dexie, no React, no IO. The v9 upgrade callback in
+ * database.ts walks db.quotes, calls this helper to compute the patch set,
+ * and then bulkPuts the result. Extracted as a pure function so jsdom can
+ * exhaustively cover the idempotency contract without fake-indexeddb
+ * (Phase 23 TEST-04 will later upgrade to real-IDB integration depth).
+ *
+ * Filter: quotes where lineItemsSnapshot.currency === 'USD' AND the user's
+ * actual currency ≠ 'USD'. Returns ONLY the quotes that need patching.
+ * Re-running on already-patched quotes returns an empty array (idempotent).
+ *
+ * Examples:
+ *   reconcileQuoteCurrency([usdQuote], 'CAD') → [{ ...usdQuote, lineItemsSnapshot: { ...usdQuote.lineItemsSnapshot, currency: 'CAD' } }]
+ *   reconcileQuoteCurrency([cadQuote], 'EUR') → []  // non-USD quote untouched
+ *   reconcileQuoteCurrency([usdQuote], 'USD') → []  // no drift possible
+ *   reconcileQuoteCurrency([patchedCadQuote], 'CAD') → []  // already patched
+ */
+export function reconcileQuoteCurrency(quotes: Quote[], currency: string): Quote[] {
+  if (currency === 'USD') return [];
+  const out: Quote[] = [];
+  for (const q of quotes) {
+    if (q.lineItemsSnapshot?.currency !== 'USD') continue;
+    out.push({
+      ...q,
+      lineItemsSnapshot: { ...q.lineItemsSnapshot, currency: currency as Currency },
     });
   }
   return out;
