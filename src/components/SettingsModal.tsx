@@ -4,7 +4,7 @@ import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, li
 import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
-import { Button, Input, Modal } from './ui';
+import { Button, Input, SidePanel } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 
 interface SettingsModalProps {
@@ -168,7 +168,7 @@ export function SettingsModal({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={settingsTitle} size="lg">
+    <SidePanel isOpen={isOpen} onClose={onClose} title={settingsTitle} size="lg">
       {/* Tabs */}
         <div className="flex border-b border-slate-700">
           {tabs.map(tab => (
@@ -816,6 +816,6 @@ export function SettingsModal({
             </div>
           )}
         </div>
-    </Modal>
+    </SidePanel>
   );
 }

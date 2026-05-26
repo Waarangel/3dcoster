@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG } from '../utils/currency';
-import { Input, Select, Textarea, Modal } from './ui';
+import { Input, Select, Textarea, SidePanel } from './ui';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -19,7 +19,7 @@ export function UserProfileModal({
   const userCurrency = userProfile.currency;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Profile" size="md">
+    <SidePanel isOpen={isOpen} onClose={onClose} title="Profile" size="md">
       <div className="p-4 space-y-6">
           {/* Basic Info */}
           <div>
@@ -162,6 +162,6 @@ export function UserProfileModal({
             </Link>
           </div>
         </div>
-    </Modal>
+    </SidePanel>
   );
 }

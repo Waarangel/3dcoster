@@ -8,3 +8,4 @@ export { Skeleton } from './Skeleton';
 export { InfoTooltip } from './InfoTooltip';
 export { CollapsibleSection } from './CollapsibleSection';
 export { Modal } from './Modal';
+export { SidePanel } from './SidePanel';
