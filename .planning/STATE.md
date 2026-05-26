@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: ready
-stopped_at: Phase 25 complete; phases 19, 20, 21, 22, 23 still pending
-last_updated: 2026-05-26T12:48:32.992Z
-last_activity: 2026-05-26 -- Phase 25 execution complete
+status: executing
+stopped_at: Phase 19 context gathered
+last_updated: "2026-05-26T13:52:07.567Z"
+last_activity: 2026-05-26
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 17
+  total_plans: 12
   completed_plans: 12
-  percent: 71
+  percent: 38
 ---
 
 # Project State
@@ -159,6 +159,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-25T21:16:27.486Z
-Stopped at: Phase 25 context gathered
-Resume file: .planning/phases/25-doc-hygiene-polish-bundle-health/25-CONTEXT.md
+Last session: 2026-05-26T13:52:07.562Z
+Stopped at: Phase 19 context gathered
+Resume file: .planning/phases/19-modal-primitive-a11y-migration/19-CONTEXT.md
