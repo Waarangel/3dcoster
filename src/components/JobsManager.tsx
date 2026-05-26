@@ -1327,6 +1327,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     } else if (e.key === 'Escape') {
       if (customerPickerOpen) {
         e.preventDefault();
+        // CR-04 fix: prevent the surrounding Modal's document-level Escape
+        // listener from also firing — without stopPropagation, Escape on the
+        // picker would close the parent Record Sale modal and lose the user's
+        // in-progress entry. Mirrors the PrintQuoteModal picker pattern
+        // (PrintQuoteModal.tsx:162-167).
+        e.stopPropagation();
         setCustomerPickerOpen(false);
       }
     } else if (e.key === 'Tab') {
