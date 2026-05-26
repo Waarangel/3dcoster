@@ -1,10 +1,10 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, QuoteStatus, RuntimeQuoteStatus } from '../types';
 import { useSales, useCustomers, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
-import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
+import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState, Modal } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
@@ -1006,6 +1006,17 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
   const [deleteConfirmJobId, setDeleteConfirmJobId] = useState<string | null>(null);
 
+  // Stable ids for Record Sale form label/input pairings (A11Y-07).
+  const saleQuantityId = useId();
+  const salePriceId = useId();
+  const saleCustomerNameId = useId();
+  const saleCustomerEmailId = useId();
+  const saleCustomerCompanyId = useId();
+  const saleCustomerAddressId = useId();
+  const saleCustomerNotesId = useId();
+  const saleShippingMethodId = useId();
+  const saleShippingCostId = useId();
+
   // Phase 15 plan 04 (TAGS-03, TAGS-04) — filter sub-header state.
   // `searchQuery` is the raw input; `debouncedSearchQuery` lags by 250ms (D-06)
   // and drives the search filter memo AND the useDynamicRowHeight cache key (D-05).
@@ -1784,13 +1795,13 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         )}
       </div>
 
-      {showSaleForm && selectedJob && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={resetSaleForm}>
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-4">
-              {editingSale ? 'Edit Sale' : 'Record Sale'} - {selectedJob.name}
-            </h3>
-
+      <Modal
+        isOpen={showSaleForm && selectedJob !== null}
+        onClose={resetSaleForm}
+        title={selectedJob ? `${editingSale ? 'Edit Sale' : 'Record Sale'} - ${selectedJob.name}` : ''}
+        size="md"
+      >
+        <div className="p-4">
             {convertingFromQuote && (
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs text-blue-300 mb-3">
                 Converting {formatQuoteNumber(convertingFromQuote.quoteNumber)} — review and adjust if needed.
@@ -1800,8 +1811,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Quantity</label>
+                  <label htmlFor={saleQuantityId} className="block text-xs text-slate-400 mb-1">Quantity</label>
                   <Input
+                    id={saleQuantityId}
                     type="number"
                     min="1"
                     compact
@@ -1810,8 +1822,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Price per Unit ($)</label>
+                  <label htmlFor={salePriceId} className="block text-xs text-slate-400 mb-1">Price per Unit ($)</label>
                   <Input
+                    id={salePriceId}
                     type="number"
                     step="0.01"
                     compact
@@ -1897,8 +1910,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Name</label>
+                      <label htmlFor={saleCustomerNameId} className="block text-xs text-slate-400 mb-1">Name</label>
                       <Input
+                        id={saleCustomerNameId}
                         type="text"
                         value={saleCustomerName}
                         onChange={e => setSaleCustomerName(e.target.value)}
@@ -1906,8 +1920,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Email</label>
+                      <label htmlFor={saleCustomerEmailId} className="block text-xs text-slate-400 mb-1">Email</label>
                       <Input
+                        id={saleCustomerEmailId}
                         type="email"
                         value={saleCustomerEmail}
                         onChange={e => setSaleCustomerEmail(e.target.value)}
@@ -1916,8 +1931,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Company</label>
+                    <label htmlFor={saleCustomerCompanyId} className="block text-xs text-slate-400 mb-1">Company</label>
                     <Input
+                      id={saleCustomerCompanyId}
                       type="text"
                       value={saleCustomerCompany}
                       onChange={e => setSaleCustomerCompany(e.target.value)}
@@ -1925,8 +1941,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Address</label>
+                    <label htmlFor={saleCustomerAddressId} className="block text-xs text-slate-400 mb-1">Address</label>
                     <Textarea
+                      id={saleCustomerAddressId}
                       rows={2}
                       value={saleCustomerAddress}
                       onChange={e => setSaleCustomerAddress(e.target.value)}
@@ -1934,8 +1951,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Notes</label>
+                    <label htmlFor={saleCustomerNotesId} className="block text-xs text-slate-400 mb-1">Notes</label>
                     <Textarea
+                      id={saleCustomerNotesId}
                       rows={2}
                       value={saleCustomerNotes}
                       onChange={e => setSaleCustomerNotes(e.target.value)}
@@ -1949,8 +1967,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Shipping</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Method</label>
+                    <label htmlFor={saleShippingMethodId} className="block text-xs text-slate-400 mb-1">Method</label>
                     <Select
+                      id={saleShippingMethodId}
                       value={saleShippingMethod}
                       onChange={e => {
                         const method = e.target.value as ShippingMethodType;
@@ -1964,8 +1983,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                     </Select>
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Cost ($)</label>
+                    <label htmlFor={saleShippingCostId} className="block text-xs text-slate-400 mb-1">Cost ($)</label>
                     <Input
+                      id={saleShippingCostId}
                       type="number"
                       step="0.01"
                       compact
@@ -2029,62 +2049,65 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 </Button>
               </div>
             </div>
-          </div>
         </div>
-      )}
+      </Modal>
 
-      {deleteConfirmJobId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteConfirmJobId(null)}>
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-2">Delete Job</h3>
-            <p className="text-slate-400 text-sm mb-6">
-              Delete this job and all associated sales records? This cannot be undone.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="secondary"
-                onClick={() => setDeleteConfirmJobId(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={confirmDeleteJob}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Delete
-              </Button>
-            </div>
+      <Modal
+        isOpen={deleteConfirmJobId !== null}
+        onClose={() => setDeleteConfirmJobId(null)}
+        title="Delete Job"
+        size="sm"
+      >
+        <div className="p-4">
+          <p className="text-slate-400 text-sm mb-6">
+            Delete this job and all associated sales records? This cannot be undone.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteConfirmJobId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDeleteJob}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
 
-      {deleteSaleConfirmId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteSaleConfirmId(null)}>
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-2">Delete Sale</h3>
-            <p className="text-slate-400 text-sm mb-6">
-              Delete this sale record? The job's copies-sold count will decrease accordingly. This cannot be undone.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="secondary"
-                onClick={() => setDeleteSaleConfirmId(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  const sale = sales.find(s => s.id === deleteSaleConfirmId);
-                  if (sale) handleConfirmDeleteSale(sale);
-                }}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Delete
-              </Button>
-            </div>
+      <Modal
+        isOpen={deleteSaleConfirmId !== null}
+        onClose={() => setDeleteSaleConfirmId(null)}
+        title="Delete Sale"
+        size="sm"
+      >
+        <div className="p-4">
+          <p className="text-slate-400 text-sm mb-6">
+            Delete this sale record? The job's copies-sold count will decrease accordingly. This cannot be undone.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteSaleConfirmId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const sale = sales.find(s => s.id === deleteSaleConfirmId);
+                if (sale) handleConfirmDeleteSale(sale);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* PrintQuoteModal — handles both create (D-18) and edit (D-27) modes via the shared state slot */}
       {printQuoteModalState && (
