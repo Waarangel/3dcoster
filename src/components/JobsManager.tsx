@@ -1150,8 +1150,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const getBreakEvenInfo = useCallback((job: PrintJob): BreakEvenInfo => {
     const jobSales = salesByJob.get(job.id) ?? [];
     const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue, 0);
-    const totalCost = job.costPerUnit * job.copiesSold + job.modelCost;
-    const actualProfit = actualRevenue - totalCost;
 
     const theoreticalProfitPerUnit = job.sellingPrice - job.costPerUnit;
     const actualProfitPerUnit = job.copiesSold > 0
@@ -1177,7 +1175,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       profitPerUnit: actualProfitPerUnit,
       breakEvenCopies,
       remainingToBreakEven,
-      isBreakEven: actualProfit >= 0 && job.copiesSold > 0,
+      isBreakEven: breakEvenCopies !== null && job.copiesSold >= breakEvenCopies,
     };
   }, [salesByJob]);
 
