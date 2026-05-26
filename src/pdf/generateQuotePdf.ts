@@ -158,7 +158,7 @@ function renderLineItems(doc: jsPDF, quote: Quote, startY: number): number {
     },
   });
 
-  return (doc as any).lastAutoTable.finalY as number;
+  return doc.lastAutoTable.finalY;
 }
 
 function renderTotals(doc: jsPDF, quote: Quote, startY: number): number {
