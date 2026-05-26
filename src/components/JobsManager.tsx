@@ -675,11 +675,11 @@ export const JobCard = memo(function JobCard({
               <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
             </div>
             {/* D-31: Edit demoted to ghost+border so the visual hierarchy reads Record Sale (green) > Print Quote (blue) > Edit (ghost) > Delete (red-tinted).
-                Hover darkens background to slate-900 so it stands out against the expanded card's bg-slate-700; ghost's default hover:bg-slate-700 is invisible against that background. */}
+                Hover lightens background to slate-600 so it stands out against the expanded card's bg-slate-700; ghost's default hover:bg-slate-700 is invisible against that background. */}
             <Button
               variant="ghost"
               btnSize="sm"
-              className="border border-slate-600 hover:!bg-slate-900"
+              className="border border-slate-600 hover:!bg-slate-600"
               onClick={(e) => { e.stopPropagation(); onEdit(job); }}
             >
               Edit
