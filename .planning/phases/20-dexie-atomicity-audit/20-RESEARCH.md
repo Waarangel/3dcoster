@@ -800,13 +800,13 @@ The user's standing `[[feedback_reconcile_legacy_data]]` rule applies to DATA-03
 
 ---
 
-## Open Questions (researcher to planner)
+## Open Questions (RESOLVED)
 
-1. **`parsePositiveNumber` rename vs. opt-in.** CONTEXT.md locks `{ allowZero: true }`. The audit's literal wording was "rename to `parseStrictlyPositiveNumber` OR add `allowZero?: boolean` param." The opt-in is the right call (no churn). Researcher confirms no concerns.
+1. **RESOLVED — `parsePositiveNumber` rename vs. opt-in.** CONTEXT.md locks `{ allowZero: true }`. The audit's literal wording was "rename to `parseStrictlyPositiveNumber` OR add `allowZero?: boolean` param." The opt-in is the right call (no churn). Researcher confirms no concerns. **Implementation:** plan 20-04 Task 2 widens the signature to `parsePositiveNumber(value, opts?: { allowZero?: boolean })` and updates 8 call sites — only L241 (`packageCost`) opts in.
 
-2. **`unitsPerPackage` line 256 secondary guard.** Keep or remove? Researcher recommends KEEP (better error message; downstream safety). Planner to confirm.
+2. **RESOLVED — `unitsPerPackage` line 256 secondary guard.** Researcher recommends KEEP (better error message; downstream safety). **Implementation:** plan 20-04 Task 2 preserves the L256 secondary guard. The `parsePositiveNumber` change does not touch the secondary `<= 0` rejection at L256.
 
-3. **Plan 20-03 / 20-04 bundle or split.** Researcher recommends split with hard dependency. Solo-dev workflow can collapse to single plan if review velocity matters more than surface-area separation.
+3. **RESOLVED — Plan 20-03 / 20-04 bundle or split.** Researcher recommends split with hard dependency. **Implementation:** kept as separate plans. `20-03` declares `depends_on: [20-04]` in frontmatter; the v9 schema bump cannot ship until the async `versionchange` handler is in place.
 
 ---
 
