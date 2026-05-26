@@ -36,7 +36,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 
 - [x] **Phase 18: Tauri fs:scope fix** — Reconcile `fs:scope` with unrestricted `save()` dialog so desktop users can save PDFs anywhere
 - [x] **Phase 19: Modal primitive + a11y migration** — Build `<Modal>` (role=dialog, aria-modal, focus-trap, focus-return, useId-labeled), migrate 10 modal surfaces, plus virtualized-list ARIA + InfoTooltip useId + close-button labels + form-label pairing + CollapsibleSection aria-controls fix (completed 2026-05-26)
-- [ ] **Phase 20: Dexie atomicity audit** — Wrap `addSale` in transaction; move `createQuote` nextQuoteNumber read inside transaction; fix `backfillQuotesFromJobs` currency hardcode; defensive trio (parsePositiveNumber, versionchange async close, getSetting validator)
+- [x] **Phase 20: Dexie atomicity audit** — Wrap `addSale` in transaction; move `createQuote` nextQuoteNumber read inside transaction; fix `backfillQuotesFromJobs` currency hardcode; defensive trio (parsePositiveNumber, versionchange async close, getSetting validator) (completed 2026-05-26)
 - [ ] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases
 - [ ] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary
 - [ ] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract
@@ -106,10 +106,10 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   6. `getSetting<T>` adds a runtime schema validator (Zod OR hand-rolled) at the JSON-parse boundary; fall back to `defaultValue` on structural mismatch (not just JSON parse failure)
   7. All existing tests pass; new tests added for the addSale transaction boundary + createQuote no-collision contract
 
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
   - [x] 20-01-PLAN.md — addSale + deleteSale + updateSale transactional wraps (DATA-01) — Wave 1
-  - [ ] 20-02-PLAN.md — createQuote tx-scoped settings read + two-tab UAT (DATA-02) — Wave 2 (depends on 20-01 for shared test file)
-  - [ ] 20-03-PLAN.md — backfillQuotesFromJobs currency forward fix + v9 reconcile schema bump (DATA-03) — Wave 2 (HARD depends on 20-04 — v9 schema bump requires async versionchange handler)
+  - [x] 20-02-PLAN.md — createQuote tx-scoped settings read + two-tab UAT (DATA-02) — Wave 2 (depends on 20-01 for shared test file)
+  - [x] 20-03-PLAN.md — backfillQuotesFromJobs currency forward fix + v9 reconcile schema bump (DATA-03) — Wave 2 (HARD depends on 20-04 — v9 schema bump requires async versionchange handler)
   - [x] 20-04-PLAN.md — Defensive trio: parsePositiveNumber allowZero + async versionchange + getSetting structural validator (DATA-04, DATA-05, DATA-06) — Wave 1 (MUST merge before 20-03)
 
 **UI hint**: no
@@ -251,7 +251,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 |-------|----------------|--------|-----------|
 | 18. Tauri fs:scope fix | 1/1 | Complete    | 2026-05-25 |
 | 19. Modal primitive + a11y migration | 6/6 | Complete    | 2026-05-26 |
-| 20. Dexie atomicity audit | 2/4 | In Progress|  |
+| 20. Dexie atomicity audit | 4/4 | Complete   | 2026-05-26 |
 | 21. CSV + URL security | 0/3 | Not started | — |
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
 | 23. Test coverage hardening | 0/4 | Not started | — |
