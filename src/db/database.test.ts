@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { db, getSetting, handleVersionchange, isPrinterConfig, isElectricityConfig, isLaborConfig, isUserProfile, isShippingConfig, isMarketplaceFees } from './database';
-import type { PrinterConfig, ElectricityConfig, LaborConfig, UserProfile, ShippingConfig, MarketplaceFees } from '../types';
+import type { PrinterConfig } from '../types';
 
 // ---------------------------------------------------------------------------
 // A. versionchange handler — DATA-05
