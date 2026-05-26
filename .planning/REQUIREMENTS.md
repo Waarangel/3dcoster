@@ -33,12 +33,12 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Data integrity (DATA)
 
-- [ ] **DATA-01**: Standard `addSale` callback in `useDatabase.ts` wraps `db.sales.add` and the `job.copiesSold` bump in a single `db.transaction('rw', db.sales, db.jobs, ...)` — matches the Convert-to-Sale pattern. Closes [CODE-AUDIT #4](v1.2-CODE-AUDIT.md) (HIGH).
-- [ ] **DATA-02**: `createQuote` reads `nextQuoteNumber` from `db.settings.get('userProfile')` INSIDE the transaction, not from the React state argument. Eliminates concurrent-tab quote-number collisions. Closes [CODE-AUDIT #11](v1.2-CODE-AUDIT.md) (MEDIUM).
-- [ ] **DATA-03**: `backfillQuotesFromJobs` upgrade callback reads `currency` from the settings record inside the upgrade transaction; never hardcodes `'USD'`. Non-USD users see correct currency on backfilled quotes. Closes [CODE-AUDIT #12](v1.2-CODE-AUDIT.md) (MEDIUM).
-- [ ] **DATA-04**: `parsePositiveNumber` returns `null` for `num <= 0` (rename to `parseStrictlyPositiveNumber` OR accept `allowZero?: boolean`). Printer `wattage` and `purchasePrice` reject `0` and surface a validation error. Closes [CODE-AUDIT #23](v1.2-CODE-AUDIT.md) (LOW).
-- [ ] **DATA-05**: `versionchange` handler wraps reload in `async () => { await db.close(); window.location.reload(); }` — no aborted-in-flight transactions. Closes [CODE-AUDIT #24](v1.2-CODE-AUDIT.md) (LOW).
-- [ ] **DATA-06**: `getSetting<T>` adds runtime validation at the JSON-parse boundary (Zod or hand-rolled schema check). Falls back to `defaultValue` on structural mismatch, not just on JSON parse failure. Closes [CODE-AUDIT #25](v1.2-CODE-AUDIT.md) (LOW).
+- [x] **DATA-01**: Standard `addSale` callback in `useDatabase.ts` wraps `db.sales.add` and the `job.copiesSold` bump in a single `db.transaction('rw', db.sales, db.jobs, ...)` — matches the Convert-to-Sale pattern. Closes [CODE-AUDIT #4](v1.2-CODE-AUDIT.md) (HIGH).
+- [x] **DATA-02**: `createQuote` reads `nextQuoteNumber` from `db.settings.get('userProfile')` INSIDE the transaction, not from the React state argument. Eliminates concurrent-tab quote-number collisions. Closes [CODE-AUDIT #11](v1.2-CODE-AUDIT.md) (MEDIUM).
+- [x] **DATA-03**: `backfillQuotesFromJobs` upgrade callback reads `currency` from the settings record inside the upgrade transaction; never hardcodes `'USD'`. Non-USD users see correct currency on backfilled quotes. Closes [CODE-AUDIT #12](v1.2-CODE-AUDIT.md) (MEDIUM).
+- [x] **DATA-04**: `parsePositiveNumber` returns `null` for `num <= 0` (rename to `parseStrictlyPositiveNumber` OR accept `allowZero?: boolean`). Printer `wattage` and `purchasePrice` reject `0` and surface a validation error. Closes [CODE-AUDIT #23](v1.2-CODE-AUDIT.md) (LOW).
+- [x] **DATA-05**: `versionchange` handler wraps reload in `async () => { await db.close(); window.location.reload(); }` — no aborted-in-flight transactions. Closes [CODE-AUDIT #24](v1.2-CODE-AUDIT.md) (LOW).
+- [x] **DATA-06**: `getSetting<T>` adds runtime validation at the JSON-parse boundary (Zod or hand-rolled schema check). Falls back to `defaultValue` on structural mismatch, not just on JSON parse failure. Closes [CODE-AUDIT #25](v1.2-CODE-AUDIT.md) (LOW).
 
 ### Test coverage (TEST)
 
