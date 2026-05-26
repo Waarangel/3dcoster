@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Customer } from '../types';
 import { Button, Input, Textarea, Modal } from './ui';
 
@@ -24,25 +24,37 @@ export function CustomerEditModal({ isOpen, initialCustomer, onSave, onClose }: 
   const addressId = useId();
   const notesId = useId();
 
-  // Hydrate from initialCustomer whenever it changes.
-  // Keyed on initialCustomer?.id so switching edit→add or edit-A→edit-B refills cleanly.
+  // WR-08 fix: hydrate on the isOpen transition (false → true) instead of on
+  // `initialCustomer?.id` changes. The previous hook keyed solely on `.id`
+  // missed in-place updates (same id, fresh fields — e.g. notes edited by a
+  // refresh from Dexie) and required an eslint-disable for an inaccurate
+  // dep array.
+  //
+  // The contract this modal actually has is: "open → snapshot initialCustomer
+  // into local state; user edits without parent interference; close → discard
+  // or save". Modal's HYG-09 child-unmount on close means a fresh mount runs
+  // for every open, so a useRef-tracked transition is the spec-correct gate.
+  const prevIsOpen = useRef(false);
   useEffect(() => {
-    if (initialCustomer) {
-      setName(initialCustomer.name ?? '');
-      setEmail(initialCustomer.email ?? '');
-      setCompany(initialCustomer.company ?? '');
-      setAddress(initialCustomer.address ?? '');
-      setNotes(initialCustomer.notes ?? '');
-    } else {
-      setName('');
-      setEmail('');
-      setCompany('');
-      setAddress('');
-      setNotes('');
+    if (isOpen && !prevIsOpen.current) {
+      // false → true transition: hydrate now.
+      if (initialCustomer) {
+        setName(initialCustomer.name ?? '');
+        setEmail(initialCustomer.email ?? '');
+        setCompany(initialCustomer.company ?? '');
+        setAddress(initialCustomer.address ?? '');
+        setNotes(initialCustomer.notes ?? '');
+      } else {
+        setName('');
+        setEmail('');
+        setCompany('');
+        setAddress('');
+        setNotes('');
+      }
+      setFormError(null);
     }
-    setFormError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialCustomer?.id]);
+    prevIsOpen.current = isOpen;
+  }, [isOpen, initialCustomer]);
 
   const isEdit = initialCustomer !== undefined;
   const submitDisabled = (!name.trim() && !email.trim()) || isSaving;
