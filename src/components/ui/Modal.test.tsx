@@ -159,9 +159,11 @@ const FOCUSABLE_SELECTOR = [
 ].join(', ');
 
 describe('Group 3 — Focus management', () => {
-  it('focuses the first focusable descendant on mount (Close button is first)', async () => {
-    // The Close button is always in the Modal header and is the first focusable element.
-    // Subsequent children follow. Modal focuses the first focusable in the card.
+  it('skips the Close button on initial focus when other focusables exist (WR-02 default)', async () => {
+    // WR-02 fix: the Close button is the first focusable in DOM order, but
+    // landing focus on it means Enter immediately closes the modal — wrong
+    // UX for form-bearing modals. Modal now skips Close when other
+    // focusables exist; only lands on it when nothing else can take focus.
     vi.useFakeTimers();
     try {
       await act(async () => {
@@ -174,9 +176,11 @@ describe('Group 3 — Focus management', () => {
       });
       // Advance the deferred setTimeout(fn, 0) that fires focus.
       await act(async () => { vi.runAllTimers(); });
-      // The Close button in the header is the first focusable descendant.
       const closeBtn = document.body.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
-      expect(document.activeElement).toBe(closeBtn);
+      const firstInput = document.body.querySelector<HTMLInputElement>('[data-testid="first-input"]');
+      expect(document.activeElement).not.toBe(closeBtn);
+      // First non-Close focusable is the input.
+      expect(document.activeElement).toBe(firstInput);
     } finally {
       vi.useRealTimers();
     }

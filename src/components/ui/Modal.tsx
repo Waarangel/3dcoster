@@ -1,4 +1,4 @@
-import { useEffect, useRef, useId, type ReactNode } from 'react';
+import { useEffect, useRef, useId, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
 
@@ -37,6 +37,13 @@ export interface ModalProps {
   children: ReactNode;
   /** Size tier controlling max-width. Default: 'md'. */
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /**
+   * WR-02 fix: opt-in target for initial focus. When provided AND the
+   * referenced element is inside the dialog card at mount time, focus lands
+   * there instead of the default first-focusable scan. Use this for form
+   * modals where focusing the first input is the right UX.
+   */
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }
 
 const sizeMap: Record<NonNullable<ModalProps['size']>, string> = {
@@ -72,12 +79,16 @@ let openModalCount = 0;
  *
  * @see https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
  */
-export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md', initialFocusRef }: ModalProps) {
   const titleId = useId();
   const cardRef = useRef<HTMLDivElement>(null);
   // Stable ref for onClose so the keydown handler doesn't re-register on each render.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  // WR-02: read initialFocusRef through a stable indirection so changing
+  // refs across renders doesn't re-fire the [isOpen] effect.
+  const initialFocusRefRef = useRef(initialFocusRef);
+  initialFocusRefRef.current = initialFocusRef;
 
   // Focus management, scroll-lock, keyboard trap — all keyed on isOpen.
   // When isOpen transitions false → true: mount effects fire.
@@ -106,12 +117,27 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     const focusFirst = () => {
       const card = cardRef.current;
       if (!card) return;
-      const focusable = Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-      if (focusable.length > 0) {
-        focusable[0].focus();
-      } else {
-        card.focus();
+
+      // WR-02 fix (opt-in): if a consumer pointed initialFocusRef at an
+      // element inside the dialog, focus that first.
+      const explicit = initialFocusRefRef.current?.current;
+      if (explicit && card.contains(explicit)) {
+        explicit.focus();
+        return;
       }
+
+      const focusable = Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+      if (focusable.length === 0) {
+        card.focus();
+        return;
+      }
+      // WR-02 fix (default): the Close button is always the first focusable in
+      // DOM order, which means every form-bearing modal would open with focus
+      // on Close — pressing Enter would close the modal instead of submitting.
+      // Skip Close when ANY other focusable descendant exists; only land on it
+      // when there's literally nothing else to focus.
+      const target = focusable.find(el => el.getAttribute('aria-label') !== 'Close') ?? focusable[0];
+      target.focus();
     };
     // Defer via setTimeout so the portal DOM is fully committed before we focus.
     // setTimeout(fn, 0) works in both browser and jsdom (unlike rAF in jsdom).
