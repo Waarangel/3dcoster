@@ -406,6 +406,35 @@ export function parsePositiveNumber(
   return num;
 }
 
+/**
+ * Phase 21 SEC-01 — CSV formula-injection guard.
+ *
+ * Prefixes a single `'` to any non-empty string whose first character is
+ * `=`, `+`, `-`, or `@` — the four leading-char triggers that Excel,
+ * LibreOffice Calc, and Numbers treat as formula starts. Otherwise the
+ * value is returned unchanged.
+ *
+ * Idempotent by construction: the sanitized output starts with `'`, which
+ * is NOT in the trigger set, so a second call is a no-op. Do NOT add an
+ * "already-sanitized?" guard — the trigger-char rule self-enforces this
+ * (per D-01). Adding a guard would invite double-prefixing on truly
+ * user-typed strings that happen to begin with `'`.
+ *
+ * Call site rule (D-02 / D-03): every cell handed to `Papa.unparse` in
+ * this file passes through `sanitizeCsvCell` at the cell-serialization
+ * boundary — immediately before the value enters the `data` array, NOT
+ * inside `Papa.unparse` itself.
+ */
+export function sanitizeCsvCell(value: string): string {
+  if (value.length === 0) return value;
+  const first = value.charCodeAt(0);
+  // 0x3D = '=', 0x2B = '+', 0x2D = '-', 0x40 = '@'
+  if (first === 0x3d || first === 0x2b || first === 0x2d || first === 0x40) {
+    return "'" + value;
+  }
+  return value;
+}
+
 function matchFilamentTypeFromCsv(input: string): FilamentType | null {
   // Try exact match (case-insensitive)
   for (const ft of VALID_FILAMENT_TYPES) {
