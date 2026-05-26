@@ -234,12 +234,12 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   11. Rollup `Circular chunk: vendor -> react-vendor -> vendor` warning is gone — `vite.config.ts manualChunks` routes all `react-*` packages into `react-vendor` explicitly; `npm run build` emits no chunk-graph warnings
   12. (Optional) Vendor chunk classification reviewed; opportunistic size reduction where the change is safe and the analyzer confirms benefit
 
-**Plans**: ~5 plans (batchable; loose grouping)
-  - 25-01: Doc-state housekeeping (DOC-01, DOC-02, HYG-10) + planning-todos audit
-  - 25-02: JobsManager hygiene (HYG-01 generatingJobIds, HYG-04 onQuoteCreated, POL-04 overflow-menu close)
-  - 25-03: Polish (HYG-05 image5 comment, POL-01 CustomerLibrary alignment, POL-02 CSV template button, POL-03 autotable cast, A11Y-09 QuoteStatusPill)
-  - 25-04: Bundle health (PERF-05 Rollup warning, PERF-06 vendor classification optional)
-  - 25-05: Phase verification + final UAT smoke + verdict
+**Plans**: 5 plans
+  - [ ] 25-01-doc-batch-PLAN.md — Doc-state housekeeping (DOC-01, DOC-02, HYG-10) — `.planning/` only
+  - [ ] 25-02-customer-ui-PLAN.md — CustomerLibrary alignment + CSV template button (POL-01, POL-02)
+  - [ ] 25-03-jobsmanager-hygiene-PLAN.md — JobsManager hygiene + a11y (HYG-01, HYG-04, HYG-05, POL-04, A11Y-09)
+  - [ ] 25-04-pdf-type-augmentation-PLAN.md — jspdf module augmentation (POL-03)
+  - [ ] 25-05-bundle-health-PLAN.md — vite.config.ts manualChunks + vendor review (PERF-05, PERF-06)
 
 **UI hint**: yes (polish items + a11y additions are user-visible)
 
