@@ -256,7 +256,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
 | 23. Test coverage hardening | 0/4 | Not started | — |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
-| 25. Doc + hygiene + polish + bundle health | 5/5 | Complete   | 2026-05-26 |
+| 25. Doc + hygiene + polish + bundle health | 5/5 | Complete    | 2026-05-26 |
 
 **Total**: 8 phases, ~34 plans, ~5-7 working days of focused work.
 

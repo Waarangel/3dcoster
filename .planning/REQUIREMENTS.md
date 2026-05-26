@@ -23,7 +23,7 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 - [ ] **A11Y-06**: `SettingsModal` and `UserProfileModal` close buttons add `aria-label="Close"` — every other modal already has this. Closes [CODE-AUDIT #10](v1.2-CODE-AUDIT.md) (HIGH).
 - [ ] **A11Y-07**: Every `<label>` in the Record Sale modal and `CustomerEditModal` form grids is paired with its `<input>` via `htmlFor`/`id` (auto-generated via `useId()` in the `Input`/`Textarea`/`Select` primitives). Closes [CODE-AUDIT #20](v1.2-CODE-AUDIT.md) (MEDIUM).
 - [ ] **A11Y-08**: `CollapsibleSection` body element is always rendered (with `hidden={!open}` or CSS toggle) so `aria-controls` never references a missing `id`. Closes [CODE-AUDIT #21](v1.2-CODE-AUDIT.md) (MEDIUM).
-- [ ] **A11Y-09**: `QuoteStatusPill` adds `aria-label="Status: {Pending|Sale|Declined}"`; Declined-pill text contrast meets WCAG AA on `bg-slate-700`. Closes [CODE-AUDIT #22](v1.2-CODE-AUDIT.md) (MEDIUM).
+- [x] **A11Y-09**: `QuoteStatusPill` adds `aria-label="Status: {Pending|Sale|Declined}"`; Declined-pill text contrast meets WCAG AA on `bg-slate-700`. Closes [CODE-AUDIT #22](v1.2-CODE-AUDIT.md) (MEDIUM).
 
 ### Security (SEC)
 
@@ -51,21 +51,21 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Hygiene (HYG)
 
-- [ ] **HYG-01**: `generatingJobIds` permanently-empty `Set<string>` removed from `JobsManager` state + `JobRowProps` + `rowProps` + `JobCard.isGeneratingPdf`. EITHER derive loading state at the parent from `printQuoteModalState !== null && state.job.id === job.id`, OR delete the slot entirely. Closes [TECH-DEBT H1](v1.2-TECH-DEBT.md) (MEDIUM).
+- [x] **HYG-01**: `generatingJobIds` permanently-empty `Set<string>` removed from `JobsManager` state + `JobRowProps` + `rowProps` + `JobCard.isGeneratingPdf`. EITHER derive loading state at the parent from `printQuoteModalState !== null && state.job.id === job.id`, OR delete the slot entirely. Closes [TECH-DEBT H1](v1.2-TECH-DEBT.md) (MEDIUM).
 - [ ] **HYG-02**: `PICKER_VISIBLE_LIMIT = 8` centralized into a shared module (`src/utils/format.ts` or new `src/components/customerPickerConfig.ts`); imported by `JobsManager` and `PrintQuoteModal`. Closes [TECH-DEBT H2](v1.2-TECH-DEBT.md) (MEDIUM).
 - [ ] **HYG-03**: `SearchIcon` SVG extracted to `src/components/ui/icons/SearchIcon.tsx`; imported by `JobsManager` and `CustomerLibrary`. Closes [TECH-DEBT H3](v1.2-TECH-DEBT.md) (MEDIUM).
-- [ ] **HYG-04**: `onQuoteCreated` prop on `PrintQuoteModal` either made optional (and dropped at the call site) OR removed entirely. Closes [TECH-DEBT H4](v1.2-TECH-DEBT.md) (LOW).
-- [ ] **HYG-05**: `ImageCarousel.tsx` gains a one-line comment explaining why `image5.png` is absent (retired during which phase, why). Closes [TECH-DEBT H5](v1.2-TECH-DEBT.md) (LOW).
+- [x] **HYG-04**: `onQuoteCreated` prop on `PrintQuoteModal` either made optional (and dropped at the call site) OR removed entirely. Closes [TECH-DEBT H4](v1.2-TECH-DEBT.md) (LOW).
+- [x] **HYG-05**: `ImageCarousel.tsx` gains a one-line comment explaining why `image5.png` is absent (retired during which phase, why). Closes [TECH-DEBT H5](v1.2-TECH-DEBT.md) (LOW).
 - [ ] **HYG-06**: `<RecordSaleModal>` extracted from `JobsManager` to `src/components/RecordSaleModal.tsx` — owns its own state, `handleRecordSale` logic, customer-picker integration, and uses the v1.3 `<Modal>` primitive. JobsManager.tsx shrinks by ~400 lines. Closes [TECH-DEBT H6 + H7](v1.2-TECH-DEBT.md) (HIGH).
 - [ ] **HYG-07**: `<SaleRow>` extracted from `<JobCard>` for the per-sale `<details>` accordion. Closes [TECH-DEBT H8](v1.2-TECH-DEBT.md) (MEDIUM).
 - [ ] **HYG-08**: `useCustomerPicker(customers)` hook in `src/hooks/useCustomerPicker.ts` consolidates the picker state triplet + filtered/visible memos + `handlePickerKeyDown`. Used by both `<RecordSaleModal>` (from HYG-06) and `<PrintQuoteModal>`. Closes [TECH-DEBT H9 + H10](v1.2-TECH-DEBT.md) (MEDIUM).
 - [ ] **HYG-09**: `useModalReset(isOpen, resetFn)` + `useEscapeToClose(isOpen, onClose)` hooks extracted OR absorbed into the `<Modal>` primitive built for A11Y-01. CSV modals stop duplicating reset/Escape boilerplate. Closes [TECH-DEBT H11](v1.2-TECH-DEBT.md) (LOW).
-- [ ] **HYG-10**: `.planning/todos/ui-consistency-sweep.md` audited against current code; either marked closed + moved to `.planning/archive/` OR updated to reflect remaining work. Closes [TECH-DEBT H12](v1.2-TECH-DEBT.md) (LOW).
+- [x] **HYG-10**: `.planning/todos/ui-consistency-sweep.md` audited against current code; either marked closed + moved to `.planning/archive/` OR updated to reflect remaining work. Closes [TECH-DEBT H12](v1.2-TECH-DEBT.md) (LOW).
 
 ### Documentation (DOC)
 
-- [ ] **DOC-01**: `.planning/milestones/v1.2-REQUIREMENTS.md` Traceability table rows for `TAGS-01` and `TAGS-04` flipped from `Pending (outstanding-pending-...)` to `Complete`. Closes [TECH-DEBT D7](v1.2-TECH-DEBT.md) (LOW).
-- [ ] **DOC-02**: `.planning/milestones/v1.2-REQUIREMENTS.md` archive header confirmed to document the CUST-01/CUST-02 wording drift; if missing, add it. (The wording itself stays — Phase 17 D-07 explicitly scoped it out of closure.) Closes [TECH-DEBT D6](v1.2-TECH-DEBT.md) (LOW).
+- [x] **DOC-01**: `.planning/milestones/v1.2-REQUIREMENTS.md` Traceability table rows for `TAGS-01` and `TAGS-04` flipped from `Pending (outstanding-pending-...)` to `Complete`. Closes [TECH-DEBT D7](v1.2-TECH-DEBT.md) (LOW).
+- [x] **DOC-02**: `.planning/milestones/v1.2-REQUIREMENTS.md` archive header confirmed to document the CUST-01/CUST-02 wording drift; if missing, add it. (The wording itself stays — Phase 17 D-07 explicitly scoped it out of closure.) Closes [TECH-DEBT D6](v1.2-TECH-DEBT.md) (LOW).
 
 ### Performance (PERF)
 
@@ -73,8 +73,8 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 - [ ] **PERF-02**: `calculateMarketplaceFee` called once per render in the sale form (stored in a `const`), not three times. Closes [CODE-AUDIT #17](v1.2-CODE-AUDIT.md) (MEDIUM).
 - [ ] **PERF-03**: `calculateMarketplaceFee` hoisted to module scope (pure function, no closures). Closes [CODE-AUDIT #31](v1.2-CODE-AUDIT.md) (LOW).
 - [ ] **PERF-04**: `useDynamicRowHeight` in `CustomerLibrary` accepts `key: searchQuery` so cache invalidates on search change. Closes [CODE-AUDIT #18](v1.2-CODE-AUDIT.md) (MEDIUM).
-- [ ] **PERF-05**: Rollup `Circular chunk: vendor -> react-vendor -> vendor` warning resolved — `vite.config.ts manualChunks` routes all `react-*` packages into `react-vendor` explicitly. Build emits no chunk-graph warnings. Closes [TECH-DEBT D12](v1.2-TECH-DEBT.md) (LOW).
-- [ ] **PERF-06**: Vendor chunk classification reviewed; opportunistic size reduction where safe (e.g., split out infrequently-used libs from `vendor`). Non-blocking — only if Phase 11's perf-gate philosophy can be cleanly extended. Closes [TECH-DEBT D13](v1.2-TECH-DEBT.md) (LOW; optional).
+- [x] **PERF-05**: Rollup `Circular chunk: vendor -> react-vendor -> vendor` warning resolved — `vite.config.ts manualChunks` routes all `react-*` packages into `react-vendor` explicitly. Build emits no chunk-graph warnings. Closes [TECH-DEBT D12](v1.2-TECH-DEBT.md) (LOW).
+- [x] **PERF-06**: Vendor chunk classification reviewed; opportunistic size reduction where safe (e.g., split out infrequently-used libs from `vendor`). Non-blocking — only if Phase 11's perf-gate philosophy can be cleanly extended. Closes [TECH-DEBT D13](v1.2-TECH-DEBT.md) (LOW; optional).
 - [ ] **PERF-07**: `useSales()` global call (`const { sales: allSales } = useSales()`) lifted to a parent or `useDatabase` hook so the global liveQuery subscription is shared, not duplicated alongside the scoped query. Closes [CODE-AUDIT #30](v1.2-CODE-AUDIT.md) (LOW; optional — accept if extraction adds more friction than it removes).
 
 ### Nyquist contracts (NYQ)
@@ -87,16 +87,16 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Polish (POL)
 
-- [ ] **POL-01**: `CustomerLibrary` row layout — "Last used" text vertically centered with Edit/Delete action buttons. ~5 min CSS fix. Closes [TECH-DEBT D10](v1.2-TECH-DEBT.md) (LOW).
-- [ ] **POL-02**: `CustomerCsvImportModal` adds a "Customer template" download button via a new `generateSampleCustomerCsv()` helper (mirrors `generateSampleCsv` for materials/printers). Tracked in `.planning/todos/customer-csv-template-download.md`. Closes [TECH-DEBT D11](v1.2-TECH-DEBT.md) (LOW).
-- [ ] **POL-03**: `(doc as any).lastAutoTable.finalY` cast in `src/pdf/generateQuotePdf.ts` replaced with a module augmentation:
+- [x] **POL-01**: `CustomerLibrary` row layout — "Last used" text vertically centered with Edit/Delete action buttons. ~5 min CSS fix. Closes [TECH-DEBT D10](v1.2-TECH-DEBT.md) (LOW).
+- [x] **POL-02**: `CustomerCsvImportModal` adds a "Customer template" download button via a new `generateSampleCustomerCsv()` helper (mirrors `generateSampleCsv` for materials/printers). Tracked in `.planning/todos/customer-csv-template-download.md`. Closes [TECH-DEBT D11](v1.2-TECH-DEBT.md) (LOW).
+- [x] **POL-03**: `(doc as any).lastAutoTable.finalY` cast in `src/pdf/generateQuotePdf.ts` replaced with a module augmentation:
   ```ts
   declare module 'jspdf' {
     interface jsPDF { lastAutoTable: { finalY: number } }
   }
   ```
   Cast disappears. Closes [CODE-AUDIT #14](v1.2-CODE-AUDIT.md) (MEDIUM).
-- [ ] **POL-04**: Pending Quote overflow menu (`QuoteRow` in `JobsManager`) gains an outside-click/Escape close handler — `useEffect` registers a `mousedown` document listener while open. Closes [CODE-AUDIT #13](v1.2-CODE-AUDIT.md) (MEDIUM).
+- [x] **POL-04**: Pending Quote overflow menu (`QuoteRow` in `JobsManager`) gains an outside-click/Escape close handler — `useEffect` registers a `mousedown` document listener while open. Closes [CODE-AUDIT #13](v1.2-CODE-AUDIT.md) (MEDIUM).
 
 ## v2 / Future Requirements
 

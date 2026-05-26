@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: executing
-stopped_at: Phase 25 context gathered
-last_updated: "2026-05-26T01:17:49.840Z"
-last_activity: 2026-05-26 -- Phase 25 execution started
+status: ready
+stopped_at: Phase 25 complete; phases 19, 20, 21, 22, 23 still pending
+last_updated: 2026-05-26T12:48:32.992Z
+last_activity: 2026-05-26 -- Phase 25 execution complete
 progress:
   total_phases: 8
-  completed_phases: 2
-  total_plans: 12
-  completed_plans: 7
-  percent: 25
+  completed_phases: 3
+  total_plans: 17
+  completed_plans: 12
+  percent: 71
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 25 — doc-hygiene-polish-bundle-health
+**Current focus:** v1.3 cleanup — Phase 25 done; resume foundational + core phases (19, 20, 21, 22, 23)
 
 ## Current Position
 
-Phase: 25 (doc-hygiene-polish-bundle-health) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 25
-Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security), or 24 (Nyquist contracts). Phase 19 must complete before Phase 22.
-Last activity: 2026-05-26 -- Phase 25 execution started
+Phase: 25 (complete) — pending phases 19, 20, 21, 22, 23
+Plan: Not started
+Status: Phase 25 complete (5/5 plans); milestone v1.3 still in progress
+Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security). Phase 19 must complete before Phase 22; Phase 22 before Phase 23.
+Last activity: 2026-05-26
 
 ## v1.3 Phase Order Reference
 
@@ -48,7 +48,7 @@ Last activity: 2026-05-26 -- Phase 25 execution started
 
 **Velocity:**
 
-- Total plans completed: 33
+- Total plans completed: 38
 - Average duration: —
 - Total execution time: —
 
@@ -65,6 +65,7 @@ Last activity: 2026-05-26 -- Phase 25 execution started
 | 15.1 | 5 | - | - |
 | 18 | 1 | - | - |
 | 24 | 6 | - | - |
+| 25 | 5 | - | - |
 
 **Recent Trend:**
 
