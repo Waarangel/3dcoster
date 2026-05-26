@@ -81,13 +81,13 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   8. Every `<label>` in the Record Sale modal form grid and `CustomerEditModal` form grid is paired with its `<input>` via `htmlFor`/`id` — `Input`, `Textarea`, `Select` primitives auto-generate `id` via `useId()` and accept an optional explicit `id` override
   9. `CollapsibleSection` body element is always rendered with `hidden={!open}` (or CSS toggle) so `aria-controls` references a real DOM id
 
-**Plans**: ~6 plans
-  - 19-01: `<Modal>` primitive + tests (foundation)
-  - 19-02: Input/Textarea/Select primitives auto-id via useId() for label pairing
-  - 19-03: InfoTooltip + CollapsibleSection a11y fixes
-  - 19-04: Migrate 5 modals batch 1 (PrintQuoteModal, SettingsModal, UserProfileModal, CustomerEditModal, MaintenanceAlertModal)
-  - 19-05: Migrate 5 modals batch 2 (CustomerCsvImportModal, DeclineQuoteModal, CsvImportModal, plus close-button aria-label fixes on Settings + UserProfile)
-  - 19-06: Virtualized-list ARIA + UAT for the entire a11y surface (NVDA or VoiceOver smoke test)
+**Plans**: 6 plans
+  - [ ] 19-01-PLAN.md — `<Modal>` primitive + tests (foundation; closes A11Y-01, A11Y-02, HYG-09)
+  - [ ] 19-02-PLAN.md — Input/Textarea/Select primitives auto-id via useId() (A11Y-07 foundation)
+  - [ ] 19-03-PLAN.md — InfoTooltip useId() + CollapsibleSection always-rendered hidden body (A11Y-04, A11Y-08)
+  - [ ] 19-04-PLAN.md — Migrate 5 modals batch 1: PrintQuoteModal, SettingsModal, UserProfileModal, CustomerEditModal, MaintenanceAlertModal (A11Y-03, A11Y-06, A11Y-07)
+  - [ ] 19-05-PLAN.md — Migrate 5 modals batch 2: CustomerCsvImportModal, DeclineQuoteModal, CsvImportModal, plus the 3 JobsManager inline overlays + Record Sale label pairing (A11Y-03, A11Y-07)
+  - [ ] 19-06-PLAN.md — Virtualized-list ARIA + VoiceOver UAT for the entire a11y surface (A11Y-05)
 
 **UI hint**: yes
 
