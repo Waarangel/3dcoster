@@ -64,6 +64,19 @@ export interface CsvParseResult {
 // SAMPLE TEMPLATE GENERATION
 // ============================================
 
+// Columns for customer CSV
+const CUSTOMER_COLUMNS = ['name', 'email', 'company', 'address', 'notes'] as const;
+
+export function generateSampleCustomerCsv(): string {
+  return Papa.unparse({
+    fields: [...CUSTOMER_COLUMNS],
+    data: [
+      ['Jane Smith', 'jane@example.com', 'Acme Co', '123 Main St', 'Repeat buyer'],
+      ['Bob Jones', 'bob@example.com', '', '', ''],
+    ],
+  });
+}
+
 export function generateSampleCsv(type: 'material' | 'printer'): string {
   if (type === 'printer') {
     return Papa.unparse({
