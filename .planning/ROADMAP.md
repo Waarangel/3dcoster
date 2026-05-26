@@ -41,7 +41,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 - [ ] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary
 - [ ] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract
 - [x] **Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT; close Phase 18 review WR-01/02/03 (test fragility, `@tauri-apps/api` dedupe, tighter `forbidden path` match) (completed 2026-05-25)
-- [ ] **Phase 25: Doc + hygiene + polish + bundle health** — Doc state lag (D6/D7); HYG-01 generatingJobIds slot; HYG-04 onQuoteCreated; HYG-05 image5 comment; HYG-10 stale todo cleanup; POL-01..POL-04 (CustomerLibrary alignment, CSV template button, autotable cast, overflow-menu close); QuoteStatusPill aria; Rollup circular-chunk fix; vendor chunk classification (optional)
+- [x] **Phase 25: Doc + hygiene + polish + bundle health** — Doc state lag (D6/D7); HYG-01 generatingJobIds slot; HYG-04 onQuoteCreated; HYG-05 image5 comment; HYG-10 stale todo cleanup; POL-01..POL-04 (CustomerLibrary alignment, CSV template button, autotable cast, overflow-menu close); QuoteStatusPill aria; Rollup circular-chunk fix; vendor chunk classification (optional) (completed 2026-05-26)
 
 ---
 
@@ -235,11 +235,11 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   12. (Optional) Vendor chunk classification reviewed; opportunistic size reduction where the change is safe and the analyzer confirms benefit
 
 **Plans**: 5 plans
-  - [ ] 25-01-doc-batch-PLAN.md — Doc-state housekeeping (DOC-01, DOC-02, HYG-10) — `.planning/` only
-  - [ ] 25-02-customer-ui-PLAN.md — CustomerLibrary alignment + CSV template button (POL-01, POL-02)
-  - [ ] 25-03-jobsmanager-hygiene-PLAN.md — JobsManager hygiene + a11y (HYG-01, HYG-04, HYG-05, POL-04, A11Y-09)
-  - [ ] 25-04-pdf-type-augmentation-PLAN.md — jspdf module augmentation (POL-03)
-  - [ ] 25-05-bundle-health-PLAN.md — vite.config.ts manualChunks + vendor review (PERF-05, PERF-06)
+  - [x] 25-01-doc-batch-PLAN.md — Doc-state housekeeping (DOC-01, DOC-02, HYG-10) — `.planning/` only
+  - [x] 25-02-customer-ui-PLAN.md — CustomerLibrary alignment + CSV template button (POL-01, POL-02)
+  - [x] 25-03-jobsmanager-hygiene-PLAN.md — JobsManager hygiene + a11y (HYG-01, HYG-04, HYG-05, POL-04, A11Y-09)
+  - [x] 25-04-pdf-type-augmentation-PLAN.md — jspdf module augmentation (POL-03)
+  - [x] 25-05-bundle-health-PLAN.md — vite.config.ts manualChunks + vendor review (PERF-05, PERF-06)
 
 **UI hint**: yes (polish items + a11y additions are user-visible)
 
@@ -256,7 +256,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
 | 23. Test coverage hardening | 0/4 | Not started | — |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
-| 25. Doc + hygiene + polish + bundle health | 0/5 | Not started | — |
+| 25. Doc + hygiene + polish + bundle health | 5/5 | Complete   | 2026-05-26 |
 
 **Total**: 8 phases, ~34 plans, ~5-7 working days of focused work.
 

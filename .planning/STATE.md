@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: v1.3 Hardening
 status: executing
 stopped_at: Phase 25 context gathered
-last_updated: "2026-05-26T01:14:42.286Z"
-last_activity: 2026-05-26 -- Phase 25 planning complete
+last_updated: "2026-05-26T01:17:49.840Z"
+last_activity: 2026-05-26 -- Phase 25 execution started
 progress:
   total_phases: 8
   completed_phases: 2
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 25 — doc + hygiene + polish + bundle health
+**Current focus:** Phase 25 — doc-hygiene-polish-bundle-health
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
-Status: Ready to execute
+Phase: 25 (doc-hygiene-polish-bundle-health) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 25
 Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security), or 24 (Nyquist contracts). Phase 19 must complete before Phase 22.
-Last activity: 2026-05-26 -- Phase 25 planning complete
+Last activity: 2026-05-26 -- Phase 25 execution started
 
 ## v1.3 Phase Order Reference
 
