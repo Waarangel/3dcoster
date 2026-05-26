@@ -35,7 +35,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 ## Phases
 
 - [x] **Phase 18: Tauri fs:scope fix** — Reconcile `fs:scope` with unrestricted `save()` dialog so desktop users can save PDFs anywhere
-- [ ] **Phase 19: Modal primitive + a11y migration** — Build `<Modal>` (role=dialog, aria-modal, focus-trap, focus-return, useId-labeled), migrate 10 modal surfaces, plus virtualized-list ARIA + InfoTooltip useId + close-button labels + form-label pairing + CollapsibleSection aria-controls fix
+- [x] **Phase 19: Modal primitive + a11y migration** — Build `<Modal>` (role=dialog, aria-modal, focus-trap, focus-return, useId-labeled), migrate 10 modal surfaces, plus virtualized-list ARIA + InfoTooltip useId + close-button labels + form-label pairing + CollapsibleSection aria-controls fix (completed 2026-05-26)
 - [ ] **Phase 20: Dexie atomicity audit** — Wrap `addSale` in transaction; move `createQuote` nextQuoteNumber read inside transaction; fix `backfillQuotesFromJobs` currency hardcode; defensive trio (parsePositiveNumber, versionchange async close, getSetting validator)
 - [ ] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases
 - [ ] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary
@@ -87,7 +87,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   - [x] 19-03-PLAN.md — InfoTooltip useId() + CollapsibleSection always-rendered hidden body (A11Y-04, A11Y-08)
   - [x] 19-04-PLAN.md — Migrate 5 modals batch 1: PrintQuoteModal, SettingsModal, UserProfileModal, CustomerEditModal, MaintenanceAlertModal (A11Y-03, A11Y-06, A11Y-07)
   - [x] 19-05-PLAN.md — Migrate 5 modals batch 2: CustomerCsvImportModal, DeclineQuoteModal, CsvImportModal, plus the 3 JobsManager inline overlays + Record Sale label pairing (A11Y-03, A11Y-07)
-  - [ ] 19-06-PLAN.md — Virtualized-list ARIA + VoiceOver UAT for the entire a11y surface (A11Y-05)
+  - [x] 19-06-PLAN.md — Virtualized-list ARIA + VoiceOver UAT for the entire a11y surface (A11Y-05)
 
 **UI hint**: yes
 
@@ -250,7 +250,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 18. Tauri fs:scope fix | 1/1 | Complete    | 2026-05-25 |
-| 19. Modal primitive + a11y migration | 5/6 | In Progress|  |
+| 19. Modal primitive + a11y migration | 6/6 | Complete   | 2026-05-26 |
 | 20. Dexie atomicity audit | 0/4 | Not started | — |
 | 21. CSV + URL security | 0/3 | Not started | — |
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
