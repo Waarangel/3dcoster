@@ -395,7 +395,7 @@ export function buildAssetsForImport(
 // HELPERS
 // ============================================
 
-function parsePositiveNumber(value: string | undefined): number | null {
+export function parsePositiveNumber(value: string | undefined): number | null {
   if (!value?.trim()) return null;
   const num = Number(value.trim());
   if (isNaN(num) || num < 0) return null;
