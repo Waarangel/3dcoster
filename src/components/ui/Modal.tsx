@@ -63,6 +63,26 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
+/**
+ * Pick the element to receive initial focus when a Modal opens.
+ *
+ * Precedence (WR-02):
+ *   1. First non-Close focusable descendant inside the card
+ *   2. The Close button (only when it's the sole focusable)
+ *   3. The card itself (relies on `tabIndex={-1}` on the card) when there
+ *      are zero focusable descendants
+ *
+ * Exported (WR-03) so unit tests can exercise the zero-focusable fallback
+ * directly — the in-component test cannot easily construct that case
+ * because the Modal always renders its own Close button.
+ */
+export function findInitialFocusTarget(card: HTMLElement): HTMLElement {
+  const focusable = Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+  if (focusable.length === 0) return card;
+  const nonClose = focusable.find(el => el.getAttribute('aria-label') !== 'Close');
+  return nonClose ?? focusable[0];
+}
+
 // CR-02 fix: a module-level boolean was monotonically reset to `false` by any
 // Modal's cleanup. Two real overlapping Modals would leave the flag wrong
 // (and StrictMode's setup → cleanup → setup would also corrupt it). A numeric
@@ -126,18 +146,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', initialFo
         return;
       }
 
-      const focusable = Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-      if (focusable.length === 0) {
-        card.focus();
-        return;
-      }
-      // WR-02 fix (default): the Close button is always the first focusable in
-      // DOM order, which means every form-bearing modal would open with focus
-      // on Close — pressing Enter would close the modal instead of submitting.
-      // Skip Close when ANY other focusable descendant exists; only land on it
-      // when there's literally nothing else to focus.
-      const target = focusable.find(el => el.getAttribute('aria-label') !== 'Close') ?? focusable[0];
-      target.focus();
+      // WR-02 / WR-03: delegate to the exported helper so the precedence rules
+      // (skip-Close, then card fallback) are testable in isolation.
+      findInitialFocusTarget(card).focus();
     };
     // Defer via setTimeout so the portal DOM is fully committed before we focus.
     // setTimeout(fn, 0) works in both browser and jsdom (unlike rAF in jsdom).

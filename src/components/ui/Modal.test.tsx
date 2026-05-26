@@ -1,7 +1,7 @@
 import { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Modal } from './Modal';
+import { Modal, findInitialFocusTarget } from './Modal';
 
 // ---------------------------------------------------------------------------
 // Modal primitive — Phase 19-01 coverage
@@ -186,32 +186,43 @@ describe('Group 3 — Focus management', () => {
     }
   });
 
-  it('focuses the dialog card if no focusable descendants exist at all', async () => {
-    // This tests the tabIndex={-1} fallback on the card itself.
-    // We need a scenario with zero focusable descendants — we achieve this
-    // by disabling the Close button. Since we can't remove it from the outside,
-    // we verify the fallback by directly calling focus() on the card after
-    // clearing all focusable items. Instead, we test the tabIndex attribute
-    // which enables programmatic focus on the card element.
-    vi.useFakeTimers();
-    try {
-      await act(async () => {
-        root.render(
-          <Modal isOpen={true} onClose={vi.fn()} title="No focusable">
-            <span>plain text only</span>
-          </Modal>,
-        );
-      });
-      await act(async () => { vi.runAllTimers(); });
-      const dialog = document.body.querySelector('[role="dialog"]');
-      // The dialog card has tabIndex={-1} so it can receive programmatic focus.
-      expect(dialog!.getAttribute('tabindex')).toBe('-1');
-      // With Close button present, focus lands on it (not the card).
-      // Verify it's within the dialog (not body).
-      expect(dialog!.contains(document.activeElement)).toBe(true);
-    } finally {
-      vi.useRealTimers();
-    }
+  it('falls back to the dialog card when there are zero focusable descendants (WR-03)', () => {
+    // WR-03 fix: the prior in-component test could never construct a true
+    // "zero focusable descendants" scenario because the Modal always renders
+    // its own Close button. The helper is now exported so we can test the
+    // fallback branch directly with a synthetic card that genuinely has no
+    // focusable children.
+    const card = document.createElement('div');
+    card.tabIndex = -1;
+    card.innerHTML = '<span>plain text only</span><p>no buttons, no inputs</p>';
+    const target = findInitialFocusTarget(card);
+    expect(target).toBe(card);
+  });
+
+  it('returns the sole Close button when it is the only focusable (WR-02 edge)', () => {
+    // When Close is the ONLY focusable descendant, we DO land on it (better
+    // than landing on body or a non-interactive card with no visible focus
+    // ring). This locks in the precedence: skip-Close-if-others, fallback-to-
+    // Close-if-alone, fallback-to-card-if-nothing.
+    const card = document.createElement('div');
+    card.tabIndex = -1;
+    const close = document.createElement('button');
+    close.setAttribute('aria-label', 'Close');
+    card.appendChild(close);
+    const target = findInitialFocusTarget(card);
+    expect(target).toBe(close);
+  });
+
+  it('skips the Close button when other focusables exist (WR-02 default)', () => {
+    const card = document.createElement('div');
+    card.tabIndex = -1;
+    const close = document.createElement('button');
+    close.setAttribute('aria-label', 'Close');
+    const input = document.createElement('input');
+    card.appendChild(close);
+    card.appendChild(input);
+    const target = findInitialFocusTarget(card);
+    expect(target).toBe(input);
   });
 
   it('restores focus to the previously-focused element on unmount', async () => {
