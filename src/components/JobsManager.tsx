@@ -417,6 +417,7 @@ export const JobCard = memo(function JobCard({
 
   return (
     <div
+      role="listitem"
       style={style}
       className={`p-4 rounded-lg border transition-colors ${
         isSelected
@@ -1747,6 +1748,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
               </div>
             ) : searchedJobs.length > 100 ? (
               <List
+                role="list"
+                aria-rowcount={searchedJobs.length}
                 rowComponent={JobRow}
                 rowCount={searchedJobs.length}
                 rowHeight={rowHeightCache}

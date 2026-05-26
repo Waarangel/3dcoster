@@ -157,6 +157,7 @@ const MobileCardItem = memo(function MobileCardItem({
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   return (
     <div
+      role="listitem"
       style={style}
       className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"
     >
@@ -1157,6 +1158,8 @@ export function AssetLibrary({
         {paginatedAssets.length > 0 ? (
           effectiveItemsPerPage > 50 ? (
             <List
+              role="list"
+              aria-rowcount={paginatedAssets.length}
               rowComponent={MobileCardRow}
               rowCount={paginatedAssets.length}
               rowHeight={mobileCardHeightCache}
@@ -1184,7 +1187,7 @@ export function AssetLibrary({
       <div className="hidden md:block overflow-x-auto">
         {filterCategory === 'printer' ? (
           /* Printer Table — 7 columns */
-          <div className="w-full text-sm">
+          <div role="grid" aria-rowcount={paginatedAssets.length + 1} className="w-full text-sm">
             {/* Header (was <thead><tr>) */}
             <div role="row" className="grid grid-cols-7 gap-x-4 text-slate-400 text-left border-b border-slate-700">
               <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('name')}>Printer<SortIndicator field="name" /></div>
@@ -1198,6 +1201,8 @@ export function AssetLibrary({
             {/* Body (was <tbody>) */}
             {effectiveItemsPerPage > 50 ? (
               <List
+                role="list"
+                aria-rowcount={paginatedAssets.length}
                 rowComponent={PrinterRowAdapter}
                 rowCount={paginatedAssets.length}
                 rowHeight={printerRowHeightCache}
@@ -1215,7 +1220,7 @@ export function AssetLibrary({
           </div>
         ) : (
           /* Materials Table — 6 columns */
-          <div className="w-full text-sm">
+          <div role="grid" aria-rowcount={paginatedAssets.length + 1} className="w-full text-sm">
             {/* Header (was <thead><tr>) */}
             <div role="row" className="grid grid-cols-6 gap-x-4 text-slate-400 text-left border-b border-slate-700">
               <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('name')}>Material<SortIndicator field="name" /></div>
@@ -1228,6 +1233,8 @@ export function AssetLibrary({
             {/* Body (was <tbody>) */}
             {effectiveItemsPerPage > 50 ? (
               <List
+                role="list"
+                aria-rowcount={paginatedAssets.length}
                 rowComponent={MaterialRowAdapter}
                 rowCount={paginatedAssets.length}
                 rowHeight={materialRowHeightCache}

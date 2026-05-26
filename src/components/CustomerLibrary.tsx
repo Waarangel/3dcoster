@@ -43,7 +43,7 @@ const CustomerRowItem = memo(function CustomerRowItem({
   const subline = [customer.email, customer.company].filter(Boolean).join(' · ');
   const lastUsedLabel = `Last used: ${formatRelativeDate(customer.lastUsedAt)}`;
   return (
-    <div style={style} className="pb-2">
+    <div role="listitem" style={style} className="pb-2">
       <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -273,6 +273,8 @@ export function CustomerLibrary({
         </div>
       ) : (
         <List
+          role="list"
+          aria-rowcount={searchedCustomers.length}
           rowComponent={CustomerRow}
           rowCount={searchedCustomers.length}
           rowHeight={customerRowHeightCache}
