@@ -7,3 +7,4 @@ export { EmptyState, shouldShowEmptyState } from './EmptyState';
 export { Skeleton } from './Skeleton';
 export { InfoTooltip } from './InfoTooltip';
 export { CollapsibleSection } from './CollapsibleSection';
+export { Modal } from './Modal';
