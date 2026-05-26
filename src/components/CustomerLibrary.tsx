@@ -272,9 +272,12 @@ export function CustomerLibrary({
           </p>
         </div>
       ) : (
+        // WR-01 fix: aria-rowcount is only valid on grid/table/treegrid per
+        // WAI-ARIA 1.2 — silently ignored on role="list". Screen readers
+        // report list length without explicit annotation; aria-setsize on
+        // each listitem is the spec-correct path if needed.
         <List
           role="list"
-          aria-rowcount={searchedCustomers.length}
           rowComponent={CustomerRow}
           rowCount={searchedCustomers.length}
           rowHeight={customerRowHeightCache}

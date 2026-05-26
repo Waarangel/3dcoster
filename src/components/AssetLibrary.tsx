@@ -1200,9 +1200,12 @@ export function AssetLibrary({
             </div>
             {/* Body (was <tbody>) */}
             {effectiveItemsPerPage > 50 ? (
+              // WR-01 fix: parent is role="grid" so the virtualized body is
+              // role="rowgroup" (valid grid-child), not role="list" (which
+              // breaks the grid → row → cell ARIA chain). aria-rowcount
+              // belongs on the outer grid only.
               <List
-                role="list"
-                aria-rowcount={paginatedAssets.length}
+                role="rowgroup"
                 rowComponent={PrinterRowAdapter}
                 rowCount={paginatedAssets.length}
                 rowHeight={printerRowHeightCache}
@@ -1232,9 +1235,11 @@ export function AssetLibrary({
             </div>
             {/* Body (was <tbody>) */}
             {effectiveItemsPerPage > 50 ? (
+              // WR-01 fix: parent is role="grid" so the virtualized body is
+              // role="rowgroup" (valid grid-child), not role="list".
+              // aria-rowcount stays on the outer grid only.
               <List
-                role="list"
-                aria-rowcount={paginatedAssets.length}
+                role="rowgroup"
                 rowComponent={MaterialRowAdapter}
                 rowCount={paginatedAssets.length}
                 rowHeight={materialRowHeightCache}

@@ -1753,9 +1753,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                 </button>
               </div>
             ) : searchedJobs.length > 100 ? (
+              // WR-01 fix: aria-rowcount is only valid on grid/table/treegrid
+              // per WAI-ARIA 1.2 — silently ignored on role="list". Drop it
+              // and let screen readers report list length naturally.
               <List
                 role="list"
-                aria-rowcount={searchedJobs.length}
                 rowComponent={JobRow}
                 rowCount={searchedJobs.length}
                 rowHeight={rowHeightCache}
