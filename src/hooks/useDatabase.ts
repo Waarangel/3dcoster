@@ -570,48 +570,58 @@ export function useSales(jobId?: string) {
   );
 
   const addSale = useCallback(async (sale: Sale) => {
-    await db.sales.add(sale);
-    // Update job's copiesSold count
-    const job = await db.jobs.get(sale.jobId);
-    if (job) {
-      await db.jobs.put({
-        ...job,
-        copiesSold: job.copiesSold + sale.quantity,
-        updatedAt: new Date(),
-      });
-    }
+    await db.transaction('rw', db.sales, db.jobs, async () => {
+      await db.sales.add(sale);
+      // Update job's copiesSold count
+      const job = await db.jobs.get(sale.jobId);
+      if (job) {
+        await db.jobs.put({
+          ...job,
+          copiesSold: job.copiesSold + sale.quantity,
+          updatedAt: new Date(),
+        });
+      }
+    });
   }, []);
 
   const deleteSale = useCallback(async (sale: Sale) => {
-    await db.sales.delete(sale.id);
-    // Update job's copiesSold count
-    const job = await db.jobs.get(sale.jobId);
-    if (job) {
-      await db.jobs.put({
-        ...job,
-        copiesSold: Math.max(0, job.copiesSold - sale.quantity),
-        updatedAt: new Date(),
-      });
-    }
+    await db.transaction('rw', db.sales, db.jobs, async () => {
+      await db.sales.delete(sale.id);
+      // Update job's copiesSold count
+      const job = await db.jobs.get(sale.jobId);
+      if (job) {
+        await db.jobs.put({
+          ...job,
+          copiesSold: Math.max(0, job.copiesSold - sale.quantity),
+          updatedAt: new Date(),
+        });
+      }
+    });
   }, []);
 
   // Phase 14 revised (2026-05-22): users need to fix typos in sale records
   // (especially customer email). Quantity change must reconcile job.copiesSold
   // by the delta between old and new sale quantity.
+  // Phase 20 DATA-01: wrapped in db.transaction('rw', db.sales, db.jobs, ...)
+  // so a thrown exception or tab close between the sale write and the copiesSold
+  // bump rolls the entire mutation back. Mirror of Convert-to-Sale at
+  // JobsManager.tsx:1490. Closes CODE-AUDIT #4 (HIGH).
   const updateSale = useCallback(async (updated: Sale) => {
-    const previous = await db.sales.get(updated.id);
-    await db.sales.put(updated);
-    if (previous && previous.quantity !== updated.quantity) {
-      const job = await db.jobs.get(updated.jobId);
-      if (job) {
-        const delta = updated.quantity - previous.quantity;
-        await db.jobs.put({
-          ...job,
-          copiesSold: Math.max(0, job.copiesSold + delta),
-          updatedAt: new Date(),
-        });
+    await db.transaction('rw', db.sales, db.jobs, async () => {
+      const previous = await db.sales.get(updated.id);
+      await db.sales.put(updated);
+      if (previous && previous.quantity !== updated.quantity) {
+        const job = await db.jobs.get(updated.jobId);
+        if (job) {
+          const delta = updated.quantity - previous.quantity;
+          await db.jobs.put({
+            ...job,
+            copiesSold: Math.max(0, job.copiesSold + delta),
+            updatedAt: new Date(),
+          });
+        }
       }
-    }
+    });
   }, []);
 
   // Calculate totals for a job

@@ -101,7 +101,6 @@ describe('useSales transactions (DATA-01)', () => {
 
   describe('addSale', () => {
     it('opens a db.transaction over db.sales and db.jobs before any write', async () => {
-      const _job = makeMinimalJob({ id: 'job-call-order', copiesSold: 0 });
       const sale = makeMinimalSale({ id: 'sale-call-order', jobId: 'job-call-order' });
 
       // Spy on db.transaction — capture what arguments it is called with.
