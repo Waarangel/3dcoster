@@ -2137,6 +2137,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         <PrintQuoteModal
           job={printQuoteModalState.job}
           userProfile={userProfile}
+          shippingConfig={shippingConfig}
           isOpen={true}
           onClose={() => setPrintQuoteModalState(null)}
           editingQuote={printQuoteModalState.mode === 'edit' ? printQuoteModalState.editingQuote : undefined}

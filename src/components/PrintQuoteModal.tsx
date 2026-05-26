@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import type { PrintJob, UserProfile, Quote, Customer } from '../types';
+import type { PrintJob, UserProfile, Quote, Customer, ShippingConfig } from '../types';
 import { useQuotes, useCustomers } from '../hooks/useDatabase';
 import { resolveTaxRate, taxLabelFor } from '../utils/taxResolution';
 import { formatCurrency } from '../utils/currency';
 import { calculateTax } from '../utils/costCalc';
+import { computeJobShipping } from '../utils/jobShipping';
 import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
 import { formatQuoteNumber } from '../utils/format';
 
@@ -32,6 +33,8 @@ const PICKER_VISIBLE_LIMIT = 8;
 export interface PrintQuoteModalProps {
   job: PrintJob;
   userProfile: UserProfile;
+  /** Shipping config so create-mode can pre-fill Shipping cost from the job's stored shipping inputs (method/distance/override). */
+  shippingConfig: ShippingConfig;
   isOpen: boolean;
   onClose: () => void;
   onQuoteCreated?: (quote: Quote) => void;
@@ -49,7 +52,7 @@ export interface PrintQuoteModalProps {
   editingQuote?: Quote;
 }
 
-export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCreated, editingQuote }: PrintQuoteModalProps) {
+export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onClose, onQuoteCreated, editingQuote }: PrintQuoteModalProps) {
   const { customers, customersByEmail } = useCustomers();
   const { createQuote, updateQuote } = useQuotes();
 
@@ -97,7 +100,10 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
         setQuoteCustomerEmail('');
         setQuoteCustomerCompany('');
         setQuoteCustomerAddress('');
-        setQuoteShippingCost(0);
+        // Pre-fill shipping from the job's saved shipping inputs (method, distance,
+        // override) so the user doesn't have to retype data that's already on the job.
+        // User can still edit the field manually if they want a different quoted price.
+        setQuoteShippingCost(computeJobShipping(job, shippingConfig));
         setPickedExistingCustomerId(null);
       }
       setCustomerPickerQuery('');
@@ -106,7 +112,7 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
       setIsGenerating(false);
       setError(null);
     }
-  }, [isOpen, editingQuote]);
+  }, [isOpen, editingQuote, job, shippingConfig]);
 
   // ─── Picker logic (mirror 15.1-04 verbatim) ──────────────────────────────
   const filteredCustomers = useMemo<Customer[]>(() => {

@@ -106,6 +106,23 @@ function makeUserProfile(overrides: Partial<UserProfile> = {}): UserProfile {
   } as UserProfile;
 }
 
+function makeShippingConfig(): import('../types').ShippingConfig {
+  return {
+    upsBaseCost: 0,
+    fedexBaseCost: 0,
+    dhlBaseCost: 0,
+    purolatorBaseCost: 0,
+    uspsBaseCost: 0,
+    royalMailBaseCost: 0,
+    australiaPostBaseCost: 0,
+    canadaPostBaseCost: 0,
+    maxDeliveryRadiusKm: 50,
+    gasPricePerLiter: 0,
+    vehicleFuelEfficiency: 0,
+    customCarriers: [],
+  } as unknown as import('../types').ShippingConfig;
+}
+
 function makeQuoteFromInput(input: CreateQuoteInput): Quote {
   const now = new Date();
   return {
@@ -163,6 +180,7 @@ async function renderModal(opts: { job?: PrintJob; userProfile?: UserProfile; on
   const props = {
     job: opts.job ?? makeJob(),
     userProfile: opts.userProfile ?? makeUserProfile(),
+    shippingConfig: makeShippingConfig(),
     isOpen: true,
     onClose: opts.onClose ?? vi.fn(),
     onQuoteCreated: opts.onQuoteCreated ?? vi.fn(),
@@ -350,6 +368,7 @@ describe('PrintQuoteModal — edit mode (D-27)', () => {
       root!.render(<PrintQuoteModal
         job={makeJob()}
         userProfile={makeUserProfile()}
+        shippingConfig={makeShippingConfig()}
         isOpen={true}
         onClose={onClose}
         onQuoteCreated={onQuoteCreated}
