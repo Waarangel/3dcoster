@@ -355,7 +355,6 @@ describe('JobCard edit-in-place (Gap E)', () => {
           isSelected={false}
           info={makeBreakEvenInfo()}
           recentSales={undefined}
-          isGeneratingPdf={false}
           getFilamentName={() => 'PLA'}
           onToggleSelect={noop}
           onOpenSaleForm={noop}
