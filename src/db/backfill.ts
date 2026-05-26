@@ -246,6 +246,38 @@ export function backfillQuotesFromJobs(jobs: PrintJob[], sales: Sale[], currency
 }
 
 /**
+ * reconcileQuoteCurrency — Phase 20 DATA-03 v9 reconcile helper.
+ *
+ * Pure. Idempotent. No Dexie, no React, no IO. The v9 upgrade callback in
+ * database.ts walks db.quotes, calls this helper to compute the patch set,
+ * and then bulkPuts the result. Extracted as a pure function so jsdom can
+ * exhaustively cover the idempotency contract without fake-indexeddb
+ * (Phase 23 TEST-04 will later upgrade to real-IDB integration depth).
+ *
+ * Filter: quotes where lineItemsSnapshot.currency === 'USD' AND the user's
+ * actual currency ≠ 'USD'. Returns ONLY the quotes that need patching.
+ * Re-running on already-patched quotes returns an empty array (idempotent).
+ *
+ * Examples:
+ *   reconcileQuoteCurrency([usdQuote], 'CAD') → [{ ...usdQuote, lineItemsSnapshot: { ...usdQuote.lineItemsSnapshot, currency: 'CAD' } }]
+ *   reconcileQuoteCurrency([cadQuote], 'EUR') → []  // non-USD quote untouched
+ *   reconcileQuoteCurrency([usdQuote], 'USD') → []  // no drift possible
+ *   reconcileQuoteCurrency([patchedCadQuote], 'CAD') → []  // already patched
+ */
+export function reconcileQuoteCurrency(quotes: Quote[], currency: string): Quote[] {
+  if (currency === 'USD') return [];
+  const out: Quote[] = [];
+  for (const q of quotes) {
+    if (q.lineItemsSnapshot?.currency !== 'USD') continue;
+    out.push({
+      ...q,
+      lineItemsSnapshot: { ...q.lineItemsSnapshot, currency: currency as Currency },
+    });
+  }
+  return out;
+}
+
+/**
  * backfillCustomersFromSales — second extension D-32 (gap K fix).
  *
  * One-time pass to populate the Customer Library with any customer that

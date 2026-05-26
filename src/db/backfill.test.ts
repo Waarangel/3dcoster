@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales } from './backfill';
-import type { PrintJob, Sale, Customer } from '../types';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency } from './backfill';
+import type { PrintJob, Sale, Customer, Quote } from '../types';
 
 describe('backfillTagsOnJob', () => {
   it('sets tags=[] when the field is missing (most common v5 path)', () => {
@@ -505,5 +505,80 @@ describe('parseTagsInput (Phase 15 D-02)', () => {
 
   it('returns undefined when every entry strips to empty', () => {
     expect(parseTagsInput('💀,@@@,!!!')).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reconcileQuoteCurrency — Phase 20 DATA-03 v9 reconcile helper
+// ---------------------------------------------------------------------------
+
+describe('reconcileQuoteCurrency (DATA-03 v9 reconcile)', () => {
+  // Build minimal Quote fixtures via inline factory
+  const makeQuote = (overrides: Partial<Quote>): Quote => ({
+    id: crypto.randomUUID(),
+    quoteNumber: 1,
+    printJobId: 'job-x',
+    customerSnapshot: { name: 'Test' },
+    lineItemsSnapshot: {
+      jobTitle: 'X',
+      sellingPrice: 10,
+      shippingCost: 0,
+      resolvedTaxRate: 0,
+      taxAmount: 0,
+      currency: 'USD',
+      notes: '',
+      terms: '',
+    },
+    status: 'sent',
+    createdAt: new Date(),
+    sentAt: new Date(),
+    ...overrides,
+  } as Quote);
+
+  it('patches quotes where lineItemsSnapshot.currency === "USD" to the user currency (CAD)', () => {
+    const quotes = [makeQuote({ id: 'q1' }), makeQuote({ id: 'q2' })];
+    const patched = reconcileQuoteCurrency(quotes, 'CAD');
+    expect(patched.length).toBe(2);
+    for (const q of patched) {
+      expect(q.lineItemsSnapshot.currency).toBe('CAD');
+    }
+  });
+
+  it('leaves non-USD quotes untouched (does NOT patch CAD → EUR)', () => {
+    const quotes = [
+      makeQuote({ id: 'q1', lineItemsSnapshot: { ...makeQuote({}).lineItemsSnapshot, currency: 'CAD' } }),
+    ];
+    const patched = reconcileQuoteCurrency(quotes, 'EUR');
+    expect(patched.length).toBe(0);  // CAD quote NOT touched (only USD → user-currency drift is patched)
+  });
+
+  it('is idempotent — rerunning on already-patched quotes produces zero patches', () => {
+    const quotes = [makeQuote({ id: 'q1' })];
+    const firstPass = reconcileQuoteCurrency(quotes, 'CAD');
+    expect(firstPass.length).toBe(1);
+    // Apply the first-pass patches in memory (the production caller does bulkPut)
+    const after = quotes.map(q => firstPass.find(p => p.id === q.id) ?? q);
+    const secondPass = reconcileQuoteCurrency(after, 'CAD');
+    expect(secondPass.length).toBe(0);
+  });
+
+  it('returns empty array when user currency is USD (no drift possible)', () => {
+    const quotes = [makeQuote({ id: 'q1' })];
+    const patched = reconcileQuoteCurrency(quotes, 'USD');
+    expect(patched.length).toBe(0);
+  });
+
+  it('preserves every Quote field other than lineItemsSnapshot.currency', () => {
+    const quote = makeQuote({ id: 'q1', quoteNumber: 42, customerId: 'cust-1', status: 'converted', convertedToSaleId: 'sale-1' });
+    const patched = reconcileQuoteCurrency([quote], 'EUR')[0];
+    expect(patched.id).toBe('q1');
+    expect(patched.quoteNumber).toBe(42);
+    expect(patched.customerId).toBe('cust-1');
+    expect(patched.status).toBe('converted');
+    expect(patched.convertedToSaleId).toBe('sale-1');
+    expect(patched.lineItemsSnapshot.currency).toBe('EUR');
+    // All other lineItemsSnapshot fields preserved
+    expect(patched.lineItemsSnapshot.jobTitle).toBe('X');
+    expect(patched.lineItemsSnapshot.sellingPrice).toBe(10);
   });
 });
