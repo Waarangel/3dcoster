@@ -5,6 +5,7 @@ import screenshot1 from '../assets/screenshots/image1.png';
 import screenshot2 from '../assets/screenshots/image2.png';
 import screenshot3 from '../assets/screenshots/image3.png';
 import screenshot4 from '../assets/screenshots/image4.png';
+// image5.png not in repo — screenshot sequence intentionally skips index 5 (asset retired pre-history-tracked timeframe).
 import screenshot6 from '../assets/screenshots/image6.png';
 import screenshot7 from '../assets/screenshots/image7.png';
 

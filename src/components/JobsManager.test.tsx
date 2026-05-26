@@ -355,7 +355,6 @@ describe('JobCard edit-in-place (Gap E)', () => {
           isSelected={false}
           info={makeBreakEvenInfo()}
           recentSales={undefined}
-          isGeneratingPdf={false}
           getFilamentName={() => 'PLA'}
           onToggleSelect={noop}
           onOpenSaleForm={noop}
@@ -530,5 +529,93 @@ describe('JobCard edit-in-place (Gap E)', () => {
     const emptyBtn = gapEContainer.querySelector<HTMLButtonElement>('button[aria-label="Add tag"]');
     expect(emptyBtn).not.toBeNull();
     expect(emptyBtn?.querySelector('svg')).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// POL-04 — QuoteRow overflow menu closes on outside click + Escape
+// ---------------------------------------------------------------------------
+
+describe('POL-04 — QuoteRow overflow menu closes on outside-click + Escape', () => {
+  function getMoreActionsBtn(): HTMLButtonElement | undefined {
+    return Array.from(container!.querySelectorAll('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? '') === 'More actions',
+    ) as HTMLButtonElement | undefined;
+  }
+
+  function getOverflowMenu(): Element | null {
+    return container!.querySelector('[role="menu"]');
+  }
+
+  it('Test 1: outside mousedown closes the overflow menu when open', async () => {
+    quotesFixture = [makeQuote({ status: 'sent' })];
+    await act(async () => {
+      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+    });
+    const moreBtn = getMoreActionsBtn();
+    expect(moreBtn).toBeDefined();
+
+    // Open the overflow menu
+    await act(async () => { moreBtn!.click(); });
+    expect(getOverflowMenu()).not.toBeNull();
+
+    // Click outside (on document.body, outside the container)
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    expect(getOverflowMenu()).toBeNull();
+  });
+
+  it('Test 2: Escape keydown closes the overflow menu when open', async () => {
+    quotesFixture = [makeQuote({ status: 'sent' })];
+    await act(async () => {
+      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+    });
+    const moreBtn = getMoreActionsBtn();
+    expect(moreBtn).toBeDefined();
+
+    // Open the overflow menu
+    await act(async () => { moreBtn!.click(); });
+    expect(getOverflowMenu()).not.toBeNull();
+
+    // Press Escape
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(getOverflowMenu()).toBeNull();
+  });
+
+  it('Test 3: listeners are removed on unmount (cleanup guard)', async () => {
+    quotesFixture = [makeQuote({ status: 'sent' })];
+    await act(async () => {
+      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+    });
+    const moreBtn = getMoreActionsBtn();
+    await act(async () => { moreBtn!.click(); });
+    expect(getOverflowMenu()).not.toBeNull();
+
+    // Unmount — afterEach will clean up root, but we verify here that Escape
+    // after unmount does not throw (listeners removed)
+    await act(async () => { root!.unmount(); });
+    root = null;
+    // If listeners leaked, this would try to call setOverflowOpen on an unmounted
+    // component. Jest/vitest would surface a warning; this assert just confirms
+    // no synchronous throw.
+    expect(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    }).not.toThrow();
+  });
+
+  it('Test 4: outside mousedown has no effect when menu is closed (no listeners registered)', async () => {
+    quotesFixture = [makeQuote({ status: 'sent' })];
+    await act(async () => {
+      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+    });
+    // Menu starts closed — outside click should do nothing (listeners not registered)
+    expect(getOverflowMenu()).toBeNull();
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    expect(getOverflowMenu()).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, QuoteStatus, RuntimeQuoteStatus } from '../types';
@@ -42,7 +42,6 @@ type JobCardProps = {
   isSelected: boolean;
   info: BreakEvenInfo;
   recentSales?: Sale[];
-  isGeneratingPdf: boolean;
   getFilamentName: (id: string) => string;
   onToggleSelect: (id: string) => void;
   onOpenSaleForm: (job: PrintJob) => void;
@@ -102,7 +101,7 @@ const QUOTE_PILL_STYLES = {
   // 3 user-facing states per D-24 + 1 legacy mapping
   pending:   { label: 'Pending',   classes: 'bg-amber-700/30 text-amber-300' },
   sale:      { label: 'Sale',      classes: 'bg-emerald-700/30 text-emerald-300' },
-  declined:  { label: 'Declined',  classes: 'bg-slate-700 text-slate-300' },
+  declined:  { label: 'Declined',  classes: 'bg-slate-700 text-slate-200' },
 } as const;
 
 type QuotePillKind = keyof typeof QUOTE_PILL_STYLES;
@@ -128,7 +127,10 @@ function quoteStatusToPill(status: QuoteStatus): QuotePillKind | null {
 function QuoteStatusPill({ kind }: { kind: QuotePillKind }) {
   const { label, classes } = QUOTE_PILL_STYLES[kind];
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}>
+    <span
+      aria-label={`Status: ${label}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}
+    >
       {label}
     </span>
   );
@@ -148,6 +150,25 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
   const currency = quote.lineItemsSnapshot.currency;
   const total = quote.lineItemsSnapshot.sellingPrice + quote.lineItemsSnapshot.shippingCost + quote.lineItemsSnapshot.taxAmount;
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOverflowOpen(false);
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [overflowOpen]);
 
   return (
     <li
@@ -169,7 +190,7 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 shrink-0 relative">
+      <div ref={overflowRef} className="flex items-center gap-2 shrink-0 relative">
         {pillKind === 'pending' && (
           <>
             <Button
@@ -354,7 +375,6 @@ export const JobCard = memo(function JobCard({
   isSelected,
   info,
   recentSales,
-  isGeneratingPdf,
   getFilamentName,
   onToggleSelect,
   onOpenSaleForm,
@@ -631,11 +651,11 @@ export const JobCard = memo(function JobCard({
               <Button
                 variant="primary"
                 btnSize="sm"
-                disabled={isGeneratingPdf || job.sellingPrice <= 0}
+                disabled={job.sellingPrice <= 0}
                 title={job.sellingPrice <= 0 ? 'Set a selling price first' : undefined}
                 onClick={(e) => { e.stopPropagation(); onGeneratePdf(job); }}
               >
-                {isGeneratingPdf ? 'Generating...' : 'Create Quote'}
+                Create Quote
               </Button>
               <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
             </div>
@@ -769,7 +789,6 @@ type JobRowProps = {
   jobs: PrintJob[];
   selectedJobId: string | null;
   selectedSales: Sale[];
-  generatingJobIds: Set<string>;
   getFilamentName: (id: string) => string;
   getBreakEvenInfo: (job: PrintJob) => BreakEvenInfo;
   onToggleSelect: (id: string) => void;
@@ -800,7 +819,6 @@ const JobRow = ({
   jobs,
   selectedJobId,
   selectedSales,
-  generatingJobIds,
   getFilamentName,
   getBreakEvenInfo,
   onToggleSelect,
@@ -831,7 +849,6 @@ const JobRow = ({
       isSelected={isSelected}
       info={getBreakEvenInfo(job)}
       recentSales={isSelected ? selectedSales : undefined}
-      isGeneratingPdf={generatingJobIds.has(job.id)}
       getFilamentName={getFilamentName}
       onToggleSelect={onToggleSelect}
       onOpenSaleForm={onOpenSaleForm}
@@ -974,10 +991,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [convertingFromQuote, setConvertingFromQuote] = useState<Quote | null>(null);
   // useQuotes is also consumed by the Decline modal's onConfirm handler — see below.
   const { updateQuote: updateQuoteFromHook } = useQuotes();
-  // Per-job generating set kept as a stable empty Set so the JobCard prop chain
-  // (`isGeneratingPdf={generatingJobIds.has(job.id)}`) keeps compiling without
-  // touching every row component. The modal owns its own Generate button state.
-  const generatingJobIds = useMemo(() => new Set<string>(), []);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleQuantity, setSaleQuantity] = useState(1);
   const [salePrice, setSalePrice] = useState(0);
@@ -1625,7 +1638,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     jobs: searchedJobs,
     selectedJobId,
     selectedSales: sales,
-    generatingJobIds,
     getFilamentName,
     getBreakEvenInfo,
     onToggleSelect: handleToggleSelect,
@@ -1647,7 +1659,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onCancelAddTag: handleCancelAddTag,
     onSubmitAddTag: handleSubmitAddTag,
     onRemoveTag: handleRemoveTag,
-  }), [searchedJobs, selectedJobId, sales, generatingJobIds, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
+  }), [searchedJobs, selectedJobId, sales, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1743,7 +1755,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       isSelected={isSelected}
                       info={getBreakEvenInfo(job)}
                       recentSales={isSelected ? sales : undefined}
-                      isGeneratingPdf={generatingJobIds.has(job.id)}
                       getFilamentName={getFilamentName}
                       onToggleSelect={handleToggleSelect}
                       onOpenSaleForm={handleOpenSaleForm}
@@ -2082,7 +2093,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
           userProfile={userProfile}
           isOpen={true}
           onClose={() => setPrintQuoteModalState(null)}
-          onQuoteCreated={() => { /* no-op for now; could trigger a toast in a future plan */ }}
           editingQuote={printQuoteModalState.mode === 'edit' ? printQuoteModalState.editingQuote : undefined}
         />
       )}
