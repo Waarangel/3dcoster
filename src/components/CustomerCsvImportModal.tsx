@@ -6,6 +6,7 @@ import {
   type ParsedCustomerRow,
   type CustomerCsvParseResult,
 } from '../utils/customerCsv';
+import { generateSampleCustomerCsv, downloadCsv } from '../utils/csvHelpers';
 import type { Customer } from '../types';
 
 /**
@@ -316,6 +317,20 @@ function UploadStep({
           onChange={onFileSelect}
           className="hidden"
         />
+      </div>
+
+      {/* Template download */}
+      <div className="bg-slate-700/50 rounded-lg p-3">
+        <p className="text-sm text-slate-300 mb-2">Download a sample template to get started:</p>
+        <Button
+          type="button"
+          variant="ghost"
+          btnSize="sm"
+          onClick={() => downloadCsv(generateSampleCustomerCsv(), 'customer-template.csv')}
+          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+        >
+          Customer template
+        </Button>
       </div>
 
       {/* Accepted columns reference */}
