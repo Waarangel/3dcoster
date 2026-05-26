@@ -102,7 +102,7 @@ const QUOTE_PILL_STYLES = {
   // 3 user-facing states per D-24 + 1 legacy mapping
   pending:   { label: 'Pending',   classes: 'bg-amber-700/30 text-amber-300' },
   sale:      { label: 'Sale',      classes: 'bg-emerald-700/30 text-emerald-300' },
-  declined:  { label: 'Declined',  classes: 'bg-slate-700 text-slate-300' },
+  declined:  { label: 'Declined',  classes: 'bg-slate-700 text-slate-200' },
 } as const;
 
 type QuotePillKind = keyof typeof QUOTE_PILL_STYLES;
@@ -128,7 +128,10 @@ function quoteStatusToPill(status: QuoteStatus): QuotePillKind | null {
 function QuoteStatusPill({ kind }: { kind: QuotePillKind }) {
   const { label, classes } = QUOTE_PILL_STYLES[kind];
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}>
+    <span
+      aria-label={`Status: ${label}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}
+    >
       {label}
     </span>
   );
