@@ -541,9 +541,14 @@ export function useJobs() {
   }, []);
 
   const deleteJob = useCallback(async (id: string) => {
-    // Also delete associated sales
-    await db.sales.where('jobId').equals(id).delete();
-    await db.jobs.delete(id);
+    // WR-01 hardening: the sales-cleanup + job-delete pair must be atomic.
+    // Without the tx wrap, a crash between the two writes leaves orphan
+    // sales referencing a deleted jobId — the same DATA-01 concern that
+    // motivated wrapping addSale/deleteSale/updateSale in plan 20-01.
+    await db.transaction('rw', db.sales, db.jobs, async () => {
+      await db.sales.where('jobId').equals(id).delete();
+      await db.jobs.delete(id);
+    });
   }, []);
 
   const getJob = useCallback(async (id: string) => {
@@ -874,7 +879,10 @@ export function useQuotes() {
 
     // quotePayload is declared outside but assigned inside the tx scope so
     // the caller can return it after the transaction commits.
-    let quotePayload!: Quote & { status: RuntimeQuoteStatus };
+    // CR-02 hardening: typed as `| undefined` (not `!`) — a runtime guard
+    // after the tx surfaces any future Dexie regression as a loud throw
+    // rather than a silent `undefined` return that callers would dereference.
+    let quotePayload: (Quote & { status: RuntimeQuoteStatus }) | undefined;
 
     await db.transaction('rw', db.quotes, db.customers, db.settings, async (tx) => {
       // DATA-02: read nextQuoteNumber from the tx-scoped settings snapshot
@@ -930,6 +938,14 @@ export function useQuotes() {
       await setUserProfile({ ...userProfile, nextQuoteNumber: nextNum + 1 });
     });
 
+    // CR-02 guard: Dexie's documented contract is that `await db.transaction()`
+    // only resolves after the scope function completes, which means quotePayload
+    // is assigned. This throw is unreachable under that contract — present to
+    // surface any future regression (or library change) loudly rather than as a
+    // silent `undefined` returned to the caller.
+    if (!quotePayload) {
+      throw new Error('createQuote: transaction resolved without assigning quotePayload');
+    }
     return quotePayload;
   }, []);
 
