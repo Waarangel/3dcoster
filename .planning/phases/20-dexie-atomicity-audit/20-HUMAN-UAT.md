@@ -1,20 +1,20 @@
 ---
-status: partial
+status: passed
 phase: 20-dexie-atomicity-audit
 source: [20-VERIFICATION.md]
 started: 2026-05-26T20:54:00Z
-updated: 2026-05-26T20:54:00Z
+updated: 2026-05-26T20:58:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing]
+[all human verification complete]
 
 ## Tests
 
 ### 1. DATA-02 concurrent-tab quote-number race UAT
 expected: Two browser tabs that open the Print Quote modal from the same React snapshot and click Save within ~1 second of each other end up with two distinct sequential `quoteNumber` values in `db.quotes`. The tx-scoped settings read inside `createQuote` (src/hooks/useDatabase.ts:887) serializes through Dexie's transaction queue — each tab's `tx.table('settings').get('userProfile')` reads the value as of its own transaction snapshot, so the second tab sees the first tab's `setUserProfile` write. No console errors. No duplicate quoteNumbers.
-result: [pending]
+result: passed (human-approved 2026-05-26 — two tabs saved within ~1s produced distinct sequential quoteNumbers, no console errors)
 
 **How to run:**
 1. Kill any running dev server. `npm run dev` (port 4173).
@@ -31,9 +31,9 @@ If pass, reply "approved" to /gsd:verify-work, or update this UAT file directly 
 ## Summary
 
 total: 1
-passed: 0
+passed: 1
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 

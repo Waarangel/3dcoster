@@ -1,13 +1,14 @@
 ---
 phase: 20-dexie-atomicity-audit
 verified: 2026-05-26T17:00:00Z
-status: human_needed
+human_uat_approved: 2026-05-26T20:58:00Z
+status: passed
 score: 6/6 must-haves verified
 overrides_applied: 0
 human_verification:
   - test: "Two-tab concurrent createQuote produces distinct quote numbers (DATA-02 race fix)"
     expected: "Tab A gets quote number N, Tab B gets quote number N+1 (never the same number); userProfile.nextQuoteNumber increments by exactly 2; no PrematureCommitError or TransactionInactiveError in either tab's DevTools console"
-    why_human: "jsdom lacks IndexedDB — fake-indexeddb required for automated concurrent-tab isolation proof. The production code change is correct (verified by code inspection: tx.table('settings').get inside the tx body). The existing test in useDatabase.test.ts calls db.transaction directly from the test body, not through the production createQuote hook (CR-04/WR-04 documented tautology). The DATA-02 two-tab UAT in 20-02-SUMMARY.md was marked blocked — the plan's Task 2 UAT was listed as non-autonomous but does not appear to have been executed with a recorded 'approved' verdict in 20-02-SUMMARY. Needs human confirmation."
+    result: "passed — human-approved 2026-05-26. Two tabs saved Print Quote within ~1s; observed distinct sequential quoteNumbers in the quotes IndexedDB store; no aborted-transaction errors in either console. UAT details persisted in 20-HUMAN-UAT.md."
 ---
 
 # Phase 20: dexie-atomicity-audit Verification Report
