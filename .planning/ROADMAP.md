@@ -106,11 +106,11 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   6. `getSetting<T>` adds a runtime schema validator (Zod OR hand-rolled) at the JSON-parse boundary; fall back to `defaultValue` on structural mismatch (not just JSON parse failure)
   7. All existing tests pass; new tests added for the addSale transaction boundary + createQuote no-collision contract
 
-**Plans**: ~4 plans
-  - 20-01: addSale transaction wrap + test
-  - 20-02: createQuote read-inside-transaction + concurrent-tab test
-  - 20-03: backfillQuotesFromJobs currency lookup
-  - 20-04: Defensive trio (parsePositiveNumber, versionchange async, getSetting validator)
+**Plans:** 4 plans
+  - [ ] 20-01-PLAN.md — addSale + deleteSale + updateSale transactional wraps (DATA-01) — Wave 1
+  - [ ] 20-02-PLAN.md — createQuote tx-scoped settings read + two-tab UAT (DATA-02) — Wave 2 (depends on 20-01 for shared test file)
+  - [ ] 20-03-PLAN.md — backfillQuotesFromJobs currency forward fix + v9 reconcile schema bump (DATA-03) — Wave 2 (HARD depends on 20-04 — v9 schema bump requires async versionchange handler)
+  - [ ] 20-04-PLAN.md — Defensive trio: parsePositiveNumber allowZero + async versionchange + getSetting structural validator (DATA-04, DATA-05, DATA-06) — Wave 1 (MUST merge before 20-03)
 
 **UI hint**: no
 
