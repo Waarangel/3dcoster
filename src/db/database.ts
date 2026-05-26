@@ -130,16 +130,36 @@ db.version(8).stores({
 // Reload this tab if another tab loads a newer schema (SCHEMA-02 / D-10 / D-11).
 // Without this, Dexie's default closes the connection and console.warn()s,
 // which crashes the React tree via useLiveQuery references.
-db.on('versionchange', () => { window.location.reload(); });
+//
+// DATA-05: handler is async so db.close() is awaited BEFORE window.location.reload().
+// Without the await, in-flight transactions in this tab can be aborted mid-write when
+// another tab triggers a schema bump (e.g. the v9 bump in plan 20-03).
+// The named export allows database.test.ts to assert the close-then-reload order.
+export async function handleVersionchange(): Promise<void> {
+  await db.close();
+  window.location.reload();
+}
+db.on('versionchange', handleVersionchange);
 
 export { db };
 
 // Helper functions for settings
-export async function getSetting<T>(key: string, defaultValue: T): Promise<T> {
+export async function getSetting<T>(
+  key: string,
+  defaultValue: T,
+  validator?: (parsed: unknown) => parsed is T,
+): Promise<T> {
   const setting = await db.settings.get(key);
   if (!setting) return defaultValue;
   try {
-    return JSON.parse(setting.value) as T;
+    const parsed = JSON.parse(setting.value);
+    if (validator && !validator(parsed)) {
+      if (import.meta.env.DEV) {
+        console.warn(`[getSetting] validator rejected stored "${key}"; using default`);
+      }
+      return defaultValue;
+    }
+    return parsed as T;
   } catch {
     return defaultValue;
   }
@@ -159,48 +179,126 @@ export const settingsKeys = {
   marketplaceFees: 'marketplaceFees',
 } as const;
 
+/** DATA-06 — structural validator for PrinterConfig stored in db.settings.
+ *  Strict on numeric fields; loose on string fields. */
+export function isPrinterConfig(x: unknown): x is PrinterConfig {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.id === 'string'
+    && typeof o.name === 'string'
+    && typeof o.purchasePrice === 'number'
+    && typeof o.expectedLifespanHours === 'number'
+    && typeof o.wattage === 'number'
+    && typeof o.nozzleCost === 'number'
+    && typeof o.nozzleLifespanCm3 === 'number';
+}
+
 export async function getPrinter(defaultValue: PrinterConfig): Promise<PrinterConfig> {
-  return getSetting(settingsKeys.printer, defaultValue);
+  return getSetting(settingsKeys.printer, defaultValue, isPrinterConfig);
 }
 
 export async function setPrinter(value: PrinterConfig): Promise<void> {
   return setSetting(settingsKeys.printer, value);
 }
 
+/** DATA-06 — structural validator for ElectricityConfig stored in db.settings.
+ *  Strict on numeric fields. */
+export function isElectricityConfig(x: unknown): x is ElectricityConfig {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.costPerKwh === 'number';
+}
+
 export async function getElectricity(defaultValue: ElectricityConfig): Promise<ElectricityConfig> {
-  return getSetting(settingsKeys.electricity, defaultValue);
+  return getSetting(settingsKeys.electricity, defaultValue, isElectricityConfig);
 }
 
 export async function setElectricity(value: ElectricityConfig): Promise<void> {
   return setSetting(settingsKeys.electricity, value);
 }
 
+/** DATA-06 — structural validator for LaborConfig stored in db.settings.
+ *  Strict on numeric fields. */
+export function isLaborConfig(x: unknown): x is LaborConfig {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.hourlyRate === 'number';
+}
+
 export async function getLabor(defaultValue: LaborConfig): Promise<LaborConfig> {
-  return getSetting(settingsKeys.labor, defaultValue);
+  return getSetting(settingsKeys.labor, defaultValue, isLaborConfig);
 }
 
 export async function setLabor(value: LaborConfig): Promise<void> {
   return setSetting(settingsKeys.labor, value);
 }
 
+/** DATA-06 — structural validator for UserProfile stored in db.settings.
+ *  Loose on string fields (currency validated as string only — NOT narrowed to
+ *  the Currency union, per RESEARCH.md A4: tightening would reject future currency
+ *  additions and crash old settings). Strict on numeric fields. */
+export function isUserProfile(x: unknown): x is UserProfile {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.currency === 'string'
+    && typeof o.laborHourlyRate === 'number';
+}
+
 export async function getUserProfile(defaultValue: UserProfile): Promise<UserProfile> {
-  return getSetting(settingsKeys.userProfile, defaultValue);
+  return getSetting(settingsKeys.userProfile, defaultValue, isUserProfile);
 }
 
 export async function setUserProfile(value: UserProfile): Promise<void> {
   return setSetting(settingsKeys.userProfile, value);
 }
 
+/** DATA-06 — structural validator for ShippingConfig stored in db.settings.
+ *  Validates load-bearing numeric carrier fields. */
+export function isShippingConfig(x: unknown): x is ShippingConfig {
+  if (typeof x !== 'object' || x === null || Array.isArray(x)) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.maxDeliveryRadiusKm === 'number'
+    && typeof o.gasPricePerLiter === 'number'
+    && typeof o.vehicleFuelEfficiency === 'number'
+    && typeof o.upsBaseCost === 'number'
+    && typeof o.fedexBaseCost === 'number'
+    && typeof o.purolatorBaseCost === 'number'
+    && typeof o.uspsBaseCost === 'number'
+    && typeof o.dhlBaseCost === 'number'
+    && typeof o.royalMailBaseCost === 'number'
+    && typeof o.australiaPostBaseCost === 'number'
+    && typeof o.canadaPostBaseCost === 'number';
+}
+
 export async function getShippingConfig(defaultValue: ShippingConfig): Promise<ShippingConfig> {
-  return getSetting(settingsKeys.shipping, defaultValue);
+  return getSetting(settingsKeys.shipping, defaultValue, isShippingConfig);
 }
 
 export async function setShippingConfig(value: ShippingConfig): Promise<void> {
   return setSetting(settingsKeys.shipping, value);
 }
 
+/** DATA-06 — structural validator for MarketplaceFees stored in db.settings.
+ *  Validates load-bearing numeric fee fields across all built-in marketplaces. */
+export function isMarketplaceFees(x: unknown): x is MarketplaceFees {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.facebookShippedPercent === 'number'
+    && typeof o.facebookMinFee === 'number'
+    && typeof o.facebookProcessingPercent === 'number'
+    && typeof o.etsyTransactionPercent === 'number'
+    && typeof o.etsyPaymentPercent === 'number'
+    && typeof o.etsyPaymentFixed === 'number'
+    && typeof o.etsyListingFee === 'number'
+    && typeof o.etsyOffsiteAdPercent === 'number'
+    && typeof o.kijijiFeaturedFee === 'number'
+    && typeof o.ebayFinalValuePercent === 'number'
+    && typeof o.ebayFixedFee === 'number'
+    && typeof o.amazonHandmadePercent === 'number';
+}
+
 export async function getMarketplaceFees(defaultValue: MarketplaceFees): Promise<MarketplaceFees> {
-  return getSetting(settingsKeys.marketplaceFees, defaultValue);
+  return getSetting(settingsKeys.marketplaceFees, defaultValue, isMarketplaceFees);
 }
 
 export async function setMarketplaceFees(value: MarketplaceFees): Promise<void> {
