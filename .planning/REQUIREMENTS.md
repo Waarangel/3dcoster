@@ -15,14 +15,14 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Accessibility (A11Y)
 
-- [ ] **A11Y-01**: A `<Modal>` primitive in `src/components/ui/` declares `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` pointing to a `useId()`-generated header id. Closes [CODE-AUDIT #2](v1.2-CODE-AUDIT.md) (CRITICAL).
-- [ ] **A11Y-02**: The `<Modal>` primitive traps focus while open (Tab/Shift+Tab cycles within modal) and restores focus to the trigger element on close. Closes [CODE-AUDIT #3](v1.2-CODE-AUDIT.md) (CRITICAL).
-- [ ] **A11Y-03**: 10 modal surfaces migrate to the `<Modal>` primitive — `PrintQuoteModal`, `SettingsModal`, `UserProfileModal`, `CustomerEditModal`, `CustomerCsvImportModal`, `DeclineQuoteModal`, `MaintenanceAlertModal`, `CsvImportModal`, plus the 3 inline overlays in `JobsManager` (Record Sale form, Delete Job confirm, Delete Sale confirm). Closes [CODE-AUDIT #19](v1.2-CODE-AUDIT.md).
-- [ ] **A11Y-04**: `InfoTooltip` uses `useId()` for its content `id` — multiple visible tooltips on the same screen (e.g., 6+ on SettingsModal Costs & Rates tab) have unique ids. Closes [CODE-AUDIT #8](v1.2-CODE-AUDIT.md) (HIGH).
-- [ ] **A11Y-05**: react-window virtualized lists (`JobsManager`, `CustomerLibrary`, `AssetLibrary`) declare `role="list"` + `aria-rowcount={totalCount}` on the `<List>` container, and each row's outer `<div>` has `role="listitem"`. The `AssetLibrary` desktop table path gets `role="grid"` or `role="table"` on its parent. Closes [CODE-AUDIT #9](v1.2-CODE-AUDIT.md) (HIGH).
-- [ ] **A11Y-06**: `SettingsModal` and `UserProfileModal` close buttons add `aria-label="Close"` — every other modal already has this. Closes [CODE-AUDIT #10](v1.2-CODE-AUDIT.md) (HIGH).
-- [ ] **A11Y-07**: Every `<label>` in the Record Sale modal and `CustomerEditModal` form grids is paired with its `<input>` via `htmlFor`/`id` (auto-generated via `useId()` in the `Input`/`Textarea`/`Select` primitives). Closes [CODE-AUDIT #20](v1.2-CODE-AUDIT.md) (MEDIUM).
-- [ ] **A11Y-08**: `CollapsibleSection` body element is always rendered (with `hidden={!open}` or CSS toggle) so `aria-controls` never references a missing `id`. Closes [CODE-AUDIT #21](v1.2-CODE-AUDIT.md) (MEDIUM).
+- [x] **A11Y-01**: A `<Modal>` primitive in `src/components/ui/` declares `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` pointing to a `useId()`-generated header id. Closes [CODE-AUDIT #2](v1.2-CODE-AUDIT.md) (CRITICAL).
+- [x] **A11Y-02**: The `<Modal>` primitive traps focus while open (Tab/Shift+Tab cycles within modal) and restores focus to the trigger element on close. Closes [CODE-AUDIT #3](v1.2-CODE-AUDIT.md) (CRITICAL).
+- [x] **A11Y-03**: 10 modal surfaces migrate to the `<Modal>` primitive — `PrintQuoteModal`, `SettingsModal`, `UserProfileModal`, `CustomerEditModal`, `CustomerCsvImportModal`, `DeclineQuoteModal`, `MaintenanceAlertModal`, `CsvImportModal`, plus the 3 inline overlays in `JobsManager` (Record Sale form, Delete Job confirm, Delete Sale confirm). Closes [CODE-AUDIT #19](v1.2-CODE-AUDIT.md).
+- [x] **A11Y-04**: `InfoTooltip` uses `useId()` for its content `id` — multiple visible tooltips on the same screen (e.g., 6+ on SettingsModal Costs & Rates tab) have unique ids. Closes [CODE-AUDIT #8](v1.2-CODE-AUDIT.md) (HIGH).
+- [x] **A11Y-05**: react-window virtualized lists (`JobsManager`, `CustomerLibrary`, `AssetLibrary`) declare `role="list"` + `aria-rowcount={totalCount}` on the `<List>` container, and each row's outer `<div>` has `role="listitem"`. The `AssetLibrary` desktop table path gets `role="grid"` or `role="table"` on its parent. Closes [CODE-AUDIT #9](v1.2-CODE-AUDIT.md) (HIGH).
+- [x] **A11Y-06**: `SettingsModal` and `UserProfileModal` close buttons add `aria-label="Close"` — every other modal already has this. Closes [CODE-AUDIT #10](v1.2-CODE-AUDIT.md) (HIGH).
+- [x] **A11Y-07**: Every `<label>` in the Record Sale modal and `CustomerEditModal` form grids is paired with its `<input>` via `htmlFor`/`id` (auto-generated via `useId()` in the `Input`/`Textarea`/`Select` primitives). Closes [CODE-AUDIT #20](v1.2-CODE-AUDIT.md) (MEDIUM).
+- [x] **A11Y-08**: `CollapsibleSection` body element is always rendered (with `hidden={!open}` or CSS toggle) so `aria-controls` never references a missing `id`. Closes [CODE-AUDIT #21](v1.2-CODE-AUDIT.md) (MEDIUM).
 - [x] **A11Y-09**: `QuoteStatusPill` adds `aria-label="Status: {Pending|Sale|Declined}"`; Declined-pill text contrast meets WCAG AA on `bg-slate-700`. Closes [CODE-AUDIT #22](v1.2-CODE-AUDIT.md) (MEDIUM).
 
 ### Security (SEC)
@@ -59,7 +59,7 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 - [ ] **HYG-06**: `<RecordSaleModal>` extracted from `JobsManager` to `src/components/RecordSaleModal.tsx` — owns its own state, `handleRecordSale` logic, customer-picker integration, and uses the v1.3 `<Modal>` primitive. JobsManager.tsx shrinks by ~400 lines. Closes [TECH-DEBT H6 + H7](v1.2-TECH-DEBT.md) (HIGH).
 - [ ] **HYG-07**: `<SaleRow>` extracted from `<JobCard>` for the per-sale `<details>` accordion. Closes [TECH-DEBT H8](v1.2-TECH-DEBT.md) (MEDIUM).
 - [ ] **HYG-08**: `useCustomerPicker(customers)` hook in `src/hooks/useCustomerPicker.ts` consolidates the picker state triplet + filtered/visible memos + `handlePickerKeyDown`. Used by both `<RecordSaleModal>` (from HYG-06) and `<PrintQuoteModal>`. Closes [TECH-DEBT H9 + H10](v1.2-TECH-DEBT.md) (MEDIUM).
-- [ ] **HYG-09**: `useModalReset(isOpen, resetFn)` + `useEscapeToClose(isOpen, onClose)` hooks extracted OR absorbed into the `<Modal>` primitive built for A11Y-01. CSV modals stop duplicating reset/Escape boilerplate. Closes [TECH-DEBT H11](v1.2-TECH-DEBT.md) (LOW).
+- [x] **HYG-09**: `useModalReset(isOpen, resetFn)` + `useEscapeToClose(isOpen, onClose)` hooks extracted OR absorbed into the `<Modal>` primitive built for A11Y-01. CSV modals stop duplicating reset/Escape boilerplate. Closes [TECH-DEBT H11](v1.2-TECH-DEBT.md) (LOW).
 - [x] **HYG-10**: `.planning/todos/ui-consistency-sweep.md` audited against current code; either marked closed + moved to `.planning/archive/` OR updated to reflect remaining work. Closes [TECH-DEBT H12](v1.2-TECH-DEBT.md) (LOW).
 
 ### Documentation (DOC)
