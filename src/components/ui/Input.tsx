@@ -1,5 +1,5 @@
 import type { InputHTMLAttributes } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 
 type InputSize = 'sm' | 'md' | 'lg';
 
@@ -18,7 +18,9 @@ const sizeStyles: Record<InputSize, string> = {
 };
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ inputSize = 'md', error = false, compact = false, className = '', disabled, ...props }, ref) => {
+  ({ inputSize = 'md', error = false, compact = false, className = '', disabled, id, ...props }, ref) => {
+    const generatedId = useId();
+    const resolvedId = id ?? generatedId;
     const baseStyles = 'w-full bg-slate-700 text-white rounded-lg border-0 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500';
     const compactStyles = compact ? 'max-w-28' : '';
     const errorStyles = error ? 'ring-2 ring-red-500' : '';
@@ -27,6 +29,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         ref={ref}
+        id={resolvedId}
         disabled={disabled}
         className={`${baseStyles} ${sizeStyles[inputSize]} ${compactStyles} ${errorStyles} ${disabledStyles} ${className}`}
         {...props}
