@@ -238,7 +238,7 @@ function validateCsvRow(
   } else {
     // Material-specific validation
     const unit = row.unit?.trim();
-    const packageCost = parsePositiveNumber(row.packagecost);
+    const packageCost = parsePositiveNumber(row.packagecost, { allowZero: true });
     const unitsPerPackage = parsePositiveNumber(row.unitsperpackage);
 
     if (!unit) {
@@ -395,10 +395,14 @@ export function buildAssetsForImport(
 // HELPERS
 // ============================================
 
-export function parsePositiveNumber(value: string | undefined): number | null {
+export function parsePositiveNumber(
+  value: string | undefined,
+  opts?: { allowZero?: boolean },
+): number | null {
   if (!value?.trim()) return null;
   const num = Number(value.trim());
-  if (isNaN(num) || num < 0) return null;
+  if (isNaN(num)) return null;
+  if (opts?.allowZero ? num < 0 : num <= 0) return null;
   return num;
 }
 
