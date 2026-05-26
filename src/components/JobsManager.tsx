@@ -425,7 +425,15 @@ export const JobCard = memo(function JobCard({
           : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
       }`}
     >
-      <div className="flex items-start justify-between">
+      {/* Header row — clicking anywhere on this row toggles expand/collapse.
+          Interactive descendants (chevron, title edit button, chip ✕, +, tag icon,
+          inline inputs, Convert) call `e.stopPropagation()` so they don't fire
+          the toggle. The chevron remains the keyboard-accessible affordance
+          (aria-expanded + aria-label); this row-click is a mouse hit-target. */}
+      <div
+        className="flex items-start justify-between cursor-pointer"
+        onClick={() => onToggleSelect(job.id)}
+      >
         <div className="flex-1">
           {/* Phase 15 Round 2 (Gap E) — title row: chevron (selection toggle) +
               title-or-input (edit in place) + inline chip strip with hover ✕ +
@@ -450,6 +458,7 @@ export const JobCard = memo(function JobCard({
                 value={titleDraft}
                 autoFocus
                 onChange={e => setTitleDraft(e.target.value)}
+                onClick={e => e.stopPropagation()}
                 onKeyDown={e => {
                   if (e.key === 'Enter') { e.preventDefault(); void onSaveTitle(job, titleDraft); }
                   if (e.key === 'Escape') { e.preventDefault(); onCancelEditTitle(); }
@@ -495,6 +504,7 @@ export const JobCard = memo(function JobCard({
                 value={addTagDraft}
                 autoFocus
                 onChange={e => setAddTagDraft(e.target.value)}
+                onClick={e => e.stopPropagation()}
                 onKeyDown={e => {
                   if (e.key === 'Enter') { e.preventDefault(); void onSubmitAddTag(job, addTagDraft); }
                   if (e.key === 'Escape') { e.preventDefault(); onCancelAddTag(); }
