@@ -50,11 +50,9 @@ export function CollapsibleSection({
         </button>
         {badge}
       </div>
-      {open && (
-        <div id={bodyId} className="mt-4">
-          {children}
-        </div>
-      )}
+      <div id={bodyId} hidden={!open} className="mt-4">
+        {children}
+      </div>
     </div>
   );
 }
