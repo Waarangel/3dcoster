@@ -167,9 +167,15 @@ db.version(9).stores({
   if (!settingsRow) return;
 
   // Layer 2: corrupt settings → bail silently. Won't make it worse.
+  // CR-01 hardening: JSON.parse can succeed but .currency may be undefined
+  // (older partial-shape settings rows). Treat any non-string as a bail signal —
+  // reconcileQuoteCurrency would otherwise stamp `undefined as Currency` onto
+  // every USD quote because `undefined !== 'USD'` skips its early-return guard.
   let userCurrency: string;
   try {
-    userCurrency = (JSON.parse(settingsRow.value) as UserProfile).currency;
+    const parsed = JSON.parse(settingsRow.value) as Partial<UserProfile>;
+    if (typeof parsed.currency !== 'string' || parsed.currency.length === 0) return;
+    userCurrency = parsed.currency;
   } catch {
     return;
   }
@@ -313,7 +319,10 @@ export async function setUserProfile(value: UserProfile): Promise<void> {
 }
 
 /** DATA-06 — structural validator for ShippingConfig stored in db.settings.
- *  Validates load-bearing numeric carrier fields. */
+ *  Validates load-bearing numeric carrier fields AND the required customCarriers
+ *  array — without the array check, callers that .map/.forEach over
+ *  customCarriers would receive a settings row that passes validation and
+ *  then crashes at runtime (CR-03). */
 export function isShippingConfig(x: unknown): x is ShippingConfig {
   if (typeof x !== 'object' || x === null || Array.isArray(x)) return false;
   const o = x as Record<string, unknown>;
@@ -327,7 +336,8 @@ export function isShippingConfig(x: unknown): x is ShippingConfig {
     && typeof o.dhlBaseCost === 'number'
     && typeof o.royalMailBaseCost === 'number'
     && typeof o.australiaPostBaseCost === 'number'
-    && typeof o.canadaPostBaseCost === 'number';
+    && typeof o.canadaPostBaseCost === 'number'
+    && Array.isArray(o.customCarriers);
 }
 
 export async function getShippingConfig(defaultValue: ShippingConfig): Promise<ShippingConfig> {
@@ -339,9 +349,11 @@ export async function setShippingConfig(value: ShippingConfig): Promise<void> {
 }
 
 /** DATA-06 — structural validator for MarketplaceFees stored in db.settings.
- *  Validates load-bearing numeric fee fields across all built-in marketplaces. */
+ *  Validates load-bearing numeric fee fields across all built-in marketplaces
+ *  AND the required customMarketplaces array — same array-shape concern as
+ *  isShippingConfig (CR-03). Also rejects arrays explicitly (typeof [] === 'object'). */
 export function isMarketplaceFees(x: unknown): x is MarketplaceFees {
-  if (typeof x !== 'object' || x === null) return false;
+  if (typeof x !== 'object' || x === null || Array.isArray(x)) return false;
   const o = x as Record<string, unknown>;
   return typeof o.facebookShippedPercent === 'number'
     && typeof o.facebookMinFee === 'number'
@@ -354,7 +366,8 @@ export function isMarketplaceFees(x: unknown): x is MarketplaceFees {
     && typeof o.kijijiFeaturedFee === 'number'
     && typeof o.ebayFinalValuePercent === 'number'
     && typeof o.ebayFixedFee === 'number'
-    && typeof o.amazonHandmadePercent === 'number';
+    && typeof o.amazonHandmadePercent === 'number'
+    && Array.isArray(o.customMarketplaces);
 }
 
 export async function getMarketplaceFees(defaultValue: MarketplaceFees): Promise<MarketplaceFees> {

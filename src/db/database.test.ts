@@ -248,6 +248,23 @@ describe('isShippingConfig (DATA-06)', () => {
   it('rejects a non-object', () => {
     expect(isShippingConfig([])).toBe(false);
   });
+
+  it('rejects a row missing the required customCarriers array (CR-03)', () => {
+    expect(isShippingConfig({
+      maxDeliveryRadiusKm: 50,
+      gasPricePerLiter: 1.75,
+      vehicleFuelEfficiency: 9.5,
+      upsBaseCost: 15,
+      fedexBaseCost: 16,
+      purolatorBaseCost: 14,
+      uspsBaseCost: 12,
+      dhlBaseCost: 18,
+      royalMailBaseCost: 10,
+      australiaPostBaseCost: 13,
+      canadaPostBaseCost: 14,
+      // customCarriers missing — callers that .forEach over it would crash
+    })).toBe(false);
+  });
 });
 
 describe('isMarketplaceFees (DATA-06)', () => {
@@ -289,5 +306,23 @@ describe('isMarketplaceFees (DATA-06)', () => {
 
   it('rejects a non-object (string)', () => {
     expect(isMarketplaceFees('fees')).toBe(false);
+  });
+
+  it('rejects a row missing the required customMarketplaces array (CR-03)', () => {
+    expect(isMarketplaceFees({
+      facebookShippedPercent: 10,
+      facebookMinFee: 0.8,
+      facebookProcessingPercent: 2.9,
+      etsyTransactionPercent: 6.5,
+      etsyPaymentPercent: 3,
+      etsyPaymentFixed: 0.25,
+      etsyListingFee: 0.2,
+      etsyOffsiteAdPercent: 15,
+      kijijiFeaturedFee: 0,
+      ebayFinalValuePercent: 12.9,
+      ebayFixedFee: 0.3,
+      amazonHandmadePercent: 15,
+      // customMarketplaces missing — callers that .map over it would crash
+    })).toBe(false);
   });
 });
