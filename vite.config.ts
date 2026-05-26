@@ -128,7 +128,18 @@ export default defineConfig(({ mode }) => ({
             return 'pdf';
           }
           if (id.includes('node_modules')) {
-            if (id.includes('/react/') || id.includes('/react-dom/')) return 'react-vendor';
+            // PERF-05 (Phase 25): explicitly route ALL react-* packages and their core
+            // companions into react-vendor. Previously only /react/ + /react-dom/ were caught,
+            // leaving react-router-dom + react-window + scheduler to fall through to the
+            // vendor fallback — their transitive imports of core React then created the
+            // `Circular chunk: vendor -> react-vendor -> vendor` Rollup warning. Catching
+            // all react-* packages plus scheduler (a React core companion that ships as a
+            // separate npm package) upfront breaks the cycle.
+            if (id.includes('/react/') || id.includes('/react-dom/')
+              || id.includes('/react-router') || id.includes('/react-window')
+              || id.includes('/@remix-run/') || id.includes('/scheduler/')) {
+              return 'react-vendor';
+            }
             if (id.includes('/dexie/') || id.includes('/dexie-react-hooks/')) return 'dexie-vendor';
             return 'vendor';
           }
