@@ -850,7 +850,6 @@ export function useQuotes() {
    */
   const createQuote = useCallback(async (input: CreateQuoteInput): Promise<Quote> => {
     const { job, userProfile, customerSnapshot, existingCustomerId, shippingCost, resolvedTaxRate, taxAmount } = input;
-    const nextNum = userProfile.nextQuoteNumber ?? 1;
 
     // Auto-create customer candidate: only if no existing link AND at least name OR email present.
     const shouldAutoCreate = !existingCustomerId &&
@@ -873,34 +872,52 @@ export function useQuotes() {
 
     const customerIdForQuote = existingCustomerId ?? newCustomerCandidate?.id;
 
-    // Compile-time G6 guard: `status` is typed RuntimeQuoteStatus on the payload, so
-    // TypeScript REFUSES `'draft'` at this call site (per BLOCKER I-03).
-    const sentAt = new Date();
-    const quotePayload: Quote & { status: RuntimeQuoteStatus } = {
-      id: typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `quote-${Date.now()}`,
-      quoteNumber: nextNum,
-      printJobId: job.id,
-      customerId: customerIdForQuote,
-      customerSnapshot,
-      lineItemsSnapshot: {
-        jobTitle: job.name,
-        sellingPrice: job.sellingPrice,
-        shippingCost,
-        resolvedTaxRate,
-        taxAmount,
-        currency: userProfile.currency,
-        notes: job.notes ?? '',
-        terms: userProfile.defaultTerms ?? '',
-        countryAtSendTime: userProfile.address?.country,
-      },
-      status: 'sent',  // RuntimeQuoteStatus — 'draft' refused here at compile time
-      createdAt: sentAt,
-      sentAt,
-    };
+    // quotePayload is declared outside but assigned inside the tx scope so
+    // the caller can return it after the transaction commits.
+    let quotePayload!: Quote & { status: RuntimeQuoteStatus };
 
-    await db.transaction('rw', db.quotes, db.customers, db.settings, async () => {
+    await db.transaction('rw', db.quotes, db.customers, db.settings, async (tx) => {
+      // DATA-02: read nextQuoteNumber from the tx-scoped settings snapshot
+      // (not from the React state arg) so two concurrent tabs cannot allocate
+      // the same quote number.
+      const settingsRow = await tx.table('settings').get('userProfile');
+      let nextNum = 1;
+      if (settingsRow) {
+        try {
+          nextNum = (JSON.parse(settingsRow.value) as UserProfile).nextQuoteNumber ?? 1;
+        } catch {
+          // Corrupt settings — fall through to nextNum = 1. The setUserProfile
+          // write at the end of this transaction will re-stamp the row clean.
+        }
+      }
+
+      // Compile-time G6 guard: `status` is typed RuntimeQuoteStatus on the payload, so
+      // TypeScript REFUSES `'draft'` at this call site (per BLOCKER I-03).
+      const sentAt = new Date();
+      quotePayload = {
+        id: typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `quote-${Date.now()}`,
+        quoteNumber: nextNum,
+        printJobId: job.id,
+        customerId: customerIdForQuote,
+        customerSnapshot,
+        lineItemsSnapshot: {
+          jobTitle: job.name,
+          sellingPrice: job.sellingPrice,
+          shippingCost,
+          resolvedTaxRate,
+          taxAmount,
+          currency: userProfile.currency,
+          notes: job.notes ?? '',
+          terms: userProfile.defaultTerms ?? '',
+          countryAtSendTime: userProfile.address?.country,
+        },
+        status: 'sent',  // RuntimeQuoteStatus — 'draft' refused here at compile time
+        createdAt: sentAt,
+        sentAt,
+      };
+
       if (existingCustomerId) {
         const existing = await db.customers.get(existingCustomerId);
         if (existing) {
