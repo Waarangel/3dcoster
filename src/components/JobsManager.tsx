@@ -540,18 +540,22 @@ export const JobCard = memo(function JobCard({
                 <NewBadge feature="tags" className="absolute -top-1 -right-1 pointer-events-none" />
               </div>
             )}
-            {info.isBreakEven ? (
-              <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-                Break-even reached
-              </span>
-            ) : info.remainingToBreakEven === null ? (
-              <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                Break-even not reachable at current price
-              </span>
-            ) : (
-              <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                {info.remainingToBreakEven} more to break even
-              </span>
+            {/* Break-even badge: only meaningful when the job has a fixed cost to recover.
+                A job with modelCost=0 has nothing to break even on — treat as incomplete data. */}
+            {job.modelCost > 0 && (
+              info.isBreakEven ? (
+                <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+                  Break-even reached
+                </span>
+              ) : info.remainingToBreakEven === null ? (
+                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                  Break-even not reachable at current price
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                  {info.remainingToBreakEven} more to break even
+                </span>
+              )
             )}
           </div>
           <div className="mt-1 text-sm text-slate-400">
@@ -614,30 +618,30 @@ export const JobCard = memo(function JobCard({
             </div>
           )}
 
-          <div className="mb-4">
-            {info.breakEvenCopies === null ? (
-              <div className="text-xs text-slate-400">
-                Break-even progress unavailable — sell price does not exceed cost per unit.
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-between text-xs text-slate-400 mb-1">
-                  <span>Break-even Progress</span>
-                  <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
+          {job.modelCost > 0 && (
+            <div className="mb-4">
+              {info.breakEvenCopies === null ? (
+                <div className="text-xs text-slate-400">
+                  Break-even progress unavailable — sell price does not exceed cost per unit.
                 </div>
-                <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
-                    style={{
-                      width: info.breakEvenCopies === 0
-                        ? '100%'
-                        : `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
-                    }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Break-even Progress</span>
+                    <span>{job.copiesSold} / {info.breakEvenCopies} copies</span>
+                  </div>
+                  <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
+                      style={{
+                        width: `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2 flex-wrap relative">
             <Button
