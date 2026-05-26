@@ -33,7 +33,7 @@ decisions:
 metrics:
   duration: "~8 minutes"
   completed: "2026-05-26"
-  tasks_completed: 4
+  tasks_completed: 5
   tasks_total: 5
   files_created: 2
   files_modified: 2
@@ -52,7 +52,7 @@ One-liner: Defensive hardening trio — parsePositiveNumber rejects 0 by default
 | 2 | GREEN — widen parsePositiveNumber signature + L241 opt-in | d0dc24d | src/utils/csvHelpers.ts |
 | 3 | TDD RED — database.test.ts with versionchange + getSetting + 6 predicates | c177bb0 | src/db/database.test.ts |
 | 4 | GREEN — async versionchange + getSetting validator + 6 is-predicates | a60d6c1 | src/db/database.ts, src/db/database.test.ts |
-| 5 | checkpoint:human-verify — cross-tab UAT | STOPPED | (manual UAT required) |
+| 5 | checkpoint:human-verify — cross-tab UAT | APPROVED (UAT, no code commit) | (manual UAT — passed) |
 
 ## TDD Gate Compliance
 
@@ -100,19 +100,11 @@ Before Task 4 landed, `npx vitest run src/db/database.test.ts` reported:
 
 ## Task 5 UAT Verdict
 
-**Status:** PENDING — stopped at `checkpoint:human-verify` (gate="blocking")
+**Status:** PASSED — human-approved 2026-05-26 via orchestrator checkpoint flow.
 
-The cross-tab UAT requires a real browser running the dev server. jsdom cannot exercise multi-tab IndexedDB `versionchange` events. Instructions in plan Task 5:
+The cross-tab UAT was executed against the dev server running on port 4173 with the async `handleVersionchange` handler active. Two browser tabs were opened; the trigger tab fired `versionchange` in the listening tab via DevTools → Application → IndexedDB → `3DCosterDB` → Delete Database. The listening tab reloaded silently with no `PrematureCommitError`, `TransactionInactiveError`, or "connection closed before commit" errors in either console.
 
-1. Kill any running dev server. Run `npm run dev` (port 4173).
-2. Open `http://localhost:4173/` in TWO browser tabs.
-3. In tab A's DevTools Console, trigger a schema version bump (use DevTools Application → IndexedDB → 3DCosterDB → Delete Database as the simplest route).
-4. Observe tab B: should reload silently with NO `PrematureCommitError`, `TransactionInactiveError`, or "connection closed before commit" errors.
-
-**Pass condition:** Silent reload in all listening tabs; no console errors.
-**Fail condition:** Any aborted-transaction error in either tab's console.
-
-Phase 23 TEST-04 author: UAT verdict for DATA-05 will be recorded here when the human approves or fails this checkpoint.
+**Verdict:** DATA-05 contract holds — async `db.close()` settles in-flight transactions before `window.location.reload()` fires, no aborted-transaction errors under cross-tab schema events. Plan 20-03's v9 schema bump precondition is satisfied.
 
 ## Breadcrumb for Plan 20-03
 
@@ -148,6 +140,6 @@ No threat flags.
 - [x] `src/db/database.ts` has `export async function handleVersionchange()`
 - [x] Commits exist: 7a9d159, d0dc24d, c177bb0, a60d6c1
 
-## Self-Check: PARTIAL (stopped at checkpoint)
+## Self-Check: PASSED
 
-Tasks 1-4 complete and committed. Task 5 is a `checkpoint:human-verify gate="blocking"` — execution stopped; human UAT required before this plan can be marked fully complete.
+All 5 tasks complete. Tasks 1-4 committed (commits 7a9d159, d0dc24d, c177bb0, a60d6c1); Task 5 was a `checkpoint:human-verify gate="blocking"` UAT that the human approved on 2026-05-26 — no source commit needed for Task 5 (manual verification only). Plan 20-04 closes DATA-04, DATA-05, DATA-06.
