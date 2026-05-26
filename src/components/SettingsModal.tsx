@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
 import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
-import { Button, Input } from './ui';
+import { Button, Input, Modal } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 
 interface SettingsModalProps {
@@ -36,7 +36,6 @@ export function SettingsModal({
   onResetMarketplaceFees,
   onUserProfileChange,
 }: SettingsModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
   const currencySymbol = CURRENCY_CONFIG[userCurrency].symbol;
   const distanceUnit = getDistanceUnit(userCurrency);
   const fuelUnit = getFuelUnit(userCurrency);
@@ -82,22 +81,6 @@ export function SettingsModal({
     setEditingCarrierId(null);
     setEditingMarketplaceId(null);
   }, [activeTab]);
-
-  // Close on escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, onClose]);
-
-  // Close on click outside
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
 
   // Add custom carrier
   const handleAddCarrier = () => {
@@ -168,40 +151,25 @@ export function SettingsModal({
     onMarketplaceFeesChange({ ...marketplaceFees, customMarketplaces: updated });
   };
 
-  if (!isOpen) return null;
-
   const tabs = [
     { id: 'costs' as const, label: 'Costs & Rates' },
     { id: 'delivery' as const, label: 'Delivery' },
     { id: 'marketplaces' as const, label: 'Marketplaces' },
   ];
 
-  return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-start justify-end p-4 z-50"
-      onClick={handleBackdropClick}
-    >
-      <div
-        ref={modalRef}
-        className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg mt-12 mr-2 max-h-[calc(100vh-100px)] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <h2 className="text-lg font-semibold text-white">Settings</h2>
-          </div>
-          <Button variant="ghost" btnSize="sm" onClick={onClose}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
+  const settingsTitle = (
+    <span className="flex items-center gap-2">
+      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      Settings
+    </span>
+  );
 
-        {/* Tabs */}
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={settingsTitle} size="lg">
+      {/* Tabs */}
         <div className="flex border-b border-slate-700">
           {tabs.map(tab => (
             // allow-raw-html: tab buttons use dynamic active/inactive class with border-b-2 indicator that no Button variant maps to (Pitfall 4)
@@ -848,7 +816,6 @@ export function SettingsModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,8 +1,7 @@
-import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG } from '../utils/currency';
-import { Button, Input, Select, Textarea } from './ui';
+import { Input, Select, Textarea, Modal } from './ui';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -17,48 +16,11 @@ export function UserProfileModal({
   userProfile,
   onProfileChange,
 }: UserProfileModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
   const userCurrency = userProfile.currency;
 
-  // Close on escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, onClose]);
-
-  // Close on click outside
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-start justify-end p-4 z-50"
-      onClick={handleBackdropClick}
-    >
-      <div
-        ref={modalRef}
-        className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md mt-12 mr-2 max-h-[calc(100vh-100px)] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <h2 className="text-lg font-semibold text-white">Profile</h2>
-          <Button variant="ghost" btnSize="sm" onClick={onClose}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-6">
+    <Modal isOpen={isOpen} onClose={onClose} title="Profile" size="md">
+      <div className="p-4 space-y-6">
           {/* Basic Info */}
           <div>
             <h3 className="text-sm font-medium text-slate-300 mb-3">Profile</h3>
@@ -200,7 +162,6 @@ export function UserProfileModal({
             </Link>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -4,7 +4,7 @@ import { useQuotes, useCustomers } from '../hooks/useDatabase';
 import { resolveTaxRate, taxLabelFor } from '../utils/taxResolution';
 import { formatCurrency } from '../utils/currency';
 import { calculateTax } from '../utils/costCalc';
-import { Button, Input, Textarea, InfoTooltip } from './ui';
+import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
 
 // ---------------------------------------------------------------------------
 // PrintQuoteModal — Phase 16 gap closure (D-16 + D-18).
@@ -106,16 +106,6 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
       setError(null);
     }
   }, [isOpen, editingQuote]);
-
-  // Close on Escape (mirrors CustomerEditModal).
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
 
   // ─── Picker logic (mirror 15.1-04 verbatim) ──────────────────────────────
   const filteredCustomers = useMemo<Customer[]>(() => {
@@ -290,32 +280,17 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
     }
   };
 
-  if (!isOpen) return null;
-
   const showShippingRow = quoteShippingCost > 0;
   const showTaxRow = resolvedTax.rate > 0 && taxAmount > 0;
 
+  const modalTitle = isEdit
+    ? `Edit Quote ${editingQuote ? `Q-${String(editingQuote.quoteNumber).padStart(4, '0')}` : ''} — ${job.name}`
+    : `Create Quote — ${job.name}`;
+
   // ─── JSX ─────────────────────────────────────────────────────────────────
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">
-            {isEdit ? `Edit Quote ${editingQuote ? `Q-${String(editingQuote.quoteNumber).padStart(4, '0')}` : ''} — ${job.name}` : `Create Quote — ${job.name}`}
-          </h3>
-          <Button variant="ghost" btnSize="sm" onClick={onClose} aria-label="Close">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-
-        {/* Body */}
-        <div className="p-4 space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="lg">
+      <div className="p-4 space-y-4">
           {/* Customer picker — WAI-ARIA combobox (mirrors Phase 15.1-04 pattern) */}
           <div className="relative">
             <label className="block text-sm text-slate-400 mb-1" htmlFor="print-quote-customer-picker">
@@ -501,7 +476,6 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
             {isGenerating ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save & Re-download' : 'Create Quote')}
           </Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

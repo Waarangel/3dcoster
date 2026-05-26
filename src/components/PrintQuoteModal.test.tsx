@@ -210,7 +210,7 @@ describe('PrintQuoteModal — static architectural locks (BLOCKER I-01 + WARNING
 describe('PrintQuoteModal — validation', () => {
   it('Create Quote button is disabled when both Name and Email are blank', async () => {
     await renderModal();
-    const generateBtn = Array.from(container!.querySelectorAll('button')).find(
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
       (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement | undefined;
     expect(generateBtn).toBeDefined();
@@ -219,10 +219,10 @@ describe('PrintQuoteModal — validation', () => {
 
   it('Create Quote button enables when Name has content', async () => {
     await renderModal();
-    const nameInput = container!.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement | null;
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement | null;
     expect(nameInput).toBeTruthy();
     await act(async () => { typeIntoInput(nameInput!, 'Alice'); });
-    const generateBtn = Array.from(container!.querySelectorAll('button')).find(
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
       (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     expect(generateBtn.disabled).toBe(false);
@@ -237,13 +237,13 @@ describe('PrintQuoteModal — D-22 tax-base lock + totals', () => {
       userProfile: makeUserProfile({ defaultTaxRate: 20 }),
     });
     // Type a customer name to pass validation
-    const nameInput = container!.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
     await act(async () => { typeIntoInput(nameInput, 'D-22 Test'); });
     // Type shipping = 10
-    const shippingInput = container!.querySelector('input[type="number"]') as HTMLInputElement;
+    const shippingInput = document.body.querySelector('input[type="number"]') as HTMLInputElement;
     await act(async () => { typeIntoInput(shippingInput, '10'); });
     // Click Generate
-    const generateBtn = Array.from(container!.querySelectorAll('button')).find(
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
       (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     await act(async () => { generateBtn.click(); });
@@ -262,16 +262,16 @@ describe('PrintQuoteModal — happy path (Test 7)', () => {
     const onClose = vi.fn();
     await renderModal({ onQuoteCreated, onClose });
 
-    const nameInput = container!.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
-    const emailInput = container!.querySelector('input[type="email"]') as HTMLInputElement;
-    const companyInput = container!.querySelector('input[placeholder="Acme Co."]') as HTMLInputElement;
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    const emailInput = document.body.querySelector('input[type="email"]') as HTMLInputElement;
+    const companyInput = document.body.querySelector('input[placeholder="Acme Co."]') as HTMLInputElement;
     await act(async () => {
       typeIntoInput(nameInput, 'Alice');
       typeIntoInput(emailInput, 'alice@example.com');
       typeIntoInput(companyInput, 'Acme');
     });
 
-    const generateBtn = Array.from(container!.querySelectorAll('button')).find(
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
       (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     await act(async () => { generateBtn.click(); });
@@ -293,10 +293,10 @@ describe('PrintQuoteModal — happy path (Test 7)', () => {
 
   it('Email-match dedup: typing an email that matches a library record passes existingCustomerId to createQuote', async () => {
     await renderModal();
-    const emailInput = container!.querySelector('input[type="email"]') as HTMLInputElement;
+    const emailInput = document.body.querySelector('input[type="email"]') as HTMLInputElement;
     await act(async () => { typeIntoInput(emailInput, 'marcus@example.com'); });
 
-    const generateBtn = Array.from(container!.querySelectorAll('button')).find(
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
       (b) => b.textContent?.trim().startsWith('Create Quote'),
     ) as HTMLButtonElement;
     await act(async () => { generateBtn.click(); });
@@ -358,14 +358,14 @@ describe('PrintQuoteModal — edit mode (D-27)', () => {
     });
 
     // Title flips to Edit Quote
-    expect(container!.textContent ?? '').toContain('Edit Quote Q-0007');
+    expect(document.body.textContent ?? '').toContain('Edit Quote Q-0007');
 
     // Name field pre-filled
-    const nameInput = container!.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
     expect(nameInput.value).toBe('Pre-Filled');
 
     // Click Save & Re-download
-    const saveBtn = Array.from(container!.querySelectorAll('button')).find(
+    const saveBtn = Array.from(document.body.querySelectorAll('button')).find(
       (b) => (b.textContent ?? '').trim().startsWith('Save & Re-download'),
     ) as HTMLButtonElement;
     expect(saveBtn).toBeDefined();
@@ -394,7 +394,7 @@ describe('PrintQuoteModal — cancel path safety (Test 8)', () => {
     const onClose = vi.fn();
     await renderModal({ onClose });
 
-    const cancelBtn = Array.from(container!.querySelectorAll('button')).find(
+    const cancelBtn = Array.from(document.body.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Cancel',
     ) as HTMLButtonElement;
     await act(async () => { cancelBtn.click(); });
