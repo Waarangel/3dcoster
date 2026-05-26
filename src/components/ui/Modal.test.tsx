@@ -424,6 +424,62 @@ describe('Group 6 — Single-modal-only dev warn', () => {
       containerB.remove();
     }
   });
+
+  it('still warns when a third Modal opens after only one of two has closed (WR-07 / CR-02 counter)', async () => {
+    // WR-07 fix: the prior version of this group could not assert post-cleanup
+    // correctness because `isAnyModalOpen` was a boolean — closing EITHER
+    // modal flipped it to false, making subsequent mounts silent even though
+    // a modal was still open. CR-02 replaced the boolean with a counter, and
+    // this test pins that invariant: close one of two, then open a third —
+    // because one modal is still open, opening a third must still warn.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // First modal — shared root.
+    await act(async () => {
+      root.render(
+        <Modal isOpen={true} onClose={vi.fn()} title="First">
+          <span>first</span>
+        </Modal>,
+      );
+    });
+
+    // Second modal — separate root.
+    const containerB = document.createElement('div');
+    document.body.appendChild(containerB);
+    const rootB = createRoot(containerB);
+    await act(async () => {
+      rootB.render(
+        <Modal isOpen={true} onClose={vi.fn()} title="Second">
+          <span>second</span>
+        </Modal>,
+      );
+    });
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+
+    // Close ONLY the second modal — the first is still open, counter should
+    // decrement from 2 → 1, not collapse to 0.
+    await act(async () => { rootB.unmount(); });
+    containerB.remove();
+
+    // Third modal — must still warn because the first is still up.
+    const containerC = document.createElement('div');
+    document.body.appendChild(containerC);
+    const rootC = createRoot(containerC);
+    try {
+      await act(async () => {
+        rootC.render(
+          <Modal isOpen={true} onClose={vi.fn()} title="Third">
+            <span>third</span>
+          </Modal>,
+        );
+      });
+      // 2 total warnings: first when second opened, second when third opened.
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      await act(async () => { rootC.unmount(); });
+      containerC.remove();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
