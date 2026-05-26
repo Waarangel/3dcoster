@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { backfillQuotesFromJobs } from './backfill';
-import type { PrintJob, Sale } from '../types';
+import { backfillQuotesFromJobs, reconcileQuoteCurrency } from './backfill';
+import type { PrintJob, Sale, Quote } from '../types';
 
 // ---------------------------------------------------------------------------
 // Dexie v7 → v8 quotes backfill — migration test (D-17 G7 locked fixture)
@@ -79,7 +79,7 @@ describe('v7→v8 quotes backfill (D-17 G7) — migration boundary', () => {
     ];
 
     // This is the exact pipeline executed inside the v8 upgrade callback in database.ts.
-    const v8Quotes = backfillQuotesFromJobs(v7Jobs, v7Sales);
+    const v8Quotes = backfillQuotesFromJobs(v7Jobs, v7Sales, 'USD');
 
     expect(v8Quotes.length).toBe(2);
     expect(v8Quotes.filter(q => q.status === 'converted').length).toBe(1);
@@ -105,11 +105,78 @@ describe('v7→v8 quotes backfill (D-17 G7) — migration boundary', () => {
     const jobs: PrintJob[] = [makeJob({ id: 'job-a', quoteNumber: 1 })];
     const sales: Sale[] = [];
 
-    const first = backfillQuotesFromJobs(jobs, sales);
-    const second = backfillQuotesFromJobs(jobs, sales);
+    const first = backfillQuotesFromJobs(jobs, sales, 'USD');
+    const second = backfillQuotesFromJobs(jobs, sales, 'USD');
 
     expect(first.length).toBe(1);
     expect(second.length).toBe(1);
     expect(first[0].id).not.toBe(second[0].id);
+  });
+
+  it('v8 migration threads user currency from settings into lineItemsSnapshot.currency (DATA-03 forward fix)', () => {
+    const v7Jobs: PrintJob[] = [makeJob({ id: 'job-a', quoteNumber: 1 })];
+    const v7Sales: Sale[] = [];
+    // Simulate the v8 upgrade callback's exact data flow:
+    const userCurrency = 'CAD';  // pretend the user has CAD settings
+    const v8Quotes = backfillQuotesFromJobs(v7Jobs, v7Sales, userCurrency);
+    expect(v8Quotes.length).toBe(1);
+    expect(v8Quotes[0].lineItemsSnapshot.currency).toBe('CAD');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v8→v9 currency reconcile (DATA-03 v9 reconcile)
+//
+// Phase 23 TEST-04 breadcrumb:
+// v9 reconcile is the FIRST real customer for `fake-indexeddb` — open v8
+// fixture, seed USD quotes + non-USD settings, reopen at v9, and assert
+// db.quotes.toArray() shows patched currency. Pure-helper layer already
+// locks the idempotency contract; the integration depth upgrade is deferred.
+//
+// The v9 upgrade callback's data contract is:
+//   const quotes = await tx.table('quotes').toArray();
+//   const patched = reconcileQuoteCurrency(quotes, userCurrency);
+//   await tx.table('quotes').bulkPut(patched);
+// So `reconcileQuoteCurrency(fixtureQuotes, userCurrency)` IS the entire
+// upgrade contract tested here.
+// ---------------------------------------------------------------------------
+
+describe('v8→v9 currency reconcile (DATA-03 v9 reconcile)', () => {
+  function makeStaleQuote(overrides: Partial<Quote>): Quote {
+    return {
+      id: crypto.randomUUID(),
+      quoteNumber: 1,
+      printJobId: 'job-x',
+      customerSnapshot: { name: 'Test' },
+      lineItemsSnapshot: {
+        jobTitle: 'X',
+        sellingPrice: 10,
+        shippingCost: 0,
+        resolvedTaxRate: 0,
+        taxAmount: 0,
+        currency: 'USD',
+        notes: '',
+        terms: '',
+      },
+      status: 'sent',
+      createdAt: new Date(),
+      sentAt: new Date(),
+      ...overrides,
+    } as Quote;
+  }
+
+  it('exercises the v9 reconcile pipeline via the pure helper (fake-indexeddb deferred to Phase 23 TEST-04)', () => {
+    const stale = makeStaleQuote({ id: 'stale-q1' });
+    const patched = reconcileQuoteCurrency([stale], 'CAD');
+    expect(patched.length).toBe(1);
+    expect(patched[0].lineItemsSnapshot.currency).toBe('CAD');
+  });
+
+  it('v9 reconcile is idempotent (rerunning on a patched quote returns zero patches)', () => {
+    const stale = makeStaleQuote({ id: 'stale-q2' });
+    const firstPass = reconcileQuoteCurrency([stale], 'CAD');
+    const after = [firstPass[0]];
+    const secondPass = reconcileQuoteCurrency(after, 'CAD');
+    expect(secondPass.length).toBe(0);
   });
 });
