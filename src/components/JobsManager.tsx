@@ -2104,7 +2104,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
           userProfile={userProfile}
           isOpen={true}
           onClose={() => setPrintQuoteModalState(null)}
-          onQuoteCreated={() => { /* no-op for now; could trigger a toast in a future plan */ }}
           editingQuote={printQuoteModalState.mode === 'edit' ? printQuoteModalState.editingQuote : undefined}
         />
       )}

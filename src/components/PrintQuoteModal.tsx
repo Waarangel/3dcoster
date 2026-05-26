@@ -33,7 +33,7 @@ export interface PrintQuoteModalProps {
   userProfile: UserProfile;
   isOpen: boolean;
   onClose: () => void;
-  onQuoteCreated: (quote: Quote) => void;
+  onQuoteCreated?: (quote: Quote) => void;
   /**
    * Second extension D-27: when set, the modal opens in EDIT mode for this
    * Quote. Pre-fills customer + shipping from the Quote snapshot. On Save:
@@ -280,7 +280,7 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
       const { generateQuotePdf } = await import('../pdf/generateQuotePdf');
       await generateQuotePdf(quote);
 
-      onQuoteCreated(quote);
+      onQuoteCreated?.(quote);
       onClose();
     } catch (err) {
       console.error('Quote generation failed:', err);
