@@ -222,6 +222,6 @@ None. This plan touches only `vite.config.ts` (build configuration). No UI compo
 - [x] `vendor-*.js` chunk smaller post-fix (598.21 KB → 550.99 KB) — confirmed
 - [x] `pdf-*.js` chunk unchanged (510.75 KB both) — PDF lazy-load preserved
 - [x] Main chunk gz 55.85 KB — under 300 KB Phase 11 perf-gate
-- [x] 2 atomic commits (Task 1: 8b978e2; Task 2: pending)
+- [x] 2 atomic commits (Task 1: 8b978e2; Task 2: 2436a0c)
 - [x] No features.ts entries added; no NewBadge JSX added
 - [x] SUMMARY.md created at .planning/phases/25-doc-hygiene-polish-bundle-health/25-05-bundle-health-SUMMARY.md
