@@ -5,6 +5,7 @@ import { resolveTaxRate, taxLabelFor } from '../utils/taxResolution';
 import { formatCurrency } from '../utils/currency';
 import { calculateTax } from '../utils/costCalc';
 import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
+import { formatQuoteNumber } from '../utils/format';
 
 // ---------------------------------------------------------------------------
 // PrintQuoteModal — Phase 16 gap closure (D-16 + D-18).
@@ -283,8 +284,14 @@ export function PrintQuoteModal({ job, userProfile, isOpen, onClose, onQuoteCrea
   const showShippingRow = quoteShippingCost > 0;
   const showTaxRow = resolvedTax.rate > 0 && taxAmount > 0;
 
-  const modalTitle = isEdit
-    ? `Edit Quote ${editingQuote ? `Q-${String(editingQuote.quoteNumber).padStart(4, '0')}` : ''} — ${job.name}`
+  // WR-06 fix: dropped the dead `editingQuote ? ... : ''` inner ternary
+  // (impossible state — isEdit was derived from editingQuote in the same
+  // render pass) and routed the quoteNumber formatting through the existing
+  // `formatQuoteNumber` helper for consistency with PDF generation and
+  // DeclineQuoteModal. Quote.quoteNumber is REQUIRED at the type level
+  // (types.ts:226), so the formatter receives a real number.
+  const modalTitle = editingQuote
+    ? `Edit Quote ${formatQuoteNumber(editingQuote.quoteNumber)} — ${job.name}`
     : `Create Quote — ${job.name}`;
 
   // ─── JSX ─────────────────────────────────────────────────────────────────
