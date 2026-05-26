@@ -4,8 +4,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { CollapsibleSection } from './CollapsibleSection';
 
 describe('CollapsibleSection', () => {
-  // --- D-03: defaults to collapsed; body NOT in DOM; aria-expanded="false" ---
-  it('Test 1 (D-03 collapsed-by-default): body content is omitted and aria-expanded="false"', () => {
+  // --- D-03: defaults to collapsed; body always in DOM but hidden; aria-expanded="false" ---
+  // Updated for A11Y-08: body is always rendered (never conditionally mounted) so
+  // aria-controls always references a present DOM id; hidden attribute hides it when collapsed.
+  it('Test 1 (D-03 collapsed-by-default): body is hidden (not absent) and aria-expanded="false"', () => {
     const html = renderToStaticMarkup(
       React.createElement(
         CollapsibleSection,
@@ -14,7 +16,9 @@ describe('CollapsibleSection', () => {
       )
     );
     expect(html).toContain('Customer');
-    expect(html).not.toContain('body content');
+    // Body is present in DOM but hidden — assert the hidden attribute is set
+    expect(html).toContain('body content');
+    expect(html).toMatch(/hidden=""/);
     expect(html).toMatch(/aria-expanded="false"/);
   });
 

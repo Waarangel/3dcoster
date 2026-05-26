@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 interface InfoTooltipProps {
   text: string;
@@ -10,6 +10,7 @@ interface InfoTooltipProps {
 // you don't want to burn placeholder space on descriptive text.
 export function InfoTooltip({ text, className = '' }: InfoTooltipProps) {
   const [open, setOpen] = useState(false);
+  const tooltipId = useId();
 
   return (
     <span
@@ -21,7 +22,7 @@ export function InfoTooltip({ text, className = '' }: InfoTooltipProps) {
       <button
         type="button"
         aria-label={text}
-        aria-describedby={open ? 'info-tooltip-content' : undefined}
+        aria-describedby={open ? tooltipId : undefined}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onClick={(e) => {
@@ -36,7 +37,7 @@ export function InfoTooltip({ text, className = '' }: InfoTooltipProps) {
       </button>
       {open && (
         <span
-          id="info-tooltip-content"
+          id={tooltipId}
           role="tooltip"
           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-200 max-w-xs w-max z-50 pointer-events-none shadow-lg"
         >

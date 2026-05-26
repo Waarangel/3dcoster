@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: v1.3 Hardening
 status: executing
 stopped_at: Phase 19 context gathered
-last_updated: "2026-05-26T17:23:31.895Z"
-last_activity: 2026-05-26 -- Phase 19 planning complete
+last_updated: "2026-05-26T17:26:26.018Z"
+last_activity: 2026-05-26 -- Phase 19 execution started
 progress:
   total_phases: 8
   completed_phases: 3
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** v1.3 cleanup — Phase 25 done; resume foundational + core phases (19, 20, 21, 22, 23)
+**Current focus:** Phase 19 — modal-primitive-a11y-migration
 
 ## Current Position
 
-Phase: 25 (complete) — pending phases 19, 20, 21, 22, 23
-Plan: Not started
-Status: Ready to execute
+Phase: 19 (modal-primitive-a11y-migration) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 19
 Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security). Phase 19 must complete before Phase 22; Phase 22 before Phase 23.
-Last activity: 2026-05-26 -- Phase 19 planning complete
+Last activity: 2026-05-26 -- Phase 19 execution started
 
 ## v1.3 Phase Order Reference
 
