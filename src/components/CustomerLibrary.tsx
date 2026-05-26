@@ -45,7 +45,7 @@ const CustomerRowItem = memo(function CustomerRowItem({
   return (
     <div style={style} className="pb-2">
       <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-white truncate">
               {customer.name || '(no name)'}
