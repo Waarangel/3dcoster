@@ -1,5 +1,5 @@
 import type { TextareaHTMLAttributes } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 
 type TextareaSize = 'sm' | 'md' | 'lg';
 
@@ -15,7 +15,9 @@ const sizeStyles: Record<TextareaSize, string> = {
 };
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ textareaSize = 'md', error = false, className = '', disabled, ...props }, ref) => {
+  ({ textareaSize = 'md', error = false, className = '', disabled, id, ...props }, ref) => {
+    const generatedId = useId();
+    const resolvedId = id ?? generatedId;
     const baseStyles = 'w-full bg-slate-700 text-white rounded-lg border-0 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none';
     const errorStyles = error ? 'ring-2 ring-red-500' : '';
     const disabledStyles = disabled ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : '';
@@ -23,6 +25,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <textarea
         ref={ref}
+        id={resolvedId}
         disabled={disabled}
         className={`${baseStyles} ${sizeStyles[textareaSize]} ${errorStyles} ${disabledStyles} ${className}`}
         {...props}

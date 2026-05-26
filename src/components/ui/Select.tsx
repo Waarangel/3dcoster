@@ -1,5 +1,5 @@
 import type { SelectHTMLAttributes } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 
 type SelectSize = 'sm' | 'md' | 'lg';
 
@@ -15,7 +15,9 @@ const sizeStyles: Record<SelectSize, string> = {
 };
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ selectSize = 'md', error = false, className = '', disabled, children, ...props }, ref) => {
+  ({ selectSize = 'md', error = false, className = '', disabled, id, children, ...props }, ref) => {
+    const generatedId = useId();
+    const resolvedId = id ?? generatedId;
     const baseStyles = 'w-full bg-slate-700 text-white rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-blue-500';
     const errorStyles = error ? 'ring-2 ring-red-500' : '';
     const disabledStyles = disabled ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : '';
@@ -23,6 +25,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <select
         ref={ref}
+        id={resolvedId}
         disabled={disabled}
         className={`${baseStyles} ${sizeStyles[selectSize]} ${errorStyles} ${disabledStyles} ${className}`}
         {...props}
