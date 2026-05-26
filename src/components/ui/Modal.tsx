@@ -44,6 +44,14 @@ export interface ModalProps {
    * modals where focusing the first input is the right UX.
    */
   initialFocusRef?: RefObject<HTMLElement | null>;
+  /**
+   * WR-04 fix: optional slot rendered to the LEFT of the title (outside the
+   * `<h3>`) — symmetric with the Close button's slot on the right. Use this
+   * for header-level controls (e.g., a "Back" button) that previously had to
+   * be smuggled inside the `title` prop, polluting the dialog's accessible
+   * name (aria-labelledby would include the button's text).
+   */
+  headerLeft?: ReactNode;
 }
 
 const sizeMap: Record<NonNullable<ModalProps['size']>, string> = {
@@ -99,7 +107,7 @@ let openModalCount = 0;
  *
  * @see https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
  */
-export function Modal({ isOpen, onClose, title, children, size = 'md', initialFocusRef }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md', initialFocusRef, headerLeft }: ModalProps) {
   const titleId = useId();
   const cardRef = useRef<HTMLDivElement>(null);
   // Stable ref for onClose so the keydown handler doesn't re-register on each render.
@@ -259,11 +267,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', initialFo
         tabIndex={-1}
         className={`bg-slate-800 rounded-xl border border-slate-700 w-full ${sizeMap[size]} shadow-xl max-h-[90vh] overflow-y-auto`}
       >
-        {/* Header */}
+        {/* Header — WR-04: optional headerLeft slot renders OUTSIDE <h3> so
+            interactive controls (e.g. Back button) don't pollute the dialog's
+            accessible name via aria-labelledby. */}
         <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
-          <h3 id={titleId} className="text-lg font-semibold text-white">
-            {title}
-          </h3>
+          <div className="flex items-center gap-3 min-w-0">
+            {headerLeft}
+            <h3 id={titleId} className="text-lg font-semibold text-white truncate">
+              {title}
+            </h3>
+          </div>
           <Button variant="ghost" btnSize="sm" onClick={() => onCloseRef.current()} aria-label="Close">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

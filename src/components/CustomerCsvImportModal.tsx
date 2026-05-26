@@ -169,27 +169,28 @@ export function CustomerCsvImportModal({
   }, [parseResult, importCount, existingCustomers, selected, duplicateMode, onImportCustomers, onClose]);
 
   // ---- Render --------------------------------------------------------------
-  const title = (
-    <span className="flex items-center gap-3">
-      {step === 'preview' && (
-        <Button
-          variant="ghost"
-          btnSize="sm"
-          onClick={() => { setStep('upload'); setParseResult(null); setError(null); }}
-          aria-label="Back to upload"
-          title="Back to upload"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Button>
-      )}
-      {step === 'upload' ? 'Import customers from CSV' : 'Preview customer import'}
-    </span>
-  );
+  // WR-04 fix: the Back button used to be smuggled inside the `title` prop,
+  // which put a <Button> inside <h3>. That polluted the dialog's accessible
+  // name (aria-labelledby on the dialog points at the h3, so screen readers
+  // would read "Back to upload Preview customer import"). Move the button
+  // to Modal's new `headerLeft` slot so it sits OUTSIDE the heading.
+  const title = step === 'upload' ? 'Import customers from CSV' : 'Preview customer import';
+  const headerLeft = step === 'preview' ? (
+    <Button
+      variant="ghost"
+      btnSize="sm"
+      onClick={() => { setStep('upload'); setParseResult(null); setError(null); }}
+      aria-label="Back to upload"
+      title="Back to upload"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      </svg>
+    </Button>
+  ) : undefined;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} headerLeft={headerLeft} size="xl">
       {/* Body */}
       <div className="p-4">
         {step === 'upload' && (
