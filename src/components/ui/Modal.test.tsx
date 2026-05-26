@@ -418,7 +418,7 @@ describe('Group 6 — Single-modal-only dev warn', () => {
       });
       expect(warnSpy).toHaveBeenCalledTimes(1);
       const [warnMsg] = warnSpy.mock.calls[0];
-      expect(String(warnMsg)).toContain('[Modal]');
+      expect(String(warnMsg)).toContain('[dialog]');
     } finally {
       await act(async () => { rootB.unmount(); });
       containerB.remove();
