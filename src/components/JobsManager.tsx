@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, QuoteStatus, RuntimeQuoteStatus } from '../types';
@@ -151,6 +151,25 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
   const currency = quote.lineItemsSnapshot.currency;
   const total = quote.lineItemsSnapshot.sellingPrice + quote.lineItemsSnapshot.shippingCost + quote.lineItemsSnapshot.taxAmount;
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOverflowOpen(false);
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [overflowOpen]);
 
   return (
     <li
@@ -172,7 +191,7 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 shrink-0 relative">
+      <div ref={overflowRef} className="flex items-center gap-2 shrink-0 relative">
         {pillKind === 'pending' && (
           <>
             <Button
