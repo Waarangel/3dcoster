@@ -106,8 +106,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         card.focus();
       }
     };
-    // Defer slightly so the DOM has settled after the portal renders.
-    const rafId = requestAnimationFrame(focusFirst);
+    // Defer via setTimeout so the portal DOM is fully committed before we focus.
+    // setTimeout(fn, 0) works in both browser and jsdom (unlike rAF in jsdom).
+    const timerId = setTimeout(focusFirst, 0);
 
     // Keyboard handler (D-04, D-07, D-08)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -145,7 +146,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
       document.removeEventListener('keydown', handleKeyDown);
 
       // Restore scroll-lock (D-10)
