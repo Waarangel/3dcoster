@@ -278,10 +278,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       case 'local_pickup':
         return 0;
       case 'dropoff':
-        // Round trip distance * fuel consumption * fuel price
+        // Round trip distance * fuel consumption * fuel price.
+        // Ceil to the next cent so float math (e.g. 6.354179999…) doesn't leak
+        // into the input value or the totals — always at-or-above the real cost.
         const roundTripKm = shippingDistanceKm * 2;
         const litersUsed = (roundTripKm / 100) * shippingConfig.vehicleFuelEfficiency;
-        return litersUsed * shippingConfig.gasPricePerLiter;
+        return Math.ceil(litersUsed * shippingConfig.gasPricePerLiter * 100) / 100;
       case 'ups':
         return shippingConfig.upsBaseCost;
       case 'fedex':
