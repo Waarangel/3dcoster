@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: ready_to_plan
-stopped_at: Phase 21 complete (3/3) — ready to discuss Phase 24
-last_updated: 2026-05-27T13:18:24.179Z
-last_activity: 2026-05-26 -- Phase 21 execution started
+status: planning
+stopped_at: Phase 22 context gathered
+last_updated: "2026-05-27T14:20:08.100Z"
+last_activity: 2026-05-27
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 25
-  completed_plans: 96
-  percent: 63
+  completed_plans: 25
+  percent: 75
 ---
 
 # Project State
@@ -162,6 +162,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-26T23:24:31.546Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-csv-url-security/21-CONTEXT.md
+Last session: 2026-05-27T14:20:08.094Z
+Stopped at: Phase 22 context gathered
+Resume file: .planning/phases/22-jobsmanager-decomposition-perf/22-CONTEXT.md
