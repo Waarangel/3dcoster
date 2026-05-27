@@ -142,7 +142,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 **Requirements**: HYG-02, HYG-03, HYG-06, HYG-07, HYG-08, PERF-01, PERF-02, PERF-03, PERF-04, PERF-07
 **Success Criteria** (what must be TRUE):
 
-  1. `src/components/RecordSaleModal.tsx` exists, owns its own state and `handleRecordSale` logic, accepts props `{ job, userProfile, userCurrency, shippingConfig, editingSale, convertingFromQuote, customers, customersByEmail, onSave, onClose }`, and uses the Phase 19 `<Modal>` primitive
+  1. `src/components/RecordSaleModal.tsx` exists, owns its own state and `handleRecordSale` logic, accepts props `{ job, userProfile, userCurrency, shippingConfig, editingSale, convertingFromQuote, isOpen, onClose, onSaved? }` (customers/customersByEmail removed from the prop surface per D-06 — RecordSaleModal subscribes to useCustomers internally), and uses the Phase 19 `<Modal>` primitive
   2. `src/components/JobsManager.tsx` shrinks by at least 400 lines (target: under 1,500 lines total); the inline Record Sale `{showSaleForm && (...)}` block is replaced by `<RecordSaleModal isOpen={...} {...} />`
   3. `src/hooks/useCustomerPicker.ts` exists, exposes `{ query, open, activeIndex, visibleCustomers, filteredCustomers, setQuery, setOpen, setActiveIndex, handleKeyDown, reset }`, and is consumed by BOTH `<RecordSaleModal>` and `<PrintQuoteModal>` — no duplicate state triplet or memos remain in either consumer
   4. `PICKER_VISIBLE_LIMIT = 8` lives in one place (`useCustomerPicker.ts` OR `src/utils/format.ts`) and is imported wherever needed; the JobsManager inline comment about "centralized here" is updated or removed accordingly
