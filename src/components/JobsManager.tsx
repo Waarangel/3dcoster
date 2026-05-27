@@ -10,6 +10,7 @@ import { SearchIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
 import { DeclineQuoteModal } from './DeclineQuoteModal';
+import { SaleRow } from './SaleRow';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
@@ -301,25 +302,6 @@ export function OrdersQuoteRows({
         );
       })}
     </ul>
-  );
-}
-
-/**
- * Informational text rendered next to a Sale's customer name when the
- * Sale was created via Convert to Sale (D-30). Replaces the prior
- * SaleBackRefLink clickable button — per user direction, this is purely
- * informational ("when was the quote last created"), not interactive.
- *
- * Exported so unit tests can mount it directly.
- */
-export function SaleFromQuoteSubtext({ convertedFromQuoteId, jobId }: { convertedFromQuoteId: string; jobId: string }) {
-  const { quotesByJobId } = useQuotes();
-  const linkedQuote = quotesByJobId.get(jobId)?.find(q => q.id === convertedFromQuoteId);
-  if (!linkedQuote) return null;  // data anomaly — render nothing
-  return (
-    <span className="ml-2 text-xs text-slate-400">
-      from {formatQuoteNumber(linkedQuote.quoteNumber)} · Quoted {formatRelativeDate(new Date(linkedQuote.sentAt))}
-    </span>
   );
 }
 
@@ -724,85 +706,15 @@ export const JobCard = memo(function JobCard({
           >
             {recentSales && recentSales.length > 0 && (
               <div className="space-y-1 mt-1">
-                {recentSales.slice(0, 5).map(sale => {
-                  // Phase 14 revised (2026-05-22): customer is per-sale.
-                  // Read from sale.customer (new) with fallback to sale.customerName (legacy).
-                  const saleCustomerName = sale.customer?.name || sale.customerName;
-                  const hasCustomerDetails = Boolean(
-                    sale.customer?.name ||
-                    sale.customer?.email ||
-                    sale.customer?.company ||
-                    sale.customer?.address ||
-                    sale.customer?.notes ||
-                    sale.customerName
-                  );
-                  const summaryLabel = saleCustomerName
-                    ? `${sale.quantity}x @ $${sale.unitPrice.toFixed(2)} (${saleCustomerName})`
-                    : `${sale.quantity}x @ $${sale.unitPrice.toFixed(2)}`;
-                  return (
-                    <details
-                      key={sale.id}
-                      className="text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded group"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <summary className="flex justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                        <span className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500 group-open:rotate-90 transition-transform">▸</span>
-                          {summaryLabel}
-                          {/* D-30: informational subtext (NOT clickable). Replaces the prior SaleBackRefLink button. */}
-                          {sale.convertedFromQuoteId && (
-                            <SaleFromQuoteSubtext convertedFromQuoteId={sale.convertedFromQuoteId} jobId={job.id} />
-                          )}
-                        </span>
-                        <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
-                      </summary>
-                      <div className="mt-2 pt-2 border-t border-slate-700 text-xs pl-5 flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          {hasCustomerDetails ? (
-                            <div className="space-y-0.5">
-                              {sale.customer?.name && (
-                                <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customer.name}</span></div>
-                              )}
-                              {!sale.customer?.name && sale.customerName && (
-                                <div><span className="text-slate-500">Name:</span> <span className="text-slate-300">{sale.customerName}</span></div>
-                              )}
-                              {sale.customer?.email && (
-                                <div><span className="text-slate-500">Email:</span> <span className="text-slate-300 break-all">{sale.customer.email}</span></div>
-                              )}
-                              {sale.customer?.company && (
-                                <div><span className="text-slate-500">Company:</span> <span className="text-slate-300">{sale.customer.company}</span></div>
-                              )}
-                              {sale.customer?.address && (
-                                <div><span className="text-slate-500">Address:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.address}</span></div>
-                              )}
-                              {sale.customer?.notes && (
-                                <div><span className="text-slate-500">Notes:</span> <span className="text-slate-300 whitespace-pre-line">{sale.customer.notes}</span></div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-slate-500 italic">No customer details recorded.</div>
-                          )}
-                        </div>
-                        <div className="flex gap-1.5 shrink-0">
-                          <Button
-                            variant="primary"
-                            btnSize="sm"
-                            onClick={e => { e.stopPropagation(); onEditSale(sale); }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="danger"
-                            btnSize="sm"
-                            onClick={e => { e.stopPropagation(); onDeleteSale(sale); }}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </details>
-                  );
-                })}
+                {recentSales.slice(0, 5).map(s => (
+                  <SaleRow
+                    key={s.id}
+                    sale={s}
+                    jobId={job.id}
+                    onEdit={onEditSale}
+                    onDelete={onDeleteSale}
+                  />
+                ))}
               </div>
             )}
           </OrdersSection>
