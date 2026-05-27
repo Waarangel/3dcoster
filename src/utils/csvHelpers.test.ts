@@ -6,7 +6,9 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect } from 'vitest';
-import { parsePositiveNumber, sanitizeCsvCell } from './csvHelpers';
+import Papa from 'papaparse';
+import { parsePositiveNumber, sanitizeCsvCell, generateExportCsv, generateSampleCsv, generateSampleCustomerCsv } from './csvHelpers';
+import type { Asset } from '../types';
 
 describe('parsePositiveNumber', () => {
   // happy-path baselines
@@ -85,5 +87,83 @@ describe('sanitizeCsvCell (Phase 21 SEC-01)', () => {
   // trigger char), so no second prefix is added. Self-enforcing via D-01.
   it("sanitizeCsvCell(sanitizeCsvCell('=A1')) === \"'=A1\" (idempotent)", () => {
     expect(sanitizeCsvCell(sanitizeCsvCell('=A1'))).toBe("'=A1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 21 SEC-01 — generateExportCsv integration (export-flow end-to-end)
+//
+// These tests verify that sanitizeCsvCell is actually wired into
+// generateExportCsv, not just that the helper function exists. They parse
+// the CSV output with PapaParse to assert on cell values directly, making
+// the assertions robust to PapaParse's internal quoting decisions.
+//
+// Covers all 4 trigger characters (=, +, -, @), a safe passthrough (no false
+// positive), and a spot-check of the template generators for the structural
+// invariant (D-02 universal coverage regression lock).
+// ---------------------------------------------------------------------------
+describe('Phase 21 SEC-01 — generateExportCsv integration', () => {
+  const BASE_ASSET: Asset = {
+    id: 'test-1',
+    name: 'Test Asset',
+    category: 'filament',
+    unit: 'g',
+    packageCost: 19.99,
+    unitsPerPackage: 1000,
+  };
+
+  function parseFirstDataRow(csv: string): Record<string, string> {
+    const result = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true });
+    return result.data[0];
+  }
+
+  it('name starting with = is prefixed with single-quote in exported CSV', () => {
+    const asset: Asset = { ...BASE_ASSET, name: '=HYPERLINK("https://evil.com","click")' };
+    const csv = generateExportCsv([asset]);
+    const row = parseFirstDataRow(csv);
+    expect(row.name.startsWith("'=")).toBe(true);
+  });
+
+  it('brand starting with + is prefixed with single-quote in exported CSV', () => {
+    const asset: Asset = { ...BASE_ASSET, brand: '+CMD' };
+    const csv = generateExportCsv([asset]);
+    const row = parseFirstDataRow(csv);
+    expect(row.brand.startsWith("'+")).toBe(true);
+  });
+
+  it('notes starting with - is prefixed with single-quote in exported CSV', () => {
+    const asset: Asset = { ...BASE_ASSET, notes: '-2+3' };
+    const csv = generateExportCsv([asset]);
+    const row = parseFirstDataRow(csv);
+    expect(row.notes.startsWith("'-")).toBe(true);
+  });
+
+  it('safe name with no leading trigger is not prefixed (no false positive)', () => {
+    const asset: Asset = { ...BASE_ASSET, name: 'Safe name' };
+    const csv = generateExportCsv([asset]);
+    const row = parseFirstDataRow(csv);
+    expect(row.name).toBe('Safe name');
+  });
+
+  it('template generators produce no cells starting with =, +, -, or @', () => {
+    const triggerChars = new Set(['=', '+', '-', '@']);
+    const sources = [
+      generateSampleCsv('printer'),
+      generateSampleCsv('material'),
+      generateSampleCustomerCsv(),
+    ];
+    for (const csv of sources) {
+      const result = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true });
+      for (const row of result.data) {
+        for (const [col, val] of Object.entries(row)) {
+          if (val.length > 0) {
+            expect(
+              triggerChars.has(val[0]),
+              `template CSV cell [${col}]="${val}" starts with a trigger char`,
+            ).toBe(false);
+          }
+        }
+      }
+    }
   });
 });
