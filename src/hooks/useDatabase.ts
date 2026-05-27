@@ -649,6 +649,28 @@ export function useSales(jobId?: string) {
   };
 }
 
+/**
+ * Hook for reading all sales globally.
+ *
+ * Used by JobsManager to build the salesByJob Map. Separate from
+ * useSales(jobId) which exposes addSale/updateSale/deleteSale for a
+ * scoped subscription on a single job.
+ *
+ * Returns Sale[] directly (not { sales: [...] }) to make intent clear
+ * and simplify mocking: `useAllSales: () => []`.
+ *
+ * PERF-07: closes the global-vs-scoped useSales duplication that
+ * previously lived at JobsManager.tsx:984-985 (the destructure-rename
+ * pattern `const { sales: allSales } = useSales()`).
+ */
+export function useAllSales(): Sale[] {
+  const sales = useLiveQuery(
+    () => db.sales.orderBy('soldAt').reverse().toArray(),
+    []
+  );
+  return sales ?? [];
+}
+
 // Hook for customer library (Phase 15.1 — D-03 + UI-SPEC discretion #15).
 // Modeled on usePrinterInstances (no seed data, minimal CRUD + entity-specific bumpers).
 export function useCustomers() {
