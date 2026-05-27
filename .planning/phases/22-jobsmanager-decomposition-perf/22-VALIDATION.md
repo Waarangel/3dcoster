@@ -39,7 +39,7 @@ created: 2026-05-27
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 22-01-* | 01 | 1 | HYG-08 | — | N/A — refactor only | Unit (hook) | `npm test -- useCustomerPicker` | ❌ W0 — `src/hooks/useCustomerPicker.test.ts` | ⬜ pending |
+| 22-01-* | 01 | 1 | HYG-08 | — | N/A — refactor only | Unit (hook) | `npm test -- useCustomerPicker` | ❌ W0 — `src/hooks/useCustomerPicker.test.tsx` | ⬜ pending |
 | 22-02-* | 02 | 1 | HYG-02, HYG-03 | — | N/A | Static / regression | `tsc -b && npm test` | ✅ (existing) | ⬜ pending |
 | 22-03-* | 03 | 2 | HYG-06 | — | V5 carried forward (`saleQuantity <= 0` guard moves verbatim with `handleRecordSale`) | Component | `npm test -- RecordSaleModal` | ❌ W0 — `src/components/RecordSaleModal.test.tsx` | ⬜ pending |
 | 22-04-* | 04 | 2 | HYG-07 | — | N/A | Regression | `npm test -- JobsManager` | ✅ (existing) | ⬜ pending |
@@ -54,7 +54,7 @@ created: 2026-05-27
 
 Files to create **before** the implementation tasks in their respective plans can claim acceptance:
 
-- [ ] `src/hooks/useCustomerPicker.test.ts` — covers keyDown branches (ArrowDown open/cycle, ArrowUp wrap-last→first, Enter-with-match calls onPick, Enter-with-no-match closes without onPick, Escape closes + `stopPropagation`, Tab close-without-pick), plus `visibleCustomers` slice to `PICKER_VISIBLE_LIMIT` and `filteredCustomers` derivation from query
+- [ ] `src/hooks/useCustomerPicker.test.tsx` — covers keyDown branches (ArrowDown open/cycle, ArrowUp wrap-last→first, Enter-with-match calls onPick, Enter-with-no-match closes without onPick, Escape closes + `stopPropagation`, Tab close-without-pick), plus `visibleCustomers` slice to `PICKER_VISIBLE_LIMIT` and `filteredCustomers` derivation from query
 - [ ] `src/components/RecordSaleModal.test.tsx` — covers the 3 modes (ROADMAP success criterion #11): create mode, edit mode (form hydrates from `editingSale`), convert-from-quote mode (spy on `db.transaction` to confirm atomic tx fires). Uses raw `createRoot` + `act` per Phase 19 D-21 and `PrintQuoteModal.test.tsx` precedent
 
 These two test files are the only Wave 0 dependencies. All other tests already exist (`JobsManager.test.tsx`, `PrintQuoteModal.test.tsx`, `CustomerLibrary.test.tsx` where applicable).
@@ -76,7 +76,7 @@ These two test files are the only Wave 0 dependencies. All other tests already e
 
 - [ ] All tasks have `<automated>` verify or Wave 0 dependencies
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers the 2 new test files (`useCustomerPicker.test.ts`, `RecordSaleModal.test.tsx`)
+- [ ] Wave 0 covers the 2 new test files (`useCustomerPicker.test.tsx`, `RecordSaleModal.test.tsx`)
 - [ ] No watch-mode flags (`npm test` runs once, exits)
 - [ ] Feedback latency < 20s
 - [ ] `nyquist_compliant: true` set in frontmatter
