@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect } from 'vitest';
-import { parsePositiveNumber } from './csvHelpers';
+import { parsePositiveNumber, sanitizeCsvCell } from './csvHelpers';
 
 describe('parsePositiveNumber', () => {
   // happy-path baselines
@@ -38,5 +38,52 @@ describe('parsePositiveNumber', () => {
   });
   it("'-1' with allowZero: true → null (allowZero must NOT allow negatives)", () => {
     expect(parsePositiveNumber('-1', { allowZero: true })).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 21 SEC-01 — sanitizeCsvCell formula-injection guard
+//
+// Locks the contract for the helper that wraps every cell handed to
+// Papa.unparse in csvHelpers.ts (4 call sites: generateSampleCustomerCsv,
+// generateSampleCsv printer/material branches, generateExportCsv). The
+// universal-coverage invariant (D-02) is enforced structurally at those
+// sites; this block locks the helper's behavior so the invariant has
+// teeth. Rule (D-01): prefix a single `'` to any non-empty string whose
+// first character is `=`, `+`, `-`, or `@`; otherwise pass through.
+// Idempotence is self-enforcing because `'` is not in the trigger set.
+// ---------------------------------------------------------------------------
+describe('sanitizeCsvCell (Phase 21 SEC-01)', () => {
+  // Trigger characters — leading `=`, `+`, `-`, `@` get a single-quote prefix
+  it("'=SUM(A1:A10)' → \"'=SUM(A1:A10)\"", () => {
+    expect(sanitizeCsvCell('=SUM(A1:A10)')).toBe("'=SUM(A1:A10)");
+  });
+  it("'+CMD' → \"'+CMD\"", () => {
+    expect(sanitizeCsvCell('+CMD')).toBe("'+CMD");
+  });
+  it("'-2+3' → \"'-2+3\"", () => {
+    expect(sanitizeCsvCell('-2+3')).toBe("'-2+3");
+  });
+  it("'@SUM()' → \"'@SUM()\"", () => {
+    expect(sanitizeCsvCell('@SUM()')).toBe("'@SUM()");
+  });
+
+  // Passthrough — safe strings return unchanged
+  it("'safe string' → 'safe string' (passthrough)", () => {
+    expect(sanitizeCsvCell('safe string')).toBe('safe string');
+  });
+  it("'' → '' (empty passthrough — no first char to match)", () => {
+    expect(sanitizeCsvCell('')).toBe('');
+  });
+
+  // Leading-char-only rule — embedded triggers do not fire
+  it("'foo=bar' → 'foo=bar' (only the LEADING char matters)", () => {
+    expect(sanitizeCsvCell('foo=bar')).toBe('foo=bar');
+  });
+
+  // Idempotence smoke — second call sees a string starting with `'` (not a
+  // trigger char), so no second prefix is added. Self-enforcing via D-01.
+  it("sanitizeCsvCell(sanitizeCsvCell('=A1')) === \"'=A1\" (idempotent)", () => {
+    expect(sanitizeCsvCell(sanitizeCsvCell('=A1'))).toBe("'=A1");
   });
 });

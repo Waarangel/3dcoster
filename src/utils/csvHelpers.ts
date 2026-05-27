@@ -68,34 +68,43 @@ export interface CsvParseResult {
 const CUSTOMER_COLUMNS = ['name', 'email', 'company', 'address', 'notes'] as const;
 
 export function generateSampleCustomerCsv(): string {
+  // SEC-01 / D-02: every cell passes through sanitizeCsvCell at the
+  // cell-serialization boundary. Template strings are no-op in practice
+  // (none start with a trigger char), but the invariant is grep-enforceable
+  // so future template edits cannot regress it.
   return Papa.unparse({
     fields: [...CUSTOMER_COLUMNS],
     data: [
-      ['Jane Smith', 'jane@example.com', 'Acme Co', '123 Main St', 'Repeat buyer'],
-      ['Bob Jones', 'bob@example.com', '', '', ''],
+      ['Jane Smith', 'jane@example.com', 'Acme Co', '123 Main St', 'Repeat buyer'].map(c => sanitizeCsvCell(c)),
+      ['Bob Jones', 'bob@example.com', '', '', ''].map(c => sanitizeCsvCell(c)),
     ],
   });
 }
 
 export function generateSampleCsv(type: 'material' | 'printer'): string {
   if (type === 'printer') {
+    // SEC-01 / D-02: every cell passes through sanitizeCsvCell at the
+    // cell-serialization boundary (structural invariant — see comment on
+    // generateSampleCustomerCsv).
     return Papa.unparse({
       fields: [...PRINTER_COLUMNS],
       data: [
-        ['Creality Ender 3 V3', 'printer', 'Creality', '199', '100', '5000', '10', '15000', 'Budget FDM printer', 'fdm|budget'],
-        ['Bambu Lab P1S', 'printer', 'Bambu Lab', '699', '120', '6000', '8', '15000', 'Enclosed CoreXY', 'corexy|enclosed'],
+        ['Creality Ender 3 V3', 'printer', 'Creality', '199', '100', '5000', '10', '15000', 'Budget FDM printer', 'fdm|budget'].map(c => sanitizeCsvCell(c)),
+        ['Bambu Lab P1S', 'printer', 'Bambu Lab', '699', '120', '6000', '8', '15000', 'Enclosed CoreXY', 'corexy|enclosed'].map(c => sanitizeCsvCell(c)),
       ],
     });
   }
 
+  // SEC-01 / D-02: every cell passes through sanitizeCsvCell at the
+  // cell-serialization boundary.
   return Papa.unparse({
     fields: [...MATERIAL_COLUMNS],
     data: [
-      ['PLA Basic White', 'filament', 'Bambu Lab', 'g', '19.99', '1000', 'USD', 'PLA', '', 'Standard white PLA', 'pla|white'],
-      ['Isopropyl Alcohol 70%', 'consumable', '', 'ml', '8.99', '500', 'USD', '', '', 'Bed cleaning', 'cleaning'],
-      ['Sandpaper 220 grit', 'finishing', '', 'sheet', '5.00', '10', 'USD', '', '3', 'Fine sanding', 'sanding'],
-      ['Shipping Box 8x6x4"', 'packaging', '', 'ea', '25.00', '25', 'USD', '', '', 'Medium shipping box', 'shipping'],
-      ['Flush Cutters', 'tool', '', 'use', '8.00', '1', 'USD', '', '500', 'For removing supports', 'tools'],
+      ['PLA Basic White', 'filament', 'Bambu Lab', 'g', '19.99', '1000', 'USD', 'PLA', '', 'Standard white PLA', 'pla|white'].map(c => sanitizeCsvCell(c)),
+      ['Isopropyl Alcohol 70%', 'consumable', '', 'ml', '8.99', '500', 'USD', '', '', 'Bed cleaning', 'cleaning'].map(c => sanitizeCsvCell(c)),
+      ['Sandpaper 220 grit', 'finishing', '', 'sheet', '5.00', '10', 'USD', '', '3', 'Fine sanding', 'sanding'].map(c => sanitizeCsvCell(c)),
+      ['Shipping Box 8x6x4"', 'packaging', '', 'ea', '25.00', '25', 'USD', '', '', 'Medium shipping box', 'shipping'].map(c => sanitizeCsvCell(c)),
+      ['Flush Cutters', 'tool', '', 'use', '8.00', '1', 'USD', '', '500', 'For removing supports', 'tools'].map(c => sanitizeCsvCell(c)),
     ],
   });
 }
@@ -333,9 +342,15 @@ export function generateExportCsv(assets: Asset[]): string {
     return row;
   });
 
+  // SEC-01 / D-02: every cell passes through sanitizeCsvCell at the
+  // cell-serialization boundary. This is the highest-risk site — r[col]
+  // reflects user-typed asset names, brands, notes, tags, and currencies
+  // that could contain =, +, -, or @ as a leading char (e.g., a malicious
+  // name '=HYPERLINK("https://evil.com","click")'). Wrapping here demotes
+  // such strings to literal cell text in Excel/LibreOffice.
   return Papa.unparse({
     fields: [...ALL_COLUMNS],
-    data: rows.map(r => ALL_COLUMNS.map(col => r[col] ?? '')),
+    data: rows.map(r => ALL_COLUMNS.map(col => sanitizeCsvCell(r[col] ?? ''))),
   });
 }
 
@@ -404,6 +419,35 @@ export function parsePositiveNumber(
   if (isNaN(num)) return null;
   if (opts?.allowZero ? num < 0 : num <= 0) return null;
   return num;
+}
+
+/**
+ * Phase 21 SEC-01 — CSV formula-injection guard.
+ *
+ * Prefixes a single `'` to any non-empty string whose first character is
+ * `=`, `+`, `-`, or `@` — the four leading-char triggers that Excel,
+ * LibreOffice Calc, and Numbers treat as formula starts. Otherwise the
+ * value is returned unchanged.
+ *
+ * Idempotent by construction: the sanitized output starts with `'`, which
+ * is NOT in the trigger set, so a second call is a no-op. Do NOT add an
+ * "already-sanitized?" guard — the trigger-char rule self-enforces this
+ * (per D-01). Adding a guard would invite double-prefixing on truly
+ * user-typed strings that happen to begin with `'`.
+ *
+ * Call site rule (D-02 / D-03): every cell handed to `Papa.unparse` in
+ * this file passes through `sanitizeCsvCell` at the cell-serialization
+ * boundary — immediately before the value enters the `data` array, NOT
+ * inside `Papa.unparse` itself.
+ */
+export function sanitizeCsvCell(value: string): string {
+  if (value.length === 0) return value;
+  const first = value.charCodeAt(0);
+  // 0x3D = '=', 0x2B = '+', 0x2D = '-', 0x40 = '@'
+  if (first === 0x3d || first === 0x2b || first === 0x2d || first === 0x40) {
+    return "'" + value;
+  }
+  return value;
 }
 
 function matchFilamentTypeFromCsv(input: string): FilamentType | null {
