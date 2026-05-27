@@ -6,6 +6,7 @@ import { useSales, useCustomers, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
 import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState, Modal } from './ui';
 import { ClipboardListIcon } from './ui/icons';
+import { SearchIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
 import { DeclineQuoteModal } from './DeclineQuoteModal';
@@ -964,24 +965,6 @@ function TagIcon(props: SVGProps<SVGSVGElement>) {
     >
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
-    </svg>
-  );
-}
-
-// Phase 15 plan 04 — local SearchIcon (mirrors CustomerLibrary.tsx:382 verbatim).
-// Inline-local rather than exported because no other JobsManager surface needs it,
-// and project policy is to avoid one-off shared modules.
-function SearchIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-      {...props}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   );
 }
