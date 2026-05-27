@@ -38,6 +38,48 @@ type BreakEvenInfo = {
   isBreakEven: boolean;
 };
 
+// PERF-01 (D-17): pure module-scope break-even calculator. Lifted verbatim
+// from the in-component `getBreakEvenInfo` useCallback (now deleted) so the
+// `breakEvenMap` useMemo can call it without capturing any component-scope
+// state. The body reads ONLY `job` fields and the explicit `salesByJob` arg —
+// RESEARCH §breakEvenMap dependency set confirmed there are no other
+// closure captures (no shippingConfig, no userCurrency, etc.). No 2nd
+// consumer today — stays at module scope per No-Analog rule.
+function computeBreakEvenInfo(
+  job: PrintJob,
+  salesByJob: Map<string, Sale[]>,
+): BreakEvenInfo {
+  const jobSales = salesByJob.get(job.id) ?? [];
+  const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue, 0);
+
+  const theoreticalProfitPerUnit = job.sellingPrice - job.costPerUnit;
+  const actualProfitPerUnit = job.copiesSold > 0
+    ? (actualRevenue - job.costPerUnit * job.copiesSold) / job.copiesSold
+    : theoreticalProfitPerUnit;
+
+  const effectiveProfitPerUnit = job.copiesSold > 0 ? actualProfitPerUnit : theoreticalProfitPerUnit;
+  // WR-04: normalize non-finite break-even results to null so the UI can
+  // render a "cannot be computed" fallback instead of leaking 'Infinity' /
+  // 'NaN' into copy.
+  const breakEvenCopiesRaw = effectiveProfitPerUnit > 0
+    ? Math.ceil(job.modelCost / effectiveProfitPerUnit)
+    : job.modelCost > 0 ? Infinity : 0;
+  const breakEvenCopies: number | null = Number.isFinite(breakEvenCopiesRaw)
+    ? breakEvenCopiesRaw
+    : null;
+  const remainingToBreakEven: number | null = breakEvenCopies === null
+    ? null
+    : Math.max(0, breakEvenCopies - job.copiesSold);
+
+  return {
+    revenueEarned: actualRevenue,
+    profitPerUnit: actualProfitPerUnit,
+    breakEvenCopies,
+    remainingToBreakEven,
+    isBreakEven: breakEvenCopies !== null && job.copiesSold >= breakEvenCopies,
+  };
+}
+
 // Props for the module-scope JobCard. Everything is passed in explicitly so
 // React.memo can compare props shallowly and skip re-renders when nothing
 // relevant for THIS row changed (CR-01 + CR-03 fix).
@@ -988,38 +1030,17 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // shipping-cost defaults) all moved to RecordSaleModal.tsx per HYG-06.
   // The modal owns them because they are sale-form concerns only.
 
-  // Calculate break-even info for a job using actual sale revenue
-  const getBreakEvenInfo = useCallback((job: PrintJob): BreakEvenInfo => {
-    const jobSales = salesByJob.get(job.id) ?? [];
-    const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue, 0);
-
-    const theoreticalProfitPerUnit = job.sellingPrice - job.costPerUnit;
-    const actualProfitPerUnit = job.copiesSold > 0
-      ? (actualRevenue - job.costPerUnit * job.copiesSold) / job.copiesSold
-      : theoreticalProfitPerUnit;
-
-    const effectiveProfitPerUnit = job.copiesSold > 0 ? actualProfitPerUnit : theoreticalProfitPerUnit;
-    // WR-04: normalize non-finite break-even results to null so the UI can
-    // render a "cannot be computed" fallback instead of leaking 'Infinity' /
-    // 'NaN' into copy.
-    const breakEvenCopiesRaw = effectiveProfitPerUnit > 0
-      ? Math.ceil(job.modelCost / effectiveProfitPerUnit)
-      : job.modelCost > 0 ? Infinity : 0;
-    const breakEvenCopies: number | null = Number.isFinite(breakEvenCopiesRaw)
-      ? breakEvenCopiesRaw
-      : null;
-    const remainingToBreakEven: number | null = breakEvenCopies === null
-      ? null
-      : Math.max(0, breakEvenCopies - job.copiesSold);
-
-    return {
-      revenueEarned: actualRevenue,
-      profitPerUnit: actualProfitPerUnit,
-      breakEvenCopies,
-      remainingToBreakEven,
-      isBreakEven: breakEvenCopies !== null && job.copiesSold >= breakEvenCopies,
-    };
-  }, [salesByJob]);
+  // PERF-01 (D-18): pre-compute break-even info once per render for the
+  // filtered job list, replacing the in-component getBreakEvenInfo useCallback
+  // that fired on every JobCard render path. The three consumers (rowProps's
+  // arrow-fn wrapper at construction site, the virtualized JobRow's flow
+  // through rowProps, and the non-virtualized fallback's direct map lookup)
+  // all read from this Map. Pure function — see `computeBreakEvenInfo` at
+  // module scope (D-17).
+  const breakEvenMap = useMemo(
+    () => new Map(searchedJobs.map((j) => [j.id, computeBreakEvenInfo(j, salesByJob)])),
+    [searchedJobs, salesByJob],
+  );
 
   // Close the Record Sale modal and clear mode-selecting state. The modal's
   // own form state is reset by Modal.tsx:67 unmount (children unmount on
@@ -1226,7 +1247,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     selectedJobId,
     selectedSales: sales,
     getFilamentName,
-    getBreakEvenInfo,
+    // PERF-01 (D-19, Pitfall 6): preserve JobRowProps.getBreakEvenInfo shape
+    // — a `(job) => BreakEvenInfo` callable — by routing through breakEvenMap
+    // with an arrow wrapper instead of a useCallback. JobRowProps stays
+    // unchanged so JobCard's prop interface and JobsManager.test.tsx's
+    // renderJobCard helper survive (D-19).
+    getBreakEvenInfo: (job: PrintJob) => breakEvenMap.get(job.id)!,
     onToggleSelect: handleToggleSelect,
     onOpenSaleForm: handleOpenSaleForm,
     onEdit: onEditJob,
@@ -1246,7 +1272,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onCancelAddTag: handleCancelAddTag,
     onSubmitAddTag: handleSubmitAddTag,
     onRemoveTag: handleRemoveTag,
-  }), [searchedJobs, selectedJobId, sales, getFilamentName, getBreakEvenInfo, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
+  }), [searchedJobs, selectedJobId, sales, getFilamentName, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1344,7 +1370,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       key={job.id}
                       job={job}
                       isSelected={isSelected}
-                      info={getBreakEvenInfo(job)}
+                      info={breakEvenMap.get(job.id)!}
                       recentSales={isSelected ? sales : undefined}
                       getFilamentName={getFilamentName}
                       onToggleSelect={handleToggleSelect}
