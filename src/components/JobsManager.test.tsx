@@ -59,7 +59,8 @@ vi.mock('../hooks/useDatabase', () => ({
 const dbJobsPutSpy = vi.fn<(job: any) => Promise<void>>().mockResolvedValue(undefined);
 vi.mock('../db/database', () => ({ db: { jobs: { put: dbJobsPutSpy } } }));
 
-const { OrdersQuoteRows, SaleFromQuoteSubtext, JobCard, ADD_TAG_PLACEHOLDER } = await import('./JobsManager');
+const { OrdersQuoteRows, JobCard, ADD_TAG_PLACEHOLDER } = await import('./JobsManager');
+const { SaleFromQuoteSubtext } = await import('./SaleRow');
 
 function makeQuote(overrides: Partial<Quote> = {}): Quote {
   const now = new Date('2026-05-23T12:00:00Z');
