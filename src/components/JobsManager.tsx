@@ -1,15 +1,16 @@
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, ShippingMethodType, MarketplaceType, Customer, UserProfile, Quote, QuoteStatus, RuntimeQuoteStatus } from '../types';
-import { useSales, useCustomers, useQuotes } from '../hooks/useDatabase';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus } from '../types';
+import { useSales, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
-import { Button, Input, Select, Textarea, EmptyState, Skeleton, shouldShowEmptyState, Modal } from './ui';
+import { Button, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { SearchIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
 import { DeclineQuoteModal } from './DeclineQuoteModal';
+import { RecordSaleModal } from './RecordSaleModal';
 import { SaleRow } from './SaleRow';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
@@ -881,12 +882,6 @@ function TagIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-// Phase 15.1 (CL-04 / IN-04) — Maximum number of customer-picker dropdown rows
-// shown before the "Showing first N of M matches" overflow footer appears.
-// UI-SPEC §5 sets this to 8; centralized here so the slice limit and the
-// overflow-footer threshold can never drift out of sync.
-const PICKER_VISIBLE_LIMIT = 8;
-
 // Phase 15 Round 2 (Gap E, D-16) — usage-suggesting placeholder for the inline
 // add-tag input. NOT a content example (no "phone-stand, pla, gloss" — those
 // vary per job); rather, this suggests the KIND of tags users should apply
@@ -917,31 +912,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [convertingFromQuote, setConvertingFromQuote] = useState<Quote | null>(null);
   // useQuotes is also consumed by the Decline modal's onConfirm handler — see below.
   const { updateQuote: updateQuoteFromHook } = useQuotes();
+  // showSaleForm + editingSale + convertingFromQuote remain CONTROLLED here
+  // so JobsManager owns the open/close lifecycle and the mode selection.
+  // The form state itself (quantity, price, customer fields, etc.) lives
+  // inside <RecordSaleModal> per HYG-06 / plan 22-03.
   const [showSaleForm, setShowSaleForm] = useState(false);
-  const [saleQuantity, setSaleQuantity] = useState(1);
-  const [salePrice, setSalePrice] = useState(0);
-  // Per-sale customer (Phase 14 revised on 2026-05-22 — D-21).
-  // Captured at sale time so each Sale row carries its own buyer info.
-  const [saleCustomerName, setSaleCustomerName] = useState('');
-  const [saleCustomerEmail, setSaleCustomerEmail] = useState('');
-  const [saleCustomerCompany, setSaleCustomerCompany] = useState('');
-  const [saleCustomerAddress, setSaleCustomerAddress] = useState('');
-  const [saleCustomerNotes, setSaleCustomerNotes] = useState('');
-  const [saleShippingMethod, setSaleShippingMethod] = useState<ShippingMethodType>('local_pickup');
-  const [saleShippingCost, setSaleShippingCost] = useState(0);
-  const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
   const [deleteConfirmJobId, setDeleteConfirmJobId] = useState<string | null>(null);
-
-  // Stable ids for Record Sale form label/input pairings (A11Y-07).
-  const saleQuantityId = useId();
-  const salePriceId = useId();
-  const saleCustomerNameId = useId();
-  const saleCustomerEmailId = useId();
-  const saleCustomerCompanyId = useId();
-  const saleCustomerAddressId = useId();
-  const saleCustomerNotesId = useId();
-  const saleShippingMethodId = useId();
-  const saleShippingCostId = useId();
 
   // Phase 15 plan 04 (TAGS-03, TAGS-04) — filter sub-header state.
   // `searchQuery` is the raw input; `debouncedSearchQuery` lags by 250ms (D-06)
@@ -962,23 +938,16 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const { sales, addSale, updateSale, deleteSale } = useSales(selectedJobId || undefined);
+  // Scoped per-job sales feed is still needed for the per-job sale-row list
+  // rendered inside <JobCard recentSales={sales} /> and the sale-row delete
+  // confirm flow (deleteSale). The Record Sale modal owns its own
+  // useSales(job.id) subscription internally per plan 22-03 D-06.
+  const { sales, deleteSale } = useSales(selectedJobId || undefined);
   const { sales: allSales } = useSales();
   // Phase 14 revised (2026-05-22): sales are editable so users can fix per-sale
   // customer typos after recording. Null = create mode; Sale = edit mode.
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [deleteSaleConfirmId, setDeleteSaleConfirmId] = useState<string | null>(null);
-
-  // Phase 15.1 (CL-04) — combobox picker state lives next to the saleCustomer* state
-  // so they can be cleared together by handleEditSale and the cancel/close flows.
-  const { customers, customersByEmail, bumpLastUsed, addCustomer } = useCustomers();
-  const [customerPickerQuery, setCustomerPickerQuery] = useState('');
-  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
-  const [customerPickerActiveIndex, setCustomerPickerActiveIndex] = useState(0);
-  // IN-06: previously held a `customerPickerInputRef` here. It was wired to
-  // the picker <Input ref={...}> but never `.focus()`'d anywhere — pure
-  // dead code. Removed entirely. If autofocus-on-modal-open is wanted
-  // later, restore the ref + add a focused useEffect keyed on showSaleForm.
 
   const salesByJob = useMemo(() => {
     const map = new Map<string, Sale[]>();
@@ -1015,61 +984,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
-  // Get available shipping methods based on currency
-  const availableShippingMethods = useMemo(() => {
-    const methods: { value: ShippingMethodType; label: string }[] = [];
-    if (userCurrency === 'CAD') {
-      methods.push({ value: 'local_pickup', label: 'Local Pickup (Free)' });
-      methods.push({ value: 'dropoff', label: 'Dropoff' });
-      methods.push({ value: 'ups', label: 'UPS' });
-      methods.push({ value: 'fedex', label: 'FedEx' });
-      methods.push({ value: 'purolator', label: 'Purolator' });
-    } else {
-      methods.push({ value: 'local_pickup', label: 'Local Pickup (Free)' });
-      methods.push({ value: 'ups', label: 'UPS' });
-      methods.push({ value: 'fedex', label: 'FedEx' });
-      methods.push({ value: 'usps', label: 'USPS' });
-    }
-    return methods;
-  }, [userCurrency]);
-
-  // Get available marketplace options based on currency
-  const availableMarketplaces = useMemo(() => {
-    const options: { value: MarketplaceType; label: string }[] = [
-      { value: 'none', label: 'Direct Sale' },
-      { value: 'facebook_local', label: 'FB Marketplace (Local)' },
-      { value: 'facebook_shipped', label: 'FB Marketplace (Shipped)' },
-    ];
-    if (userCurrency === 'CAD') {
-      options.push({ value: 'kijiji', label: 'Kijiji' });
-    }
-    options.push({ value: 'etsy', label: 'Etsy' });
-    return options;
-  }, [userCurrency]);
-
-  // Calculate marketplace fee
-  const calculateMarketplaceFee = (price: number, marketplace: MarketplaceType) => {
-    switch (marketplace) {
-      case 'facebook_shipped':
-        return Math.max(0.80, price * 0.10) + price * 0.029;
-      case 'etsy':
-        return price * 0.065 + price * 0.03 + 0.45;
-      default:
-        return 0;
-    }
-  };
-
-  // Get default shipping cost based on method
-  const getDefaultShippingCost = (method: ShippingMethodType) => {
-    switch (method) {
-      case 'local_pickup': return 0;
-      case 'ups': return shippingConfig.upsBaseCost;
-      case 'fedex': return shippingConfig.fedexBaseCost;
-      case 'purolator': return shippingConfig.purolatorBaseCost;
-      case 'usps': return shippingConfig.uspsBaseCost;
-      default: return 0;
-    }
-  };
+  // Sale-form helpers (shipping methods, marketplace options, fee formula,
+  // shipping-cost defaults) all moved to RecordSaleModal.tsx per HYG-06.
+  // The modal owns them because they are sale-form concerns only.
 
   // Calculate break-even info for a job using actual sale revenue
   const getBreakEvenInfo = useCallback((job: PrintJob): BreakEvenInfo => {
@@ -1104,320 +1021,46 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     };
   }, [salesByJob]);
 
-  // Reset all sale-form state. Called after submit + on Cancel.
-  // Phase 16 plan 16-12: also clear convertingFromQuote so cancel-then-reopen
-  // doesn't reuse stale conversion state on the next Record Sale open.
-  const resetSaleForm = useCallback(() => {
+  // Close the Record Sale modal and clear mode-selecting state. The modal's
+  // own form state is reset by Modal.tsx:67 unmount (children unmount on
+  // close per Phase 19 D-19); we just clear the mode flags here so the next
+  // open starts in the right mode.
+  const handleCloseSaleModal = useCallback(() => {
     setShowSaleForm(false);
     setEditingSale(null);
     setConvertingFromQuote(null);
-    setSaleQuantity(1);
-    setSalePrice(0);
-    setSaleCustomerName('');
-    setSaleCustomerEmail('');
-    setSaleCustomerCompany('');
-    setSaleCustomerAddress('');
-    setSaleCustomerNotes('');
-    setSaleShippingMethod('local_pickup');
-    setSaleShippingCost(0);
-    setSaleMarketplace('facebook_local');
   }, []);
 
   // Phase 16 plan 16-12 (D-20): Convert to Sale flow.
-  // Opens the existing Record Sale modal pre-populated from the Quote snapshot.
-  // The save handler (handleRecordSale) branches on convertingFromQuote to wrap
-  // Sale.add + Quote.put in one Dexie transaction.
+  // Opens <RecordSaleModal> in convert mode by setting convertingFromQuote.
+  // The modal's hydration useEffect (D-08) keyed on convertingFromQuote
+  // fills its form state from the Quote snapshot on mount.
   const handleStartConversion = useCallback((quote: Quote) => {
-    // Find the matching job in this manager's scope and select it so the modal
-    // mounts with the correct selectedJob context.
     const job = jobs.find(j => j.id === quote.printJobId);
     if (job) setSelectedJobId(job.id);
     setConvertingFromQuote(quote);
     setEditingSale(null);
-    setSaleQuantity(1);
-    setSalePrice(quote.lineItemsSnapshot.sellingPrice);
-    setSaleCustomerName(quote.customerSnapshot.name ?? '');
-    setSaleCustomerEmail(quote.customerSnapshot.email ?? '');
-    setSaleCustomerCompany(quote.customerSnapshot.company ?? '');
-    setSaleCustomerAddress(quote.customerSnapshot.address ?? '');
-    setSaleCustomerNotes('');
-    setSaleShippingMethod('local_pickup');
-    setSaleShippingCost(quote.lineItemsSnapshot.shippingCost);
-    setSaleMarketplace('facebook_local');
-    setCustomerPickerQuery('');
-    setCustomerPickerOpen(false);
-    setCustomerPickerActiveIndex(0);
     setShowSaleForm(true);
   }, [jobs]);
 
-  // Open the sale modal in edit mode. Loads the existing sale's fields into form state.
+  // Open the sale modal in edit mode. The modal's hydration useEffect (D-08)
+  // keyed on editingSale fills its form state from the Sale on mount.
   const handleEditSale = useCallback((sale: Sale) => {
     setEditingSale(sale);
-    setSaleQuantity(sale.quantity);
-    setSalePrice(sale.unitPrice);
-    setSaleCustomerName(sale.customer?.name ?? sale.customerName ?? '');
-    setSaleCustomerEmail(sale.customer?.email ?? '');
-    setSaleCustomerCompany(sale.customer?.company ?? '');
-    setSaleCustomerAddress(sale.customer?.address ?? '');
-    setSaleCustomerNotes(sale.customer?.notes ?? '');
-    setSaleShippingMethod(sale.shippingMethod ?? 'local_pickup');
-    setSaleShippingCost(sale.shippingCost ?? 0);
-    setSaleMarketplace(sale.marketplace ?? 'facebook_local');
-    // Phase 15.1 — clear picker state when entering edit mode (no auto-pick from prior sales)
-    setCustomerPickerQuery('');
-    setCustomerPickerOpen(false);
-    setCustomerPickerActiveIndex(0);
+    setConvertingFromQuote(null);
     setShowSaleForm(true);
   }, []);
 
-  // Phase 15.1 (CL-04) — filter customers by Name OR Email substring (case-insensitive).
-  // Empty query keeps the dropdown closed (UI-SPEC §5).
-  const filteredCustomers = useMemo<Customer[]>(() => {
-    const q = customerPickerQuery.trim().toLowerCase();
-    if (!q) return [];
-    return customers.filter(c =>
-      (c.name || '').toLowerCase().includes(q) ||
-      (c.email || '').toLowerCase().includes(q)
-    );
-  }, [customers, customerPickerQuery]);
-
-  // Top PICKER_VISIBLE_LIMIT visible; the rest get an overflow footer per UI-SPEC §5.
-  const visibleCustomers = useMemo<Customer[]>(
-    () => filteredCustomers.slice(0, PICKER_VISIBLE_LIMIT),
-    [filteredCustomers]
-  );
-
-  // Phase 15.1 (CL-04 + D-05): pick fills Name/Email/Company/Address — NOT Notes.
-  // (Sale has its own Sale.notes for transaction-level notes; library Notes is buyer-bound.)
-  //
-  // WR-05 fix: do NOT bump lastUsedAt here. The semantic is "last used in
-  // business," not "last touched in the UI." Picking and then cancelling the
-  // sale form would falsely advance lastUsedAt for a customer who was never
-  // actually used in a recorded sale. The bump now fires exclusively from
-  // handleRecordSale's auto-link path (D-07 silent link), which runs only on
-  // sale-commit — the picked-and-email-still-matches case is covered there,
-  // and the picked-then-cancelled case correctly no-ops.
-  const handlePickCustomer = useCallback((c: Customer) => {
-    setSaleCustomerName(c.name ?? '');
-    setSaleCustomerEmail(c.email ?? '');
-    setSaleCustomerCompany(c.company ?? '');
-    setSaleCustomerAddress(c.address ?? '');
-    // D-05: DO NOT setSaleCustomerNotes
-    setCustomerPickerQuery('');
-    setCustomerPickerOpen(false);
-    setCustomerPickerActiveIndex(0);
-  }, []);
-
-  // Phase 15.1 (CL-04) — WAI-ARIA combobox keyboard handler per UI-SPEC §5.
-  const handlePickerKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      // WR-04 fix: do not open an empty dropdown. If the user typed a query
-      // that matches nothing, ArrowDown has nothing to navigate — leave the
-      // dropdown state alone so the user isn't shown an active-index pointing
-      // at a non-existent row.
-      if (visibleCustomers.length === 0) return;
-      if (!customerPickerOpen) {
-        setCustomerPickerOpen(true);
-        setCustomerPickerActiveIndex(0);
-      } else {
-        // wrap: last → first
-        setCustomerPickerActiveIndex(i => (i + 1) % visibleCustomers.length);
-      }
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      // wrap: first → last
-      setCustomerPickerActiveIndex(i =>
-        visibleCustomers.length === 0 ? 0 : (i - 1 + visibleCustomers.length) % visibleCustomers.length
-      );
-    } else if (e.key === 'Enter') {
-      // WR-01 fix: the Record Sale modal is not a <form>, so there is no
-      // implicit submit handler. Treat Enter-with-no-match as "dismiss the
-      // dropdown" so the user has a clear next step (fill the fields below).
-      // Enter on the empty/unopened state is a no-op — do NOT attempt to
-      // submit the surrounding modal.
-      if (customerPickerOpen) {
-        const picked = visibleCustomers[customerPickerActiveIndex];
-        if (picked) {
-          e.preventDefault();
-          void handlePickCustomer(picked);
-        } else if (customerPickerQuery.trim()) {
-          // No match — close suggestions so the user can fill the fields below.
-          e.preventDefault();
-          setCustomerPickerOpen(false);
-        }
-      }
-    } else if (e.key === 'Escape') {
-      if (customerPickerOpen) {
-        e.preventDefault();
-        // CR-04 fix: prevent the surrounding Modal's document-level Escape
-        // listener from also firing — without stopPropagation, Escape on the
-        // picker would close the parent Record Sale modal and lose the user's
-        // in-progress entry. Mirrors the PrintQuoteModal picker pattern
-        // (PrintQuoteModal.tsx:162-167).
-        e.stopPropagation();
-        setCustomerPickerOpen(false);
-      }
-    } else if (e.key === 'Tab') {
-      // Per UI-SPEC §5: Tab closes the dropdown and advances focus naturally (do NOT auto-pick)
-      setCustomerPickerOpen(false);
-    }
-  }, [customerPickerOpen, customerPickerActiveIndex, customerPickerQuery, visibleCustomers, handlePickCustomer]);
+  // Picker memos + pick handler + keyDown handler + sale-commit handler
+  // all moved to RecordSaleModal.tsx per HYG-06. The modal owns the entire
+  // sale-form lifecycle including the Convert-from-Quote atomic db.transaction
+  // (Pitfall 2) and the Phase 15.1 D-06 auto-create + D-07 silent-link
+  // customer side-effects.
 
   const handleConfirmDeleteSale = useCallback(async (sale: Sale) => {
     await deleteSale(sale);
     setDeleteSaleConfirmId(null);
   }, [deleteSale]);
-
-  const handleRecordSale = async () => {
-    if (!selectedJob || saleQuantity <= 0) return;
-
-    const unitPrice = salePrice || selectedJob.sellingPrice;
-    const marketplaceFee = calculateMarketplaceFee(unitPrice * saleQuantity, saleMarketplace);
-
-    // Per-sale customer payload (Phase 14 revised — D-21).
-    // Only persist `customer` if at least one field was filled in; saves nothing if the
-    // user skips customer entry. The legacy `customerName` field stays undefined on new
-    // sales — readers fall back to it for pre-revision IndexedDB records only.
-    const hasCustomer =
-      saleCustomerName.trim() !== '' ||
-      saleCustomerEmail.trim() !== '' ||
-      saleCustomerCompany.trim() !== '' ||
-      saleCustomerAddress.trim() !== '' ||
-      saleCustomerNotes.trim() !== '';
-
-    const customer = hasCustomer
-      ? {
-          name: saleCustomerName.trim() || undefined,
-          email: saleCustomerEmail.trim() || undefined,
-          company: saleCustomerCompany.trim() || undefined,
-          address: saleCustomerAddress.trim() || undefined,
-          notes: saleCustomerNotes.trim() || undefined,
-        }
-      : undefined;
-
-    // Phase 15.1 (CL-04 / D-06 / D-07): library side-effect for NEW sales only.
-    // Single source of truth for lastUsedAt bumps — fires here at sale-commit
-    // time, NOT at pick time (WR-05 fix: picking and cancelling the form must
-    // NOT advance lastUsedAt).
-    // - Picked customer who is still email-matched at commit → silent link
-    //   path below bumps lastUsedAt for that existing record. The 4 fields
-    //   were filled from the library record by handlePickCustomer; the typed
-    //   values pass through unchanged.
-    // - Picked customer whose email was edited to match a DIFFERENT record →
-    //   the silent link path bumps the new match (D-07 intended behavior),
-    //   and the originally-picked record is correctly left untouched.
-    // - User typed values directly with no email match → auto-create a new
-    //   library record (D-06).
-    // Edit-sale path is excluded — we don't want to retroactively create
-    // library records when a user edits a pre-15.1 sale.
-    if (!editingSale && customer && (customer.name || customer.email)) {
-      const emailKey = (customer.email || '').trim().toLowerCase();
-      const existing = emailKey ? customersByEmail.get(emailKey) : undefined;
-      if (existing) {
-        // D-07 silent link: bump lastUsedAt; do NOT overwrite library fields with per-sale values
-        await bumpLastUsed(existing.id);
-      } else {
-        // D-06 auto-create from typed values
-        const newCustomer: Customer = {
-          id: typeof crypto !== 'undefined' && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `customer-${Date.now()}`,
-          createdAt: new Date(),
-          lastUsedAt: new Date(),  // first use = creation time
-          name: customer.name,
-          email: customer.email,
-          company: customer.company,
-          address: customer.address,
-          notes: customer.notes,
-        };
-        await addCustomer(newCustomer);
-      }
-    }
-
-    // TODO(future-sale-pdf): D-21 audit 2026-05-23 — when Sale gains taxRate (e.g.,
-    // Sale PDF invoicing in v2), persist the RESOLVED rate from resolveTaxRate(),
-    // NOT the raw form override. Mirror the CostCalculator.tsx D-21 fix at lines
-    // 589 + 624. Sale today (Phase 14 shape) has shippingCost/marketplace/marketplaceFee
-    // but no taxRate field — audit-clean as of 2026-05-23.
-    if (editingSale) {
-      // Edit mode: preserve id + soldAt + jobId from the original sale.
-      const updated: Sale = {
-        ...editingSale,
-        quantity: saleQuantity,
-        unitPrice: unitPrice,
-        totalRevenue: saleQuantity * unitPrice,
-        customer,
-        customerName: undefined,  // Drop the legacy field on update — new shape wins.
-        shippingMethod: saleShippingMethod,
-        shippingCost: saleShippingCost,
-        marketplace: saleMarketplace,
-        marketplaceFee: marketplaceFee,
-      };
-      await updateSale(updated);
-    } else {
-      const sale: Sale = {
-        id: `sale-${Date.now()}`,
-        jobId: selectedJob.id,
-        quantity: saleQuantity,
-        unitPrice: unitPrice,
-        totalRevenue: saleQuantity * unitPrice,
-        soldAt: new Date(),
-        customer,
-        shippingMethod: saleShippingMethod,
-        shippingCost: saleShippingCost,
-        marketplace: saleMarketplace,
-        marketplaceFee: marketplaceFee,
-        // Phase 16 plan 16-12 (D-20): back-reference to the originating Quote when this Sale
-        // is being written as part of a Convert to Sale flow. The conversion's Quote patch
-        // is written atomically in the same Dexie transaction below.
-        convertedFromQuoteId: convertingFromQuote?.id,
-      };
-      if (convertingFromQuote) {
-        // D-20 atomicity: Sale.add + Quote.put + job.copiesSold bump run in ONE
-        // Dexie transaction. Rollback leaves NEITHER persisted on any mid-
-        // transaction failure.
-        //
-        // The job.copiesSold bump MUST live here (not via useSales().addSale)
-        // because addSale wraps its own implicit write — calling it inside this
-        // explicit transaction would either deadlock or fail to participate in
-        // the atomic rollback. So we inline the same logic: read the job, bump
-        // copiesSold, write back. Mirrors useSales.addSale's body verbatim.
-        // [DO NOT REMOVE THIS BUMP] — first ext2 ship silently dropped it,
-        // which made break-even progress stall whenever conversions happened
-        // without a parallel Record Sale.
-        //
-        // BLOCKER I-03 compile-time guard: the Quote patch declares
-        // `status: RuntimeQuoteStatus` so TypeScript REFUSES `'draft'` at this
-        // call site. Symmetric with createQuote in useDatabase.ts — both
-        // runtime write sites narrow the status to the runtime-only enum.
-        const quotePatch: Quote & { status: RuntimeQuoteStatus } = {
-          ...convertingFromQuote,
-          status: 'converted',
-          convertedAt: new Date(),
-          convertedToSaleId: sale.id,
-        };
-        await db.transaction('rw', db.sales, db.quotes, db.jobs, async () => {
-          await db.sales.add(sale);
-          await db.quotes.put(quotePatch);
-          const jobRow = await db.jobs.get(sale.jobId);
-          if (jobRow) {
-            await db.jobs.put({
-              ...jobRow,
-              copiesSold: jobRow.copiesSold + sale.quantity,
-              updatedAt: new Date(),
-            });
-          }
-        });
-      } else {
-        // Legacy non-conversion path — addSale internally bumps job.copiesSold
-        // (see useDatabase.ts:476-487). Do NOT duplicate the bump here.
-        await addSale(sale);
-      }
-    }
-
-    resetSaleForm();
-  };
 
   // Print Quote button → open the modal (Phase 16 gap closure plan 16-10, D-18).
   // The prior silent most-recent-sale fallback is gone; the modal is the SOLE
@@ -1460,8 +1103,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
 
   const handleOpenSaleForm = useCallback((job: PrintJob) => {
     setSelectedJobId(job.id);
+    // RecordSaleModal hydrates its salePrice from job.sellingPrice on mount
+    // via its hydration useEffect (D-08) — no need to set form state here.
+    setEditingSale(null);
+    setConvertingFromQuote(null);
     setShowSaleForm(true);
-    setSalePrice(job.sellingPrice);
   }, []);
 
   const handleDeleteJob = useCallback((id: string) => {
@@ -1729,262 +1375,23 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
         )}
       </div>
 
-      <Modal
-        isOpen={showSaleForm && selectedJob !== null}
-        onClose={resetSaleForm}
-        title={selectedJob ? `${editingSale ? 'Edit Sale' : 'Record Sale'} - ${selectedJob.name}` : ''}
-        size="md"
-      >
-        <div className="p-4">
-            {convertingFromQuote && (
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs text-blue-300 mb-3">
-                Converting {formatQuoteNumber(convertingFromQuote.quoteNumber)} — review and adjust if needed.
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor={saleQuantityId} className="block text-xs text-slate-400 mb-1">Quantity</label>
-                  <Input
-                    id={saleQuantityId}
-                    type="number"
-                    min="1"
-                    compact
-                    value={saleQuantity}
-                    onChange={e => setSaleQuantity(parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor={salePriceId} className="block text-xs text-slate-400 mb-1">Price per Unit ($)</label>
-                  <Input
-                    id={salePriceId}
-                    type="number"
-                    step="0.01"
-                    compact
-                    value={salePrice}
-                    onChange={e => setSalePrice(parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-              </div>
-
-              {/* Customer details (Phase 14 revised — D-21).
-                  Optional 4-field block. Lives on the sale, not the job. */}
-              <div className="pt-3 border-t border-slate-700 relative">
-                <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">
-                  Customer (optional)
-                  <NewBadge feature="customer-details" className="absolute top-2 right-0" />
-                </div>
-                <div className="space-y-2">
-                  {/* Phase 15.1 (CL-04) — Customer combobox picker (LOCKED layout per UI-SPEC §5) */}
-                  <div className="relative">
-                    <label className="block text-sm text-slate-400 mb-1" htmlFor="customer-picker-input">
-                      Existing customer
-                    </label>
-                    <Input
-                      id="customer-picker-input"
-                      type="text"
-                      role="combobox"
-                      aria-expanded={customerPickerOpen}
-                      aria-controls="customer-picker-listbox"
-                      aria-autocomplete="list"
-                      aria-activedescendant={
-                        customerPickerOpen && visibleCustomers[customerPickerActiveIndex]
-                          ? `customer-option-${visibleCustomers[customerPickerActiveIndex].id}`
-                          : undefined
-                      }
-                      value={customerPickerQuery}
-                      onChange={(e) => {
-                        setCustomerPickerQuery(e.target.value);
-                        setCustomerPickerOpen(true);
-                        setCustomerPickerActiveIndex(0);
-                      }}
-                      onFocus={() => { if (customerPickerQuery.trim()) setCustomerPickerOpen(true); }}
-                      onKeyDown={handlePickerKeyDown}
-                      placeholder="Type to find a saved customer…"
-                    />
-                    {customerPickerOpen && customerPickerQuery.trim() && (
-                      <div
-                        role="listbox"
-                        id="customer-picker-listbox"
-                        className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-72 overflow-y-auto"
-                      >
-                        {visibleCustomers.map((c, i) => (
-                          // allow-raw-html: WAI-ARIA combobox option needs full styling control (custom dropdown row, not a CTA button)
-                          <button
-                            key={c.id}
-                            type="button"
-                            role="option"
-                            id={`customer-option-${c.id}`}
-                            aria-selected={i === customerPickerActiveIndex}
-                            onClick={() => { void handlePickCustomer(c); }}
-                            onMouseEnter={() => setCustomerPickerActiveIndex(i)}
-                            className={`w-full text-left px-4 py-3 hover:bg-slate-700 focus:bg-slate-700 focus:outline-none min-h-[44px] ${
-                              i === customerPickerActiveIndex ? 'bg-blue-500/10 text-blue-300' : ''
-                            }`}
-                          >
-                            <div className="text-sm font-medium text-white">{c.name || '(no name)'}</div>
-                            <div className="text-xs text-slate-400">
-                              {[c.email, c.company].filter(Boolean).join(' · ')}
-                            </div>
-                          </button>
-                        ))}
-                        {filteredCustomers.length > PICKER_VISIBLE_LIMIT && (
-                          <div className="px-4 py-2 text-xs text-slate-500 border-t border-slate-700">
-                            Showing first {PICKER_VISIBLE_LIMIT} of {filteredCustomers.length} matches — refine your search
-                          </div>
-                        )}
-                        {filteredCustomers.length === 0 && (
-                          <div className="px-4 py-3 text-sm text-slate-400">
-                            No saved customers match "{customerPickerQuery}". The customer will be saved when you record the sale.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div>
-                      <label htmlFor={saleCustomerNameId} className="block text-xs text-slate-400 mb-1">Name</label>
-                      <Input
-                        id={saleCustomerNameId}
-                        type="text"
-                        value={saleCustomerName}
-                        onChange={e => setSaleCustomerName(e.target.value)}
-                        placeholder="Jane Doe"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={saleCustomerEmailId} className="block text-xs text-slate-400 mb-1">Email</label>
-                      <Input
-                        id={saleCustomerEmailId}
-                        type="email"
-                        value={saleCustomerEmail}
-                        onChange={e => setSaleCustomerEmail(e.target.value)}
-                        placeholder="jane@example.com"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor={saleCustomerCompanyId} className="block text-xs text-slate-400 mb-1">Company</label>
-                    <Input
-                      id={saleCustomerCompanyId}
-                      type="text"
-                      value={saleCustomerCompany}
-                      onChange={e => setSaleCustomerCompany(e.target.value)}
-                      placeholder="Acme LLC"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor={saleCustomerAddressId} className="block text-xs text-slate-400 mb-1">Address</label>
-                    <Textarea
-                      id={saleCustomerAddressId}
-                      rows={2}
-                      value={saleCustomerAddress}
-                      onChange={e => setSaleCustomerAddress(e.target.value)}
-                      placeholder="Shipping address or pickup location"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor={saleCustomerNotesId} className="block text-xs text-slate-400 mb-1">Notes</label>
-                    <Textarea
-                      id={saleCustomerNotesId}
-                      rows={2}
-                      value={saleCustomerNotes}
-                      onChange={e => setSaleCustomerNotes(e.target.value)}
-                      placeholder="Quirks, preferences, allergies — anything to remember for next time"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-700">
-                <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Shipping</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor={saleShippingMethodId} className="block text-xs text-slate-400 mb-1">Method</label>
-                    <Select
-                      id={saleShippingMethodId}
-                      value={saleShippingMethod}
-                      onChange={e => {
-                        const method = e.target.value as ShippingMethodType;
-                        setSaleShippingMethod(method);
-                        setSaleShippingCost(getDefaultShippingCost(method));
-                      }}
-                    >
-                      {availableShippingMethods.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div>
-                    <label htmlFor={saleShippingCostId} className="block text-xs text-slate-400 mb-1">Cost ($)</label>
-                    <Input
-                      id={saleShippingCostId}
-                      type="number"
-                      step="0.01"
-                      compact
-                      value={saleShippingCost}
-                      onChange={e => setSaleShippingCost(parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Marketplace</div>
-                <Select
-                  value={saleMarketplace}
-                  onChange={e => setSaleMarketplace(e.target.value as MarketplaceType)}
-                >
-                  {availableMarketplaces.map(m => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="pt-3 border-t border-slate-700 space-y-2">
-                <div className="flex justify-between text-sm text-slate-400">
-                  <span>Sale Total</span>
-                  <span className="font-mono">${(saleQuantity * salePrice).toFixed(2)}</span>
-                </div>
-                {saleShippingCost > 0 && (
-                  <div className="flex justify-between text-sm text-slate-400">
-                    <span>+ Shipping Charged</span>
-                    <span className="font-mono">${saleShippingCost.toFixed(2)}</span>
-                  </div>
-                )}
-                {calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace) > 0 && (
-                  <div className="flex justify-between text-sm text-orange-400">
-                    <span>- Marketplace Fee</span>
-                    <span className="font-mono">-${calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace).toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-white font-semibold pt-2 border-t border-slate-600">
-                  <span>Net Revenue</span>
-                  <span className="font-mono">
-                    ${((saleQuantity * salePrice) + saleShippingCost - calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace)).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="success"
-                  onClick={handleRecordSale}
-                  className="flex-1"
-                >
-                  {editingSale ? 'Save Changes' : 'Record Sale'}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={resetSaleForm}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-        </div>
-      </Modal>
+      {/* Record Sale modal — HYG-06 / plan 22-03. Owns form state + sale-commit
+          logic (including the Convert-from-Quote atomic db.transaction) + the
+          Phase 15.1 D-06 auto-create + D-07 silent-link customer side-effects
+          internally. JobsManager only controls open/close + which mode the
+          modal is in via the editingSale / convertingFromQuote props. */}
+      {selectedJob && (
+        <RecordSaleModal
+          job={selectedJob}
+          userProfile={userProfile}
+          userCurrency={userCurrency}
+          shippingConfig={shippingConfig}
+          editingSale={editingSale}
+          convertingFromQuote={convertingFromQuote}
+          isOpen={showSaleForm}
+          onClose={handleCloseSaleModal}
+        />
+      )}
 
       <Modal
         isOpen={deleteConfirmJobId !== null}

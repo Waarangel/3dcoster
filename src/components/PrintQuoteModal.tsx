@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import type { PrintJob, UserProfile, Quote, Customer, ShippingConfig } from '../types';
 import { useQuotes, useCustomers } from '../hooks/useDatabase';
+import { useCustomerPicker, PICKER_VISIBLE_LIMIT } from '../hooks/useCustomerPicker';
 import { resolveTaxRate, taxLabelFor } from '../utils/taxResolution';
 import { formatCurrency } from '../utils/currency';
 import { calculateTax } from '../utils/costCalc';
@@ -27,8 +28,6 @@ import { formatQuoteNumber } from '../utils/format';
 // TypeScript REFUSES `'draft'` at the call site. End-to-end compile-time
 // enforcement, not JSDoc convention.
 // ---------------------------------------------------------------------------
-
-const PICKER_VISIBLE_LIMIT = 8;
 
 export interface PrintQuoteModalProps {
   job: PrintJob;
@@ -65,20 +64,36 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
   const [quoteCustomerAddress, setQuoteCustomerAddress] = useState('');
   const [quoteShippingCost, setQuoteShippingCost] = useState<number>(0);
 
-  // Picker triplet (mirrors 15.1-04)
-  const [customerPickerQuery, setCustomerPickerQuery] = useState('');
-  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
-  const [customerPickerActiveIndex, setCustomerPickerActiveIndex] = useState(0);
-  const customerPickerInputRef = useRef<HTMLInputElement | null>(null);
+  // Picker state migrated to useCustomerPicker hook (plan 22-03 / HYG-08).
+  // The prior input ref was dead code (wired but never .focus()'d) — removed
+  // per Open Question 2 / IN-06 alignment.
 
-  // Captured when handlePickCustomer fires. Passed to createQuote as existingCustomerId
-  // so the hook bumps lastUsedAt on that record. Cleared when the picker query is cleared
-  // so a typed-over email re-runs through the email-match dedup path instead of forcing
-  // a stale library link.
+  // Captured when the picker's onPick callback fires. Passed to createQuote as
+  // existingCustomerId so the hook bumps lastUsedAt on that record. Cleared
+  // when the picker query is cleared so a typed-over email re-runs through
+  // the email-match dedup path instead of forcing a stale library link.
+  // RESEARCH Pitfall 1 lock: this is a PrintQuoteModal-only concept and MUST
+  // NOT be migrated into the useCustomerPicker hook (the hook is consumer-
+  // agnostic; pickedExistingCustomerId is library-link state).
   const [pickedExistingCustomerId, setPickedExistingCustomerId] = useState<string | null>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ─── Picker integration (plan 22-03 / HYG-08) ────────────────────────────
+  // handlePickCustomer fills the 4 quote-customer form fields AND captures
+  // pickedExistingCustomerId — the latter is the PrintQuoteModal-specific
+  // library-link slot that MUST NOT migrate into the hook (RESEARCH Pitfall 1).
+  // The hook's internal pick() handles the query/open/activeIndex reset.
+  const handlePickCustomer = useCallback((c: Customer) => {
+    setQuoteCustomerName(c.name ?? '');
+    setQuoteCustomerEmail(c.email ?? '');
+    setQuoteCustomerCompany(c.company ?? '');
+    setQuoteCustomerAddress(c.address ?? '');
+    setPickedExistingCustomerId(c.id);  // PrintQuoteModal-only library link
+  }, []);
+
+  const picker = useCustomerPicker(customers, { onPick: handlePickCustomer });
 
   // ─── Effects ──────────────────────────────────────────────────────────────
   // Reset state on open. In CREATE mode, fields are blank; in EDIT mode (D-27),
@@ -106,76 +121,14 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
         setQuoteShippingCost(computeJobShipping(job, shippingConfig));
         setPickedExistingCustomerId(null);
       }
-      setCustomerPickerQuery('');
-      setCustomerPickerOpen(false);
-      setCustomerPickerActiveIndex(0);
+      picker.reset();
       setIsGenerating(false);
       setError(null);
     }
+    // picker.reset is stable per useCallback in useCustomerPicker; exclude
+    // from deps to avoid re-running on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, editingQuote, job, shippingConfig]);
-
-  // ─── Picker logic (mirror 15.1-04 verbatim) ──────────────────────────────
-  const filteredCustomers = useMemo<Customer[]>(() => {
-    const q = customerPickerQuery.trim().toLowerCase();
-    if (!q) return [];
-    return customers.filter(c =>
-      (c.name || '').toLowerCase().includes(q) ||
-      (c.email || '').toLowerCase().includes(q)
-    );
-  }, [customers, customerPickerQuery]);
-
-  const visibleCustomers = useMemo<Customer[]>(
-    () => filteredCustomers.slice(0, PICKER_VISIBLE_LIMIT),
-    [filteredCustomers]
-  );
-
-  const handlePickCustomer = useCallback((c: Customer) => {
-    setQuoteCustomerName(c.name ?? '');
-    setQuoteCustomerEmail(c.email ?? '');
-    setQuoteCustomerCompany(c.company ?? '');
-    setQuoteCustomerAddress(c.address ?? '');
-    setPickedExistingCustomerId(c.id);
-    setCustomerPickerQuery('');
-    setCustomerPickerOpen(false);
-    setCustomerPickerActiveIndex(0);
-  }, []);
-
-  const handlePickerKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (visibleCustomers.length === 0) return;
-      if (!customerPickerOpen) {
-        setCustomerPickerOpen(true);
-        setCustomerPickerActiveIndex(0);
-      } else {
-        setCustomerPickerActiveIndex(i => (i + 1) % visibleCustomers.length);
-      }
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setCustomerPickerActiveIndex(i =>
-        visibleCustomers.length === 0 ? 0 : (i - 1 + visibleCustomers.length) % visibleCustomers.length
-      );
-    } else if (e.key === 'Enter') {
-      if (customerPickerOpen) {
-        const picked = visibleCustomers[customerPickerActiveIndex];
-        if (picked) {
-          e.preventDefault();
-          void handlePickCustomer(picked);
-        } else if (customerPickerQuery.trim()) {
-          e.preventDefault();
-          setCustomerPickerOpen(false);
-        }
-      }
-    } else if (e.key === 'Escape') {
-      if (customerPickerOpen) {
-        e.preventDefault();
-        e.stopPropagation();  // don't bubble to the modal's Esc-close handler
-        setCustomerPickerOpen(false);
-      }
-    } else if (e.key === 'Tab') {
-      setCustomerPickerOpen(false);
-    }
-  }, [customerPickerOpen, customerPickerActiveIndex, customerPickerQuery, visibleCustomers, handlePickCustomer]);
 
   // ─── Live totals memoization ─────────────────────────────────────────────
   const resolvedTax = useMemo(
@@ -311,48 +264,47 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
             </label>
             <Input
               id="print-quote-customer-picker"
-              ref={customerPickerInputRef}
               type="text"
               role="combobox"
-              aria-expanded={customerPickerOpen}
+              aria-expanded={picker.open}
               aria-controls="print-quote-picker-listbox"
               aria-autocomplete="list"
               aria-activedescendant={
-                customerPickerOpen && visibleCustomers[customerPickerActiveIndex]
-                  ? `print-quote-option-${visibleCustomers[customerPickerActiveIndex].id}`
+                picker.open && picker.visibleCustomers[picker.activeIndex]
+                  ? `print-quote-option-${picker.visibleCustomers[picker.activeIndex].id}`
                   : undefined
               }
-              value={customerPickerQuery}
+              value={picker.query}
               onChange={(e) => {
-                setCustomerPickerQuery(e.target.value);
-                setCustomerPickerOpen(true);
-                setCustomerPickerActiveIndex(0);
+                picker.setQuery(e.target.value);
+                picker.setOpen(true);
+                picker.setActiveIndex(0);
                 // Clear stale picked-id once the user starts typing again — keeps the
                 // email-match dedup honest if they typed over a previously-picked match.
                 if (pickedExistingCustomerId) setPickedExistingCustomerId(null);
               }}
-              onFocus={() => { if (customerPickerQuery.trim()) setCustomerPickerOpen(true); }}
-              onKeyDown={handlePickerKeyDown}
+              onFocus={() => { if (picker.query.trim()) picker.setOpen(true); }}
+              onKeyDown={picker.handleKeyDown}
               placeholder="Type to find a saved customer…"
             />
-            {customerPickerOpen && customerPickerQuery.trim() && (
+            {picker.open && picker.query.trim() && (
               <div
                 role="listbox"
                 id="print-quote-picker-listbox"
                 className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-72 overflow-y-auto"
               >
-                {visibleCustomers.map((c, i) => (
+                {picker.visibleCustomers.map((c, i) => (
                   // allow-raw-html: WAI-ARIA combobox option needs full styling control
                   <button
                     key={c.id}
                     type="button"
                     role="option"
                     id={`print-quote-option-${c.id}`}
-                    aria-selected={i === customerPickerActiveIndex}
-                    onClick={() => { void handlePickCustomer(c); }}
-                    onMouseEnter={() => setCustomerPickerActiveIndex(i)}
+                    aria-selected={i === picker.activeIndex}
+                    onClick={() => { picker.pick(c); }}
+                    onMouseEnter={() => picker.setActiveIndex(i)}
                     className={`w-full text-left px-4 py-3 hover:bg-slate-700 focus:bg-slate-700 focus:outline-none min-h-[44px] ${
-                      i === customerPickerActiveIndex ? 'bg-blue-500/10 text-blue-300' : ''
+                      i === picker.activeIndex ? 'bg-blue-500/10 text-blue-300' : ''
                     }`}
                   >
                     <div className="text-sm font-medium text-white">{c.name || '(no name)'}</div>
@@ -361,14 +313,14 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
                     </div>
                   </button>
                 ))}
-                {filteredCustomers.length > PICKER_VISIBLE_LIMIT && (
+                {picker.filteredCustomers.length > PICKER_VISIBLE_LIMIT && (
                   <div className="px-4 py-2 text-xs text-slate-500 border-t border-slate-700">
-                    Showing first {PICKER_VISIBLE_LIMIT} of {filteredCustomers.length} matches — refine your search
+                    Showing first {PICKER_VISIBLE_LIMIT} of {picker.filteredCustomers.length} matches — refine your search
                   </div>
                 )}
-                {filteredCustomers.length === 0 && (
+                {picker.filteredCustomers.length === 0 && (
                   <div className="px-4 py-3 text-sm text-slate-400">
-                    No saved customers match "{customerPickerQuery}". The customer will be saved with this quote.
+                    No saved customers match "{picker.query}". The customer will be saved with this quote.
                   </div>
                 )}
               </div>
