@@ -12,6 +12,7 @@ import { DeclineQuoteModal } from './DeclineQuoteModal';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
+import { isSafeHttpUrl } from '../utils/urlSecurity';
 import { parseTagsInput } from '../db/backfill';
 
 interface JobsManagerProps {
@@ -616,15 +617,29 @@ export const JobCard = memo(function JobCard({
           {job.modelUrl && (
             <div className="mb-4 text-sm">
               <span className="text-slate-500">Model source: </span>
-              <a
-                href={job.modelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-blue-400 hover:text-blue-300 underline break-all"
-              >
-                {job.modelUrl}
-              </a>
+              {/* Phase 21 SEC-02 — render-time URL guard. Valid http(s) URLs
+                  render as the existing anchor. Anything else (javascript:,
+                  data:, vbscript:, file:, mailto:, plain text) falls back to
+                  a muted <span title="..."> so the user can still see what
+                  they typed and is told how to fix it (D-06 / D-07). */}
+              {isSafeHttpUrl(job.modelUrl) ? (
+                <a
+                  href={job.modelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-blue-400 hover:text-blue-300 underline break-all"
+                >
+                  {job.modelUrl}
+                </a>
+              ) : (
+                <span
+                  title="Link blocked: must start with http:// or https://"
+                  className="text-slate-400 break-all"
+                >
+                  {job.modelUrl}
+                </span>
+              )}
             </div>
           )}
 
