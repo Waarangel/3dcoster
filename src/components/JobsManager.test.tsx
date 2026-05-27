@@ -619,3 +619,133 @@ describe('POL-04 — QuoteRow overflow menu closes on outside-click + Escape', (
     expect(getOverflowMenu()).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 21 SEC-02 — render-time URL guard for the JobCard `Model source` block
+//
+// Locks D-06 (render-time only — empty modelUrl renders nothing) and D-07
+// (invalid modelUrl renders as plain-text `<span title="...">`, not as an
+// `<a href>`). The `isSafeHttpUrl` predicate is unit-tested in
+// `src/utils/urlSecurity.test.ts`; these tests verify the JSX wiring inside
+// JobCard.
+// ---------------------------------------------------------------------------
+
+describe('JobCard Model source render-time URL guard (Phase 21 SEC-02)', () => {
+  let urlContainer: HTMLDivElement;
+  let urlRoot: Root;
+
+  beforeEach(() => {
+    urlContainer = document.createElement('div');
+    document.body.appendChild(urlContainer);
+    urlRoot = createRoot(urlContainer);
+  });
+
+  afterEach(() => {
+    act(() => { urlRoot.unmount(); });
+    urlContainer.remove();
+  });
+
+  function renderJobCardWithModelUrl(modelUrl: string | undefined) {
+    const noop = () => undefined;
+    const noopAsync = async () => undefined;
+    const job = makeMinimalJob({ modelUrl });
+    act(() => {
+      urlRoot.render(
+        <JobCard
+          job={job}
+          // Model source block only renders inside `{isSelected && (...)}` —
+          // expand the card so the block is reachable.
+          isSelected={true}
+          info={makeBreakEvenInfo()}
+          recentSales={undefined}
+          getFilamentName={() => 'PLA'}
+          onToggleSelect={noop}
+          onOpenSaleForm={noop}
+          onEdit={noop}
+          onDelete={noop}
+          onGeneratePdf={noop}
+          onEditSale={noop}
+          onDeleteSale={noop}
+          onStartConversion={undefined}
+          onEditQuote={undefined}
+          onDeclineQuote={undefined}
+          isEditingTitle={false}
+          onStartEditTitle={noop}
+          onCancelEditTitle={noop}
+          onSaveTitle={noopAsync}
+          isAddingTag={false}
+          onStartAddTag={noop}
+          onCancelAddTag={noop}
+          onSubmitAddTag={noopAsync}
+          onRemoveTag={noopAsync}
+        />,
+      );
+    });
+  }
+
+  function findModelSourceBlock(): Element | null {
+    // The "Model source: " label is a unique anchor — find its parent <div>.
+    const spans = Array.from(urlContainer.querySelectorAll('span'));
+    const label = spans.find((s) => s.textContent === 'Model source: ');
+    return label?.parentElement ?? null;
+  }
+
+  it("renders the existing <a href> for a valid https:// URL (safe-path is byte-identical)", () => {
+    renderJobCardWithModelUrl('https://example.com/model.stl');
+
+    const block = findModelSourceBlock();
+    expect(block).not.toBeNull();
+
+    const anchor = block!.querySelector('a');
+    expect(anchor).not.toBeNull();
+    expect(anchor!.getAttribute('href')).toBe('https://example.com/model.stl');
+    expect(anchor!.getAttribute('target')).toBe('_blank');
+    expect(anchor!.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(anchor!.textContent).toBe('https://example.com/model.stl');
+    // No fallback <span> with title for the safe path
+    expect(block!.querySelector('span[title]')).toBeNull();
+  });
+
+  it("renders a plain <span title='...'> for a javascript: URL (D-07 fallback, NOT an <a href>)", () => {
+    renderJobCardWithModelUrl('javascript:alert(1)');
+
+    const block = findModelSourceBlock();
+    expect(block).not.toBeNull();
+
+    // No anchor rendered for the unsafe URL
+    expect(block!.querySelector('a')).toBeNull();
+
+    // Plain-text fallback: span containing the raw input, with a title warning
+    const fallback = block!.querySelector('span[title]');
+    expect(fallback).not.toBeNull();
+    expect(fallback!.textContent).toBe('javascript:alert(1)');
+    const title = fallback!.getAttribute('title') ?? '';
+    // Title must mention how to fix it: http:// and https://
+    expect(title).toContain('http://');
+    expect(title).toContain('https://');
+  });
+
+  it("renders nothing (no label, no fallback) when modelUrl is undefined (D-06: outer truthy guard preserved)", () => {
+    renderJobCardWithModelUrl(undefined);
+
+    // The "Model source: " label is hidden when modelUrl is empty/undefined
+    expect(findModelSourceBlock()).toBeNull();
+  });
+
+  it("renders nothing when modelUrl is the empty string (truthy guard catches '')", () => {
+    renderJobCardWithModelUrl('');
+
+    expect(findModelSourceBlock()).toBeNull();
+  });
+
+  it("rejects a `data:text/html,...` URL (renders as plain-text fallback)", () => {
+    renderJobCardWithModelUrl('data:text/html,<script>alert(1)</script>');
+
+    const block = findModelSourceBlock();
+    expect(block).not.toBeNull();
+    expect(block!.querySelector('a')).toBeNull();
+    const fallback = block!.querySelector('span[title]');
+    expect(fallback).not.toBeNull();
+    expect(fallback!.textContent).toBe('data:text/html,<script>alert(1)</script>');
+  });
+});
