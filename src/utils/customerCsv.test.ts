@@ -215,3 +215,99 @@ describe('buildCustomersForImport (Phase 15.1 — D-11 merge semantics)', () => 
     expect(merged.lastUsedAt).toBe(oldLastUsed);
   });
 });
+
+// Phase 21 SEC-03 — formula-injection + Unicode pass-through.
+//
+// This describe block locks PARSER PASS-THROUGH behavior: every test asserts
+// that `parseCustomerCsv` returns customer fields character-for-character
+// identical to the raw CSV input. No formula escaping, no NFC/NFD Unicode
+// normalization, no surrogate-pair collapse.
+//
+// Crucially, this block does NOT test `sanitizeCsvCell` — that helper is the
+// EXPORT-path concern and is owned by `src/utils/csvHelpers.test.ts` (plan
+// 21-01). The separation is intentional: the parser must stay clean so that
+// values round-tripped through CSV import → IndexedDB → CSV export are
+// sanitized exactly once (at the export boundary). If escaping logic is ever
+// added to `customerCsv.ts` by mistake, these tests fail loudly — preserving
+// round-trip identity and trapping the regression at PR time.
+describe('Phase 21 SEC-03 — formula-injection + Unicode pass-through', () => {
+  it('Test 13: formula-injection in name → parser preserves "=HYPERLINK(...)" byte-for-byte', () => {
+    // The raw cell value contains commas, so we hand-build a properly RFC-4180
+    // quoted CSV. Embedded double-quotes are escaped by doubling (`""`).
+    const csvString =
+      'name,email,company,address,notes\n' +
+      '"=HYPERLINK(""https://evil.com"",""click"")",,,,';
+    const result = parseCustomerCsv(csvString, []);
+    expect(result.globalErrors).toEqual([]);
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0];
+    expect(row.customer).not.toBeNull();
+    expect(row.errors).toEqual([]);
+    expect(row.customer!.name).toBe('=HYPERLINK("https://evil.com","click")');
+  });
+
+  it('Test 14: formula-injection in notes → parser preserves "+CMD|\' /C calc\'!A0" byte-for-byte', () => {
+    // The raw cell value contains a single-quote and `!` but no commas — the
+    // `csv` helper produces valid CSV here without extra quoting.
+    const csvString = csv(
+      ['name', 'email', 'company', 'address', 'notes'],
+      ['safe customer', '', '', '', "+CMD|' /C calc'!A0"],
+    );
+    const result = parseCustomerCsv(csvString, []);
+    expect(result.globalErrors).toEqual([]);
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0];
+    expect(row.customer).not.toBeNull();
+    expect(row.errors).toEqual([]);
+    expect(row.customer!.notes).toBe("+CMD|' /C calc'!A0");
+  });
+
+  it('Test 15: Unicode (Latin diacritic) in name → "Müller" preserved without NFC/NFD normalization', () => {
+    const csvString = csv(
+      ['name', 'email', 'company', 'address', 'notes'],
+      ['Müller', '', '', '', ''],
+    );
+    const result = parseCustomerCsv(csvString, []);
+    expect(result.globalErrors).toEqual([]);
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0];
+    expect(row.customer).not.toBeNull();
+    expect(row.errors).toEqual([]);
+    expect(row.customer!.name).toBe('Müller');
+    // Code-point integrity check — rules out NFC↔NFD normalization changing the
+    // ü character class. The first code point must equal the raw input's first
+    // code point exactly.
+    expect(row.customer!.name!.codePointAt(0)).toBe('Müller'.codePointAt(0));
+  });
+
+  it('Test 16: Unicode (CJK ideographs) in name → "张三" preserved as two distinct code points', () => {
+    const csvString = csv(
+      ['name', 'email', 'company', 'address', 'notes'],
+      ['张三', '', '', '', ''],
+    );
+    const result = parseCustomerCsv(csvString, []);
+    expect(result.globalErrors).toEqual([]);
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0];
+    expect(row.customer).not.toBeNull();
+    expect(row.errors).toEqual([]);
+    expect(row.customer!.name).toBe('张三');
+    // Two CJK ideographs preserved as separate code points (spreading a string
+    // iterates by code point, not by UTF-16 unit).
+    expect([...row.customer!.name!].length).toBe(2);
+  });
+
+  it('Test 17: emoji in notes → "Great client 🎉" preserved with surrogate pair intact', () => {
+    const csvString = csv(
+      ['name', 'email', 'company', 'address', 'notes'],
+      ['Customer', '', '', '', 'Great client 🎉'],
+    );
+    const result = parseCustomerCsv(csvString, []);
+    expect(result.globalErrors).toEqual([]);
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0];
+    expect(row.customer).not.toBeNull();
+    expect(row.errors).toEqual([]);
+    expect(row.customer!.notes).toBe('Great client 🎉');
+  });
+});
