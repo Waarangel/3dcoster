@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: v1.3 Hardening
 status: executing
 stopped_at: Phase 22 context gathered
-last_updated: "2026-05-27T15:28:18.659Z"
-last_activity: 2026-05-27 -- Phase 22 planning complete
+last_updated: "2026-05-27T15:57:47.237Z"
+last_activity: 2026-05-27 -- Phase 22 execution started
 progress:
   total_phases: 8
   completed_phases: 6
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 24 — nyquist contracts phase 13 visual uat phase 18 review carryo
+**Current focus:** Phase 22 — jobsmanager-decomposition-perf
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
-Status: Ready to execute
+Phase: 22 (jobsmanager-decomposition-perf) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 22
 Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security). Phase 19 must complete before Phase 22; Phase 22 before Phase 23.
-Last activity: 2026-05-27 -- Phase 22 planning complete
+Last activity: 2026-05-27 -- Phase 22 execution started
 
 ## v1.3 Phase Order Reference
 
