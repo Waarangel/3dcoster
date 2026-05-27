@@ -37,7 +37,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 - [x] **Phase 18: Tauri fs:scope fix** — Reconcile `fs:scope` with unrestricted `save()` dialog so desktop users can save PDFs anywhere
 - [x] **Phase 19: Modal primitive + a11y migration** — Build `<Modal>` (role=dialog, aria-modal, focus-trap, focus-return, useId-labeled), migrate 10 modal surfaces, plus virtualized-list ARIA + InfoTooltip useId + close-button labels + form-label pairing + CollapsibleSection aria-controls fix (completed 2026-05-26)
 - [x] **Phase 20: Dexie atomicity audit** — Wrap `addSale` in transaction; move `createQuote` nextQuoteNumber read inside transaction; fix `backfillQuotesFromJobs` currency hardcode; defensive trio (parsePositiveNumber, versionchange async close, getSetting validator) (completed 2026-05-26)
-- [ ] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases
+- [x] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases (completed 2026-05-27)
 - [ ] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary
 - [ ] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract
 - [x] **Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT; close Phase 18 review WR-01/02/03 (test fragility, `@tauri-apps/api` dedupe, tighter `forbidden path` match) (completed 2026-05-25)
@@ -252,7 +252,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 18. Tauri fs:scope fix | 1/1 | Complete    | 2026-05-25 |
 | 19. Modal primitive + a11y migration | 6/6 | Complete    | 2026-05-26 |
 | 20. Dexie atomicity audit | 4/4 | Complete    | 2026-05-26 |
-| 21. CSV + URL security | 0/3 | Not started | — |
+| 21. CSV + URL security | 3/3 | Complete   | 2026-05-27 |
 | 22. JobsManager decomposition + perf | 0/6 | Not started | — |
 | 23. Test coverage hardening | 0/4 | Not started | — |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
