@@ -38,13 +38,10 @@ type BreakEvenInfo = {
   isBreakEven: boolean;
 };
 
-// PERF-01 (D-17): pure module-scope break-even calculator. Lifted verbatim
-// from the in-component `getBreakEvenInfo` useCallback (now deleted) so the
-// `breakEvenMap` useMemo can call it without capturing any component-scope
-// state. The body reads ONLY `job` fields and the explicit `salesByJob` arg —
-// RESEARCH §breakEvenMap dependency set confirmed there are no other
-// closure captures (no shippingConfig, no userCurrency, etc.). No 2nd
-// consumer today — stays at module scope per No-Analog rule.
+// PERF-01 (D-17): pure module-scope break-even calculator. Lifted from the
+// in-component `getBreakEvenInfo` useCallback so `breakEvenMap` (D-18) can
+// call it without capturing component-scope state. Reads only `job` fields
+// and the explicit `salesByJob` arg — no other closures (RESEARCH confirmed).
 function computeBreakEvenInfo(
   job: PrintJob,
   salesByJob: Map<string, Sale[]>,
@@ -1031,12 +1028,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // The modal owns them because they are sale-form concerns only.
 
   // PERF-01 (D-18): pre-compute break-even info once per render for the
-  // filtered job list, replacing the in-component getBreakEvenInfo useCallback
-  // that fired on every JobCard render path. The three consumers (rowProps's
-  // arrow-fn wrapper at construction site, the virtualized JobRow's flow
-  // through rowProps, and the non-virtualized fallback's direct map lookup)
-  // all read from this Map. Pure function — see `computeBreakEvenInfo` at
-  // module scope (D-17).
+  // filtered job list. Replaces the per-row `getBreakEvenInfo` useCallback;
+  // three consumers (rowProps arrow wrapper D-19, virtualized JobRow via
+  // rowProps, non-virtualized fallback) all do O(1) Map lookups.
   const breakEvenMap = useMemo(
     () => new Map(searchedJobs.map((j) => [j.id, computeBreakEvenInfo(j, salesByJob)])),
     [searchedJobs, salesByJob],
@@ -1247,11 +1241,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     selectedJobId,
     selectedSales: sales,
     getFilamentName,
-    // PERF-01 (D-19, Pitfall 6): preserve JobRowProps.getBreakEvenInfo shape
-    // — a `(job) => BreakEvenInfo` callable — by routing through breakEvenMap
-    // with an arrow wrapper instead of a useCallback. JobRowProps stays
-    // unchanged so JobCard's prop interface and JobsManager.test.tsx's
-    // renderJobCard helper survive (D-19).
+    // PERF-01 (D-19, Pitfall 6): preserve JobRowProps shape with an arrow
+    // wrapper so JobCard's prop interface stays unchanged.
     getBreakEvenInfo: (job: PrintJob) => breakEvenMap.get(job.id)!,
     onToggleSelect: handleToggleSelect,
     onOpenSaleForm: handleOpenSaleForm,
