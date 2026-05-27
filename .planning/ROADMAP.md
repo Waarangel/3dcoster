@@ -154,13 +154,13 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   10. (Optional) Global `useSales()` call in `JobsManager` lifted to a parent or `useDatabase` hook so the subscription is shared, not duplicated alongside the scoped query
   11. All existing tests pass; the JobsManager test file's mount works against the decomposed structure; a new `RecordSaleModal.test.tsx` covers the form's golden path + edit + convert-from-quote modes
 
-**Plans**: ~6 plans
-  - 22-01: useCustomerPicker hook + tests
-  - 22-02: SearchIcon extract + PICKER_VISIBLE_LIMIT centralize
-  - 22-03: Extract <RecordSaleModal> from JobsManager (uses Modal primitive + useCustomerPicker)
-  - 22-04: Extract <SaleRow> from <JobCard>
-  - 22-05: Perf: pre-compute getBreakEvenInfo Map + memoize calculateMarketplaceFee + useDynamicRowHeight key
-  - 22-06: (Optional) Lift global useSales subscription + UAT + test re-mount verification
+**Plans**: 6 plans (authored 2026-05-27 — see [phases/22-jobsmanager-decomposition-perf/](phases/22-jobsmanager-decomposition-perf/))
+  - [ ] 22-01-PLAN.md — useCustomerPicker hook + tests + PICKER_VISIBLE_LIMIT centralize (HYG-08, HYG-02) — Wave 1
+  - [ ] 22-02-PLAN.md — SearchIcon extract to src/components/ui/icons/SearchIcon.tsx + delete both local copies (HYG-03) — Wave 1
+  - [ ] 22-03-PLAN.md — Extract <RecordSaleModal> from JobsManager + migrate PrintQuoteModal to useCustomerPicker (HYG-06, HYG-08) — Wave 2, depends_on [22-01]
+  - [ ] 22-04-PLAN.md — Extract <SaleRow> from <JobCard>; relocate SaleFromQuoteSubtext (HYG-07) — Wave 2
+  - [ ] 22-05-PLAN.md — Perf bundle: breakEvenMap + computeBreakEvenInfo hoist + calculateMarketplaceFee module-scope + memo + CustomerLibrary row-height key (PERF-01/02/03/04) — Wave 3, depends_on [22-03]
+  - [ ] 22-06-PLAN.md — useAllSales hook lift + JobsManager dedup + test mock update + manual UAT (PERF-07) — Wave 4, depends_on [22-03, 22-05]
 
 **UI hint**: yes (no visible UI change; testable via existing tests + new modal test)
 
