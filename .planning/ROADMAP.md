@@ -38,7 +38,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 - [x] **Phase 19: Modal primitive + a11y migration** — Build `<Modal>` (role=dialog, aria-modal, focus-trap, focus-return, useId-labeled), migrate 10 modal surfaces, plus virtualized-list ARIA + InfoTooltip useId + close-button labels + form-label pairing + CollapsibleSection aria-controls fix (completed 2026-05-26)
 - [x] **Phase 20: Dexie atomicity audit** — Wrap `addSale` in transaction; move `createQuote` nextQuoteNumber read inside transaction; fix `backfillQuotesFromJobs` currency hardcode; defensive trio (parsePositiveNumber, versionchange async close, getSetting validator) (completed 2026-05-26)
 - [x] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases (completed 2026-05-27)
-- [ ] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary
+- [x] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary (completed 2026-05-27)
 - [ ] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract
 - [x] **Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT; close Phase 18 review WR-01/02/03 (test fragility, `@tauri-apps/api` dedupe, tighter `forbidden path` match) (completed 2026-05-25)
 - [x] **Phase 25: Doc + hygiene + polish + bundle health** — Doc state lag (D6/D7); HYG-01 generatingJobIds slot; HYG-04 onQuoteCreated; HYG-05 image5 comment; HYG-10 stale todo cleanup; POL-01..POL-04 (CustomerLibrary alignment, CSV template button, autotable cast, overflow-menu close); QuoteStatusPill aria; Rollup circular-chunk fix; vendor chunk classification (optional) (completed 2026-05-26)
@@ -160,7 +160,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
   - [x] 22-03-PLAN.md — Extract <RecordSaleModal> from JobsManager + migrate PrintQuoteModal to useCustomerPicker (HYG-06, HYG-08) — Wave 2, depends_on [22-01]
   - [x] 22-04-PLAN.md — Extract <SaleRow> from <JobCard>; relocate SaleFromQuoteSubtext (HYG-07) — Wave 2
   - [x] 22-05-PLAN.md — Perf bundle: breakEvenMap + computeBreakEvenInfo hoist + calculateMarketplaceFee module-scope + memo + CustomerLibrary row-height key (PERF-01/02/03/04) — Wave 3, depends_on [22-03]
-  - [ ] 22-06-PLAN.md — useAllSales hook lift + JobsManager dedup + test mock update + manual UAT (PERF-07) — Wave 4, depends_on [22-03, 22-05]
+  - [x] 22-06-PLAN.md — useAllSales hook lift + JobsManager dedup + test mock update + manual UAT (PERF-07) — Wave 4, depends_on [22-03, 22-05]
 
 **UI hint**: yes (no visible UI change; testable via existing tests + new modal test)
 
@@ -253,7 +253,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 19. Modal primitive + a11y migration | 6/6 | Complete    | 2026-05-26 |
 | 20. Dexie atomicity audit | 4/4 | Complete    | 2026-05-26 |
 | 21. CSV + URL security | 3/3 | Complete    | 2026-05-27 |
-| 22. JobsManager decomposition + perf | 5/6 | In Progress|  |
+| 22. JobsManager decomposition + perf | 6/6 | Complete   | 2026-05-27 |
 | 23. Test coverage hardening | 0/4 | Not started | — |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
 | 25. Doc + hygiene + polish + bundle health | 5/5 | Complete    | 2026-05-26 |
