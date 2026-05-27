@@ -157,7 +157,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 **Plans**: 6 plans (authored 2026-05-27 — see [phases/22-jobsmanager-decomposition-perf/](phases/22-jobsmanager-decomposition-perf/))
   - [x] 22-01-PLAN.md — useCustomerPicker hook + tests + PICKER_VISIBLE_LIMIT centralize (HYG-08, HYG-02) — Wave 1
   - [x] 22-02-PLAN.md — SearchIcon extract to src/components/ui/icons/SearchIcon.tsx + delete both local copies (HYG-03) — Wave 1
-  - [ ] 22-03-PLAN.md — Extract <RecordSaleModal> from JobsManager + migrate PrintQuoteModal to useCustomerPicker (HYG-06, HYG-08) — Wave 2, depends_on [22-01]
+  - [x] 22-03-PLAN.md — Extract <RecordSaleModal> from JobsManager + migrate PrintQuoteModal to useCustomerPicker (HYG-06, HYG-08) — Wave 2, depends_on [22-01]
   - [x] 22-04-PLAN.md — Extract <SaleRow> from <JobCard>; relocate SaleFromQuoteSubtext (HYG-07) — Wave 2
   - [ ] 22-05-PLAN.md — Perf bundle: breakEvenMap + computeBreakEvenInfo hoist + calculateMarketplaceFee module-scope + memo + CustomerLibrary row-height key (PERF-01/02/03/04) — Wave 3, depends_on [22-03]
   - [ ] 22-06-PLAN.md — useAllSales hook lift + JobsManager dedup + test mock update + manual UAT (PERF-07) — Wave 4, depends_on [22-03, 22-05]
@@ -253,7 +253,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 19. Modal primitive + a11y migration | 6/6 | Complete    | 2026-05-26 |
 | 20. Dexie atomicity audit | 4/4 | Complete    | 2026-05-26 |
 | 21. CSV + URL security | 3/3 | Complete    | 2026-05-27 |
-| 22. JobsManager decomposition + perf | 3/6 | In Progress|  |
+| 22. JobsManager decomposition + perf | 4/6 | In Progress|  |
 | 23. Test coverage hardening | 0/4 | Not started | — |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
 | 25. Doc + hygiene + polish + bundle health | 5/5 | Complete    | 2026-05-26 |
