@@ -50,6 +50,11 @@ vi.mock('../hooks/useDatabase', () => ({
     updateSale: vi.fn(),
     deleteSale: vi.fn(),
   }),
+  // D-24 / Pitfall 4: useAllSales returns a plain Sale[] (NOT { sales: [] }) —
+  // mirrors the production hook contract in useDatabase.ts. Getting the shape
+  // wrong here surfaces as `TypeError: useAllSales is not a function` or
+  // runtime errors when JobsManager destructures non-existent properties.
+  useAllSales: () => [],
 }));
 
 // Mock the Dexie db so JobCard's onSaveTitle / onSubmitAddTag / onRemoveTag

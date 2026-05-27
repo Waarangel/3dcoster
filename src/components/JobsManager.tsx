@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus } from '../types';
-import { useSales, useQuotes } from '../hooks/useDatabase';
+import { useSales, useAllSales, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
 import { Button, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal } from './ui';
 import { ClipboardListIcon } from './ui/icons';
@@ -982,7 +982,10 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // confirm flow (deleteSale). The Record Sale modal owns its own
   // useSales(job.id) subscription internally per plan 22-03 D-06.
   const { sales, deleteSale } = useSales(selectedJobId || undefined);
-  const { sales: allSales } = useSales();
+  // PERF-07 (plan 22-06): global sales subscription lifted to useAllSales —
+  // explicit named hook returning Sale[] directly, replacing the previous
+  // destructure-rename of the no-arg useSales hook.
+  const allSales = useAllSales();
   // Phase 14 revised (2026-05-22): sales are editable so users can fix per-sale
   // customer typos after recording. Null = create mode; Sale = edit mode.
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
