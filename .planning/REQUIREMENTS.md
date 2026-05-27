@@ -27,9 +27,9 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Security (SEC)
 
-- [ ] **SEC-01**: A `sanitizeCsvCell()` helper escapes leading `=`, `+`, `-`, `@` with a `'` prefix; applied to every cell in `generateExportCsv` and any other CSV export path. Closes [CODE-AUDIT #5](v1.2-CODE-AUDIT.md) (HIGH).
-- [ ] **SEC-02**: `job.modelUrl` is validated to start with `http://` or `https://` before rendering as an `<a href>`; otherwise renders as plain text or is omitted. Closes [CODE-AUDIT #6](v1.2-CODE-AUDIT.md) (HIGH).
-- [ ] **SEC-03**: `customerCsv.test.ts` adds test cases for formula-injection strings (`=HYPERLINK(...)`, `+CMD`, `@SUM()`) and Unicode (`Müller`, `张三`, emoji-in-notes) — locks pass-through behavior in the parser before the export path adds escaping. Closes [CODE-AUDIT #15](v1.2-CODE-AUDIT.md) (MEDIUM).
+- [x] **SEC-01**: A `sanitizeCsvCell()` helper escapes leading `=`, `+`, `-`, `@` with a `'` prefix; applied to every cell in `generateExportCsv` and any other CSV export path. Closes [CODE-AUDIT #5](v1.2-CODE-AUDIT.md) (HIGH).
+- [x] **SEC-02**: `job.modelUrl` is validated to start with `http://` or `https://` before rendering as an `<a href>`; otherwise renders as plain text or is omitted. Closes [CODE-AUDIT #6](v1.2-CODE-AUDIT.md) (HIGH).
+- [x] **SEC-03**: `customerCsv.test.ts` adds test cases for formula-injection strings (`=HYPERLINK(...)`, `+CMD`, `@SUM()`) and Unicode (`Müller`, `张三`, emoji-in-notes) — locks pass-through behavior in the parser before the export path adds escaping. Closes [CODE-AUDIT #15](v1.2-CODE-AUDIT.md) (MEDIUM).
 
 ### Data integrity (DATA)
 
