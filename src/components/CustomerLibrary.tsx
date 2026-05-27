@@ -151,7 +151,11 @@ export function CustomerLibrary({
   }, [sortedCustomers, searchQuery]);
 
   // Dynamic row height — defaults to ~88 (two text lines + actions + 8px gap).
-  const customerRowHeightCache = useDynamicRowHeight({ defaultRowHeight: 88 });
+  // PERF-04 (D-22): pass `searchQuery` as a cache-invalidation key so row
+  // heights recompute when the filter changes — mirrors the Phase 15 plan 04
+  // D-05 bi-key pattern in JobsManager. Without this, search results inherit
+  // stale row heights from the previous filter and visually drift.
+  const customerRowHeightCache = useDynamicRowHeight({ defaultRowHeight: 88, key: searchQuery });
 
   // Handlers
   const handleAddClick = useCallback(() => {
