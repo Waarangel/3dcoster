@@ -213,6 +213,19 @@ export function RecordSaleModal({
     return options;
   }, [userCurrency]);
 
+  // PERF-02 (D-21): collapse the 3 JSX summary-block calls to a single
+  // memoized constant. Previously the same calculation ran 3× per render
+  // (Sale Total summary, Marketplace Fee row, Net Revenue row). Now it
+  // runs once per change of [saleQuantity, salePrice, saleMarketplace].
+  // NOTE: handleRecordSale's separate `marketplaceFee` (local const inside
+  // the handler) uses `unitPrice = salePrice || job.sellingPrice` as its
+  // first arg — DIFFERENT semantics from the JSX summary which displays
+  // the in-progress entry verbatim. The handler's local stays untouched.
+  const marketplaceFee = useMemo(
+    () => calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace),
+    [saleQuantity, salePrice, saleMarketplace],
+  );
+
   // ─── handleRecordSale (ported verbatim from JobsManager.tsx:1272-1420) ───
   const handleRecordSale = async () => {
     if (saleQuantity <= 0) return;
@@ -591,16 +604,16 @@ export function RecordSaleModal({
                 <span className="font-mono">${saleShippingCost.toFixed(2)}</span>
               </div>
             )}
-            {calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace) > 0 && (
+            {marketplaceFee > 0 && (
               <div className="flex justify-between text-sm text-orange-400">
                 <span>- Marketplace Fee</span>
-                <span className="font-mono">-${calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace).toFixed(2)}</span>
+                <span className="font-mono">-${marketplaceFee.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-white font-semibold pt-2 border-t border-slate-600">
               <span>Net Revenue</span>
               <span className="font-mono">
-                ${((saleQuantity * salePrice) + saleShippingCost - calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace)).toFixed(2)}
+                ${((saleQuantity * salePrice) + saleShippingCost - marketplaceFee).toFixed(2)}
               </span>
             </div>
           </div>
