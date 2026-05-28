@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: ready_to_plan
-stopped_at: Phase 22 complete (6/6) — ready to discuss Phase 24
-last_updated: 2026-05-28T00:34:17.263Z
-last_activity: 2026-05-27 -- Phase 22 execution started
+status: planning
+stopped_at: Phase 22 context gathered
+last_updated: "2026-05-28T00:41:24.652Z"
+last_activity: 2026-05-28
 progress:
-  total_phases: 8
-  completed_phases: 6
+  total_phases: 9
+  completed_phases: 7
   total_plans: 31
-  completed_plans: 102
-  percent: 75
+  completed_plans: 31
+  percent: 78
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 24 — nyquist contracts phase 13 visual uat phase 18 review carryo
+**Current focus:** Phase 22.1 — Break-even formula reconciliation
 
 ## Current Position
 
@@ -106,6 +106,7 @@ Last activity: 2026-05-28
 - v1.2 Phases 12–16 defined 2026-05-20 (Quote-to-Customer)
 - Phase 17 added 2026-05-25 mid-milestone — closure phase for PDF-04 (Rollup circular chunk defeats jsPDF lazy-loading) + tax rounding divergence (PrintQuoteModal vs CostCalculator). Surfaced by /gsd:audit-milestone v1.2.
 - Phase 24 edited: added Phase 18 code review carryover (WR-01/02/03) to Phase 24 scope
+- Phase 22.1 inserted after Phase 22: Break-even formula reconciliation — Calculator's formula wins; persist depreciation+nozzleWear on PrintJob; one-time reconcile helper for legacy IndexedDB jobs; folds in WR-01/WR-02 from Phase 22 code review. Surfaced during Phase 22 UAT. (URGENT)
 
 ### Decisions
 

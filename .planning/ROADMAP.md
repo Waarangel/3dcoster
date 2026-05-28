@@ -164,6 +164,33 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 
 **UI hint**: yes (no visible UI change; testable via existing tests + new modal test)
 
+### Phase 22.1: Break-even formula reconciliation (INSERTED)
+
+**Goal:** The CostCalculator "Break-even Units" widget and the JobsManager break-even pill compute the same number for the same job. Calculator's formula wins — break-even fixed costs = `modelCost + printerDepreciation + nozzleWear` (not `modelCost` only as JobsManager currently does). Existing IndexedDB jobs are reconciled in place so the change isn't forward-only.
+
+**Why now**: User-surfaced during Phase 22 UAT — Calculator says "1 unit to recover $21.81 in fixed costs" but JobCard's pill uses `modelCost / profitPerUnit` and shows a different number, so users save a job under one mental model and read it back under another.
+
+**Depends on**: Phase 22 (broader cumulative refactor must be settled first; this phase modifies `computeBreakEvenInfo` and the PrintJob schema)
+**Requirements**: TBD (pending discuss-phase — likely 1 PERF/CORRECT requirement + 1 DATA migration requirement)
+
+**Success Criteria** (what must be TRUE):
+
+  1. `PrintJob` carries a `fixedCostsAtSave: { depreciation: number; nozzleWear: number }` snapshot (or equivalent — discuss-phase locks the exact shape); fields are optional and the Dexie schema string is unchanged (non-indexed extension per the D-18 pattern used in Phase 14)
+  2. `CostCalculator` writes both fields on Save (new) and Update (edit) — see `CostCalculator.tsx:589` / `:625`
+  3. `JobsManager.tsx`'s `computeBreakEvenInfo` (line 45) uses `job.modelCost + (job.fixedCostsAtSave?.depreciation ?? legacyBackfill) + (job.fixedCostsAtSave?.nozzleWear ?? legacyBackfill)` as the break-even numerator
+  4. A one-time reconcile helper (analog to `backfillQuotesFromJobs` from Phase 16) populates `fixedCostsAtSave` on every legacy PrintJob, computing depreciation+nozzleWear from the saved `printerInstanceId × printTimeHours × failureRate`. Reconcile runs on app startup behind an idempotent flag (Dexie meta row or app-state key) so it executes once per user, never silently re-runs, and ships with a unit test
+  5. The Calculator's "Break-even Units" displayed number === the JobsManager pill's `breakEvenCopies` for the same job (after save+reload) — locked by a small test that round-trips a job through save → backfill → render
+  6. Folded-in fixes from Phase 22 code review: WR-02 (`RecordSaleModal` hydration `useEffect` drops `job.sellingPrice` from deps with a Pitfall 3 comment), WR-01 (dead `userProfile` prop removed from `RecordSaleModalProps`)
+  7. `npx tsc -b` clean; full vitest suite passes; the round-trip test from #5 passes
+  8. Manual UAT: existing user data shows the corrected break-even pill values after one reload (with no surprise data-loss or NaN)
+
+**UI hint**: yes (the break-even pill value changes for some jobs — the Calculator widget number stays the same)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 22.1 to break down)
+
 ### Phase 23: Test coverage hardening
 
 **Goal**: The Customer-UI surface has its first tests; the email-lowercase divergence bug between `CustomerEditModal` and `customerCsv.ts` is locked by test; migration tests run against real Dexie
