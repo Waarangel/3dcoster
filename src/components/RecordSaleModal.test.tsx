@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import type { Customer, PrintJob, UserProfile, ShippingConfig, Sale, Quote } from '../types';
+import type { Customer, PrintJob, ShippingConfig, Sale, Quote } from '../types';
 
 // ---------------------------------------------------------------------------
 // RecordSaleModal — Phase 22 plan 22-03 (HYG-06).
@@ -99,16 +99,6 @@ function makeJob(overrides: Partial<PrintJob> = {}): PrintJob {
     taxAmount: 13,
     ...overrides,
   } as PrintJob;
-}
-
-function makeUserProfile(overrides: Partial<UserProfile> = {}): UserProfile {
-  return {
-    currency: 'USD',
-    laborHourlyRate: 25,
-    defaultTaxRate: 13,
-    nextQuoteNumber: 1,
-    ...overrides,
-  } as UserProfile;
 }
 
 function makeShippingConfig(): ShippingConfig {
@@ -216,7 +206,6 @@ interface RenderOpts {
 async function renderModal(opts: RenderOpts = {}) {
   const props = {
     job: opts.job ?? makeJob(),
-    userProfile: makeUserProfile(),
     userCurrency: 'USD' as const,
     shippingConfig: makeShippingConfig(),
     editingSale: opts.editingSale ?? null,
