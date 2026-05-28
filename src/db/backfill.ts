@@ -432,6 +432,8 @@ export function reconcileCopiesSoldFromSales(
 }
 
 /**
+ * CALL-SITE CONTRACT: printers MUST be sourced from db.materials filtered by category==='printer' (via assetToPrinterConfig). db.printers is a vestigial Dexie table that is never written.
+ *
  * reconcileFixedCostsAtSave — Phase 22.1 DATA-07 reconcile helper (Path B —
  * faithful reconstruction of depreciation + nozzleWear for legacy jobs).
  *

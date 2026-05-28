@@ -520,13 +520,22 @@ export function useJobs() {
     let cancelled = false;
     (async () => {
       try {
-        const [printerInstances, printers, materials] = await Promise.all([
+        // Phase 22.1 CR-01 — printers MUST come from db.materials filtered by
+        // category==='printer' (via assetToPrinterConfig). db.printers is a
+        // vestigial Dexie table that is never written; reading it returns []
+        // and silently degrades the reconcile to "depreciation only when
+        // actualPurchasePrice is set; nozzleWear always zero." See usePrinters
+        // above for the canonical adapter.
+        const [printerInstances, printerAssets, allMaterials] = await Promise.all([
           db.printerInstances.toArray(),
-          db.printers.toArray(),
+          db.materials.where('category').equals('printer').toArray(),
           db.materials.toArray(),
         ]);
         if (cancelled) return;
-        const updated = reconcileFixedCostsAtSave(jobs, printerInstances, printers, materials);
+        const printerConfigs = printerAssets
+          .map(a => assetToPrinterConfig(a))
+          .filter((p): p is PrinterConfig => p !== null);
+        const updated = reconcileFixedCostsAtSave(jobs, printerInstances, printerConfigs, allMaterials);
         if (updated.length > 0) {
           // Helper returns full PrintJob[] (not patches) so we write each row
           // directly — no need to re-fetch + merge.
