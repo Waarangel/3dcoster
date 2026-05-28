@@ -25,42 +25,63 @@ _Add the next release's user-facing changes here. Promote to a versioned section
 
 ---
 
-## [1.3.1] - 2025-05-26
+## [1.3.2] - 2026-05-28
+
+The v1.3 Hardening release — 6 weeks of foundation work shipped to desktop users in one go. No new user-facing features by design; every change closes an audit finding (accessibility, security, atomicity, performance, hygiene) so that v1.4+ feature work has a clean base to build on. Bundle stays under 60 KB gzipped despite ~13K LOC added.
 
 ### Added
-- **Detailed in-app release notes** — The /changelog page now shows the most recent 5 releases with full release notes; older releases are accessible via the "All Releases on GitHub" button.
+- **Customer Library testing surface** — full test coverage for CustomerEditModal, CustomerCsvImportModal, and CustomerLibrary, including bulk-import preview, dedup-mode toggle, and the `lastUsedAt` sort lock.
+- **`<Modal>` primitive** — every modal in the app (10 surfaces) now shares one WAI-ARIA dialog implementation with focus trap, scroll-lock, and proper `useId()`-labeled fields. Press Escape to close any modal from anywhere it has focus.
+- **Customer template download button** — `👥 Customer template` link inside Import Customers, matching the existing Materials / Printers template download UX in the Assets import modal.
+- **PrintQuoteModal overflow-menu keyboard support** — the `[⋯]` menu on Pending quote rows now closes on Escape and on outside-click.
 
 ### Changed
-- **Release process now requires a CHANGELOG.md section** per version. If a tag is pushed without a matching section, the release workflow falls back to a generic "See the changelog" template and warns in the build log (no longer silent).
+- **CustomerEditModal email canonicalization** — emails are now lowercased on save (was: saved as-typed), matching how the CSV import canonicalizes. Resolves the bug where typing `John@Example.com` in the modal and importing `john@example.com` via CSV would create two separate library entries for the same person. Existing customer rows are auto-fixed on first app load.
+- **JobsManager refactor** — internal restructure that has no visual impact but makes the Jobs tab faster on large libraries (per-row break-even pre-compute via memoized map; redundant marketplace-fee recalculation collapsed; deduplicated `useSales` subscription).
+- **Customer Library row layout** — "Last used" text is now vertically centered with the Edit / Delete buttons.
+- **QuoteStatusPill accessibility** — adds `aria-label="Status: {label}"` for screen readers; the Declined status pill now uses brighter slate-200 text on slate-700 background (4.6:1 contrast, meets WCAG AA).
+- **Bundle health** — main chunk dropped from 61.5 KB → 56.5 KB gzipped through JobsManager decomposition. The 300 KB main-chunk gate from Phase 11 stays comfortably intact.
 
 ### Fixed
-- Customer Import modal layout now matches the Asset Import modal — template download button moved above the upload zone with a `👥 Customer template` label.
+- **PDF generation on Windows desktop** — fixed Tauri `fs:scope` ACL that was silently blocking PDF writes outside the app's working directory. PDFs now save to anywhere the user picks in the file dialog.
+- **Data atomicity** — `Record Sale`, `Create Quote`, and the v8→v9 Dexie migration are now properly transactional. A crash mid-operation no longer leaves the library half-updated (e.g. a Sale recorded without its referenced Quote, or vice versa).
+- **CSV formula injection** — exported CSVs from anywhere in the app (Asset library, customer templates, future exports) now neutralize any cell starting with `=`, `+`, `-`, or `@` — opening the export in Excel / Numbers / LibreOffice no longer risks accidentally executing a formula payload.
+- **JobsManager Model URL render** — entering `javascript:alert(1)` or `data:text/html,…` as a Model URL no longer renders as a clickable link in the Jobs view. Non-`http(s)` URLs render as plain muted text with a tooltip explaining why.
+- **`@tauri-apps/api` deduplication** — bumped Rust Tauri crate to 2.11.x so the bundle no longer ships two nested copies of `@tauri-apps/api`. Reduces install size and eliminates a class of "which copy is loaded?" runtime ambiguity.
+- **Break-even pill formula consistency** — the per-row break-even count shown in the Jobs tab now matches what the Calculator tab's Break-even Units widget computes for the same job, in all currencies. Previously the two could diverge when a job had per-print model cost split across multiple units. Existing jobs are auto-snapshotted on first app load so the agreement holds historically too.
+- **Customer Import modal layout** — the template download block now appears above the upload zone (was: below), matching the Asset Import modal pattern.
 
-> _Note: v1.3.1 desktop release predates this changelog system. The list above reflects what shipped with this changelog entry being added — historical v1.3.x patches before 2026-05-28 had only the auto-generated "See the changelog" body._
+### Security
+- **Formula injection prevention (SEC-01)** — all CSV export paths route through `sanitizeCsvCell` at the cell-serialization boundary.
+- **Render-time XSS guard for Model URLs (SEC-02)** — `isSafeHttpUrl` validates `http://` / `https://` prefix before rendering any user-entered URL as an `<a href>`.
+- **CSV parser pass-through regression locks (SEC-03)** — 5 new tests pin the customer CSV parser's character-for-character pass-through behavior against formula-injection inputs and Unicode (Latin diacritic / CJK / emoji).
+
+### For developers
+- **Release notes now sourced from `CHANGELOG.md`** — the GitHub Actions release workflow extracts the section matching the pushed tag and uses it as the release body. Missing section → soft warning in the build log + fallback template. See `.claude/CLAUDE.md` "Desktop App Release Process" for the rule. No more "See the changelog" placeholder releases.
+- **/changelog page caps at 5 most recent releases** with "View full archive on GitHub" link. Filters out 2-part GSD milestone tags (e.g. `v1.3`) so internal planning markers don't surface as user-facing releases.
+- **Windows lint script fix** — `scripts/lint-no-raw-html.mjs` now normalizes file paths to forward slashes before comparing against the exclude list. Previously failed every Windows release matrix run because backslash paths never matched the `src/components/ui` allowlist. Macs were unaffected; the failure went unnoticed until v1.3 release attempt.
 
 ---
 
-## [1.3.0] - 2025-05-25
+## [1.3.1] - 2026-04-15
 
-_Historical entry — released before CHANGELOG.md was adopted. The v1.3 GSD milestone (Hardening) backed this desktop release. See [.planning/MILESTONES.md](.planning/MILESTONES.md) for the full v1.3 accomplishment list including:_
-
-- **`<Modal>` primitive + 10-surface a11y migration** (focus trap, scroll-lock, useId-labeled fields)
-- **JobsManager decomposition** — extracted `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker`, `useAllSales`; main JobsManager.tsx shrunk from 2067 → 1474 LOC
-- **Dexie atomicity sweep** — `addSale`, `createQuote`, v9 upgrade callbacks all wrapped in transactions; defensive trio (`parsePositiveNumber`, async `versionchange`, `getSetting<T>` validator)
-- **CSV + URL security** — formula-injection sanitization at all 4 Papa.unparse boundaries; `javascript:` URL render-time guard for job model links
-- **First Customer-UI test files** — CustomerEditModal, CustomerCsvImportModal, CustomerLibrary covered; real-Dexie migration test via fake-indexeddb
-- **Tauri 2.11.x upgrade** — eliminates dual-copy `@tauri-apps/api`
-- **Bundle health** — main chunk dropped from 61.5 KB → 56.5 KB gzipped
+_Original v1.3.1 desktop release (April 15, 2026). This patch shipped before the CHANGELOG.md system was adopted; the GitHub release body was the auto-generated "See the changelog" placeholder. The substantive code changes from v1.3.0 → v1.3.1 are visible in the [commit log](https://github.com/Waarangel/3dcoster/compare/v1.3.0...v1.3.1). The v1.3.2 release above bundles all subsequent v1.3 Hardening work._
 
 ---
 
-## [1.2.4] - 2025-05-23
+## [1.3.0] - 2026-04-15
+
+_Original v1.3.0 desktop release (April 15, 2026). Released before the CHANGELOG.md system was adopted. The v1.3.2 release above is the first release with proper release notes since this one._
+
+---
+
+## [1.2.4] - 2026-04-13
 
 _Historical entry — released before CHANGELOG.md was adopted. Patch release; see [GitHub release](https://github.com/Waarangel/3dcoster/releases/tag/v1.2.4) for the original body._
 
 ---
 
-## [1.2.3] - 2025-05-23
+## [1.2.3] - 2026-02-15
 
 _Historical entry — released before CHANGELOG.md was adopted. Patch release; see [GitHub release](https://github.com/Waarangel/3dcoster/releases/tag/v1.2.3) for the original body._
 
