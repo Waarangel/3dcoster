@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import type { Quote, PrintJob } from '../types';
+import type { Quote, PrintJob, Sale, PrinterInstance, PrinterConfig, Material } from '../types';
+import { reconcileFixedCostsAtSave } from '../db/backfill';
 
 // ---------------------------------------------------------------------------
 // JobsManager Orders section — Phase 16 second extension (D-23..D-32).
@@ -64,7 +65,7 @@ vi.mock('../hooks/useDatabase', () => ({
 const dbJobsPutSpy = vi.fn<(job: any) => Promise<void>>().mockResolvedValue(undefined);
 vi.mock('../db/database', () => ({ db: { jobs: { put: dbJobsPutSpy } } }));
 
-const { OrdersQuoteRows, JobCard, ADD_TAG_PLACEHOLDER } = await import('./JobsManager');
+const { OrdersQuoteRows, JobCard, ADD_TAG_PLACEHOLDER, computeBreakEvenInfo } = await import('./JobsManager');
 const { SaleFromQuoteSubtext } = await import('./SaleRow');
 
 function makeQuote(overrides: Partial<Quote> = {}): Quote {
@@ -753,5 +754,140 @@ describe('JobCard Model source render-time URL guard (Phase 21 SEC-02)', () => {
     const fallback = block!.querySelector('span[title]');
     expect(fallback).not.toBeNull();
     expect(fallback!.textContent).toBe('data:text/html,<script>alert(1)</script>');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PERF-08 — break-even formula round-trip (Phase 22.1)
+//
+// Locks the agreement between the Calculator's "Break-even Units" widget and
+// the JobsManager pill's `breakEvenCopies` for the same job:
+//   pill.breakEvenCopies === Math.ceil((modelCost + depreciation + nozzleWear) / profitPerUnit)
+//
+// Three cases assert the formula identity directly against computeBreakEvenInfo
+// (pure module-scope helper — no JobsManager render needed). The fourth case
+// cross-validates the no-op contract of reconcileFixedCostsAtSave from the
+// consumer side: a newly-saved job that already has fixedCostsAtSave set must
+// NOT be touched by the helper (returned-array length 0).
+// ---------------------------------------------------------------------------
+
+function makeJob(overrides: Partial<PrintJob> = {}): PrintJob {
+  return {
+    id: 'job-be-1',
+    name: 'Round-trip Job',
+    createdAt: new Date('2026-05-28T00:00:00Z'),
+    updatedAt: new Date('2026-05-28T00:00:00Z'),
+    filaments: [],
+    printTimeHours: 1,
+    printerInstanceId: 'pi-1',
+    modelCost: 100,
+    prepTimeMinutes: 0,
+    postProcessingMinutes: 0,
+    materialsUsed: [],
+    failureRate: 0,
+    costPerUnit: 30,
+    sellingPrice: 50,
+    copiesSold: 0,
+    ...overrides,
+  } as PrintJob;
+}
+
+describe('PERF-08 — break-even formula round-trip (Phase 22.1)', () => {
+  it('snapshotted job — pill breakEvenCopies === Math.ceil((modelCost + depreciation + nozzleWear) / profitPerUnit)', () => {
+    // modelCost=100, depreciation=20, nozzleWear=5 → fixedTotal=125
+    // sellingPrice=50, costPerUnit=30 → profitPerUnit=20
+    // expected = Math.ceil(125/20) = 7
+    const job = makeJob({
+      modelCost: 100,
+      fixedCostsAtSave: { depreciation: 20, nozzleWear: 5 },
+      sellingPrice: 50,
+      costPerUnit: 30,
+      copiesSold: 0,
+    });
+    const info = computeBreakEvenInfo(job, new Map<string, Sale[]>());
+
+    // Calculator-side reference (mirror CostCalculator.tsx:460-467 arithmetic).
+    const fixedTotal = job.modelCost + job.fixedCostsAtSave!.depreciation + job.fixedCostsAtSave!.nozzleWear;
+    const profitPerUnit = job.sellingPrice - job.costPerUnit;
+    const expectedCalcBreakEven = profitPerUnit > 0
+      ? Math.ceil(fixedTotal / profitPerUnit)
+      : (fixedTotal > 0 ? Infinity : 0);
+
+    expect(expectedCalcBreakEven).toBe(7);
+    expect(info.breakEvenCopies).toBe(expectedCalcBreakEven);
+  });
+
+  it('legacy job (no snapshot) — pill falls back to Math.ceil(modelCost / profitPerUnit)', () => {
+    // fixedCostsAtSave is undefined — the ?? 0 defaults should make the
+    // numerator collapse to modelCost alone (pre-22.1 behavior preserved
+    // for legacy IndexedDB jobs until reconcileFixedCostsAtSave backfills them).
+    // modelCost=100, profitPerUnit=20 → expected = Math.ceil(100/20) = 5
+    const job = makeJob({
+      modelCost: 100,
+      fixedCostsAtSave: undefined,
+      sellingPrice: 50,
+      costPerUnit: 30,
+      copiesSold: 0,
+    });
+    const info = computeBreakEvenInfo(job, new Map<string, Sale[]>());
+    expect(info.breakEvenCopies).toBe(5);
+  });
+
+  it('zero-modelCost + non-zero depreciation — pill returns finite breakEven (Infinity guard widened to fixedNumerator > 0)', () => {
+    // modelCost=0 but fixedCostsAtSave.depreciation=20 + nozzleWear=5 → fixedNumerator=25
+    // sellingPrice=50, costPerUnit=49 → profitPerUnit=1
+    // expected = Math.ceil(25/1) = 25
+    // Before the widened guard (`job.modelCost > 0 ? Infinity : 0`) this returned
+    // 0 — silently hiding the fact that the job DOES have fixed costs to recover.
+    const job = makeJob({
+      modelCost: 0,
+      fixedCostsAtSave: { depreciation: 20, nozzleWear: 5 },
+      sellingPrice: 50,
+      costPerUnit: 49,
+      copiesSold: 0,
+    });
+    const info = computeBreakEvenInfo(job, new Map<string, Sale[]>());
+    expect(info.breakEvenCopies).toBe(25);
+  });
+
+  it('reconcileFixedCostsAtSave is a no-op on newly-saved jobs (already-snapshotted job returns empty patch array)', () => {
+    // must_haves.truths[5] consumer-side cross-validation.
+    // A newly-saved job ALREADY carries fixedCostsAtSave (Task 2 writes it at
+    // Save/Update time). Running the backfill helper over such a job must
+    // return [] — proving the helper does not re-snapshot newly-saved jobs.
+    const job = makeJob({
+      id: 'job-already-snapshotted',
+      modelCost: 100,
+      fixedCostsAtSave: { depreciation: 20, nozzleWear: 5 },
+      sellingPrice: 50,
+      costPerUnit: 30,
+      copiesSold: 0,
+    });
+    const printerInstance: PrinterInstance = {
+      id: 'pi-1',
+      printerConfigId: 'pc-1',
+      nickname: 'Test Printer',
+      printHours: 100,
+      actualPurchasePrice: 1000,
+      recoveryMonths: 12,
+      estimatedMonthlyPrintHours: 40,
+    };
+    const printer: PrinterConfig = {
+      id: 'pc-1',
+      name: 'Bambu A1',
+      purchasePrice: 1000,
+      expectedLifespanHours: 10000,
+      wattage: 100,
+      nozzleCost: 5,
+      nozzleLifespanCm3: 1000,
+    };
+    const material: Material = {
+      id: 'm-1',
+      name: 'PLA',
+      category: 'filament',
+      filamentType: 'PLA',
+    };
+    const result = reconcileFixedCostsAtSave([job], [printerInstance], [printer], [material]);
+    expect(result).toEqual([]);
   });
 });
