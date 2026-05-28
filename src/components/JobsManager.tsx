@@ -66,7 +66,12 @@ export function computeBreakEvenInfo(
   // Infinity guard widened from `job.modelCost > 0` → `fixedNumerator > 0` so jobs
   // with modelCost=0 and non-zero depreciation surface a finite break-even
   // (RESEARCH Open Question #2).
-  const fixedNumerator = job.modelCost
+  // Phase 22.1 CR-02 — mirror CostCalculator.tsx:449-457: when modelCostPerUnit
+  // is true, the model fee is amortized into costPerUnit and excluded from
+  // fixed-cost recovery. Without this, per-unit-licensed jobs show pill
+  // breakEvenCopies higher than the Calculator widget for the same job.
+  const fixedModelCost = job.modelCostPerUnit ? 0 : job.modelCost;
+  const fixedNumerator = fixedModelCost
     + (job.fixedCostsAtSave?.depreciation ?? 0)
     + (job.fixedCostsAtSave?.nozzleWear ?? 0);
   // WR-04: normalize non-finite break-even results to null so the UI can
