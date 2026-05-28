@@ -1,25 +1,32 @@
 ---
 phase: 25-doc-hygiene-polish-bundle-health
 verified: 2026-05-26T00:00:00Z
-status: human_needed
-score: 12/12 must-haves verified
+re_verified: 2026-05-28T16:25:00Z
+status: passed
+score: 12/12 automated truths VERIFIED; 5/5 manual UAT items VERIFIED
 overrides_applied: 0
+re_verification: "Phase 25 HUMAN-UAT executed 2026-05-28 (see 25-HUMAN-UAT.md). All 5 manual tests PASS in live browser: (1) Customer template download POL-02, (2) QuoteRow overflow menu outside-click close POL-04, (3) QuoteRow overflow menu Escape close POL-04, (4) QuoteStatusPill aria-label + Declined contrast A11Y-09, (5) PrintQuoteModal create-quote flow HYG-04. Phase 25 is fully verified."
 human_verification:
   - test: "Open CustomerCsvImportModal in npm run dev (port 4173), navigate to the Upload step, click 'Customer template' button"
     expected: "Browser downloads customer-template.csv with header row (name,email,company,address,notes) + 2 data rows; file opens cleanly in spreadsheet app showing 5 columns"
     why_human: "Cannot trigger browser download in headless agent context; downloadCsv() uses Blob + URL.createObjectURL which requires a browser environment"
+    outcome: "PASS on 2026-05-28 — Customer template downloads and opens correctly."
   - test: "Open JobsManager, navigate to Pending quotes, click the [⋯] overflow button on a Pending quote row, then click somewhere outside the menu"
     expected: "Overflow menu closes when clicking outside its container"
     why_human: "POL-04 mousedown outside-click handler requires a real DOM environment; can't fire fireEvent.mouseDown(document.body) without running the test suite"
+    outcome: "PASS on 2026-05-28 — outside-click closes the menu."
   - test: "With the overflow menu open (from above), press Escape"
     expected: "Overflow menu closes"
     why_human: "POL-04 Escape handler requires a real keyboard event in a browser context"
+    outcome: "PASS on 2026-05-28 — Escape closes the menu."
   - test: "Inspect a Declined quote pill in browser DevTools; check the aria-label attribute"
     expected: "aria-label reads 'Status: Declined'; visually the text appears brighter/more readable against the dark bg-slate-700 background (text-slate-200 vs prior text-slate-300)"
     why_human: "Contrast ratio verification (4.6:1 claim) and visual readability require DevTools color picker or human eye on rendered output"
+    outcome: "PASS on 2026-05-28 — aria-label and Declined contrast confirmed."
   - test: "Generate a quote via PrintQuoteModal (create a job, add pricing, click Create Quote)"
     expected: "Modal closes without JavaScript error in console; no regression from making onQuoteCreated optional"
     why_human: "HYG-04 optional-prop change is structurally verified but runtime modal flow needs visual confirmation"
+    outcome: "PASS on 2026-05-28 — quote-creation flow completes cleanly with no console errors."
 ---
 
 # Phase 25: Doc + Hygiene + Polish + Bundle Health Verification Report
