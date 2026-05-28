@@ -209,11 +209,11 @@ Plans:
   6. DUP-02 D-15 contract test split into 6 named `it` blocks inside `describe("DUP-02 D-15 locked contract")`; assertion text unchanged; failure messages now name the specific property; **discuss-phase confirms the "Do NOT modify these assertions" comment intent allows shape refactoring**
   7. `npm test` passes with no skipped tests; coverage report shows non-zero coverage for the 3 new Customer-UI test files
 
-**Plans**: ~4 plans
-  - 23-01: CustomerEditModal.test.tsx (drives email-lowercase resolution)
-  - 23-02: CustomerCsvImportModal.test.tsx + CustomerLibrary.test.tsx
-  - 23-03: fake-indexeddb + real-Dexie migration test
-  - 23-04: Test type fixes (dbJobsPutSpy) + DUP-02 split (after discuss)
+**Plans**: 4 plans
+  - [ ] 23-01-PLAN.md — CustomerEditModal.test.tsx + D-01 modal lowercase + D-02 reconcileCustomerEmailLowercase helper + useCustomers useEffect wiring (TEST-01) — Wave 1, autonomous=true
+  - [ ] 23-02-PLAN.md — CustomerCsvImportModal.test.tsx (TEST-02) + CustomerLibrary.test.tsx with CL-01 sort lock (TEST-03) — Wave 1, autonomous=true
+  - [ ] 23-03-PLAN.md — fake-indexeddb devDep + database.migrations.test.ts real-Dexie replacement (TEST-04) — Wave 1, autonomous=false (package legitimacy human checkpoint)
+  - [ ] 23-04-PLAN.md — JobsManager.test.tsx dbJobsPutSpy retype (TEST-05) + duplicateJob.test.ts DUP-02 D-15 6-it split + D-10 lock comment rewrite (TEST-06) — Wave 1, autonomous=true
 
 **UI hint**: no
 
