@@ -353,6 +353,15 @@ export interface PrintJob {
   shippingOverrideCost?: number | null;
   packagingMaterials?: MaterialUsage[];
   marketplace?: MarketplaceType;
+
+  // Break-even fixed-cost snapshot (Phase 22.1 D-02 schema-extension pattern).
+  // Snapshotted at Save/Update time by CostCalculator from its `fixedCosts` memo so the
+  // JobsManager break-even pill can converge on the Calculator's broader formula
+  // (modelCost + depreciation + nozzleWear) without recomputing live printer state.
+  // Undefined on legacy v8 records until `reconcileFixedCostsAtSave` (src/db/backfill.ts)
+  // backfills them on next page load. Non-indexed — Dexie schema string unchanged, no
+  // migration needed (mirrors the Phase 14 D-18 schema-extension fields above).
+  fixedCostsAtSave?: { depreciation: number; nozzleWear: number };
 }
 
 // Sales record for a print job
