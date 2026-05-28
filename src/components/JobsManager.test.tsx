@@ -61,8 +61,7 @@ vi.mock('../hooks/useDatabase', () => ({
 // Mock the Dexie db so JobCard's onSaveTitle / onSubmitAddTag / onRemoveTag
 // handlers (which call db.jobs.put inside the parent JobsManager) can be
 // observed without standing up a real IndexedDB.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const dbJobsPutSpy = vi.fn<(job: any) => Promise<void>>().mockResolvedValue(undefined);
+const dbJobsPutSpy = vi.fn<(job: PrintJob) => Promise<void>>().mockResolvedValue();
 vi.mock('../db/database', () => ({ db: { jobs: { put: dbJobsPutSpy } } }));
 
 const { OrdersQuoteRows, JobCard, ADD_TAG_PLACEHOLDER, computeBreakEvenInfo } = await import('./JobsManager');
