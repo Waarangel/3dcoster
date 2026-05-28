@@ -890,4 +890,26 @@ describe('PERF-08 — break-even formula round-trip (Phase 22.1)', () => {
     const result = reconcileFixedCostsAtSave([job], [printerInstance], [printer], [material]);
     expect(result).toEqual([]);
   });
+
+  it('per-unit-licensed modelCost (modelCostPerUnit=true) — pill excludes modelCost from numerator (CR-02)', () => {
+    // CR-02 regression: when modelCostPerUnit=true, the model fee is paid
+    // per copy (licensing model — Etsy author resale, etc.) and rolled into
+    // costPerUnit, NOT into fixed recovery. The Calculator widget zeroes it
+    // out (CostCalculator.tsx:449-457) — the JobsManager pill must mirror.
+    //
+    // Fixture: modelCost=100, modelCostPerUnit=true, snapshot zeroed → the
+    // numerator collapses to 0 → breakEvenCopies must be 0 (no fixed cost
+    // to recover). Before the fix, the pill returned Math.ceil(100/20)=5,
+    // contradicting the PERF-08 round-trip identity.
+    const job = makeJob({
+      modelCost: 100,
+      modelCostPerUnit: true,
+      sellingPrice: 50,
+      costPerUnit: 30,
+      copiesSold: 0,
+      fixedCostsAtSave: { depreciation: 0, nozzleWear: 0 },
+    });
+    const info = computeBreakEvenInfo(job, new Map<string, Sale[]>());
+    expect(info.breakEvenCopies).toBe(0);
+  });
 });
