@@ -1,4 +1,5 @@
-import type { PrintJob, Sale, Quote, QuoteStatus, Customer, Currency } from '../types';
+import type { PrintJob, Sale, Quote, QuoteStatus, Customer, Currency, PrinterInstance, PrinterConfig, Material } from '../types';
+import { getMaterialDensity } from '../utils/gcodeParser';
 
 /**
  * Backfill `tags = []` on a job record that came from a pre-v6 schema.
@@ -426,6 +427,121 @@ export function reconcileCopiesSoldFromSales(
     if (job.copiesSold !== expected) {
       out.push({ id: job.id, copiesSold: expected });
     }
+  }
+  return out;
+}
+
+/**
+ * reconcileFixedCostsAtSave — Phase 22.1 DATA-07 reconcile helper (Path B —
+ * faithful reconstruction of depreciation + nozzleWear for legacy jobs).
+ *
+ * Backfills the Phase 22.1 D-02 PrintJob.fixedCostsAtSave snapshot on every
+ * legacy IndexedDB job so the JobsManager break-even pill can converge on the
+ * Calculator's broader formula (modelCost + depreciation + nozzleWear) without
+ * re-reading live printer state per render.
+ *
+ * Pure helper. No imports from `dexie` or `./database` — keeps this module
+ * jsdom-safe so the sibling test can `import { reconcileFixedCostsAtSave } from
+ * './backfill'` without triggering the `new Dexie('3DCosterDB')` top-level side
+ * effect (RESEARCH Pitfall 4). The only non-`../types` import is
+ * `getMaterialDensity` from `../utils/gcodeParser`, which is a pure lookup table.
+ *
+ * Idempotent. Jobs whose `fixedCostsAtSave` is already defined are skipped
+ * outright (returned array excludes them). Running the helper a second time
+ * over the merged result of the first pass returns an empty array.
+ *
+ * Missing-printer edge case (D-07): when a job's `printerInstanceId` does not
+ * resolve to any PrinterInstance, the snapshot is `{ depreciation: 0, nozzleWear: 0 }`
+ * and a `console.warn` carrying the job id + name is emitted. The job is still
+ * reconciled (orphan jobs end up with zero snapshots — they break-even on
+ * modelCost only, matching today's narrow-formula pill behavior; no surprise
+ * to the user).
+ *
+ * No `failureRate` multiplier on either depreciation or nozzleWear (D-06 /
+ * RESEARCH Pitfall 2). `failureRate` applies only to per-unit consumables in
+ * `calculateCost()` (filament + electricity + per-unit materials), not to the
+ * printer fixed-cost recovery side.
+ *
+ * Formulas mirror `calculateDepreciation` + `calculateNozzleWear` from
+ * `src/utils/costCalc.ts:70-99`:
+ *   depreciation = (purchasePrice / (recoveryMonths × monthlyHours)) × printTimeHours
+ *     where purchasePrice = inst.actualPurchasePrice ?? printerConfig.purchasePrice ?? 0
+ *           recoveryMonths = inst.recoveryMonths ?? 12
+ *           monthlyHours   = inst.estimatedMonthlyPrintHours ?? 40
+ *   nozzleWear   = (totalVolumeCm3 / printerConfig.nozzleLifespanCm3) × printerConfig.nozzleCost
+ *     where totalVolumeCm3 = Σ (filament.grams / getMaterialDensity(material.filamentType))
+ *     and rows with grams ≤ 0 contribute 0.
+ * If the PrinterConfig referenced by the instance is missing, nozzleWear is 0.
+ *
+ * Examples:
+ *   // Already-snapshotted job — skipped:
+ *   reconcileFixedCostsAtSave(
+ *     [{ ...job, fixedCostsAtSave: { depreciation: 5, nozzleWear: 0.02 } }], [], [], []
+ *   ) → []
+ *
+ *   // Legacy job with live printer + materials — full snapshot:
+ *   reconcileFixedCostsAtSave([legacyJob], [inst], [printerCfg], [pla])
+ *     → [{ ...legacyJob, fixedCostsAtSave: { depreciation: 5, nozzleWear: 0.4 } }]
+ *
+ *   // Orphan job (printerInstanceId points at deleted printer) — zero snapshot + warn:
+ *   reconcileFixedCostsAtSave([orphanJob], [], [], [])
+ *     → [{ ...orphanJob, fixedCostsAtSave: { depreciation: 0, nozzleWear: 0 } }]
+ *       // and console.warn called with the job's name + id + the literal
+ *       // "snapshotting zeros"
+ */
+export function reconcileFixedCostsAtSave(
+  jobs: PrintJob[],
+  printerInstances: PrinterInstance[],
+  printers: PrinterConfig[],
+  materials: Material[],
+): PrintJob[] {
+  // Build O(1) lookup maps once.
+  const instanceById = new Map<string, PrinterInstance>();
+  for (const inst of printerInstances) instanceById.set(inst.id, inst);
+  const printerById = new Map<string, PrinterConfig>();
+  for (const p of printers) printerById.set(p.id, p);
+
+  const out: PrintJob[] = [];
+  for (const job of jobs) {
+    // Job-level idempotency — already snapshotted, leave alone.
+    if (job.fixedCostsAtSave !== undefined) continue;
+
+    const inst = instanceById.get(job.printerInstanceId);
+    if (!inst) {
+      // D-07 missing-printer edge case: snapshot zeros + warn, do NOT throw.
+      console.warn(
+        `[reconcileFixedCostsAtSave] orphan job "${job.name}" (${job.id}): ` +
+          `printerInstanceId "${job.printerInstanceId}" not found — snapshotting zeros`,
+      );
+      out.push({ ...job, fixedCostsAtSave: { depreciation: 0, nozzleWear: 0 } });
+      continue;
+    }
+
+    const printer = printerById.get(inst.printerConfigId);
+
+    // Mirror calculateDepreciation (costCalc.ts:70-80). NO failureRate multiplier (Pitfall 2).
+    const purchasePrice = inst.actualPurchasePrice ?? printer?.purchasePrice ?? 0;
+    const recoveryMonths = inst.recoveryMonths ?? 12;
+    const monthlyHours = inst.estimatedMonthlyPrintHours ?? 40;
+    const totalRecoveryHours = recoveryMonths * monthlyHours;
+    const depreciationPerHour = totalRecoveryHours > 0 ? purchasePrice / totalRecoveryHours : 0;
+    const depreciation = depreciationPerHour * job.printTimeHours;
+
+    // Mirror calculateNozzleWear (costCalc.ts:86-99). NO failureRate multiplier (Pitfall 2).
+    let nozzleWear = 0;
+    if (printer) {
+      let totalVolumeCm3 = 0;
+      for (const filament of job.filaments) {
+        if (filament.grams <= 0) continue;
+        const asset = materials.find(m => m.id === filament.filamentId);
+        const density = getMaterialDensity(asset?.filamentType ?? null);
+        totalVolumeCm3 += filament.grams / density;
+      }
+      nozzleWear = (totalVolumeCm3 / printer.nozzleLifespanCm3) * printer.nozzleCost;
+    }
+
+    // Spread-copy — NEVER mutate the input job (could be a liveQuery cache entry).
+    out.push({ ...job, fixedCostsAtSave: { depreciation, nozzleWear } });
   }
   return out;
 }
