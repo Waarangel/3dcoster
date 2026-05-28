@@ -43,12 +43,12 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 
 ### Test coverage (TEST)
 
-- [ ] **TEST-01**: `CustomerEditModal.test.tsx` exists. Covers: Add vs Edit hydration, Name-OR-Email validation, Escape close, submit-disable during save, error recovery, **and the email-lowercase divergence** (currently the modal does NOT lowercase email on save while `customerCsv.ts` does — this test should lock the desired behavior, which is to lowercase). Closes [CODE-AUDIT #7](v1.2-CODE-AUDIT.md) part 1.
-- [ ] **TEST-02**: `CustomerCsvImportModal.test.tsx` exists. Covers: upload non-CSV → WR-06 error, upload valid CSV → preview step, dedup-mode toggle, row selection/deselect, confirm import call shape. Closes [CODE-AUDIT #7](v1.2-CODE-AUDIT.md) part 2.
-- [ ] **TEST-03**: `CustomerLibrary.test.tsx` exists. Covers: search-filter behavior, delete confirmation flow, edit-modal open/close, empty state, sort order (`lastUsedAt desc` with undefined-first per CL-01). Closes [CODE-AUDIT #7](v1.2-CODE-AUDIT.md) part 3.
-- [ ] **TEST-04**: `fake-indexeddb` added as devDependency; `database.migrations.test.ts` promoted to a real-Dexie upgrade test that opens a v7 fixture and asserts `db.quotes.toArray()` post-upgrade. Closes [CODE-AUDIT #27](v1.2-CODE-AUDIT.md) (LOW).
-- [ ] **TEST-05**: `dbJobsPutSpy` in `JobsManager.test.tsx` retyped to `vi.fn<(job: PrintJob) => Promise<void>>()`. Closes [CODE-AUDIT #26](v1.2-CODE-AUDIT.md) (LOW).
-- [ ] **TEST-06**: DUP-02 D-15 locked contract split into 6 named `it` blocks within a single `describe("DUP-02 D-15 locked contract")` — preserves the lock semantics while improving CI error messages. **Discussion required:** original test comment says "Do NOT modify these assertions"; discuss-phase confirms the intent allows refactoring shape while preserving assertion text. Closes [CODE-AUDIT #28](v1.2-CODE-AUDIT.md) (LOW).
+- [x] **TEST-01**: `CustomerEditModal.test.tsx` exists. Covers: Add vs Edit hydration, Name-OR-Email validation, Escape close, submit-disable during save, error recovery, **and the email-lowercase divergence** (currently the modal does NOT lowercase email on save while `customerCsv.ts` does — this test should lock the desired behavior, which is to lowercase). Closes [CODE-AUDIT #7](v1.2-CODE-AUDIT.md) part 1.
+- [x] **TEST-02**: `CustomerCsvImportModal.test.tsx` exists. Covers: upload non-CSV → WR-06 error, upload valid CSV → preview step, dedup-mode toggle, row selection/deselect, confirm import call shape. Closes [CODE-AUDIT #7](v1.2-CODE-AUDIT.md) part 2.
+- [x] **TEST-03**: `CustomerLibrary.test.tsx` exists. Covers: search-filter behavior, delete confirmation flow, edit-modal open/close, empty state, sort order (`lastUsedAt desc` with undefined-first per CL-01). Closes [CODE-AUDIT #7](v1.2-CODE-AUDIT.md) part 3.
+- [x] **TEST-04**: `fake-indexeddb` added as devDependency; `database.migrations.test.ts` promoted to a real-Dexie upgrade test that opens a v7 fixture and asserts `db.quotes.toArray()` post-upgrade. Closes [CODE-AUDIT #27](v1.2-CODE-AUDIT.md) (LOW).
+- [x] **TEST-05**: `dbJobsPutSpy` in `JobsManager.test.tsx` retyped to `vi.fn<(job: PrintJob) => Promise<void>>()`. Closes [CODE-AUDIT #26](v1.2-CODE-AUDIT.md) (LOW).
+- [x] **TEST-06**: DUP-02 D-15 locked contract split into 6 named `it` blocks within a single `describe("DUP-02 D-15 locked contract")` — preserves the lock semantics while improving CI error messages. **Discussion required:** original test comment says "Do NOT modify these assertions"; discuss-phase confirms the intent allows refactoring shape while preserving assertion text. Closes [CODE-AUDIT #28](v1.2-CODE-AUDIT.md) (LOW).
 
 ### Hygiene (HYG)
 

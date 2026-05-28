@@ -285,7 +285,7 @@ Plans:
 | 21. CSV + URL security | 3/3 | Complete    | 2026-05-27 |
 | 22. JobsManager decomposition + perf | 6/6 | Complete    | 2026-05-28 |
 | 22.1. Break-even formula reconciliation | 4/4 | Complete    | 2026-05-28 |
-| 23. Test coverage hardening | 4/4 | Complete   | 2026-05-28 |
+| 23. Test coverage hardening | 4/4 | Complete    | 2026-05-28 |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
 | 25. Doc + hygiene + polish + bundle health | 5/5 | Complete    | 2026-05-26 |
 
