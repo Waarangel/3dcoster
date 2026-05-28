@@ -1,7 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+// Source of truth: CHANGELOG.md at repo root, loaded as a string at build time
+// via Vite's `?raw` query. Replaces the previous GitHub Releases API fetch so
+// the marketing /changelog page stays in lockstep with what we actually ship
+// (no more "See the changelog" placeholder bodies from forgotten release.yml
+// edits). The release workflow also extracts from the same CHANGELOG.md (see
+// scripts/extract-changelog.cjs) so the GitHub release body and the marketing
+// page never drift.
+import changelogRaw from '../../CHANGELOG.md?raw';
 
 /**
  * How many releases to display on the /changelog page.
@@ -12,44 +20,88 @@ import { Footer } from '../components/Footer';
  */
 const MAX_RELEASES_DISPLAYED = 5;
 
-interface GitHubRelease {
-  id: number;
-  tag_name: string;
-  name: string;
-  body: string;
-  published_at: string;
-  prerelease: boolean;
-  draft: boolean;
-  html_url: string;
-}
+const GITHUB_REPO = 'Waarangel/3dcoster';
 
 interface ParsedRelease {
-  version: string;
-  name: string;
-  date: string;
-  body: string;
-  url: string;
+  version: string;     // e.g. "1.3.2" (no v prefix)
+  date: string;        // ISO date string
+  body: string;        // raw markdown body of the section
+  url: string;         // constructed GitHub release URL
   type: 'major' | 'minor' | 'patch' | 'milestone';
 }
 
 function getVersionType(version: string): 'major' | 'minor' | 'patch' | 'milestone' {
-  const parts = version.replace('v', '').split('.');
-  // 2-part tags (e.g. v1.3) are GSD milestone markers, not desktop releases.
-  // They should never reach this function (the release workflow no longer
-  // builds them, and the fetch loop below filters them out), but classify
-  // defensively in case a historical 2-part tag still has a release entry.
+  const parts = version.split('.');
+  // 2-part versions (e.g. 1.3) are GSD milestone markers, not desktop releases.
+  // Should never reach this function (parseChangelog filters to 3-part), but
+  // classify defensively.
   if (parts.length < 3) return 'milestone';
   if (parts[0] !== '0' && parts[1] === '0' && parts[2] === '0') return 'major';
   if (parts[2] === '0') return 'minor';
   return 'patch';
 }
 
-// 2-part version tags (v1.3, v2.0) are GSD milestone markers — planning
-// artifacts that should not appear on the user-facing changelog. Filter them
-// out at the source, before they consume one of the MAX_RELEASES_DISPLAYED
-// slots.
-function isDesktopReleaseTag(tagName: string): boolean {
-  return /^v\d+\.\d+\.\d+$/.test(tagName);
+/**
+ * Parse CHANGELOG.md (Keep a Changelog format) into structured releases.
+ *
+ * Matches sections shaped like:
+ *   ## [1.3.2] - 2026-05-28
+ *   <body...>
+ *   ## [1.3.1] - 2026-04-15   <-- terminator
+ *
+ * Skips `## [Unreleased]` and any section that isn't a 3-part semver version.
+ * Stops body capture at the next `## ` header OR a horizontal-rule `---`
+ * separator (CHANGELOG.md uses both to delimit sections).
+ */
+function parseChangelog(raw: string): ParsedRelease[] {
+  const lines = raw.split('\n');
+  // Match `## [1.3.2] - 2026-05-28` (also tolerant of optional time component
+  // or `[YANKED]` suffix).
+  const sectionHeader = /^## \[(\d+\.\d+\.\d+)\]\s*-\s*(\d{4}-\d{2}-\d{2})/;
+
+  const releases: ParsedRelease[] = [];
+  let current: { version: string; date: string; bodyLines: string[] } | null = null;
+
+  const closeCurrent = () => {
+    if (!current) return;
+    // Trim trailing blank lines and a trailing `---` separator if present.
+    while (current.bodyLines.length > 0 && current.bodyLines[current.bodyLines.length - 1].trim() === '') {
+      current.bodyLines.pop();
+    }
+    if (current.bodyLines.length > 0 && current.bodyLines[current.bodyLines.length - 1].trim() === '---') {
+      current.bodyLines.pop();
+    }
+    releases.push({
+      version: current.version,
+      date: new Date(current.date).toISOString(),
+      body: current.bodyLines.join('\n').trim(),
+      url: `https://github.com/${GITHUB_REPO}/releases/tag/v${current.version}`,
+      type: getVersionType(current.version),
+    });
+    current = null;
+  };
+
+  for (const line of lines) {
+    const match = line.match(sectionHeader);
+    if (match) {
+      closeCurrent();
+      current = { version: match[1], date: match[2], bodyLines: [] };
+      continue;
+    }
+    // Any other `## ` header (e.g. `## [Unreleased]`, `## Older releases`,
+    // `## How to add a release section`) closes the current section without
+    // starting a new one.
+    if (line.startsWith('## ') && current) {
+      closeCurrent();
+      continue;
+    }
+    if (current) {
+      current.bodyLines.push(line);
+    }
+  }
+  closeCurrent();
+
+  return releases;
 }
 
 function parseMarkdownBody(body: string): string[] {
@@ -94,49 +146,16 @@ function renderInlineMarkdown(text: string): (string | React.ReactElement)[] {
 }
 
 export function ChangelogPage() {
-  const [releases, setReleases] = useState<ParsedRelease[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchReleases() {
-      try {
-        // Fetch headroom (2x display cap) so that filtering out drafts +
-        // milestone-marker tags (v1.3, v2.0, etc.) still leaves enough
-        // 3-part desktop releases to fill MAX_RELEASES_DISPLAYED slots.
-        const response = await fetch(
-          `https://api.github.com/repos/Waarangel/3dcoster/releases?per_page=${MAX_RELEASES_DISPLAYED * 2}`
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch releases');
-        }
-
-        const data: GitHubRelease[] = await response.json();
-
-        const parsed: ParsedRelease[] = data
-          .filter(r => !r.draft)
-          .filter(r => isDesktopReleaseTag(r.tag_name))
-          .slice(0, MAX_RELEASES_DISPLAYED)
-          .map(r => ({
-            version: r.tag_name,
-            name: r.name || r.tag_name,
-            date: r.published_at,
-            body: r.body || '',
-            url: r.html_url,
-            type: getVersionType(r.tag_name),
-          }));
-
-        setReleases(parsed);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load releases');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchReleases();
-  }, []);
+  // CHANGELOG.md is bundled at build time — parse it once and memoize.
+  // No loading state needed; no fetch can fail. Falls back to an empty list
+  // if CHANGELOG.md ever becomes malformed (the "No Releases" empty state
+  // below handles that case).
+  const releases: ParsedRelease[] = useMemo(
+    () => parseChangelog(changelogRaw).slice(0, MAX_RELEASES_DISPLAYED),
+    []
+  );
+  const loading = false;
+  const error: string | null = null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col">
@@ -226,7 +245,7 @@ export function ChangelogPage() {
                       rel="noopener noreferrer"
                       className={`text-2xl font-bold hover:underline ${index === 0 ? 'text-white' : 'text-slate-300'}`}
                     >
-                      {release.version}
+                      v{release.version}
                     </a>
                     <span className={`px-2 py-0.5 text-xs rounded border ${
                       release.type === 'major'
@@ -252,11 +271,6 @@ export function ChangelogPage() {
                       </span>
                     )}
                   </div>
-
-                  {/* Release name if different from tag */}
-                  {release.name !== release.version && (
-                    <h3 className="text-lg font-medium text-white mb-3">{release.name}</h3>
-                  )}
 
                   {/* Release body (markdown) */}
                   {release.body && (
