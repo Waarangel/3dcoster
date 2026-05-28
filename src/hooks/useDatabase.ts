@@ -466,12 +466,11 @@ export function useJobs() {
   useEffect(() => {
     if (copiesSoldReconcileRan) return;
     if (jobs === undefined) return;  // wait for the first liveQuery emission
-    copiesSoldReconcileRan = true;
     let cancelled = false;
     (async () => {
       try {
         const allSales = await db.sales.toArray();
-        if (cancelled) return;
+        if (cancelled) return;  // do NOT set flag — never wrote
         const patches = reconcileCopiesSoldFromSales(jobs, allSales);
         if (patches.length > 0) {
           // bulkPut needs the full row; fetch current then merge copiesSold.
@@ -484,11 +483,14 @@ export function useJobs() {
             }
           });
         }
+        // WR-01: mark only on full completion. If we returned early via the
+        // `cancelled` guard above, the flag stays false so a future mount retries.
+        copiesSoldReconcileRan = true;
       } catch (err) {
         // Reconcile failures must NOT break the app — the UI still works
         // against stale counters; users can manually edit a Sale to retrigger.
         console.error('copiesSold reconcile failed:', err);
-        copiesSoldReconcileRan = false;  // allow retry on next mount
+        // flag stays false — next mount retries
       }
     })();
     return () => { cancelled = true; };
@@ -516,7 +518,6 @@ export function useJobs() {
   useEffect(() => {
     if (fixedCostsReconcileRan) return;
     if (jobs === undefined) return;  // wait for the first liveQuery emission
-    fixedCostsReconcileRan = true;
     let cancelled = false;
     (async () => {
       try {
@@ -531,7 +532,7 @@ export function useJobs() {
           db.materials.where('category').equals('printer').toArray(),
           db.materials.toArray(),
         ]);
-        if (cancelled) return;
+        if (cancelled) return;  // do NOT set flag — never wrote
         const printerConfigs = printerAssets
           .map(a => assetToPrinterConfig(a))
           .filter((p): p is PrinterConfig => p !== null);
@@ -545,12 +546,14 @@ export function useJobs() {
             }
           });
         }
+        // WR-01: mark only on full completion. If we returned early via the
+        // `cancelled` guard above, the flag stays false so a future mount retries.
+        fixedCostsReconcileRan = true;
       } catch (err) {
         // Reconcile failures must NOT break the app — the UI still works
         // against legacy jobs (their pills will read zero fixed costs until
-        // a successful retry). Allow retry on next mount.
+        // a successful retry). Flag stays false — next mount retries.
         console.error('fixedCosts reconcile failed:', err);
-        fixedCostsReconcileRan = false;  // allow retry on next mount
       }
     })();
     return () => { cancelled = true; };
@@ -573,7 +576,6 @@ export function useJobs() {
   useEffect(() => {
     if (tagsNormalizeRan) return;
     if (jobs === undefined) return;  // wait for the first liveQuery emission
-    tagsNormalizeRan = true;
     let cancelled = false;
     (async () => {
       try {
@@ -585,17 +587,19 @@ export function useJobs() {
             dirty.push({ ...copy, updatedAt: new Date() });
           }
         }
-        if (cancelled) return;
+        if (cancelled) return;  // do NOT set flag — never wrote
         if (dirty.length > 0) {
           await db.transaction('rw', db.jobs, async () => {
             for (const job of dirty) await db.jobs.put(job);
           });
         }
+        // WR-01: mark only on full completion. If we returned early via the
+        // `cancelled` guard above, the flag stays false so a future mount retries.
+        tagsNormalizeRan = true;
       } catch (err) {
         // Reconcile failures must NOT break the app — the UI still works
-        // against un-normalized tags. Allow retry on next mount.
+        // against un-normalized tags. Flag stays false — next mount retries.
         console.error('tag normalize reconcile failed:', err);
-        tagsNormalizeRan = false;
       }
     })();
     return () => { cancelled = true; };
