@@ -356,6 +356,16 @@ See [REQUIREMENTS.md "Out of Scope"](REQUIREMENTS.md#out-of-scope) for the full 
 *Replaces: v1.2 Quote-to-Customer roadmap (Phases 12–17, shipped 2026-05-25 — see [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md))*
 *Phase numbering continues from v1.2 — v1.3 phases start at Phase 18*
 
+### Phase 26: v1.3 cleanup — flip VALIDATION.md statuses, sync REQUIREMENTS.md checkboxes, customer-import modal parity
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 25
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 26 to break down)
+
 ---
 
 ## Historical Milestones (collapsed)

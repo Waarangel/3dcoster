@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: ready_to_plan
-stopped_at: Phase 23 complete (4/4) — ready to discuss Phase 24
-last_updated: 2026-05-28T15:32:11.100Z
-last_activity: 2026-05-28 -- Phase 23 execution started
+status: planning
+stopped_at: Phase 23 context gathered
+last_updated: "2026-05-28T19:27:47.120Z"
+last_activity: 2026-05-28
 progress:
-  total_phases: 9
-  completed_phases: 8
+  total_phases: 10
+  completed_phases: 9
   total_plans: 39
-  completed_plans: 110
-  percent: 89
+  completed_plans: 39
+  percent: 90
 ---
 
 # Project State
@@ -109,6 +109,7 @@ Last activity: 2026-05-28
 - Phase 17 added 2026-05-25 mid-milestone — closure phase for PDF-04 (Rollup circular chunk defeats jsPDF lazy-loading) + tax rounding divergence (PrintQuoteModal vs CostCalculator). Surfaced by /gsd:audit-milestone v1.2.
 - Phase 24 edited: added Phase 18 code review carryover (WR-01/02/03) to Phase 24 scope
 - Phase 22.1 inserted after Phase 22: Break-even formula reconciliation — Calculator's formula wins; persist depreciation+nozzleWear on PrintJob; one-time reconcile helper for legacy IndexedDB jobs; folds in WR-01/WR-02 from Phase 22 code review. Surfaced during Phase 22 UAT. (URGENT)
+- Phase 26 added: v1.3 cleanup — flip VALIDATION.md statuses, sync REQUIREMENTS.md checkboxes, customer-import modal parity
 
 ### Decisions
 
