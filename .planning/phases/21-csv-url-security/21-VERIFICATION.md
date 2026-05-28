@@ -1,16 +1,19 @@
 ---
 phase: 21-csv-url-security
 verified: 2026-05-27T09:15:00Z
-status: human_needed
-score: 4/4 must-haves verified (automated); 2 manual UAT items deferred to human
-re_verification: null
+re_verified: 2026-05-28T16:10:00Z
+status: passed
+score: 4/4 automated truths VERIFIED; 1/2 manual UAT truths VERIFIED, 1/2 SKIPPED with acknowledged spec gap
+re_verification: "Phase 21 HUMAN-UAT executed 2026-05-28 (see 21-HUMAN-UAT.md). Test 2 (javascript: Model URL render-guard) PASS in live browser. Test 1 (customer CSV formula-injection) SKIPPED — the customer CSV export feature named by SC#5 does not exist in the codebase; only assets export (generateExportCsv) shipped, with sanitization hardening verified at unit-test layer (csvHelpers.test.ts 8/8 + customerCsv.test.ts 5/5). User deprioritized adding customer export. Follow-up captured in .planning/todos/pending/customer-import-modal-parity.md (separate UI polish item also discovered during UAT)."
 human_verification:
   - test: "Export a customer CSV containing a customer named `=HYPERLINK(\"https://example.com\",\"click\")`; open the exported file in Excel/Numbers/LibreOffice Calc"
     expected: "The cell shows the literal string `=HYPERLINK(\"https://example.com\",\"click\")` (with the leading single-quote stripped by the spreadsheet's text-cell convention) — NOT a clickable hyperlink. No formula execution."
     why_human: "Requires opening the exported file in an external spreadsheet application (Excel / Numbers / LibreOffice Calc) and observing the visual / interactive rendering. Cannot be verified by grep or unit test — the rendering is owned by the consuming application, not by the codebase."
+    outcome: "SKIPPED on 2026-05-28 — Customer CSV export does not exist in the codebase. Phase 21 SC#5 specified a UAT for an unbuilt feature; only generateExportCsv(assets) ships sanitization. User confirmed deprioritization. Defense-in-depth at the helper layer (sanitizeCsvCell + 8 unit tests) and parser pass-through layer (customerCsv.test.ts 5 tests) preserved. Backlog: add customer CSV export when needed and route through sanitizeCsvCell."
   - test: "In the calculator, enter `javascript:alert(1)` (or `data:text/html,<script>alert(1)</script>`) as a job's Model URL; save the job; navigate to the Jobs tab and expand the job card"
     expected: "The Model source row shows `javascript:alert(1)` as plain muted text (slate-400, no underline, no link-blue) with a hover tooltip reading `Link blocked: must start with http:// or https://`. Clicking the text does NOT navigate, does NOT execute the payload, does NOT show an alert dialog."
     why_human: "Requires running the dev server (port 4173), interacting with the form, saving to IndexedDB, navigating tabs, expanding a job card, and visually observing the muted styling + hover tooltip + non-interactive behavior. The render-time guard is unit-covered (JobsManager.test.tsx Phase 21 SEC-02 block, 5 passing tests) but visual + interactive UX confirmation requires a live browser session."
+    outcome: "PASS on 2026-05-28 — User confirmed live browser test passes. Render-time guard works as specified."
 ---
 
 # Phase 21: CSV + URL Security Verification Report
