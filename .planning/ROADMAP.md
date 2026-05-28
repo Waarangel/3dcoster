@@ -253,7 +253,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 | 19. Modal primitive + a11y migration | 6/6 | Complete    | 2026-05-26 |
 | 20. Dexie atomicity audit | 4/4 | Complete    | 2026-05-26 |
 | 21. CSV + URL security | 3/3 | Complete    | 2026-05-27 |
-| 22. JobsManager decomposition + perf | 6/6 | Complete   | 2026-05-27 |
+| 22. JobsManager decomposition + perf | 6/6 | Complete    | 2026-05-28 |
 | 23. Test coverage hardening | 0/4 | Not started | — |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
 | 25. Doc + hygiene + polish + bundle health | 5/5 | Complete    | 2026-05-26 |
