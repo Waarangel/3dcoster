@@ -27,39 +27,36 @@ _Add the next release's user-facing changes here. Promote to a versioned section
 
 ## [1.3.2] - 2026-05-28
 
-The v1.3 Hardening release — 6 weeks of foundation work shipped to desktop users in one go. No new user-facing features by design; every change closes an audit finding (accessibility, security, atomicity, performance, hygiene) so that v1.4+ feature work has a clean base to build on. Bundle stays under 60 KB gzipped despite ~13K LOC added.
+A hardening release — no new features, just a sweep through accessibility, security, reliability, and polish so v1.4+ can build on a clean foundation.
 
-### Added
-- **Customer Library testing surface** — full test coverage for CustomerEditModal, CustomerCsvImportModal, and CustomerLibrary, including bulk-import preview, dedup-mode toggle, and the `lastUsedAt` sort lock.
-- **`<Modal>` primitive** — every modal in the app (10 surfaces) now shares one WAI-ARIA dialog implementation with focus trap, scroll-lock, and proper `useId()`-labeled fields. Press Escape to close any modal from anywhere it has focus.
-- **Customer template download button** — `👥 Customer template` link inside Import Customers, matching the existing Materials / Printers template download UX in the Assets import modal.
-- **PrintQuoteModal overflow-menu keyboard support** — the `[⋯]` menu on Pending quote rows now closes on Escape and on outside-click.
+### ♿ Accessibility
+- **Every modal in the app now shares one foundation** — focus trap, scroll lock, Escape-to-close, and proper screen-reader labels work consistently across all 10 modal surfaces (Record Sale, Print Quote, Edit Customer, CSV Import, and more)
+- **Better contrast on quote status pills** — Declined pills are now noticeably more readable (4.6:1 WCAG AA contrast); all status pills announce their state to screen readers as "Status: Pending / Accepted / Declined / Converted"
+- **Form field labels properly paired** — every input now has its label associated for click-to-focus and screen-reader navigation
 
-### Changed
-- **CustomerEditModal email canonicalization** — emails are now lowercased on save (was: saved as-typed), matching how the CSV import canonicalizes. Resolves the bug where typing `John@Example.com` in the modal and importing `john@example.com` via CSV would create two separate library entries for the same person. Existing customer rows are auto-fixed on first app load.
-- **JobsManager refactor** — internal restructure that has no visual impact but makes the Jobs tab faster on large libraries (per-row break-even pre-compute via memoized map; redundant marketplace-fee recalculation collapsed; deduplicated `useSales` subscription).
-- **Customer Library row layout** — "Last used" text is now vertically centered with the Edit / Delete buttons.
-- **QuoteStatusPill accessibility** — adds `aria-label="Status: {label}"` for screen readers; the Declined status pill now uses brighter slate-200 text on slate-700 background (4.6:1 contrast, meets WCAG AA).
-- **Bundle health** — main chunk dropped from 61.5 KB → 56.5 KB gzipped through JobsManager decomposition. The 300 KB main-chunk gate from Phase 11 stays comfortably intact.
+### 🔒 Security
+- **CSV exports no longer risk formula injection** — opening an exported CSV in Excel, Numbers, or LibreOffice can no longer trigger an accidental formula payload from data like `=HYPERLINK(...)` in a customer name
+- **Model URL field rejects dangerous schemes** — pasting `javascript:alert(1)` or a `data:` URL as a job's Model URL renders it as plain muted text with a "Link blocked" tooltip, not a clickable link
 
-### Fixed
-- **PDF generation on Windows desktop** — fixed Tauri `fs:scope` ACL that was silently blocking PDF writes outside the app's working directory. PDFs now save to anywhere the user picks in the file dialog.
-- **Data atomicity** — `Record Sale`, `Create Quote`, and the v8→v9 Dexie migration are now properly transactional. A crash mid-operation no longer leaves the library half-updated (e.g. a Sale recorded without its referenced Quote, or vice versa).
-- **CSV formula injection** — exported CSVs from anywhere in the app (Asset library, customer templates, future exports) now neutralize any cell starting with `=`, `+`, `-`, or `@` — opening the export in Excel / Numbers / LibreOffice no longer risks accidentally executing a formula payload.
-- **JobsManager Model URL render** — entering `javascript:alert(1)` or `data:text/html,…` as a Model URL no longer renders as a clickable link in the Jobs view. Non-`http(s)` URLs render as plain muted text with a tooltip explaining why.
-- **`@tauri-apps/api` deduplication** — bumped Rust Tauri crate to 2.11.x so the bundle no longer ships two nested copies of `@tauri-apps/api`. Reduces install size and eliminates a class of "which copy is loaded?" runtime ambiguity.
-- **Break-even pill formula consistency** — the per-row break-even count shown in the Jobs tab now matches what the Calculator tab's Break-even Units widget computes for the same job, in all currencies. Previously the two could diverge when a job had per-print model cost split across multiple units. Existing jobs are auto-snapshotted on first app load so the agreement holds historically too.
-- **Customer Import modal layout** — the template download block now appears above the upload zone (was: below), matching the Asset Import modal pattern.
+### 🐛 Reliability
+- **PDF saves work properly on Windows desktop** — the Tauri filesystem permission that was silently blocking PDF writes outside the app's working folder is fixed; PDFs now save wherever you pick in the file dialog
+- **Crash-safe database operations** — recording a sale, creating a quote, and the v8→v9 database migration are now wrapped in transactions; a crash mid-operation no longer leaves your library half-updated
+- **Break-even Units matches everywhere** — the per-row break-even count in the Jobs tab now equals what the Calculator tab's Break-even Units widget computes for the same job, in every currency. Old jobs are quietly auto-fixed on first launch
+- **Tauri runtime deduplicated** — Rust crate bumped to 2.11.x; bundle no longer ships two nested copies of `@tauri-apps/api`, eliminating a class of "which copy is loaded?" runtime ambiguity
 
-### Security
-- **Formula injection prevention (SEC-01)** — all CSV export paths route through `sanitizeCsvCell` at the cell-serialization boundary.
-- **Render-time XSS guard for Model URLs (SEC-02)** — `isSafeHttpUrl` validates `http://` / `https://` prefix before rendering any user-entered URL as an `<a href>`.
-- **CSV parser pass-through regression locks (SEC-03)** — 5 new tests pin the customer CSV parser's character-for-character pass-through behavior against formula-injection inputs and Unicode (Latin diacritic / CJK / emoji).
+### ✨ Customer Library
+- **Same customer, every time** — emails are lowercased on save in the Edit Customer modal (matching the CSV importer), so typing `John@Example.com` once and importing `john@example.com` from a CSV no longer creates two library entries for the same person. Existing duplicates auto-resolve on first launch
+- **Customer template download button now in Import Customers** — matches the Materials / Printers template UX in the Assets importer
+- **"Last used" text vertically centered with Edit / Delete buttons** — a small alignment fix that's been bugging us
 
-### For developers
-- **Release notes now sourced from `CHANGELOG.md`** — the GitHub Actions release workflow extracts the section matching the pushed tag and uses it as the release body. Missing section → soft warning in the build log + fallback template. See `.claude/CLAUDE.md` "Desktop App Release Process" for the rule. No more "See the changelog" placeholder releases.
-- **/changelog page caps at 5 most recent releases** with "View full archive on GitHub" link. Filters out 2-part GSD milestone tags (e.g. `v1.3`) so internal planning markers don't surface as user-facing releases.
-- **Windows lint script fix** — `scripts/lint-no-raw-html.mjs` now normalizes file paths to forward slashes before comparing against the exclude list. Previously failed every Windows release matrix run because backslash paths never matched the `src/components/ui` allowlist. Macs were unaffected; the failure went unnoticed until v1.3 release attempt.
+### ⚡ Performance
+- **JobsManager refactor** — the Jobs tab is faster on large libraries (per-row break-even is pre-computed once, marketplace-fee no longer recalculates 3× per render, deduplicated database subscriptions)
+- **Smaller bundle** — main chunk dropped from 61.5 KB → 56.5 KB gzipped despite ~13K lines of new code, well under the 300 KB ceiling
+
+### Behind the scenes
+- **Release notes now come from `CHANGELOG.md`** — this release is the first one whose notes were sourced from a versioned changelog file. Future releases auto-populate from the same source; if a release ever lands without a CHANGELOG entry the build warns loudly
+- **/changelog marketing page now shows the 5 most recent releases** with a "View full archive on GitHub" link (was: 20)
+- **Windows release builds work again** — a path-separator bug in our lint script was silently failing the Windows matrix of every release attempt; macOS builds were unaffected so the failure went unnoticed until this release
 
 ---
 
