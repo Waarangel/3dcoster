@@ -361,13 +361,13 @@ See [REQUIREMENTS.md "Out of Scope"](REQUIREMENTS.md#out-of-scope) for the full 
 **Goal**: Close the v1.3 audit `tech_debt` items so milestone can tag cleanly — flip stale VALIDATION.md frontmatter on Phases 18/20/22/22.1, backfill missing VALIDATION.md for Phases 19/23/24/25, sync REQUIREMENTS.md DATA-07 + PERF-08 checkboxes, and bring CustomerCsvImportModal layout into parity with CsvImportModal (template-block above upload zone, 👥 emoji prefix)
 **Depends on:** Phase 25
 **Requirements**: DOC-03 (validation backfill), DOC-04 (requirements sync), POL-05 (customer modal parity)
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 26-01-PLAN.md — VALIDATION.md frontmatter flips (Phases 18, 20, 22, 22.1) per D-01/D-02/D-03 — Wave 1, autonomous=true
-- [ ] 26-02-PLAN.md — VALIDATION.md backfill (Phases 19, 23, 24, 25) per D-05/D-06 — Wave 1, autonomous=true
-- [ ] 26-03-PLAN.md — REQUIREMENTS.md DATA-07 + PERF-08 checkbox + traceability sync per D-07/D-08 — Wave 1, autonomous=true
-- [ ] 26-04-PLAN.md — CustomerCsvImportModal layout parity (Template-first reorder + 👥 emoji prefix) per D-09/D-10/D-11/D-12 — Wave 1, autonomous=true
+- [x] 26-01-PLAN.md — VALIDATION.md frontmatter flips (Phases 18, 20, 22, 22.1) per D-01/D-02/D-03 — Wave 1, autonomous=true
+- [x] 26-02-PLAN.md — VALIDATION.md backfill (Phases 19, 23, 24, 25) per D-05/D-06 — Wave 1, autonomous=true
+- [x] 26-03-PLAN.md — REQUIREMENTS.md DATA-07 + PERF-08 checkbox + traceability sync per D-07/D-08 — Wave 1, autonomous=true
+- [x] 26-04-PLAN.md — CustomerCsvImportModal layout parity (Template-first reorder + 👥 emoji prefix) per D-09/D-10/D-11/D-12 — Wave 1, autonomous=true
 
 ---
 
