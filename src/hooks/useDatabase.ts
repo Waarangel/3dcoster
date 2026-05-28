@@ -539,10 +539,16 @@ export function useJobs() {
         const updated = reconcileFixedCostsAtSave(jobs, printerInstances, printerConfigs, allMaterials);
         if (updated.length > 0) {
           // Helper returns full PrintJob[] (not patches) so we write each row
-          // directly — no need to re-fetch + merge.
+          // directly — no need to re-fetch + merge. WR-03: do NOT override
+          // updatedAt here — reconcileFixedCostsAtSave returns `{...job,
+          // fixedCostsAtSave: {...}}` so the row's original updatedAt is
+          // already preserved. Stamping `new Date()` would re-sort every
+          // legacy job to "edited today" on first post-migration reload —
+          // a silent UX regression. (The other two reconciles in this hook
+          // change content semantics, so they correctly DO bump updatedAt.)
           await db.transaction('rw', db.jobs, async () => {
             for (const updatedJob of updated) {
-              await db.jobs.put({ ...updatedJob, updatedAt: new Date() });
+              await db.jobs.put(updatedJob);
             }
           });
         }
