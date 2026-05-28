@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui';
 
 // Current app version - update this when releasing new versions
-export const APP_VERSION = '1.3.2';
+export const APP_VERSION = '1.4.0';
 
 const DOWNLOAD_URL = 'https://3dcoster.vercel.app/download';
 

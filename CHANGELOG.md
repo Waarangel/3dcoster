@@ -25,50 +25,93 @@ _Add the next release's user-facing changes here. Promote to a versioned section
 
 ---
 
-## [1.3.2] - 2026-05-28
+## [1.4.0] - 2026-05-28
 
-A hardening release — no new features, just a sweep through accessibility, security, reliability, and polish so v1.4+ can build on a clean foundation.
+A huge release — 6 weeks of work shipped at once. The Customer Library, Printable PDF Quote, Job tags + search, three-layer tax model, Etsy ToS helper, and a full accessibility + security + performance pass. If you've been on v1.3.1, this update is the equivalent of three normal releases stacked into one.
 
-### ♿ Accessibility
-- **Every modal in the app now shares one foundation** — focus trap, scroll lock, Escape-to-close, and proper screen-reader labels work consistently across all 10 modal surfaces (Record Sale, Print Quote, Edit Customer, CSV Import, and more)
-- **Better contrast on quote status pills** — Declined pills are now noticeably more readable (4.6:1 WCAG AA contrast); all status pills announce their state to screen readers as "Status: Pending / Accepted / Declined / Converted"
-- **Form field labels properly paired** — every input now has its label associated for click-to-focus and screen-reader navigation
+### 👥 Customer Library — a whole new app section
+- **New Customers tab** — manage your customer list as first-class records (name, email, company, address, notes). Virtualized list scales to thousands of customers without lag.
+- **CSV bulk import** — drop a `.csv` of existing customers to seed your library in one step. Smart column detection, preview-before-import, and Skip / Update duplicate handling.
+- **Combobox picker in Record Sale** — type a name or email when recording a sale and the matching customer pre-fills. Email auto-link finds the same customer across past sales.
+- **By-value snapshots on Sales** — editing a Customer in the Library never mutates the customer fields on historical sales (audit-trail integrity is locked by a test contract).
+
+### 📄 Printable PDF Quote — send professional quotes to your customers
+- **One-click PDF quote** from any saved job, with your customer's details, line items, taxes, and totals laid out on a clean page.
+- **Recent Quotes accordion** in the Jobs tab — every quote you've sent shows its status (Pending / Accepted / Declined / Converted) with one-click status changes.
+- **Convert-to-Sale** — accepting a quote turns it into a Sale in one atomic operation; the quote and the sale stay linked so you can trace any sale back to its originating quote.
+- **Lazy-loaded** — the PDF engine (`jsPDF`) only loads when you click "Create Quote", so the app's startup time stays fast for everyone who doesn't use quotes.
+- **Free tier ships with a small "Made with 3DCoster" footer.** White-label PDFs (no footer, your logo) are planned for a future paid tier.
+
+### 🏷️ Job tags + search — organize your library
+- **Editable tags on every job** — free-text, comma-separated; auto-lowercased, trimmed, deduplicated, capped at 10 per job. Edit inline on the job title row without leaving the Jobs view.
+- **Free-text search across the Jobs library** — search matches job title, customer name, and tags simultaneously. Type once, find anything.
+- **Quick-duplicate helper** — `duplicateJob()` produces a copy of any saved job with PII reset, tax fields cleared, and a fresh id. (UI for one-click duplicate is queued for the next release; the helper is locked-in with a 7-case test contract for future consumers.)
+
+### 💰 Three-layer tax model
+- **Region defaults** — built-in tax rates for the EU 27, UK, AU, CA, JP, US (no-tax), and more. Pick your region in Settings; defaults apply to all new jobs.
+- **Settings override** — set a project-wide default tax rate that overrides the region default (e.g. you're in the US but selling B2B with a flat 8.25%).
+- **Per-job override** — tweak the rate on any individual job when an edge case demands it.
+- Tax math is unit-tested with order-of-operations guards (tax applies to `sellingPrice`, never to `subtotal`).
+
+### 🛒 Etsy ToS compliance helper
+- **Inline checklist** on jobs where you've set `marketplace: etsy`. Covers Etsy's seller policy reminders (handmade verification, intellectual property, shipping disclosure) with the policy summary date and a link to the source.
+- Conditional — only renders when relevant, never on the customer-facing PDF.
+
+### 📅 Currency upgrades
+- **Japanese Yen (JPY)** now formats correctly with 0 decimal places.
+- Currency fallback formatting catches edge cases that previously rendered as raw numbers.
+- Carrier costs and marketplace fees clamp at 0 — no more negative numbers from typos.
+
+### ♿ Accessibility overhaul
+- **`<Modal>` primitive** — every modal in the app (10 surfaces: Record Sale, Print Quote, Edit Customer, CSV Import, and more) now shares one WAI-ARIA dialog implementation with focus trap, scroll lock, Escape-to-close, and proper `useId()`-labeled fields.
+- **Quote status pills announce their state** to screen readers (`"Status: Pending / Accepted / Declined / Converted"`).
+- **Declined pill contrast** bumped to 4.6:1 (WCAG AA).
+- **Form field labels** properly paired with their inputs for click-to-focus and screen-reader navigation.
+- **Virtualized list rows** have ARIA roles so keyboard navigation works correctly.
 
 ### 🔒 Security
-- **CSV exports no longer risk formula injection** — opening an exported CSV in Excel, Numbers, or LibreOffice can no longer trigger an accidental formula payload from data like `=HYPERLINK(...)` in a customer name
-- **Model URL field rejects dangerous schemes** — pasting `javascript:alert(1)` or a `data:` URL as a job's Model URL renders it as plain muted text with a "Link blocked" tooltip, not a clickable link
+- **CSV exports neutralize formula injection** — cells starting with `=`, `+`, `-`, or `@` are escaped at the cell-serialization boundary, so opening an exported CSV in Excel / Numbers / LibreOffice can't trigger an accidental formula payload from a maliciously-named customer.
+- **Model URL render guard** — pasting `javascript:alert(1)` or a `data:` URL as a job's Model URL renders as plain muted text with a "Link blocked" tooltip, not a clickable link.
 
 ### 🐛 Reliability
-- **PDF saves work properly on Windows desktop** — the Tauri filesystem permission that was silently blocking PDF writes outside the app's working folder is fixed; PDFs now save wherever you pick in the file dialog
-- **Crash-safe database operations** — recording a sale, creating a quote, and the v8→v9 database migration are now wrapped in transactions; a crash mid-operation no longer leaves your library half-updated
-- **Break-even Units matches everywhere** — the per-row break-even count in the Jobs tab now equals what the Calculator tab's Break-even Units widget computes for the same job, in every currency. Old jobs are quietly auto-fixed on first launch
-- **Tauri runtime deduplicated** — Rust crate bumped to 2.11.x; bundle no longer ships two nested copies of `@tauri-apps/api`, eliminating a class of "which copy is loaded?" runtime ambiguity
-
-### ✨ Customer Library
-- **Same customer, every time** — emails are lowercased on save in the Edit Customer modal (matching the CSV importer), so typing `John@Example.com` once and importing `john@example.com` from a CSV no longer creates two library entries for the same person. Existing duplicates auto-resolve on first launch
-- **Customer template download button now in Import Customers** — matches the Materials / Printers template UX in the Assets importer
-- **"Last used" text vertically centered with Edit / Delete buttons** — a small alignment fix that's been bugging us
+- **PDF saves work on Windows desktop** — fixed a Tauri filesystem permission that was silently blocking PDF writes outside the app's working folder. PDFs now save wherever you pick in the file dialog.
+- **Crash-safe database operations** — recording a sale, creating a quote, and the v8→v9 database migration are now wrapped in transactions. A crash mid-operation never leaves your library half-updated (e.g. a Sale without its referenced Quote).
+- **Break-even Units matches everywhere** — the per-row break-even count in the Jobs tab now equals what the Calculator tab's Break-even Units widget computes for the same job, in every currency. Old jobs are quietly auto-snapshotted on first launch so historical agreement holds too.
+- **Tauri runtime deduplicated** — bundle no longer ships two nested copies of `@tauri-apps/api`.
+- **Multi-tab safety** — opening the app in two tabs and triggering a schema migration in one no longer crashes the other; the affected tab reloads automatically.
+- **G-code Windows line endings** — slicer exports with `\r\n` line endings now parse correctly (previously only Unix `\n` worked).
 
 ### ⚡ Performance
-- **JobsManager refactor** — the Jobs tab is faster on large libraries (per-row break-even is pre-computed once, marketplace-fee no longer recalculates 3× per render, deduplicated database subscriptions)
-- **Smaller bundle** — main chunk dropped from 61.5 KB → 56.5 KB gzipped despite ~13K lines of new code, well under the 300 KB ceiling
+- **JobsManager refactor** — the Jobs tab is faster on large libraries: per-row break-even pre-computed once via memoized map; marketplace-fee no longer recalculates 3× per render; deduplicated database subscriptions.
+- **300 KB main-chunk gate** — enforced as a build-time check so the app's startup time doesn't regress as we ship more features. Currently at 56.5 KB main + lazy-loaded PDF chunk, well under the ceiling.
+
+### ✨ UI consistency + polish
+- **Customer Library row layout** — "Last used" text vertically centered with Edit / Delete buttons.
+- **Customer Import modal** — template download (`👥 Customer template`) now above the upload zone, matching the asset import pattern.
+- **QuoteRow overflow menu** closes on Escape AND outside-click.
+- **Compact numeric inputs** — currency, %, and rate inputs are visually narrower so small data doesn't live in wide fields.
+- **Info-icon tooltips** replace verbose placeholder text on form fields — descriptions live next to labels, placeholders show example values.
+- **Empty states** with helpful CTAs across the app (Jobs, Sales, Customers, Assets).
+- **Skeleton loading states** while data hydrates from IndexedDB, so the app feels responsive from first paint.
+
+### 🧪 Test coverage
+- **First Customer-UI test files** — `CustomerEditModal.test.tsx` (7 tests), `CustomerCsvImportModal.test.tsx` (6 tests), `CustomerLibrary.test.tsx` (7 tests including the sort-order lock).
+- **Real-Dexie migration test** via `fake-indexeddb` — locks the v7→v8 quotes-store migration at the actual transaction boundary, not just at the helper layer.
+- **CostCalculator Vitest suite** — pure-function tax + cost math is now exhaustively unit-tested.
+- **466 tests passing** across 31 test files (up from ~280 in v1.3.1).
 
 ### Behind the scenes
-- **Release notes now come from `CHANGELOG.md`** — this release is the first one whose notes were sourced from a versioned changelog file. Future releases auto-populate from the same source; if a release ever lands without a CHANGELOG entry the build warns loudly
-- **/changelog marketing page now shows the 5 most recent releases** with a "View full archive on GitHub" link (was: 20)
-- **Windows release builds work again** — a path-separator bug in our lint script was silently failing the Windows matrix of every release attempt; macOS builds were unaffected so the failure went unnoticed until this release
+- **Release notes now come from `CHANGELOG.md`** — this release is the first whose notes were sourced from a versioned changelog file. Future releases auto-populate from the same source; if a release ever lands without a CHANGELOG entry the build warns loudly.
+- **/changelog marketing page sources from CHANGELOG.md** at build time (not the GitHub Releases API), so the page never drifts from what we actually documented.
+- **/changelog page caps at 5 most recent releases** with a "View full archive on GitHub" link.
+- **Windows release builds work again** — a path-separator bug in the `lint-no-raw-html` script was silently failing the Windows matrix of every release attempt; the macOS matrix was unaffected so the failure went unnoticed until this release.
+- **Nyquist validation contracts** authored for all 13 in-scope phases (audit traceability is now first-class).
 
 ---
 
 ## [1.3.1] - 2026-04-15
 
-_Original v1.3.1 desktop release (April 15, 2026). This patch shipped before the CHANGELOG.md system was adopted; the GitHub release body was the auto-generated "See the changelog" placeholder. The substantive code changes from v1.3.0 → v1.3.1 are visible in the [commit log](https://github.com/Waarangel/3dcoster/compare/v1.3.0...v1.3.1). The v1.3.2 release above bundles all subsequent v1.3 Hardening work._
-
----
-
-## [1.3.0] - 2026-04-15
-
-_Original v1.3.0 desktop release (April 15, 2026). Released before the CHANGELOG.md system was adopted. The v1.3.2 release above is the first release with proper release notes since this one._
+_Original v1.3.1 desktop release. This patch shipped before the CHANGELOG.md system was adopted; the GitHub release body was the auto-generated "See the changelog" placeholder. v1.4.0 above is the next release after v1.3.1 — there is no v1.3.2; the v1.3 numbering after this entry was retired in favor of a clean v1.4.0 minor bump that reflects the size of the 6-week change set._
 
 ---
 
