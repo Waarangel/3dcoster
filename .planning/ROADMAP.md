@@ -186,13 +186,13 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 
 **UI hint**: yes (the break-even pill value changes for some jobs — the Calculator widget number stays the same)
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 22.1-01-PLAN.md — Schema extension (PrintJob.fixedCostsAtSave) + reconcileFixedCostsAtSave helper (Path B faithful reconstruction) + 4 Vitest cases + useJobs() module-flag wire-up (DATA-07) — Wave 1
 - [x] 22.1-02-PLAN.md — CostCalculator writes snapshot on Save+Update + JobsManager computeBreakEvenInfo numerator widened + 3 PERF-08 round-trip tests (TDD: tests first, formula change second) (PERF-08) — Wave 2, depends_on [22.1-01]
 - [x] 22.1-03-PLAN.md — Phase 22 code-review carry-overs: WR-01 dead-prop removal (userProfile from RecordSaleModalProps + JobsManager callsite) + WR-02 hydration dep array narrowed with Pitfall 3 comment + WR-02 regression test (TDD ordering) — Wave 2, depends_on [22.1-01]
-- [ ] 22.1-04-PLAN.md — Manual UAT: pre-flight tsc-b/npm-test gates + dev server on port 4173 + Phase 22 Complex Test job verification + NaN/Infinity/undefined sweep + reload-idempotency check + RecordSaleModal smoke (PERF-08, DATA-07) — Wave 3, depends_on [22.1-01, 22.1-02, 22.1-03], autonomous=false
+- [x] 22.1-04-PLAN.md — Manual UAT: pre-flight tsc-b/npm-test gates + dev server on port 4173 + Phase 22 Complex Test job verification + NaN/Infinity/undefined sweep + reload-idempotency check + RecordSaleModal smoke (PERF-08, DATA-07) — Wave 3, depends_on [22.1-01, 22.1-02, 22.1-03], autonomous=false
 
 ### Phase 23: Test coverage hardening
 
@@ -284,7 +284,7 @@ Plans:
 | 20. Dexie atomicity audit | 4/4 | Complete    | 2026-05-26 |
 | 21. CSV + URL security | 3/3 | Complete    | 2026-05-27 |
 | 22. JobsManager decomposition + perf | 6/6 | Complete    | 2026-05-28 |
-| 22.1. Break-even formula reconciliation | 3/4 | In Progress|  |
+| 22.1. Break-even formula reconciliation | 4/4 | Complete   | 2026-05-28 |
 | 23. Test coverage hardening | 0/4 | Not started | — |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
 | 25. Doc + hygiene + polish + bundle health | 5/5 | Complete    | 2026-05-26 |
