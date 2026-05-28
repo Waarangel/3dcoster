@@ -262,6 +262,20 @@ function UploadStep({
 }: UploadStepProps) {
   return (
     <div className="space-y-4">
+      {/* Template download */}
+      <div className="bg-slate-700/50 rounded-lg p-3">
+        <p className="text-sm text-slate-300 mb-2">Download a sample template to get started:</p>
+        <Button
+          type="button"
+          variant="ghost"
+          btnSize="sm"
+          onClick={() => downloadCsv(generateSampleCustomerCsv(), 'customer-template.csv')}
+          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+        >
+          👥 Customer template
+        </Button>
+      </div>
+
       {/* Error banner */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 whitespace-pre-line">
@@ -293,20 +307,6 @@ function UploadStep({
           onChange={onFileSelect}
           className="hidden"
         />
-      </div>
-
-      {/* Template download */}
-      <div className="bg-slate-700/50 rounded-lg p-3">
-        <p className="text-sm text-slate-300 mb-2">Download a sample template to get started:</p>
-        <Button
-          type="button"
-          variant="ghost"
-          btnSize="sm"
-          onClick={() => downloadCsv(generateSampleCustomerCsv(), 'customer-template.csv')}
-          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-        >
-          Customer template
-        </Button>
       </div>
 
       {/* Accepted columns reference */}
