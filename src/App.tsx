@@ -173,12 +173,12 @@ function App() {
       {/* Header */}
       <header className="bg-slate-800 border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <img src="/pwa-192x192.png" alt="3DCoster" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl" />
-            <div>
-              <h1 className="text-lg md:text-2xl font-bold text-white">3D Print Cost Calculator</h1>
-              <p className="hidden sm:block text-slate-400 text-sm mt-1">Calculate your true cost per print</p>
-            </div>
+          <div className="flex items-center">
+            <img
+              src="/3DCosterLogoWithWords.svg"
+              alt="3DCoster"
+              className="h-10 sm:h-12 w-auto"
+            />
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             {!isStandalone && (

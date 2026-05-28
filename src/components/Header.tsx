@@ -34,9 +34,8 @@ export function Header() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700/50">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
-          <img src="/pwa-192x192.png" alt="3DCoster" className="w-10 h-10 rounded-xl" />
-          <span className="text-white font-semibold text-xl">3DCoster</span>
+        <Link to="/" className="flex items-center" aria-label="3DCoster home">
+          <img src="/3DCosterLogoWithWords.svg" alt="3DCoster" className="h-9 w-auto" />
         </Link>
 
         {/* Desktop navigation - hidden below md */}
