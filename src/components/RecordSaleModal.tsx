@@ -1,7 +1,6 @@
 import { useEffect, useId, useMemo, useCallback, useState } from 'react';
 import type {
   PrintJob,
-  UserProfile,
   ShippingConfig,
   Currency,
   Sale,
@@ -57,7 +56,6 @@ function calculateMarketplaceFee(price: number, marketplace: MarketplaceType): n
 
 export interface RecordSaleModalProps {
   job: PrintJob;
-  userProfile: UserProfile;
   userCurrency: Currency;
   shippingConfig: ShippingConfig;
   editingSale: Sale | null;
@@ -104,8 +102,9 @@ export function RecordSaleModal({
   const saleShippingMethodId = useId();
   const saleShippingCostId = useId();
 
-  // ─── Hydration effect (D-08 / Pitfall 3) ──────────────────────────────────
-  // Keyed on [editingSale, convertingFromQuote, job.sellingPrice].
+  // ─── Hydration effect (D-08 / Pitfall 3 / Phase 22.1 D-09 / WR-02) ────────
+  // Keyed on [editingSale?.id, convertingFromQuote?.id] only — see Pitfall 3
+  // comment immediately above the closing dep array below for the full WHY.
   // Modal.tsx:67 unmounts children on close, so each open is a fresh mount;
   // the first effect-fire after mount hydrates with the correct mode.
   // DO NOT add isOpen to the dep array — that would re-hydrate every time
@@ -152,7 +151,12 @@ export function RecordSaleModal({
       setSaleShippingCost(0);
       setSaleMarketplace('facebook_local');
     }
-  }, [editingSale, convertingFromQuote, job.sellingPrice]);
+    // Pitfall 3: DO NOT add job.sellingPrice — a concurrent useLiveQuery emission
+    // that updates the job's selling price while the modal is open must NOT clobber
+    // the user's in-progress form state. Only editingSale/convertingFromQuote
+    // identity drives re-hydration (Phase 22.1 D-09 / WR-02).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingSale?.id, convertingFromQuote?.id]);
 
   // ─── Customer picker integration ──────────────────────────────────────────
   // Phase 15.1 (CL-04 + D-05): pick fills Name/Email/Company/Address — NOT Notes.

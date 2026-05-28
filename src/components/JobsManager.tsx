@@ -1417,7 +1417,6 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
       {selectedJob && (
         <RecordSaleModal
           job={selectedJob}
-          userProfile={userProfile}
           userCurrency={userCurrency}
           shippingConfig={shippingConfig}
           editingSale={editingSale}

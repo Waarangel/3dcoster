@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import type { Customer, PrintJob, UserProfile, ShippingConfig, Sale, Quote } from '../types';
+import type { Customer, PrintJob, ShippingConfig, Sale, Quote } from '../types';
 
 // ---------------------------------------------------------------------------
 // RecordSaleModal — Phase 22 plan 22-03 (HYG-06).
@@ -99,16 +99,6 @@ function makeJob(overrides: Partial<PrintJob> = {}): PrintJob {
     taxAmount: 13,
     ...overrides,
   } as PrintJob;
-}
-
-function makeUserProfile(overrides: Partial<UserProfile> = {}): UserProfile {
-  return {
-    currency: 'USD',
-    laborHourlyRate: 25,
-    defaultTaxRate: 13,
-    nextQuoteNumber: 1,
-    ...overrides,
-  } as UserProfile;
 }
 
 function makeShippingConfig(): ShippingConfig {
@@ -216,7 +206,6 @@ interface RenderOpts {
 async function renderModal(opts: RenderOpts = {}) {
   const props = {
     job: opts.job ?? makeJob(),
-    userProfile: makeUserProfile(),
     userCurrency: 'USD' as const,
     shippingConfig: makeShippingConfig(),
     editingSale: opts.editingSale ?? null,
@@ -476,5 +465,51 @@ describe('RecordSaleModal — cancel path safety (Test 5)', () => {
     expect(addSaleSpy).not.toHaveBeenCalled();
     expect(updateSaleSpy).not.toHaveBeenCalled();
     expect(txSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('WR-02 — hydration dep array stability (Phase 22.1 D-09)', () => {
+  it('salePrice form state survives a useLiveQuery re-emission that mutates job.sellingPrice', async () => {
+    // EDIT mode with editingSale.unitPrice = 50.
+    // The hydration useEffect should ONLY re-fire on editingSale/convertingFromQuote
+    // identity changes — NOT on job.sellingPrice mutations from a concurrent
+    // useLiveQuery emission. After the parent re-renders with a mutated job
+    // (e.g., user updated the job's selling price in another tab/component while
+    // this modal sits open), the salePrice input MUST still reflect the
+    // editingSale-driven value, not the new job.sellingPrice.
+    const job = makeJob({ sellingPrice: 0 });
+    const editingSale = makeSale({ unitPrice: 50 });
+    const baseProps = {
+      job,
+      userCurrency: 'USD' as const,
+      shippingConfig: makeShippingConfig(),
+      editingSale,
+      convertingFromQuote: null,
+      isOpen: true,
+      onClose: vi.fn(),
+      onSaved: vi.fn(),
+    };
+
+    await act(async () => {
+      root!.render(<RecordSaleModal {...baseProps} />);
+    });
+
+    // 1st number input = quantity; 2nd = price (mirror of Test 3 pattern)
+    const numberInputsBefore = document.body.querySelectorAll('input[type="number"]');
+    const priceInputBefore = numberInputsBefore[1] as HTMLInputElement;
+    expect(priceInputBefore.value).toBe('50');
+
+    // Simulate a useLiveQuery re-emission that mutates job.sellingPrice while
+    // the modal is open — the parent re-renders with the same editingSale id
+    // but a new job object whose sellingPrice has jumped to 999.
+    await act(async () => {
+      root!.render(
+        <RecordSaleModal {...baseProps} job={{ ...job, sellingPrice: 999 }} />,
+      );
+    });
+
+    const numberInputsAfter = document.body.querySelectorAll('input[type="number"]');
+    const priceInputAfter = numberInputsAfter[1] as HTMLInputElement;
+    expect(priceInputAfter.value).toBe('50');  // NOT '999' — hydration must NOT re-fire
   });
 });
