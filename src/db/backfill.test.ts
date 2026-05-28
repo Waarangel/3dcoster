@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase } from './backfill';
 import type { PrintJob, Sale, Customer, Quote, PrinterInstance, PrinterConfig, Material } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -580,6 +580,64 @@ describe('reconcileQuoteCurrency (DATA-03 v9 reconcile)', () => {
     // All other lineItemsSnapshot fields preserved
     expect(patched.lineItemsSnapshot.jobTitle).toBe('X');
     expect(patched.lineItemsSnapshot.sellingPrice).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reconcileCustomerEmailLowercase — Phase 23 D-02 pure reconcile helper
+//
+// Five cases asserting the D-02 contract:
+//   1. Mixed-case email → lowercased in output row (patched)
+//   2. Already-lowercase email → idempotent, returns []
+//   3. Undefined email → skip, returns []
+//   4. Mixed array → only the mixed-case row in output (length=1)
+//   5. Does NOT mutate input array — spread-copy only
+// ---------------------------------------------------------------------------
+
+function makeCustomer(overrides: Partial<Customer>): Customer {
+  return {
+    id: 'cust-x',
+    createdAt: new Date('2026-01-01'),
+    ...overrides,
+  } as Customer;
+}
+
+describe('reconcileCustomerEmailLowercase (Phase 23 D-02)', () => {
+  it('returns a patched row with lowercase email when input has mixed-case email', () => {
+    const input = [makeCustomer({ id: 'c1', email: 'John@Example.com', name: 'John' })];
+    const out = reconcileCustomerEmailLowercase(input);
+    expect(out.length).toBe(1);
+    expect(out[0].email).toBe('john@example.com');
+  });
+
+  it('is idempotent — returns [] when email is already all-lowercase', () => {
+    const input = [makeCustomer({ id: 'c1', email: 'john@example.com', name: 'John' })];
+    const out = reconcileCustomerEmailLowercase(input);
+    expect(out).toEqual([]);
+  });
+
+  it('skips rows with undefined email — returns []', () => {
+    const input = [makeCustomer({ id: 'c1', email: undefined, name: 'John' })];
+    const out = reconcileCustomerEmailLowercase(input);
+    expect(out).toEqual([]);
+  });
+
+  it('mixed array — only patches the mixed-case row; lowercase and undefined rows are skipped', () => {
+    const input = [
+      makeCustomer({ id: 'c1', email: 'JOHN@EXAMPLE.COM', name: 'John' }),    // needs patch
+      makeCustomer({ id: 'c2', email: 'alice@example.com', name: 'Alice' }),  // already canonical
+      makeCustomer({ id: 'c3', email: undefined, name: 'No Email' }),         // no email
+    ];
+    const out = reconcileCustomerEmailLowercase(input);
+    expect(out.length).toBe(1);
+    expect(out[0].id).toBe('c1');
+    expect(out[0].email).toBe('john@example.com');
+  });
+
+  it('does NOT mutate the input — output is a spread-copy, original stays unchanged', () => {
+    const input = [makeCustomer({ id: 'c1', email: 'JOHN@EXAMPLE.COM' })];
+    reconcileCustomerEmailLowercase(input);
+    expect(input[0].email).toBe('JOHN@EXAMPLE.COM');  // original still uppercase
   });
 });
 

@@ -432,6 +432,39 @@ export function reconcileCopiesSoldFromSales(
 }
 
 /**
+ * reconcileCustomerEmailLowercase — Phase 23 D-02 one-time reconcile.
+ *
+ * Pure. Idempotent at the row level — rows whose email is already lowercase
+ * or undefined are skipped. Returns ONLY the patched Customer rows (empty
+ * array when nothing needs patching). No Dexie, no React, no IO.
+ *
+ * Why this exists: `CustomerEditModal.tsx` historically did NOT lowercase email
+ * on save; `customerCsv.ts:139-140` DID (UI-SPEC discretion #8). This helper
+ * corrects all legacy mixed-case rows in the user's IndexedDB on first reload
+ * after Phase 23 lands. Wired into `useCustomers()` in `useDatabase.ts` behind
+ * a `customerEmailLowercaseRan` module flag — runs once, subsequent loads pay
+ * zero write cost because the helper is idempotent at the row level.
+ *
+ * Examples:
+ *   reconcileCustomerEmailLowercase([{ ...c, email: 'John@Example.com' }])
+ *     → [{ ...c, email: 'john@example.com' }]
+ *   reconcileCustomerEmailLowercase([{ ...c, email: 'john@example.com' }])
+ *     → []  (already lowercase — idempotent)
+ *   reconcileCustomerEmailLowercase([{ ...c, email: undefined }])
+ *     → []  (no email — skip)
+ */
+export function reconcileCustomerEmailLowercase(customers: Customer[]): Customer[] {
+  const out: Customer[] = [];
+  for (const c of customers) {
+    if (!c.email) continue;
+    const lowered = c.email.toLowerCase();
+    if (lowered === c.email) continue;  // idempotent: already canonical
+    out.push({ ...c, email: lowered });
+  }
+  return out;
+}
+
+/**
  * CALL-SITE CONTRACT: printers MUST be sourced from db.materials filtered by category==='printer' (via assetToPrinterConfig). db.printers is a vestigial Dexie table that is never written.
  *
  * reconcileFixedCostsAtSave — Phase 22.1 DATA-07 reconcile helper (Path B —

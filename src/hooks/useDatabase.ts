@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
-import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase } from '../db/backfill';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -25,6 +25,17 @@ let tagsNormalizeRan = false;
 // because reconcileFixedCostsAtSave is idempotent at the job level. No Dexie meta
 // table is touched (none exists in this schema; module flag is the only mechanism).
 let fixedCostsReconcileRan = false;
+
+// Phase 23 D-02 — process-lifetime flag for the email-lowercase reconcile.
+// Same one-per-page-load pattern as the 4 existing reconciles above. Runs
+// once inside useCustomers(); subsequent loads pay zero write cost because
+// reconcileCustomerEmailLowercase is idempotent at the row level. WR-01:
+// flag is set AFTER db.customers.bulkPut completes, NOT before — so failures
+// leave the flag false and the next mount retries. Aligns db.customers with
+// the CSV parser's canonical lowercase form (customerCsv.ts:139-140, UI-SPEC
+// discretion #8). Sale.customer historical snapshots are NEVER touched (D-03
+// + CL-05 by-value lock).
+let customerEmailLowercaseRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -795,6 +806,42 @@ export function useCustomers() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers === undefined]);  // re-evaluate only when isLoading flips, not on every emission
+
+  // Phase 23 D-02: one-time reconcile to lowercase all customer email addresses
+  // in the library. Aligns db.customers with the CSV parser's canonical form
+  // (UI-SPEC discretion #8). Historical Sale.customer.email snapshots are NOT
+  // touched (CL-05 by-value lock — D-03). Guarded by customerEmailLowercaseRan
+  // so it runs exactly once per page load; helper is idempotent at the row
+  // level so subsequent loads pay zero write cost.
+  //
+  // WR-01 hardening: customerEmailLowercaseRan is set AFTER the bulkPut await
+  // completes, NOT before — so failures leave the flag false and the next
+  // mount retries. Mirrors the copiesSoldReconcileRan + fixedCostsReconcileRan
+  // pattern above (NOT saleCustomerBackfillRan, which is pre-WR-01).
+  useEffect(() => {
+    if (customerEmailLowercaseRan) return;
+    if (customers === undefined) return;  // wait for the first liveQuery emission
+    let cancelled = false;
+    (async () => {
+      try {
+        const patches = reconcileCustomerEmailLowercase(customers);
+        if (cancelled) return;  // do NOT set flag — never wrote
+        if (patches.length > 0) {
+          await db.customers.bulkPut(patches);
+        }
+        // WR-01: mark only on full completion. If we returned early via the
+        // `cancelled` guard above, the flag stays false so a future mount retries.
+        customerEmailLowercaseRan = true;
+      } catch (err) {
+        // Reconcile failures must NOT break the app — the picker still works
+        // against mixed-case emails (customersByEmail already lowercases keys).
+        // Flag stays false — next mount retries.
+        console.error('customerEmailLowercase reconcile failed:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customers === undefined]);
 
   // WR-03 fix: shallow-freeze the customers array at the hook boundary so
   // consumers cannot mutate the array reference returned by Dexie's
