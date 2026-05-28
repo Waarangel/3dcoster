@@ -39,7 +39,7 @@ The 51 requirements cluster into 8 natural delivery boundaries driven by theme c
 - [x] **Phase 20: Dexie atomicity audit** — Wrap `addSale` in transaction; move `createQuote` nextQuoteNumber read inside transaction; fix `backfillQuotesFromJobs` currency hardcode; defensive trio (parsePositiveNumber, versionchange async close, getSetting validator) (completed 2026-05-26)
 - [x] **Phase 21: CSV + URL security** — `sanitizeCsvCell()` helper across export paths; validate `job.modelUrl` as http(s) before rendering; add formula-injection + Unicode test cases (completed 2026-05-27)
 - [x] **Phase 22: JobsManager decomposition + perf** — Extract `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker` hook; centralize `PICKER_VISIBLE_LIMIT`; extract `SearchIcon`; pre-compute `getBreakEvenInfo` Map; memoize `calculateMarketplaceFee`; `useDynamicRowHeight` key in CustomerLibrary (completed 2026-05-27)
-- [ ] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract
+- [x] **Phase 23: Test coverage hardening** — Author 3 Customer-UI test files (catches email-lowercase divergence bug); add `fake-indexeddb` for real-Dexie migration test; retype dbJobsPutSpy; discuss + split DUP-02 packed contract (completed 2026-05-28)
 - [x] **Phase 24: Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover** — `/gsd:validate-phase` for 13, 15, 15.1, 17; complete Phase 13 8-item visual contract UAT; close Phase 18 review WR-01/02/03 (test fragility, `@tauri-apps/api` dedupe, tighter `forbidden path` match) (completed 2026-05-25)
 - [x] **Phase 25: Doc + hygiene + polish + bundle health** — Doc state lag (D6/D7); HYG-01 generatingJobIds slot; HYG-04 onQuoteCreated; HYG-05 image5 comment; HYG-10 stale todo cleanup; POL-01..POL-04 (CustomerLibrary alignment, CSV template button, autotable cast, overflow-menu close); QuoteStatusPill aria; Rollup circular-chunk fix; vendor chunk classification (optional) (completed 2026-05-26)
 
@@ -210,10 +210,10 @@ Plans:
   7. `npm test` passes with no skipped tests; coverage report shows non-zero coverage for the 3 new Customer-UI test files
 
 **Plans**: 4 plans
-  - [ ] 23-01-PLAN.md — CustomerEditModal.test.tsx + D-01 modal lowercase + D-02 reconcileCustomerEmailLowercase helper + useCustomers useEffect wiring (TEST-01) — Wave 1, autonomous=true
-  - [ ] 23-02-PLAN.md — CustomerCsvImportModal.test.tsx (TEST-02) + CustomerLibrary.test.tsx with CL-01 sort lock (TEST-03) — Wave 1, autonomous=true
-  - [ ] 23-03-PLAN.md — fake-indexeddb devDep + database.migrations.test.ts real-Dexie replacement (TEST-04) — Wave 1, autonomous=false (package legitimacy human checkpoint)
-  - [ ] 23-04-PLAN.md — JobsManager.test.tsx dbJobsPutSpy retype (TEST-05) + duplicateJob.test.ts DUP-02 D-15 6-it split + D-10 lock comment rewrite (TEST-06) — Wave 1, autonomous=true
+  - [x] 23-01-PLAN.md — CustomerEditModal.test.tsx + D-01 modal lowercase + D-02 reconcileCustomerEmailLowercase helper + useCustomers useEffect wiring (TEST-01) — Wave 1, autonomous=true
+  - [x] 23-02-PLAN.md — CustomerCsvImportModal.test.tsx (TEST-02) + CustomerLibrary.test.tsx with CL-01 sort lock (TEST-03) — Wave 1, autonomous=true
+  - [x] 23-03-PLAN.md — fake-indexeddb devDep + database.migrations.test.ts real-Dexie replacement (TEST-04) — Wave 1, autonomous=false (package legitimacy human checkpoint)
+  - [x] 23-04-PLAN.md — JobsManager.test.tsx dbJobsPutSpy retype (TEST-05) + duplicateJob.test.ts DUP-02 D-15 6-it split + D-10 lock comment rewrite (TEST-06) — Wave 1, autonomous=true
 
 **UI hint**: no
 
@@ -285,7 +285,7 @@ Plans:
 | 21. CSV + URL security | 3/3 | Complete    | 2026-05-27 |
 | 22. JobsManager decomposition + perf | 6/6 | Complete    | 2026-05-28 |
 | 22.1. Break-even formula reconciliation | 4/4 | Complete    | 2026-05-28 |
-| 23. Test coverage hardening | 0/4 | Not started | — |
+| 23. Test coverage hardening | 4/4 | Complete   | 2026-05-28 |
 | 24. Nyquist contracts + Phase 13 visual UAT + Phase 18 review carryover | 6/6 | Complete    | 2026-05-25 |
 | 25. Doc + hygiene + polish + bundle health | 5/5 | Complete    | 2026-05-26 |
 
