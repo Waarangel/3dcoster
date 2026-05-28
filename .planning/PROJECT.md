@@ -8,25 +8,21 @@
 
 Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
 
-## Current Milestone: v1.3 Hardening
+## Last Shipped Milestone: v1.3 Hardening — 2026-05-28
 
-**Goal:** Close every actionable finding from the v1.2 code + tech-debt audit so v1.4+ feature work ships on a clean foundation. No new user-facing features in this milestone — every requirement maps back to an audit finding.
+10 phases (18–26), 43 plans, 56 tasks, 53 requirements satisfied (100%), audit verdict: **passed**. Code: 54 src files changed, +13,221 / −4,266 LOC over 322 commits in 4 days.
 
-**Driver:** [v1.2-CODE-AUDIT.md](v1.2-CODE-AUDIT.md) (31 severity-classified findings — 3 CRITICAL · 7 HIGH · 14 MEDIUM · 7 LOW) + [v1.2-TECH-DEBT.md](v1.2-TECH-DEBT.md) (12 hygiene + 4 test debt + 7 milestone-audit deferrals).
+**Key wins:**
+- `<Modal>` primitive + 10-surface a11y migration (Phase 19) — A11Y-01..A11Y-08 + HYG-09
+- JobsManager decomposed 2067 → 1474 LOC via `RecordSaleModal` + `SaleRow` + `useCustomerPicker` + `useAllSales` (Phase 22)
+- Dexie atomicity sweep + transactional safety on `addSale`/`createQuote`/v9 upgrade (Phase 20)
+- CSV formula-injection + javascript: URL sanitization (Phase 21)
+- Break-even formula reconciliation between Calculator and JobsManager (Phase 22.1, inserted)
+- Test coverage hardening: 3 Customer-UI test files + real-Dexie migration test via `fake-indexeddb` (Phase 23)
+- Tauri 2.11.x upgrade eliminating dual-copy `@tauri-apps/api` (Phase 18 + 24)
+- 8 VALIDATION.md files brought to Nyquist-compliant state + REQUIREMENTS.md doc-lag sync + CustomerCsvImportModal layout parity (Phase 26 cleanup)
 
-**Target phases:** 18–25 (8 phases, ~34 plans, ~5-7 working days)
-- Phase 18: Tauri `fs:scope` fix (CRITICAL desktop bug)
-- Phase 19: `<Modal>` primitive + 10-surface a11y migration (closes 2 CRITICAL + most A11Y)
-- Phase 20: Dexie atomicity audit (closes HIGH data-integrity gaps)
-- Phase 21: CSV + URL security (closes HIGH formula-injection + XSS)
-- Phase 22: JobsManager decomposition + perf (biggest scope — extract RecordSaleModal + useCustomerPicker)
-- Phase 23: Test coverage hardening (3 Customer-UI test files; catches email-lowercase divergence bug)
-- Phase 24: Nyquist contracts + Phase 13 visual UAT (5 doc closures)
-- Phase 25: Doc + hygiene + polish + bundle health (final batch)
-
-Full delivery map: [ROADMAP.md](ROADMAP.md). Requirements: [REQUIREMENTS.md](REQUIREMENTS.md).
-
-**Why this slot:** v1.2 shipped 7 phases over 6 days with 2 rounds of gap closure on Phase 15 and 2 extension cycles on Phase 16. The audit surfaced predictable gap-closure residue (large functions, duplicated picker logic, withdrawn-requirement orphans) alongside systemic accessibility gaps that were never addressed phase-by-phase. v1.3 cleans the slate before the next feature cycle — pays compounding interest on every v1.4+ change to the same surfaces.
+Full delivery map: [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md). Audit: [milestones/v1.3-MILESTONE-AUDIT.md](milestones/v1.3-MILESTONE-AUDIT.md).
 
 <details>
 <summary>v1.2 Quote-to-Customer SHIPPED 2026-05-25 (collapsed)</summary>
@@ -113,21 +109,25 @@ Not yet defined. Will be scoped via `/gsd:new-milestone` after v1.3 Hardening sh
 - ✓ **NYQ-01..NYQ-05** — Nyquist validation contracts authored for Phases 13/15/15.1/17 + Phase 13 visual UAT closed (2 IndexedDB smoke tests + 6 rubber-stamped against phases 14-17 in-prod evidence); Phase 18 review carryover WR-01/02/03 also closed (collapsed forbidden-path test, Tauri 2.11.x crate + `@tauri-apps/api ^2.11.0` dedup, `startsWith('forbidden path:')` anchored matcher) (Phase 24)
 - ✓ **DOC-01, DOC-02, HYG-01, HYG-04, HYG-05, HYG-10, A11Y-09, POL-01..POL-04, PERF-05, PERF-06** — Doc-state lag closed (TAGS-01/04 flipped, CUST-01/02 wording-drift archive note); JobsManager hygiene (`generatingJobIds` slot removed, `onQuoteCreated` made optional, image5 absence comment, `ui-consistency-sweep` audit); CustomerLibrary row alignment + CSV template download; jspdf module augmentation replaces `(doc as any)` cast; QuoteRow overflow menu outside-click + Escape; QuoteStatusPill `aria-label` + Declined-pill contrast; Rollup circular-chunk warning eliminated by routing all `react-*` packages (incl. `scheduler`) into `react-vendor` (Phase 25)
 
-### Active (v1.3 Hardening)
+### Validated — v1.3 Hardening (shipped 2026-05-28)
 
-v1.3 is a hardening-only milestone — every REQ closes an audit finding from [v1.2-CODE-AUDIT.md](v1.2-CODE-AUDIT.md) or [v1.2-TECH-DEBT.md](v1.2-TECH-DEBT.md). 51 requirements across 10 categories tracked in [REQUIREMENTS.md](REQUIREMENTS.md); 8-phase delivery in [ROADMAP.md](ROADMAP.md).
+All 53 v1.3 requirements satisfied. Snapshot: [milestones/v1.3-REQUIREMENTS.md](milestones/v1.3-REQUIREMENTS.md).
 
-Category summary (severity from audit):
-- **DESK** (1): Tauri `fs:scope` fix — 1 CRITICAL
-- **A11Y** (9): Modal primitive + focus trap + virtualized-list roles + label pairing — 2 CRITICAL + 3 HIGH + 4 MEDIUM
-- **SEC** (3): CSV formula-injection escape + `modelUrl` validation — 2 HIGH + 1 MEDIUM ✓ closed Phase 21 (2026-05-27)
-- **DATA** (6): Dexie atomicity in `addSale`/`createQuote`/`backfillQuotesFromJobs` + defensive trio — 1 HIGH + 2 MEDIUM + 3 LOW ✓ closed Phase 20 (2026-05-26)
-- **TEST** (6): 3 Customer-UI test files + fake-indexeddb migration + DUP-02 split — 3 HIGH + 3 LOW
-- **HYG** (10): JobsManager decomposition (`<RecordSaleModal>` + `<SaleRow>` + `useCustomerPicker` hook) + dead code cleanup — 1 HIGH + 4 MEDIUM + 5 LOW · 5 closed Phase 22 (HYG-02/03/06/07/08, 2026-05-27)
-- **DOC** (2): v1.2 archive doc-state lag — 2 LOW
-- **PERF** (7): pre-computed maps + memoization + bundle health — 3 MEDIUM + 4 LOW · 5 closed Phase 22 (PERF-01..04 + PERF-07, 2026-05-27)
-- **NYQ** (5): 4 missing/draft Nyquist contracts + Phase 13 visual UAT closure
-- **POL** (4): Customer Library alignment, CSV template button, autotable cast, overflow-menu close — 2 MEDIUM + 2 LOW
+- ✓ **DESK-01** — Tauri `fs:scope` fix (Phase 18)
+- ✓ **A11Y-01..A11Y-08, HYG-09** — `<Modal>` primitive + 10-surface migration with focus trap, scroll-lock, useId-labeled fields, virtualized-list ARIA, CollapsibleSection always-rendered (Phase 19)
+- ✓ **DATA-01..DATA-06** — Dexie atomicity sweep: `addSale` + `createQuote` + v9 upgrade wrapped in `db.transaction('rw',...)`; `parsePositiveNumber` rejects 0; async `versionchange` close; `getSetting<T>` validator (Phase 20)
+- ✓ **DATA-07** — `reconcileFixedCostsAtSave` WR-01-hardened useEffect snapshots `{depreciation, nozzleWear}` on saved jobs (Phase 22.1)
+- ✓ **SEC-01..SEC-03** — `sanitizeCsvCell` at all 4 Papa.unparse boundaries; `isSafeHttpUrl` render-time guard for `job.modelUrl`; customerCsv parser-passthrough regression locks (Phase 21)
+- ✓ **HYG-02, HYG-03, HYG-06, HYG-07, HYG-08, PERF-01..PERF-04, PERF-07** — JobsManager decomposition: `<RecordSaleModal>`, `<SaleRow>`, `useCustomerPicker`, `<SearchIcon>`, `breakEvenMap` pre-compute, `useAllSales` hook; JobsManager.tsx 2067 → 1474 LOC (Phase 22)
+- ✓ **PERF-08** — JobsManager break-even pill formula brought into byte-equivalence with the Calculator widget; round-trip test locks it (Phase 22.1)
+- ✓ **TEST-01..TEST-06** — `CustomerEditModal.test.tsx` (7 it, locks D-01), `CustomerCsvImportModal.test.tsx` (6 it), `CustomerLibrary.test.tsx` (7 it + CL-01 sort lock), `database.migrations.test.ts` promoted to real-Dexie via `fake-indexeddb`, `dbJobsPutSpy` retyped `any` → `PrintJob`, DUP-02 split into 6 named `it()` (Phase 23)
+- ✓ **NYQ-01..NYQ-05** — VALIDATION.md backfilled for Phase 13/15/15.1/17; Phase 13 visual UAT closed with 2 smoke tests + 6 in-prod rubber-stamps; Phase 18 review WR-01/02/03 closed (collapsed forbidden-path test, Tauri 2.11.x dedup, `startsWith('forbidden path:')` matcher) (Phase 24)
+- ✓ **A11Y-09, DOC-01, DOC-02, HYG-01, HYG-04, HYG-05, HYG-10, PERF-05, PERF-06, POL-01..POL-04** — Doc-state lag closed (TAGS-01/04 flipped, CUST-01/02 archive note); JobsManager hygiene (`generatingJobIds` slot removed, `onQuoteCreated` made optional, image5 absence comment, `ui-consistency-sweep` audit); CustomerLibrary row alignment; CSV template download; jspdf module augmentation; QuoteRow overflow menu outside-click + Escape; QuoteStatusPill `aria-label` + Declined contrast (Phase 25)
+- ✓ **DOC-03, DOC-04, POL-05** — v1.3 audit cleanup: 8 VALIDATION.md files Nyquist-compliant (Phase 18/20/22/22.1 flipped, Phase 19/23/24/25 backfilled); REQUIREMENTS.md DATA-07/PERF-08 sync; CustomerCsvImportModal layout parity with asset modal — template block above upload zone with `👥 Customer template` label (Phase 26)
+
+### Active — v1.4 (TBD)
+
+No active milestone scope. Run `/gsd:new-milestone` to start v1.4.
 
 ### Out of Scope (carried forward)
 
@@ -147,10 +147,11 @@ Category summary (severity from audit):
 - v1.0 (Multi-Material Support) shipped 2026-04-15 across 6 phases
 - Default Profit Margin shipped 2026-05-18 (single-feature, outside milestone)
 - v1.1 (Polish & Foundation) shipped 2026-05-20 across Phases 7–11
-- **v1.2 (Quote-to-Customer) shipped 2026-05-25** across Phases 12–17 (7 phases, 45 plans, 6 days). Mid-milestone insertions: Phase 15.1 (Customer Library) and Phase 17 (PDF-04 closure). Final main bundle 61.5 KB gzipped.
-- Current codebase: ~22,777 LOC TypeScript/TSX in `src/`; Dexie schema at v8 (3 migrations within v1.2 alone: v6/v7/v8)
-- v1.3 phase numbering continues — next phase is **Phase 18**
-- Roadmap: [docs/ROADMAP.md](../docs/ROADMAP.md)
+- v1.2 (Quote-to-Customer) shipped 2026-05-25 across Phases 12–17 (7 phases, 45 plans, 6 days). Mid-milestone insertions: Phase 15.1 (Customer Library) and Phase 17 (PDF-04 closure)
+- **v1.3 (Hardening) shipped 2026-05-28** across Phases 18–26 (10 phases, 43 plans, 4 days). Mid-milestone insertions: Phase 22.1 (Break-even formula reconciliation surfaced during Phase 22 UAT) and Phase 26 (v1.3 audit cleanup before tag). Final main bundle 56.5 KB gzipped (down from v1.2's 61.5 KB)
+- Current codebase: 13,221 src LOC added during v1.3 (54 src files changed); Dexie schema at v9 (v1.3 added v9 currency reconcile); 466 Vitest tests passing across 31 test files
+- v1.4 phase numbering continues — next phase is **Phase 27**
+- Roadmap: [ROADMAP.md](ROADMAP.md) (collapsed milestone-grouped index) + [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md) (latest full delivery map)
 - Free/paid principle: "Free for the person; paid when the tool wears your brand to your customers, or works while you sleep"
 - Codebase map: `.planning/codebase/`
 - Desktop release tags decoupled from GSD milestones — v1.2 work shipped to users under `v1.2.0`..`v1.2.4` + `v1.3.0`..`v1.3.1` desktop tags as features landed
@@ -189,6 +190,13 @@ Category summary (severity from audit):
 | Customer Library snapshots are by-value on Sale (not foreign-key) | Editing a library Customer must never mutate historical sales — protects audit trail. Locked by unit test that edits a library fixture then asserts byte-identical pre/post on the Sale's customer field. | v1.2 | ✓ Shipped 2026-05-22 (Phase 15.1 CL-05) |
 | DUP-01 row-action UI withdrawn-from-v1.2; DUP-02 helper ships standalone | Single-item overflow `[⋯]` was the wrong pattern (labelless + floating NEW badge confusing). Deferred to v1.3+ richer surface; helper preserved with locked 7-case Vitest contract for future consumers. | v1.2 | ⚠️ Revised 2026-05-24: helper shipped, UI deferred |
 | Phase 17 closure phase for PDF-04 + tax rounding divergence | `/gsd:audit-milestone v1.2` surfaced Rollup chunk-ordering regression (defeating PDF-04 lazy-load) and tax-rounding divergence between PrintQuoteModal and CostCalculator. Inserted as closure phase rather than ship with known blocker. | v1.2 | ✓ Shipped 2026-05-25 (added `scripts/assert-no-static-pdf-import.mjs` CI gate) |
+| `<Modal>` primitive shipped FIRST in v1.3 (Phase 19), before JobsManager decomposition (Phase 22) | Phase 22 depends on `<RecordSaleModal>` extraction, which depends on a stable Modal primitive. Foundation-first prevents extracting a component built on doomed boilerplate. | v1.3 | ✓ Shipped 2026-05-26 (17 Vitest contract tests; 10-surface migration with zero behavioral change) |
+| Email-lowercase canonicalized at save (D-01 in Phase 23) | Phase 23 Customer-UI tests surfaced a real bug: `CustomerEditModal` saved emails as-typed while `customerCsv.ts` lowercased — same logical customer would have two library entries. Resolved by canonicalizing at save in the modal + reconcileCustomerEmailLowercase backfill. | v1.3 | ✓ Shipped 2026-05-28 |
+| `fake-indexeddb` for migration test scoped per-file only (D-04 in Phase 23) | Global injection via `vitest.setup.ts` would expose all 28+ existing tests to the IDB shim and risk cross-test contamination. Per-file `import 'fake-indexeddb/auto'` keeps the blast radius to `database.migrations.test.ts`. | v1.3 | ✓ Shipped 2026-05-28 |
+| Tauri Rust crate upgraded to 2.11.x (over JS-side dedupe workaround) | Phase 18 carried two nested `@tauri-apps/api` copies as known debt. Phase 24-06 evaluated three options: (a) pin JS plugins, (b) bump Rust crate, (c) document dual-copy. Chose (b) — `tauri 2.11.x` + `@tauri-apps/api ^2.11.0` eliminates the duplication at the dependency root rather than papering over it. | v1.3 | ✓ Shipped 2026-05-25 |
+| Phase 22.1 inserted mid-milestone for break-even formula reconciliation | Phase 22 HUMAN-UAT surfaced that the JobsManager break-even pill formula diverged from the Calculator widget on the same job. Inserted as decimal phase (22.1) rather than expanding Phase 22 scope. Reconciled at the snapshot layer (`fixedCostsAtSave` on saved jobs) so future Calculator changes propagate without backfill. | v1.3 | ✓ Shipped 2026-05-27 (PERF-08 round-trip test locks agreement) |
+| Phase 26 inserted as v1.3 closure cleanup before tagging | `/gsd:audit-milestone v1.3` returned `tech_debt` (no blockers, 8 doc-state items). Inserted Phase 26 to flip those items rather than ship `tech_debt`. 4 parallel-safe plans completed in 5 minutes, audit re-ran clean. Pattern: cleanup phase before tag if audit verdict has fixable items. | v1.3 | ✓ Shipped 2026-05-28 (verdict flipped `tech_debt` → `passed`) |
+| Customer CSV export deferred to v1.4+ | Phase 21 SC#5 specified a UAT for customer CSV export, but the export feature was never built — only `sanitizeCsvCell` shipped. Surfaced during Phase 21 HUMAN-UAT 2026-05-28. User deprioritized; backlog item rather than scope expansion. | v1.3 | ⚠️ Deferred 2026-05-28 |
 
 ## Evolution
 
@@ -208,4 +216,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-28 — Phase 22.1 complete (PERF-08 + DATA-07 closed; folded WR-01 + WR-02 Phase 22 carry-overs). The CostCalculator "Break-even Units" widget and the JobsManager pill now compute the same number for the same job: numerator = `modelCost + depreciation + nozzleWear` on both sides, with `modelCostPerUnit=true` correctly zeroing `modelCost` per the Calculator's existing semantics. New optional non-indexed `PrintJob.fixedCostsAtSave` snapshot field (Dexie schema string unchanged) is written by CostCalculator on Save+Update and backfilled on every legacy job by `reconcileFixedCostsAtSave` (Path B — faithful depreciation + nozzleWear reconstruction from PrinterInstance/PrinterConfig/Material rows, no failureRate multiplier, idempotent at the job level, once-per-page-load behind a module flag). Code review surfaced 2 BLOCKERS that were fixed in-phase: CR-01 (reconcile reads printer configs from `db.materials` via `assetToPrinterConfig`, NOT the vestigial empty `db.printers` table) + CR-02 (computeBreakEvenInfo honors `modelCostPerUnit`). Also closed WR-01 (reconcile flags set only on full completion across all 3 reconciles — `fixedCostsReconcileRan`, `copiesSoldReconcileRan`, `tagsNormalizeRan`) and WR-03 (snapshot-only reconcile preserves `updatedAt`). Tests 438 passing + 1 todo (28 files); +11 new tests across `reconcileFixedCostsAtSave` (4), `computeBreakEvenInfo` PERF-08 round-trip (5 including CR-02 regression), and `RecordSaleModal` WR-02 dep-array regression (1). Verifier: 8/8 ROADMAP success criteria verified in code. Manual UAT approved against real `Complex Test` job (id `job-1779821127120`): Calculator=2, JobsManager pill=2 — round-trip locked. v1.3 Hardening milestone status: 8 of 9 phases complete (18, 19, 20, 21, 22, 22.1, 24, 25); remaining: Phase 23 (Test coverage hardening). Next: open `/gsd:discuss-phase` for Phase 23, or close the v1.3 milestone.*
+*Last updated: 2026-05-28 after v1.3 Hardening milestone shipped. All 10 phases (18, 19, 20, 21, 22, 22.1, 23, 24, 25, 26) complete with audit verdict `passed` (53/53 reqs, 12/12 integration WIRED, 3/3 E2E flows). v1.3 archive: [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md). Next: `/gsd:new-milestone` to scope v1.4.*
