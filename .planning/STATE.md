@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: v1.3 Hardening
-status: executing
-stopped_at: Phase 22.1 context gathered
-last_updated: "2026-05-28T12:27:16.510Z"
+status: ready_to_plan
+stopped_at: Phase 22.1 complete (4/4) — ready to discuss Phase 24
+last_updated: 2026-05-28T13:34:11.674Z
 last_activity: 2026-05-28 -- Phase 22.1 execution started
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 35
-  completed_plans: 31
+  completed_plans: 106
   percent: 78
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 22.1 — break-even-formula-reconciliation
+**Current focus:** Phase 24 — nyquist contracts phase 13 visual uat phase 18 review carryo
 
 ## Current Position
 
-Phase: 22.1 (break-even-formula-reconciliation) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 22.1
+Phase: 24
+Plan: Not started
+Status: Ready to plan
 Next: Pick any independent phase: 19 (Modal primitive), 20 (Dexie atomicity), 21 (CSV + URL security). Phase 19 must complete before Phase 22; Phase 22 before Phase 23.
-Last activity: 2026-05-28 -- Phase 22.1 execution started
+Last activity: 2026-05-28
 
 ## v1.3 Phase Order Reference
 
@@ -48,7 +48,7 @@ Last activity: 2026-05-28 -- Phase 22.1 execution started
 
 **Velocity:**
 
-- Total plans completed: 57
+- Total plans completed: 61
 - Average duration: —
 - Total execution time: —
 
@@ -70,6 +70,7 @@ Last activity: 2026-05-28 -- Phase 22.1 execution started
 | 20 | 4 | - | - |
 | 21 | 3 | - | - |
 | 22 | 6 | - | - |
+| 22.1 | 4 | - | - |
 
 **Recent Trend:**
 
