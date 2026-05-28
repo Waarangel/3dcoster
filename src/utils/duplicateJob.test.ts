@@ -28,8 +28,11 @@ function makeMinimalJob(overrides: Partial<PrintJob>): PrintJob {
 
 // ---------------------------------------------------------------------------
 // D-15 LOCKED test contract — CONTEXT.md lines 149-159 reproduced verbatim.
-// Do NOT modify these assertions. They are the unit-test acceptance criteria
-// for DUP-02 and are referenced by the threat-model mitigation T-15-03.
+// Do NOT modify the assertion expressions below — they are the unit-test
+// acceptance criteria for DUP-02 and are referenced by threat-model
+// mitigation T-15-03. Shape refactoring (e.g., one it() per assertion,
+// rename describe()) is permitted as long as every expect() line stays
+// byte-identical and every threat-model mitigation remains locked.
 // ---------------------------------------------------------------------------
 
 describe('duplicateJob (DUP-02 D-15 locked contract)', () => {
@@ -44,13 +47,33 @@ describe('duplicateJob (DUP-02 D-15 locked contract)', () => {
     tags: ['phone-stand', 'pla'],
   });
 
-  it('resets PII, tax, copiesSold, id; preserves tags (TAGS-F3)', () => {
+  it('resets PII (customer) on the duplicate', () => {
     const dup = duplicateJob(jobWithCustomerAndTaxRate);
     expect(dup.customer).toBeUndefined();
+  });
+
+  it('resets taxRate on the duplicate', () => {
+    const dup = duplicateJob(jobWithCustomerAndTaxRate);
     expect(dup.taxRate).toBeUndefined();
+  });
+
+  it('resets copiesSold to 0 on the duplicate', () => {
+    const dup = duplicateJob(jobWithCustomerAndTaxRate);
     expect(dup.copiesSold).toBe(0);
+  });
+
+  it('rotates id — duplicate id differs from source id', () => {
+    const dup = duplicateJob(jobWithCustomerAndTaxRate);
     expect(dup.id).not.toBe(jobWithCustomerAndTaxRate.id);
+  });
+
+  it('advances createdAt — duplicate is newer than source', () => {
+    const dup = duplicateJob(jobWithCustomerAndTaxRate);
     expect(dup.createdAt.getTime()).toBeGreaterThan(jobWithCustomerAndTaxRate.createdAt.getTime());
+  });
+
+  it('preserves tags (TAGS-F3 lock)', () => {
+    const dup = duplicateJob(jobWithCustomerAndTaxRate);
     expect(dup.tags).toEqual(jobWithCustomerAndTaxRate.tags);  // TAGS-F3 lock
   });
 });
