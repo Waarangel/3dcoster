@@ -29,14 +29,27 @@ interface ParsedRelease {
   date: string;
   body: string;
   url: string;
-  type: 'major' | 'minor' | 'patch';
+  type: 'major' | 'minor' | 'patch' | 'milestone';
 }
 
-function getVersionType(version: string): 'major' | 'minor' | 'patch' {
+function getVersionType(version: string): 'major' | 'minor' | 'patch' | 'milestone' {
   const parts = version.replace('v', '').split('.');
+  // 2-part tags (e.g. v1.3) are GSD milestone markers, not desktop releases.
+  // They should never reach this function (the release workflow no longer
+  // builds them, and the fetch loop below filters them out), but classify
+  // defensively in case a historical 2-part tag still has a release entry.
+  if (parts.length < 3) return 'milestone';
   if (parts[0] !== '0' && parts[1] === '0' && parts[2] === '0') return 'major';
   if (parts[2] === '0') return 'minor';
   return 'patch';
+}
+
+// 2-part version tags (v1.3, v2.0) are GSD milestone markers — planning
+// artifacts that should not appear on the user-facing changelog. Filter them
+// out at the source, before they consume one of the MAX_RELEASES_DISPLAYED
+// slots.
+function isDesktopReleaseTag(tagName: string): boolean {
+  return /^v\d+\.\d+\.\d+$/.test(tagName);
 }
 
 function parseMarkdownBody(body: string): string[] {
@@ -88,8 +101,11 @@ export function ChangelogPage() {
   useEffect(() => {
     async function fetchReleases() {
       try {
+        // Fetch headroom (2x display cap) so that filtering out drafts +
+        // milestone-marker tags (v1.3, v2.0, etc.) still leaves enough
+        // 3-part desktop releases to fill MAX_RELEASES_DISPLAYED slots.
         const response = await fetch(
-          `https://api.github.com/repos/Waarangel/3dcoster/releases?per_page=${MAX_RELEASES_DISPLAYED}`
+          `https://api.github.com/repos/Waarangel/3dcoster/releases?per_page=${MAX_RELEASES_DISPLAYED * 2}`
         );
 
         if (!response.ok) {
@@ -100,6 +116,8 @@ export function ChangelogPage() {
 
         const parsed: ParsedRelease[] = data
           .filter(r => !r.draft)
+          .filter(r => isDesktopReleaseTag(r.tag_name))
+          .slice(0, MAX_RELEASES_DISPLAYED)
           .map(r => ({
             version: r.tag_name,
             name: r.name || r.tag_name,
@@ -215,6 +233,8 @@ export function ChangelogPage() {
                         ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
                         : release.type === 'minor'
                         ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                        : release.type === 'milestone'
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
                         : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
                     }`}>
                       {release.type}
