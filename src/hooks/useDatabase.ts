@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
-import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave } from '../db/backfill';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -17,6 +17,14 @@ let copiesSoldReconcileRan = false;
 
 // Phase 15 D-12 — process-lifetime flag for the tag-normalization reconcile (sibling to copiesSoldReconcileRan).
 let tagsNormalizeRan = false;
+
+// Phase 22.1 D-08 — process-lifetime flag for the fixed-cost snapshot backfill.
+// Mirrors the copiesSold / tags reconciles above. Runs ONCE per page load so legacy
+// jobs (no fixedCostsAtSave) get the depreciation + nozzleWear snapshot populated
+// before JobsManager's break-even pill renders; subsequent loads pay zero write cost
+// because reconcileFixedCostsAtSave is idempotent at the job level. No Dexie meta
+// table is touched (none exists in this schema; module flag is the only mechanism).
+let fixedCostsReconcileRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -481,6 +489,59 @@ export function useJobs() {
         // against stale counters; users can manually edit a Sale to retrigger.
         console.error('copiesSold reconcile failed:', err);
         copiesSoldReconcileRan = false;  // allow retry on next mount
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobs === undefined]);
+
+  // Phase 22.1 D-08: backfill the fixedCostsAtSave snapshot on every legacy
+  // PrintJob (jobs saved before the schema-extension field landed). Runs ONCE
+  // per page load behind the fixedCostsReconcileRan module flag so React
+  // remounts do not retrigger the read+write cycle. Without this, the
+  // JobsManager break-even pill (which now reads the broader Calculator
+  // formula via fixedCostsAtSave) would silently fall back to zeros on every
+  // legacy row, defeating Phase 22.1's whole point.
+  //
+  // reconcileFixedCostsAtSave is Path B — it reads PrinterInstance, PrinterConfig,
+  // and Material rows to faithfully reconstruct depreciation + nozzleWear
+  // (mirrors calculateDepreciation + calculateNozzleWear from costCalc.ts; no
+  // failureRate multiplier per D-06). Orphan jobs (printerInstanceId points at
+  // a deleted printer) get { depreciation: 0, nozzleWear: 0 } + console.warn
+  // from the helper itself — no UI surface needed (D-07).
+  //
+  // Idempotent at the job level — helper returns empty array when every job
+  // already has fixedCostsAtSave, so subsequent loads pay zero write cost. On
+  // error the flag resets to false so a future remount can retry.
+  useEffect(() => {
+    if (fixedCostsReconcileRan) return;
+    if (jobs === undefined) return;  // wait for the first liveQuery emission
+    fixedCostsReconcileRan = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [printerInstances, printers, materials] = await Promise.all([
+          db.printerInstances.toArray(),
+          db.printers.toArray(),
+          db.materials.toArray(),
+        ]);
+        if (cancelled) return;
+        const updated = reconcileFixedCostsAtSave(jobs, printerInstances, printers, materials);
+        if (updated.length > 0) {
+          // Helper returns full PrintJob[] (not patches) so we write each row
+          // directly — no need to re-fetch + merge.
+          await db.transaction('rw', db.jobs, async () => {
+            for (const updatedJob of updated) {
+              await db.jobs.put({ ...updatedJob, updatedAt: new Date() });
+            }
+          });
+        }
+      } catch (err) {
+        // Reconcile failures must NOT break the app — the UI still works
+        // against legacy jobs (their pills will read zero fixed costs until
+        // a successful retry). Allow retry on next mount.
+        console.error('fixedCosts reconcile failed:', err);
+        fixedCostsReconcileRan = false;  // allow retry on next mount
       }
     })();
     return () => { cancelled = true; };
