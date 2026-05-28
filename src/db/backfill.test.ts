@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency } from './backfill';
-import type { PrintJob, Sale, Customer, Quote } from '../types';
+import { describe, it, expect, vi } from 'vitest';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave } from './backfill';
+import type { PrintJob, Sale, Customer, Quote, PrinterInstance, PrinterConfig, Material } from '../types';
 
 describe('backfillTagsOnJob', () => {
   it('sets tags=[] when the field is missing (most common v5 path)', () => {
@@ -580,5 +580,155 @@ describe('reconcileQuoteCurrency (DATA-03 v9 reconcile)', () => {
     // All other lineItemsSnapshot fields preserved
     expect(patched.lineItemsSnapshot.jobTitle).toBe('X');
     expect(patched.lineItemsSnapshot.sellingPrice).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reconcileFixedCostsAtSave — Phase 22.1 DATA-07 reconcile (Path B — faithful
+// reconstruction of depreciation + nozzleWear for legacy jobs).
+//
+// Four cases:
+//   1. Job with fixedCostsAtSave already set → skipped (job-level idempotency)
+//   2. Legacy job + live printer + materials → correct depreciation + nozzleWear
+//      snapshot (mirrors calculateDepreciation + calculateNozzleWear from costCalc.ts,
+//      NO failureRate multiplier — D-06 / Pitfall 2)
+//   3. Legacy job + missing printerInstance → { depreciation: 0, nozzleWear: 0 }
+//      + console.warn called (D-07)
+//   4. Idempotent over a full second run → first call writes snapshots, second
+//      pass over the merged result returns empty array
+// ---------------------------------------------------------------------------
+
+describe('reconcileFixedCostsAtSave (Phase 22.1 DATA-07)', () => {
+  function makeJob(overrides: Partial<PrintJob>): PrintJob {
+    return {
+      id: 'job-1',
+      name: 'Test Job',
+      createdAt: new Date('2026-04-01'),
+      updatedAt: new Date('2026-04-01'),
+      filaments: [],
+      printTimeHours: 1,
+      printerInstanceId: 'inst-1',
+      modelCost: 0,
+      prepTimeMinutes: 0,
+      postProcessingMinutes: 0,
+      materialsUsed: [],
+      failureRate: 0,
+      costPerUnit: 1,
+      sellingPrice: 10,
+      copiesSold: 0,
+      ...overrides,
+    } as PrintJob;
+  }
+
+  function makeInst(overrides: Partial<PrinterInstance>): PrinterInstance {
+    return {
+      id: 'inst-1',
+      printerConfigId: 'cfg-1',
+      nickname: 'Test Printer',
+      printHours: 0,
+      actualPurchasePrice: 1200,
+      recoveryMonths: 12,
+      estimatedMonthlyPrintHours: 40,
+      ...overrides,
+    } as PrinterInstance;
+  }
+
+  function makePrinter(overrides: Partial<PrinterConfig>): PrinterConfig {
+    return {
+      id: 'cfg-1',
+      name: 'Test Printer Model',
+      purchasePrice: 1000,
+      expectedLifespanHours: 5000,
+      wattage: 100,
+      nozzleCost: 10,
+      nozzleLifespanCm3: 500,
+      ...overrides,
+    } as PrinterConfig;
+  }
+
+  function makeMaterial(overrides: Partial<Material>): Material {
+    return {
+      id: 'mat-1',
+      name: 'Test PLA',
+      category: 'filament',
+      costPerUnit: 0.025,
+      filamentType: 'PLA',
+      ...overrides,
+    } as Material;
+  }
+
+  it('leaves already-snapshotted jobs unchanged (job-level idempotency)', () => {
+    const job = makeJob({ fixedCostsAtSave: { depreciation: 5, nozzleWear: 0.02 } });
+    const result = reconcileFixedCostsAtSave([job], [makeInst({})], [makePrinter({})], [makeMaterial({})]);
+    expect(result.length).toBe(0);
+  });
+
+  it('snapshots depreciation + nozzleWear for legacy job with live printer + materials', () => {
+    // Fixture: printer cost $1200 over 12 months × 40 hr/mo = 480 recovery hours
+    //         → $2.50/hour depreciation; printTimeHours=2 → depreciation=$5.00
+    // Filament: 24.8 grams of PLA (density 1.24 g/cm³) → 20 cm³ volume
+    //         → nozzleLifespan 500 cm³, nozzleCost $10 → wear = (20/500)*10 = $0.40
+    const job = makeJob({
+      id: 'job-legacy',
+      name: 'Legacy Job',
+      printTimeHours: 2,
+      filaments: [{ filamentId: 'mat-1', grams: 24.8 }],
+    });
+    const inst = makeInst({ id: 'inst-1', printerConfigId: 'cfg-1', actualPurchasePrice: 1200, recoveryMonths: 12, estimatedMonthlyPrintHours: 40 });
+    const printer = makePrinter({ id: 'cfg-1', nozzleLifespanCm3: 500, nozzleCost: 10 });
+    const material = makeMaterial({ id: 'mat-1', filamentType: 'PLA' });
+
+    const result = reconcileFixedCostsAtSave([job], [inst], [printer], [material]);
+    expect(result.length).toBe(1);
+
+    // depreciation = (1200 / (12 * 40)) * 2 = (1200/480) * 2 = 2.5 * 2 = 5
+    const expectedDepreciation = (1200 / (12 * 40)) * 2;
+    // nozzleWear = (24.8 / 1.24 / 500) * 10 = (20 / 500) * 10 = 0.4
+    const expectedNozzleWear = (24.8 / 1.24 / 500) * 10;
+
+    expect(result[0].fixedCostsAtSave).toBeDefined();
+    expect(result[0].fixedCostsAtSave!.depreciation).toBeCloseTo(expectedDepreciation, 6);
+    expect(result[0].fixedCostsAtSave!.nozzleWear).toBeCloseTo(expectedNozzleWear, 6);
+  });
+
+  it('snapshots zeros + console.warn when printerInstance is missing (D-07)', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const job = makeJob({
+        id: 'job-orphan',
+        name: 'Orphan Job',
+        printerInstanceId: 'p-does-not-exist',
+      });
+      const result = reconcileFixedCostsAtSave([job], [], [], []);
+      expect(result.length).toBe(1);
+      expect(result[0].fixedCostsAtSave).toEqual({ depreciation: 0, nozzleWear: 0 });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const callArg = String(warnSpy.mock.calls[0][0]);
+      expect(callArg).toContain('job-orphan');
+      expect(callArg).toContain('Orphan Job');
+      expect(callArg).toContain('snapshotting zeros');
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('is idempotent over a full second run', () => {
+    const job = makeJob({
+      id: 'job-1',
+      printTimeHours: 2,
+      filaments: [{ filamentId: 'mat-1', grams: 24.8 }],
+    });
+    const inst = makeInst({});
+    const printer = makePrinter({});
+    const material = makeMaterial({});
+
+    const firstPass = reconcileFixedCostsAtSave([job], [inst], [printer], [material]);
+    expect(firstPass.length).toBe(1);
+
+    // Build secondInput by spreading first-pass results onto the input where ids match
+    const updatedById = new Map(firstPass.map(j => [j.id, j]));
+    const secondInput = [job].map(j => updatedById.get(j.id) ?? j);
+    const secondPass = reconcileFixedCostsAtSave(secondInput, [inst], [printer], [material]);
+    expect(secondPass.length).toBe(0);
   });
 });
