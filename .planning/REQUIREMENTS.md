@@ -39,7 +39,7 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 - [x] **DATA-04**: `parsePositiveNumber` returns `null` for `num <= 0` (rename to `parseStrictlyPositiveNumber` OR accept `allowZero?: boolean`). Printer `wattage` and `purchasePrice` reject `0` and surface a validation error. Closes [CODE-AUDIT #23](v1.2-CODE-AUDIT.md) (LOW).
 - [x] **DATA-05**: `versionchange` handler wraps reload in `async () => { await db.close(); window.location.reload(); }` — no aborted-in-flight transactions. Closes [CODE-AUDIT #24](v1.2-CODE-AUDIT.md) (LOW).
 - [x] **DATA-06**: `getSetting<T>` adds runtime validation at the JSON-parse boundary (Zod or hand-rolled schema check). Falls back to `defaultValue` on structural mismatch, not just on JSON parse failure. Closes [CODE-AUDIT #25](v1.2-CODE-AUDIT.md) (LOW).
-- [ ] **DATA-07**: `reconcileFixedCostsAtSave` pure helper in `src/db/backfill.ts` is idempotent on the job level (jobs with `fixedCostsAtSave` already set are returned unchanged) and handles the missing-printer edge case by snapshotting `{ depreciation: 0, nozzleWear: 0 }` + `console.warn` (orphan job id + name) rather than crashing. Wired into `useJobs()` (`src/hooks/useDatabase.ts`) behind a process-lifetime module flag `fixedCostsReconcileRan`. Closes Phase 22.1 data-reconcile gap (no audit finding — surfaced during Phase 22 UAT).
+- [x] **DATA-07**: `reconcileFixedCostsAtSave` pure helper in `src/db/backfill.ts` is idempotent on the job level (jobs with `fixedCostsAtSave` already set are returned unchanged) and handles the missing-printer edge case by snapshotting `{ depreciation: 0, nozzleWear: 0 }` + `console.warn` (orphan job id + name) rather than crashing. Wired into `useJobs()` (`src/hooks/useDatabase.ts`) behind a process-lifetime module flag `fixedCostsReconcileRan`. Closes Phase 22.1 data-reconcile gap (no audit finding — surfaced during Phase 22 UAT).
 
 ### Test coverage (TEST)
 
@@ -77,7 +77,7 @@ Requirements for milestone v1.3. Each maps to one or more audit findings. All re
 - [x] **PERF-05**: Rollup `Circular chunk: vendor -> react-vendor -> vendor` warning resolved — `vite.config.ts manualChunks` routes all `react-*` packages into `react-vendor` explicitly. Build emits no chunk-graph warnings. Closes [TECH-DEBT D12](v1.2-TECH-DEBT.md) (LOW).
 - [x] **PERF-06**: Vendor chunk classification reviewed; opportunistic size reduction where safe (e.g., split out infrequently-used libs from `vendor`). Non-blocking — only if Phase 11's perf-gate philosophy can be cleanly extended. Closes [TECH-DEBT D13](v1.2-TECH-DEBT.md) (LOW; optional).
 - [x] **PERF-07**: `useSales()` global call (`const { sales: allSales } = useSales()`) lifted to a parent or `useDatabase` hook so the global liveQuery subscription is shared, not duplicated alongside the scoped query. Closes [CODE-AUDIT #30](v1.2-CODE-AUDIT.md) (LOW; optional — accept if extraction adds more friction than it removes).
-- [ ] **PERF-08**: Formula correctness — the JobsManager break-even pill (`computeBreakEvenInfo` in `src/components/JobsManager.tsx`) computes `Math.ceil((modelCost + fixedCostsAtSave.depreciation + fixedCostsAtSave.nozzleWear) / effectiveProfitPerUnit)`, matching the Calculator widget's "Break-even Units" formula. CostCalculator save and update paths write `fixedCostsAtSave: { depreciation, nozzleWear }` onto each saved `PrintJob`. Locked by a round-trip test asserting Calculator displayed Break-even Units === JobsManager pill `breakEvenCopies` for the same job. Closes Phase 22.1 formula-divergence gap (surfaced during Phase 22 UAT).
+- [x] **PERF-08**: Formula correctness — the JobsManager break-even pill (`computeBreakEvenInfo` in `src/components/JobsManager.tsx`) computes `Math.ceil((modelCost + fixedCostsAtSave.depreciation + fixedCostsAtSave.nozzleWear) / effectiveProfitPerUnit)`, matching the Calculator widget's "Break-even Units" formula. CostCalculator save and update paths write `fixedCostsAtSave: { depreciation, nozzleWear }` onto each saved `PrintJob`. Locked by a round-trip test asserting Calculator displayed Break-even Units === JobsManager pill `breakEvenCopies` for the same job. Closes Phase 22.1 formula-divergence gap (surfaced during Phase 22 UAT).
 
 ### Nyquist contracts (NYQ)
 
@@ -156,7 +156,7 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | DATA-04 | Phase 20 | LOW | Not started |
 | DATA-05 | Phase 20 | LOW | Not started |
 | DATA-06 | Phase 20 | LOW | Not started |
-| DATA-07 | Phase 22.1 | MEDIUM | Not started |
+| DATA-07 | Phase 22.1 | MEDIUM | Complete |
 | TEST-01 | Phase 23 | HIGH | Not started |
 | TEST-02 | Phase 23 | HIGH | Not started |
 | TEST-03 | Phase 23 | HIGH | Not started |
@@ -182,7 +182,7 @@ Which phases cover which requirements. Filled by gsd-roadmapper.
 | PERF-05 | Phase 25 | LOW | Not started |
 | PERF-06 | Phase 25 | LOW (optional) | Not started |
 | PERF-07 | Phase 22 | LOW (optional) | Not started |
-| PERF-08 | Phase 22.1 | HIGH (correctness) | Not started |
+| PERF-08 | Phase 22.1 | HIGH (correctness) | Complete |
 | NYQ-01 | Phase 24 | — | Not started |
 | NYQ-02 | Phase 24 | — | Not started |
 | NYQ-03 | Phase 24 | — | Not started |
