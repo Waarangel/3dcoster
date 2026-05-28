@@ -597,6 +597,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         packagingMaterials,
         marketplace,
         tags: editingJob.tags,
+        // Phase 22.1 D-03 — snapshot the Calculator's broader break-even fixed
+        // costs (depreciation + nozzleWear) so the JobsManager pill can converge
+        // on the Calculator widget's formula for the same job. Reads the
+        // existing `fixedCosts` memo (line 449-457) computed from current
+        // printer/material state at Update time.
+        fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
       };
 
       onUpdateJob(updatedJob);
@@ -633,6 +639,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         packagingMaterials,
         marketplace,
         copiesSold: 0,
+        // Phase 22.1 D-03 — snapshot the Calculator's broader break-even fixed
+        // costs (depreciation + nozzleWear) so the JobsManager pill can converge
+        // on the Calculator widget's formula for the same job. Reads the
+        // existing `fixedCosts` memo (line 449-457) computed from current
+        // printer/material state at Save (Create) time.
+        fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
       };
 
       onSaveJob(job, printTimeHours);

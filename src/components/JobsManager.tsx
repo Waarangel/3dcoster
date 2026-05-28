@@ -42,7 +42,11 @@ type BreakEvenInfo = {
 // in-component `getBreakEvenInfo` useCallback so `breakEvenMap` (D-18) can
 // call it without capturing component-scope state. Reads only `job` fields
 // and the explicit `salesByJob` arg — no other closures (RESEARCH confirmed).
-function computeBreakEvenInfo(
+//
+// Phase 22.1 PERF-08 (D-17 export): exported so JobsManager.test.tsx can
+// import and assert the Calculator-formula round-trip without rendering
+// JobsManager.
+export function computeBreakEvenInfo(
   job: PrintJob,
   salesByJob: Map<string, Sale[]>,
 ): BreakEvenInfo {
@@ -55,12 +59,22 @@ function computeBreakEvenInfo(
     : theoreticalProfitPerUnit;
 
   const effectiveProfitPerUnit = job.copiesSold > 0 ? actualProfitPerUnit : theoreticalProfitPerUnit;
+  // Phase 22.1 D-01 — widen numerator to include fixed-cost snapshot.
+  // Calculator's formula wins: break-even covers modelCost + depreciation + nozzleWear,
+  // not just modelCost. Legacy jobs without fixedCostsAtSave fall back to modelCost
+  // alone via the `?? 0` defaults (round-trip equivalent to pre-22.1 behavior).
+  // Infinity guard widened from `job.modelCost > 0` → `fixedNumerator > 0` so jobs
+  // with modelCost=0 and non-zero depreciation surface a finite break-even
+  // (RESEARCH Open Question #2).
+  const fixedNumerator = job.modelCost
+    + (job.fixedCostsAtSave?.depreciation ?? 0)
+    + (job.fixedCostsAtSave?.nozzleWear ?? 0);
   // WR-04: normalize non-finite break-even results to null so the UI can
   // render a "cannot be computed" fallback instead of leaking 'Infinity' /
   // 'NaN' into copy.
   const breakEvenCopiesRaw = effectiveProfitPerUnit > 0
-    ? Math.ceil(job.modelCost / effectiveProfitPerUnit)
-    : job.modelCost > 0 ? Infinity : 0;
+    ? Math.ceil(fixedNumerator / effectiveProfitPerUnit)
+    : fixedNumerator > 0 ? Infinity : 0;
   const breakEvenCopies: number | null = Number.isFinite(breakEvenCopiesRaw)
     ? breakEvenCopiesRaw
     : null;
