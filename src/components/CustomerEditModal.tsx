@@ -76,7 +76,7 @@ export function CustomerEditModal({ isOpen, initialCustomer, onSave, onClose }: 
         createdAt: initialCustomer?.createdAt ?? new Date(),
         lastUsedAt: initialCustomer?.lastUsedAt,
         name: name.trim() || undefined,
-        email: email.trim() || undefined,
+        email: email.trim().toLowerCase() || undefined,
         company: company.trim() || undefined,
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
