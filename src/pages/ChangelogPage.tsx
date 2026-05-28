@@ -3,6 +3,15 @@ import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 
+/**
+ * How many releases to display on the /changelog page.
+ *
+ * Industry best practice (Linear, Vercel, Stripe) is 5 — most-recent matters
+ * most; older releases are one click away on GitHub. Keeps the page scannable.
+ * Tune this constant if the release cadence changes.
+ */
+const MAX_RELEASES_DISPLAYED = 5;
+
 interface GitHubRelease {
   id: number;
   tag_name: string;
@@ -80,7 +89,7 @@ export function ChangelogPage() {
     async function fetchReleases() {
       try {
         const response = await fetch(
-          'https://api.github.com/repos/Waarangel/3dcoster/releases?per_page=20'
+          `https://api.github.com/repos/Waarangel/3dcoster/releases?per_page=${MAX_RELEASES_DISPLAYED}`
         );
 
         if (!response.ok) {
@@ -167,6 +176,20 @@ export function ChangelogPage() {
           {/* Releases List */}
           {!loading && !error && releases.length > 0 && (
             <div className="space-y-8">
+              {releases.length >= MAX_RELEASES_DISPLAYED && (
+                <p className="text-slate-500 text-sm text-center -mt-4">
+                  Showing the {MAX_RELEASES_DISPLAYED} most recent releases. For older versions, see the{' '}
+                  <a
+                    href="https://github.com/Waarangel/3dcoster/releases"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline"
+                  >
+                    full archive on GitHub
+                  </a>
+                  .
+                </p>
+              )}
               {releases.map((release, index) => (
                 <div
                   key={release.version}

@@ -47,6 +47,21 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Extract release notes from CHANGELOG.md
+        # Reads the section matching the pushed tag from CHANGELOG.md and
+        # stuffs the body into $GITHUB_ENV as a multi-line var. If no section
+        # is found, the script emits a fallback body + a loud stderr warning
+        # that surfaces in the build log (soft gate — never blocks shipping).
+        # See scripts/extract-changelog.cjs for full behavior.
+        shell: bash
+        run: |
+          NOTES="$(node scripts/extract-changelog.cjs "${{ github.ref_name }}")"
+          {
+            echo "RELEASE_BODY<<RELEASE_BODY_EOF_3DCOSTER"
+            echo "$NOTES"
+            echo "RELEASE_BODY_EOF_3DCOSTER"
+          } >> "$GITHUB_ENV"
+
       - name: Build frontend with Tauri flag
         run: npm run build
         env:
@@ -60,16 +75,11 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '3DCoster ${{ github.ref_name }}'
-          releaseBody: |
-            ## Download
-
-            - **macOS (Apple Silicon)**: Download the `_aarch64.dmg` file
-            - **macOS (Intel)**: Download the `_x64.dmg` file
-            - **Windows**: Download the `.msi` file
-
-            ## What's New
-
-            See the [changelog](https://github.com/Waarangel/3dcoster/commits/${{ github.ref_name }}) for details.
+          # Body comes from CHANGELOG.md via the "Extract release notes" step
+          # above. To add notes for the next release, append a section to
+          # CHANGELOG.md BEFORE pushing the tag. See .claude/CLAUDE.md
+          # "Desktop App Release Process" for the rule.
+          releaseBody: ${{ env.RELEASE_BODY }}
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

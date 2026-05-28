@@ -59,22 +59,43 @@ if (__IS_TAURI__) {
 
 ## Desktop App Release Process
 
-### Version Files to Update
-When releasing a new version, update ALL THREE files:
+### MANDATORY — CHANGELOG.md entry per release
 
-1. **`src/components/UpdateBanner.tsx`** - `APP_VERSION` constant
+**Every `v*` tag MUST have a matching `## [X.Y.Z] - YYYY-MM-DD` section in `CHANGELOG.md` BEFORE the tag is pushed.** The release workflow extracts this section via `scripts/extract-changelog.cjs` and uses it as the GitHub release body, which then surfaces verbatim on the `/changelog` page (front-end fetches GitHub Releases API).
+
+If a section is missing:
+- The release still ships (soft gate, doesn't block).
+- A loud `⚠ WARNING` lands in the GitHub Actions build log.
+- The release body falls back to a generic "See the commits" template — the same anti-pattern that caused v1.2.3, v1.2.4, v1.3.0, v1.3.1 to ship with empty release notes.
+
+Use the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format with these section groupings (only include those that apply):
+- **Added** — new features
+- **Changed** — changes in existing functionality
+- **Deprecated** — soon-to-be removed features
+- **Removed** — now removed features
+- **Fixed** — bug fixes
+- **Security** — vulnerabilities fixed
+
+Each bullet should be a short, user-facing sentence. **Do not include internal-only details** (refactors, dep bumps the user won't notice, planning artifacts).
+
+### Version Files to Update
+When releasing a new version, update ALL FOUR artifacts:
+
+1. **`CHANGELOG.md`** — promote `## [Unreleased]` content into a new `## [X.Y.Z] - YYYY-MM-DD` section
+
+2. **`src/components/UpdateBanner.tsx`** - `APP_VERSION` constant
    ```ts
    export const APP_VERSION = '1.1.0';
    ```
 
-2. **`src-tauri/tauri.conf.json`** - `version` field
+3. **`src-tauri/tauri.conf.json`** - `version` field
    ```json
    {
      "version": "1.1.0"
    }
    ```
 
-3. **`src-tauri/Cargo.toml`** - `version` field
+4. **`src-tauri/Cargo.toml`** - `version` field
    ```toml
    [package]
    version = "1.1.0"
@@ -82,23 +103,30 @@ When releasing a new version, update ALL THREE files:
 
 ### Release Steps
 
-1. Update version numbers in all three files
-2. Commit and push:
+1. Update CHANGELOG.md — promote `[Unreleased]` content into a new `## [X.Y.Z] - YYYY-MM-DD` section
+2. Update version numbers in the three version files
+3. **Verify locally**: `node scripts/extract-changelog.cjs vX.Y.Z` should print your release notes (no fallback warning)
+4. Commit and push:
    ```bash
    git add .
    git commit -m "chore: Bump version to 1.1.0"
    git push origin main
    ```
-3. Create and push tag:
+5. Create and push tag:
    ```bash
    git tag v1.1.0
    git push origin v1.1.0
    ```
-4. GitHub Actions builds automatically:
+6. GitHub Actions builds automatically:
    - Windows: NSIS `.exe` installer
    - macOS Apple Silicon: `_aarch64.dmg`
    - macOS Intel: `_x64.dmg`
-5. Release published with all artifacts
+7. Release published with all artifacts AND with the CHANGELOG.md section as the body
+
+### Why this matters
+Earlier releases (v1.2.3, v1.2.4, v1.3.0, v1.3.1) shipped with only "See the [changelog](commits/...) for details" as the release body because the workflow had no source of detailed notes. Result: the `/changelog` page on the marketing site looked progressively emptier as the project matured. The CHANGELOG.md + extract-script + soft-warning system was added 2026-05-28 to prevent that pattern from recurring.
+
+The marketing `/changelog` page (`src/pages/ChangelogPage.tsx`) shows the most recent `MAX_RELEASES_DISPLAYED` releases (currently 5 — industry best practice). Older releases are accessible via the "All Releases on GitHub" CTA. Adjust the constant in that file if cadence changes.
 
 ### How Users Get Updates
 
