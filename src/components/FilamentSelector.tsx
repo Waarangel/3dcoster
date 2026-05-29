@@ -30,21 +30,33 @@ export function FilamentSelector({
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Filter filaments by user's preferred currency
-  const filaments = materials.filter(m => m.category === 'filament' && m.currency === userCurrency);
+  // Filter filaments by user's preferred currency.
+  // Tolerate null/undefined currency (legacy + freshly-added rows that never got a
+  // currency written) but still exclude a DIFFERENT explicit currency — never a
+  // false positive. Loose `== null` matches both undefined and null.
+  const filaments = materials.filter(m => m.category === 'filament' && (m.currency === userCurrency || m.currency == null));
   const selectedFilament = materials.find(m => m.id === selectedFilamentId);
 
-  // Get unique brands
+  // Get unique brand groups. Brand-less filaments are bucketed under a synthetic
+  // 'Unbranded' label so they never silently vanish; 'Unbranded' always sorts last.
+  const UNBRANDED = 'Unbranded';
   const brands = useMemo(() => {
     const brandSet = new Set<string>();
     filaments.forEach(f => {
-      if (f.brand) brandSet.add(f.brand);
+      brandSet.add(f.brand || UNBRANDED);
     });
-    return Array.from(brandSet).sort();
+    return Array.from(brandSet).sort((a, b) => {
+      if (a === UNBRANDED) return 1;
+      if (b === UNBRANDED) return -1;
+      return a.localeCompare(b);
+    });
   }, [filaments]);
 
-  // Get filaments by brand
+  // Get filaments by brand group. The 'Unbranded' group returns brand-less rows.
   const getFilamentsForBrand = (brand: string) => {
+    if (brand === UNBRANDED) {
+      return filaments.filter(f => !f.brand);
+    }
     return filaments.filter(f => f.brand === brand);
   };
 
