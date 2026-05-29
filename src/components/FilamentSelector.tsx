@@ -2,6 +2,33 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Material, Currency } from '../types';
 import { Button } from './ui';
 
+// Filament names often embed the brand (e.g. "Bambu ASA", "eSun PLA"). The
+// submenu is already grouped under a brand header, so repeating the brand on
+// every row is redundant — strip the leading brand word for the submenu label.
+// Match on the brand's FIRST word (brand "Bambu Lab" → strip "Bambu") so the
+// common short form is removed without needing the full brand string to prefix
+// the name. If the name doesn't start with the brand word, return it unchanged
+// (never drop real content for user-added filaments).
+function stripBrandFromName(name: string, brand?: string): string {
+  if (!brand) return name;
+  const brandFirst = brand.split(/\s+/)[0];
+  const words = name.split(/\s+/);
+  if (words[0]?.toLowerCase() === brandFirst.toLowerCase()) {
+    return words.slice(1).join(' ') || name;
+  }
+  return name;
+}
+
+// Trigger label: brand short-word + bare name, e.g. "Bambu ASA" / "eSun PLA".
+// Guarantees brand context even when a user-added name omits the brand
+// (brand "eSun" + name "PLA+" → "eSun PLA+").
+function brandedName(filament: Material): string {
+  const bare = stripBrandFromName(filament.name, filament.brand);
+  if (!filament.brand) return bare;
+  const brandFirst = filament.brand.split(/\s+/)[0];
+  return `${brandFirst} ${bare}`;
+}
+
 interface FilamentSelectorProps {
   materials: Material[];
   selectedFilamentId: string;
@@ -119,7 +146,7 @@ export function FilamentSelector({
           className="!justify-between text-left"
         >
           <span className={selectedFilament ? 'text-white' : 'text-slate-400'}>
-            {selectedFilament ? selectedFilament.name : 'Select filament...'}
+            {selectedFilament ? brandedName(selectedFilament) : 'Select filament...'}
           </span>
           <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -163,7 +190,7 @@ export function FilamentSelector({
                           fIndex === getFilamentsForBrand(brand).length - 1 ? 'rounded-b-lg' : ''
                         }`}
                       >
-                        {filament.name}
+                        {stripBrandFromName(filament.name, filament.brand)}
                       </div>
                     ))}
                   </div>
