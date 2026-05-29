@@ -25,6 +25,17 @@ _Add the next release's user-facing changes here. Promote to a versioned section
 
 ---
 
+## [1.4.1] - 2026-05-29
+
+### Changed
+- **Cleaner filament picker** — filaments now sort A–Z within each brand, the dropdown shows just the filament name (the brand is already the group heading), and the selected field shows brand + name (e.g. "Bambu ASA").
+- **Tidier filament rows** — removed the per-row "price per gram" box from the calculator. Filament pricing lives in the Asset Library and still feeds every cost calculation, so multi-filament jobs take up much less vertical space.
+
+### Fixed
+- **"Reset Filament" keeps your currency** — resetting the built-in filament catalog now re-prices it into your currency instead of leaving the filaments in USD (which could hide them from the picker).
+
+---
+
 ## [1.4.0] - 2026-05-28
 
 A huge release — 6 weeks of work shipped at once. The Customer Library, Printable PDF Quote, Job tags + search, three-layer tax model, Etsy ToS helper, and a full accessibility + security + performance pass. If you've been on v1.3.1, this update is the equivalent of three normal releases stacked into one.
