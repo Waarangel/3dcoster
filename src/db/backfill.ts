@@ -279,6 +279,38 @@ export function reconcileQuoteCurrency(quotes: Quote[], currency: string): Quote
 }
 
 /**
+ * reconcileFilamentCurrency — quick-260529-bg2 reconcile helper.
+ *
+ * Pure. Idempotent. No Dexie, no React, no IO. Heals already-saved filament
+ * materials whose `currency` is null/undefined (added before the save-layer
+ * fix wrote `currency`). The useAssets effect reads the persisted profile
+ * currency, calls this helper to compute the patch set, then bulkPuts the
+ * result. Extracted as a pure function so jsdom can exhaustively cover the
+ * idempotency contract without fake-indexeddb (mirrors reconcileQuoteCurrency).
+ *
+ * Filter: materials where category === 'filament' AND currency == null (loose,
+ * matches both undefined and null). An explicit currency (e.g. the USD-seeded
+ * Bambu rows) is NEVER clobbered — no FX rewrite, no false positives. Returns
+ * ONLY the rows that need patching as spread copies (never the liveQuery cache
+ * entry). Re-running on already-patched rows returns an empty array.
+ *
+ * Examples:
+ *   reconcileFilamentCurrency([{ category: 'filament', currency: undefined }], 'CAD') → [{ ...row, currency: 'CAD' }]
+ *   reconcileFilamentCurrency([{ category: 'filament', currency: 'USD' }], 'CAD') → []  // explicit currency untouched
+ *   reconcileFilamentCurrency([{ category: 'consumable', currency: undefined }], 'CAD') → []  // non-filament untouched
+ *   reconcileFilamentCurrency([{ category: 'filament', currency: 'CAD' }], 'CAD') → []  // already patched (idempotent)
+ */
+export function reconcileFilamentCurrency(materials: Material[], currency: string): Material[] {
+  const out: Material[] = [];
+  for (const m of materials) {
+    if (m.category !== 'filament') continue;
+    if (m.currency != null) continue;
+    out.push({ ...m, currency: currency as Currency });
+  }
+  return out;
+}
+
+/**
  * backfillCustomersFromSales — second extension D-32 (gap K fix).
  *
  * One-time pass to populate the Customer Library with any customer that

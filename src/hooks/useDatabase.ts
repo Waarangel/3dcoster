@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
-import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency } from '../db/backfill';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -36,6 +36,16 @@ let fixedCostsReconcileRan = false;
 // discretion #8). Sale.customer historical snapshots are NEVER touched (D-03
 // + CL-05 by-value lock).
 let customerEmailLowercaseRan = false;
+
+// quick-260529-bg2 — process-lifetime flag for the filament-currency reconcile.
+// Heals already-saved filament materials whose `currency` is null/undefined
+// (added before the save-layer fix wrote `currency`) so they become visible in
+// the FilamentSelector after one app launch. Same one-per-page-load pattern as
+// customerEmailLowercaseRan above. WR-01: flag is set AFTER db.materials.bulkPut
+// completes, NOT before — so failures leave the flag false and the next mount
+// retries. reconcileFilamentCurrency is idempotent at the row level, so a second
+// pass writes nothing (and the flag short-circuits before any Dexie read anyway).
+let filamentCurrencyReconcileRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -94,6 +104,47 @@ export function useAssets() {
 
     return () => { cancelled = true; };
   }, []);
+
+  // quick-260529-bg2 — one-time idempotent reconcile that heals already-saved
+  // filament materials with a null/undefined currency so they become visible in
+  // the FilamentSelector. Runs AFTER the init effect above so seeds exist first,
+  // and waits for the first liveQuery emission (`assets === undefined` guard) so
+  // we never patch against an empty pre-load snapshot. WR-01: the flag is set
+  // only AFTER the bulkPut await resolves — a thrown error leaves it false so the
+  // next mount retries. reconcileFilamentCurrency is pure/idempotent; explicit
+  // currencies (e.g. USD-seeded Bambu rows) are never clobbered.
+  useEffect(() => {
+    if (filamentCurrencyReconcileRan) return;
+    if (assets === undefined) return;  // wait for the first liveQuery emission
+    let cancelled = false;
+    (async () => {
+      try {
+        // Read the persisted profile currency one-shot. Default mirrors the
+        // useUserProfile defaultProfile shape (currency 'CAD').
+        const profile = await getUserProfile({
+          currency: 'CAD',
+          laborHourlyRate: 15,
+          defaultProfitMargin: 30,
+          address: { country: 'CA' },
+        });
+        if (cancelled) return;  // do NOT set flag — never wrote
+        const patches = reconcileFilamentCurrency(assets, profile.currency);
+        if (cancelled) return;  // do NOT set flag — never wrote
+        if (patches.length > 0) {
+          await db.materials.bulkPut(patches);
+        }
+        // WR-01: mark only on full completion. Early `cancelled` returns leave
+        // the flag false so a future mount retries.
+        filamentCurrencyReconcileRan = true;
+      } catch (err) {
+        // Reconcile failures must NOT break the app — the read-layer null
+        // tolerance already surfaces these rows. Flag stays false → next mount retries.
+        console.error('filamentCurrency reconcile failed:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets === undefined]);
 
   const addAsset = useCallback(async (asset: Asset) => {
     await db.materials.add(asset);
