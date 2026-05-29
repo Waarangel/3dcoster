@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
+import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees, getFxSeedConversion, setFxSeedConversion } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
-import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency, convertUsdFilaments } from '../db/backfill';
+import { fetchUsdRate } from '../utils/fxRates';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -46,6 +47,16 @@ let customerEmailLowercaseRan = false;
 // retries. reconcileFilamentCurrency is idempotent at the row level, so a second
 // pass writes nothing (and the flag short-circuits before any Dexie read anyway).
 let filamentCurrencyReconcileRan = false;
+
+// FX seed-conversion — process-lifetime guard for the one-time USD→user-currency
+// conversion of the built-in (Bambu) filament catalog. Distinct from the
+// persistent `settings.fxSeedConversion.done` flag: the module flag stops the
+// effect re-running within a single page load; the persistent flag stops it
+// running across reloads (conversion happens EXACTLY ONCE ever). An offline
+// launch that can't fetch a rate sets NEITHER flag, so the next online launch
+// retries (design decision: accuracy over visibility — USD seeds stay hidden
+// from a non-USD user until a real rate converts them).
+let fxSeedConversionRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -145,6 +156,104 @@ export function useAssets() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assets === undefined]);
+
+  // One-time FX conversion of the USD-seeded filament catalog into the user's
+  // currency. The Bambu seeds ship priced in USD; a non-USD user would never
+  // see them in the FilamentSelector (which excludes a DIFFERENT explicit
+  // currency). This converts them ONCE EVER using that launch's real exchange
+  // rate, then persists a done-flag. NEVER invents a rate — a network failure
+  // defers (no persist) and retries on the next online launch. Design: convert
+  // silently (no estimate badge), one-time only (a later currency switch leaves
+  // prices as-is).
+  //
+  // Keyed on `assets` (not `assets === undefined`) on purpose: on a fresh DB the
+  // liveQuery emits `[]` BEFORE the init effect writes the seeds. Firing once on
+  // that empty snapshot would mark "nothing to convert / done" and permanently
+  // block conversion for a brand-new user. So we ignore the empty pre-seed
+  // snapshot (length 0) and act on the first POPULATED one.
+  //
+  // The module flag is CLAIMED SYNCHRONOUSLY (before the async IIFE) as a
+  // single-flight latch. This is load-bearing for two reasons:
+  //   1. Self-retrigger — the conversion's own bulkPut re-emits `assets`
+  //      ([39 CAD]); without the latch that emission would spawn a second
+  //      invocation seeing "no USD filaments" and clobber the flag's rate/date
+  //      provenance with a bogus rate:1.
+  //   2. React 18 StrictMode — the dev mount→cleanup→remount double-invoke would
+  //      otherwise run the conversion (and fetch) twice.
+  // There is NO `cancelled` guard inside the commit path: this is a fire-once,
+  // module-level data migration with no React state to abandon, so once we've
+  // decided to convert we always finish bulkPut → persist-flag atomically (an
+  // earlier version bailed between the two and left the catalog converted but
+  // unflagged). A thrown error releases the latch so a later emission retries;
+  // a deliberate defer (offline / no rate) holds the latch for the session and
+  // lets the next online launch retry via the fresh module + unset persisted flag.
+  useEffect(() => {
+    if (fxSeedConversionRan) return;
+    if (assets === undefined) return;   // liveQuery not emitted yet
+    if (assets.length === 0) return;    // pre-seed empty snapshot — wait
+    fxSeedConversionRan = true;         // single-flight claim
+    (async () => {
+      try {
+        const persisted = await getFxSeedConversion();
+        if (persisted?.done) return;    // already converted in a prior launch
+
+        const profile = await getUserProfile({
+          currency: 'CAD',
+          laborHourlyRate: 15,
+          defaultProfitMargin: 30,
+          address: { country: 'CA' },
+        });
+        const target = profile.currency;
+
+        // USD user: seeds are already in their currency — mark done, no network.
+        if (target === 'USD') {
+          await setFxSeedConversion({
+            done: true, fromCurrency: 'USD', toCurrency: 'USD',
+            rate: 1, date: new Date().toISOString().slice(0, 10),
+          });
+          return;
+        }
+
+        // Nothing to convert (no USD filament rows) — mark done, no network.
+        const hasUsdFilament = assets.some(a => a.category === 'filament' && a.currency === 'USD');
+        if (!hasUsdFilament) {
+          await setFxSeedConversion({
+            done: true, fromCurrency: 'USD', toCurrency: target,
+            rate: 1, date: new Date().toISOString().slice(0, 10),
+          });
+          return;
+        }
+
+        // Offline: don't attempt a guaranteed-failing fetch. Defer — release the
+        // latch so the next online launch retries.
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          fxSeedConversionRan = false;
+          return;
+        }
+
+        const fx = await fetchUsdRate(target);
+        if (!fx) {  // no rate this launch → defer; release latch, retry next launch
+          fxSeedConversionRan = false;
+          return;
+        }
+
+        const patches = convertUsdFilaments(assets, fx.rate, target);
+        if (patches.length > 0) {
+          await db.materials.bulkPut(patches);
+        }
+        await setFxSeedConversion({
+          done: true, fromCurrency: 'USD', toCurrency: target,
+          rate: fx.rate, date: fx.date,
+        });
+      } catch (err) {
+        // Conversion failures must NOT break the app. Release the latch so a
+        // later emission this session (or the next launch) retries.
+        fxSeedConversionRan = false;
+        console.error('fxSeedConversion failed:', err);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets]);
 
   const addAsset = useCallback(async (asset: Asset) => {
     await db.materials.add(asset);

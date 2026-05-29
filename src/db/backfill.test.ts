@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency, convertUsdFilaments } from './backfill';
 import type { PrintJob, Sale, Customer, Quote, PrinterInstance, PrinterConfig, Material } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -847,5 +847,89 @@ describe('reconcileFilamentCurrency (quick-260529-bg2 reconcile)', () => {
     const patched = reconcileFilamentCurrency([original], 'CAD');
     expect(patched[0]).not.toBe(original);  // new object identity
     expect(original.currency).toBeUndefined();  // input not mutated
+  });
+});
+
+// ---------------------------------------------------------------------------
+// convertUsdFilaments — one-time FX conversion of the USD-seeded Bambu catalog.
+// Contract cases:
+//   1. USD filament → costPerUnit & packageCost × rate, currency = target
+//   2. Non-USD filament → untouched, returns []
+//   3. Non-filament USD row → untouched, returns []
+//   4. target === 'USD' → no-op, returns [] (identity)
+//   5. bad rate (NaN / 0 / negative) → no-op, returns []
+//   6. idempotent — rerunning on converted (now-target) rows produces []
+//   + spread-copy isolation, and partial money fields handled
+// ---------------------------------------------------------------------------
+
+describe('convertUsdFilaments (FX seed conversion)', () => {
+  function makeMat(overrides: Partial<Material>): Material {
+    return {
+      id: 'mat-1',
+      name: 'Bambu PLA Basic',
+      category: 'filament',
+      currency: 'USD',
+      costPerUnit: 0.01299,
+      packageCost: 12.99,
+      unitsPerPackage: 1000,
+      filamentType: 'PLA',
+      ...overrides,
+    } as Material;
+  }
+
+  it('multiplies costPerUnit and packageCost by the rate and sets the target currency', () => {
+    const patched = convertUsdFilaments([makeMat({})], 1.3854, 'CAD');
+    expect(patched.length).toBe(1);
+    expect(patched[0].currency).toBe('CAD');
+    expect(patched[0].costPerUnit).toBeCloseTo(0.01299 * 1.3854, 10);
+    expect(patched[0].packageCost).toBeCloseTo(12.99 * 1.3854, 8);
+  });
+
+  it('does not round costPerUnit to currency decimals (keeps sub-cent precision)', () => {
+    const patched = convertUsdFilaments([makeMat({ costPerUnit: 0.013 })], 1.3854, 'CAD');
+    expect(patched[0].costPerUnit).toBeGreaterThan(0);  // not zeroed by rounding
+  });
+
+  it('leaves a non-USD filament untouched', () => {
+    const patched = convertUsdFilaments([makeMat({ currency: 'CAD' })], 1.3854, 'CAD');
+    expect(patched.length).toBe(0);
+  });
+
+  it('leaves a non-filament USD row untouched', () => {
+    const patched = convertUsdFilaments([makeMat({ category: 'consumable' })], 1.3854, 'CAD');
+    expect(patched.length).toBe(0);
+  });
+
+  it('is a no-op when target === USD (identity)', () => {
+    const patched = convertUsdFilaments([makeMat({})], 1.3854, 'USD');
+    expect(patched.length).toBe(0);
+  });
+
+  it.each([NaN, 0, -1])('is a no-op for a bad rate (%s)', (rate) => {
+    const patched = convertUsdFilaments([makeMat({})], rate, 'CAD');
+    expect(patched.length).toBe(0);
+  });
+
+  it('is idempotent — converted rows are no longer USD so a re-pass produces zero patches', () => {
+    const mats = [makeMat({ id: 'm1' })];
+    const firstPass = convertUsdFilaments(mats, 1.3854, 'CAD');
+    expect(firstPass.length).toBe(1);
+    const after = mats.map(m => firstPass.find(p => p.id === m.id) ?? m);
+    const secondPass = convertUsdFilaments(after, 1.3854, 'CAD');
+    expect(secondPass.length).toBe(0);
+  });
+
+  it('returns spread copies, never the original input reference', () => {
+    const original = makeMat({ id: 'm1' });
+    const patched = convertUsdFilaments([original], 1.3854, 'CAD');
+    expect(patched[0]).not.toBe(original);
+    expect(original.currency).toBe('USD');        // input not mutated
+    expect(original.costPerUnit).toBe(0.01299);   // input not mutated
+  });
+
+  it('handles a row missing packageCost (only converts the fields present)', () => {
+    const patched = convertUsdFilaments([makeMat({ packageCost: undefined })], 2, 'EUR');
+    expect(patched[0].costPerUnit).toBeCloseTo(0.01299 * 2, 10);
+    expect(patched[0].packageCost).toBeUndefined();
   });
 });

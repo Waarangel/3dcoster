@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, Currency } from '../types';
 import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency } from './backfill';
 
 // Settings stored as key-value pairs
@@ -243,7 +243,47 @@ export const settingsKeys = {
   userProfile: 'userProfile',
   shipping: 'shipping',
   marketplaceFees: 'marketplaceFees',
+  fxSeedConversion: 'fxSeedConversion',
 } as const;
+
+/**
+ * Persistent record of the one-time USD→user-currency conversion of the
+ * built-in (Bambu) filament seeds. Survives reloads in the `settings` store so
+ * the conversion runs EXACTLY ONCE ever — a later currency switch leaves the
+ * already-converted prices as-is (design decision). `done` gates the effect;
+ * the remaining fields are provenance for debugging (which rate, from where).
+ * Written only on a successful convert; an offline/no-rate launch leaves this
+ * unset so the next online launch retries.
+ */
+export interface FxSeedConversion {
+  done: boolean;
+  fromCurrency: Currency;
+  toCurrency: Currency;
+  rate: number;
+  date: string;
+}
+
+/** Structural validator for the FxSeedConversion settings row. Strict on the
+ *  load-bearing `done` boolean; loose on currency strings (per isUserProfile,
+ *  never narrow to the Currency union — future additions must not invalidate
+ *  a stored done-flag and re-trigger conversion). */
+export function isFxSeedConversion(x: unknown): x is FxSeedConversion {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.done === 'boolean';
+}
+
+export async function getFxSeedConversion(): Promise<FxSeedConversion | null> {
+  return getSetting<FxSeedConversion | null>(
+    settingsKeys.fxSeedConversion,
+    null,
+    (p): p is FxSeedConversion | null => p === null || isFxSeedConversion(p),
+  );
+}
+
+export async function setFxSeedConversion(value: FxSeedConversion): Promise<void> {
+  return setSetting(settingsKeys.fxSeedConversion, value);
+}
 
 /** DATA-06 — structural validator for PrinterConfig stored in db.settings.
  *  Strict on numeric fields; loose on string fields. */
