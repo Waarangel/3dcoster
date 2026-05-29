@@ -92,6 +92,20 @@ On expiry, the app silently re-fetches when next online. A configurable grace wi
 (default +7 days past `exp`) covers a subscriber who has been offline for a stretch before
 the gate closes. Entitlement state is cached locally (IndexedDB) between launches.
 
+**Client interface.** A single `useEntitlement()` hook is the only entitlement surface the
+rest of the app consumes:
+
+```ts
+useEntitlement(): {
+  entitled: boolean;          // token valid (active) AND within life-or-grace
+  status: 'active' | 'inactive' | 'unknown';
+  withinGrace: boolean;       // true when relying on an expired-but-in-grace token
+  refresh(): Promise<void>;   // force a re-fetch of issue-entitlement
+}
+```
+Everything else (PDF capture, settings lock, upgrade CTAs) reads `entitled` and never
+re-implements verification.
+
 **Billing management.** Stripe Checkout to subscribe; Stripe Customer Portal for
 cancel / update card — no custom billing UI.
 
@@ -99,8 +113,9 @@ cancel / update card — no custom billing UI.
 
 **`UserProfile` additions** (stored as the JSON blob in `settings['userProfile']`;
 `name`, `address`, `defaultTerms` already exist — these are additive, **no Dexie
-migration**; the `isUserProfile` validator must be updated to accept the new optional
-fields):
+migration**. Note: the current `isUserProfile` validator (`database.ts:355`) only checks
+`currency` + `laborHourlyRate`, so it already accepts arbitrary optional fields — **do not
+add required-field checks** for the new branding fields; they remain optional):
 
 - `businessName?: string`
 - `businessEmail?: string`
@@ -110,8 +125,9 @@ fields):
 - `brandAccentColor?: string` — hex (e.g. `#2563eb`)
 - `quoteFooterText?: string` — replaces the footer; empty + subscribed ⇒ no footer
 
-**`Quote` addition** (Dexie store, schema v9; the property is **non-indexed** so **no
-version bump / migration** — old quote records simply lack it and render the default look):
+**`Quote` addition** (the `Quote` store already exists at the current schema v9; the new
+property is **non-indexed**, so **no new schema version and no migration are introduced** —
+old quote records simply lack it and render the default look):
 
 ```ts
 interface BrandingSnapshot {
@@ -147,6 +163,21 @@ Consequences (all intended):
 - Subscription lapses → **new** quotes revert to the footer; **already-issued** quotes stay branded.
 - Fully offline — the snapshot needs no network at render time.
 
+**Edit mode (required rule — closes a D-17 hole).** `PrintQuoteModal` has an EDIT path
+(D-27) that re-spreads `lineItemsSnapshot` from the *current* `UserProfile` and re-renders.
+The branding rule on edit is the opposite of the line-items rule: **`brandingSnapshot` is
+preserved verbatim from the existing `editingQuote` — never re-captured, never re-checked
+against current entitlement.** Rationale:
+- Re-capturing would *strip* branding from a quote that was legitimately issued while
+  subscribed if it is edited after a lapse — violating "already-issued quotes stay branded."
+- Dropping it (leaving `brandingSnapshot` undefined on the spread) would silently revert a
+  branded quote to the footer on any edit.
+Therefore edit must copy `editingQuote.brandingSnapshot` through unchanged. The
+at-creation entitlement check fires **only** when a quote is first created, not on edit.
+The capture (CREATE) and pass-through (EDIT) both live in `createQuote` / the quote-update
+path inside the `useQuotes` hook (same transaction that writes the quote), not in the
+component — so the snapshot is never built in React state.
+
 ## Data Flow
 
 1. **Subscribe:** user signs in (magic link) → opens Stripe Checkout → completes payment →
@@ -169,7 +200,9 @@ All driven by `quote.brandingSnapshot`; absent or `whiteLabeled: false` ⇒ toda
   name as text; not white-labeled → unchanged `'3DCoster'` wordmark.
 - **Seller-identity block** (new — the PDF currently shows no seller info, only the
   customer block): business name/address/email/phone/website near the header, from the
-  snapshot.
+  snapshot. Note `BrandingSnapshot.address` is a **structured object** (sourced from
+  `UserProfile.address`), unlike `customerSnapshot.address` which is a freeform string — so
+  this needs a small seller-address formatter (street / city, province postalCode / country).
 - **Accent color:** applied to the header rule, the `autoTable` header fill, and the total
   row; absent → today's default color.
 - **Footer** (`:258`): white-labeled → render `footerText` or nothing; not white-labeled →
@@ -192,7 +225,10 @@ All driven by `quote.brandingSnapshot`; absent or `whiteLabeled: false` ⇒ toda
 - **Logo upload:** reject non-images; downscale via canvas and cap (~500 KB / max
   dimensions) *before* storing.
 - **Render-time `addImage`:** wrapped in try/catch → fall back to business-name text if a
-  logo is corrupt/oversized. PDF never throws.
+  logo is corrupt/oversized. **Terminal fallback** (white-labeled, logo fails, *and* no
+  `businessName`): render no header brand mark at all (omit it) — do **not** reintroduce the
+  `'3DCoster'` wordmark on a paid quote. The seller-identity block still renders any
+  available contact fields. PDF never throws and never wrongly re-brands.
 - **Accent color:** validate hex; invalid → default color.
 - **Entitlement:** expired / invalid / offline-past-grace → treat new quotes as free
   (footer). **Never block quote creation.** Within grace → still branded.
