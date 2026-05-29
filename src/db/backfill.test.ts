@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency } from './backfill';
 import type { PrintJob, Sale, Customer, Quote, PrinterInstance, PrinterConfig, Material } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -788,5 +788,64 @@ describe('reconcileFixedCostsAtSave (Phase 22.1 DATA-07)', () => {
     const secondInput = [job].map(j => updatedById.get(j.id) ?? j);
     const secondPass = reconcileFixedCostsAtSave(secondInput, [inst], [printer], [material]);
     expect(secondPass.length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reconcileFilamentCurrency — quick-260529-bg2 pure reconcile helper
+//
+// Four cases asserting the contract:
+//   1. null/undefined-currency filament → patched to the user currency (CAD)
+//   2. Explicit different currency (USD) → never clobbered, returns []
+//   3. Non-filament with null currency → untouched, returns []
+//   4. Already-patched filament → idempotent, returns []
+//   + spread-copy isolation (output rows are not the input references)
+// ---------------------------------------------------------------------------
+
+describe('reconcileFilamentCurrency (quick-260529-bg2 reconcile)', () => {
+  function makeMat(overrides: Partial<Material>): Material {
+    return {
+      id: 'mat-1',
+      name: 'Test PLA',
+      category: 'filament',
+      costPerUnit: 0.025,
+      filamentType: 'PLA',
+      ...overrides,
+    } as Material;
+  }
+
+  it('patches a filament with null/undefined currency to the user currency (CAD)', () => {
+    const mats = [makeMat({ id: 'm1', currency: undefined })];
+    const patched = reconcileFilamentCurrency(mats, 'CAD');
+    expect(patched.length).toBe(1);
+    expect(patched[0].currency).toBe('CAD');
+  });
+
+  it('never clobbers an explicit currency (USD filament stays USD)', () => {
+    const mats = [makeMat({ id: 'm1', currency: 'USD' })];
+    const patched = reconcileFilamentCurrency(mats, 'CAD');
+    expect(patched.length).toBe(0);
+  });
+
+  it('leaves non-filament rows untouched (consumable with null currency)', () => {
+    const mats = [makeMat({ id: 'm1', category: 'consumable', currency: undefined })];
+    const patched = reconcileFilamentCurrency(mats, 'CAD');
+    expect(patched.length).toBe(0);
+  });
+
+  it('is idempotent — rerunning on already-patched rows produces zero patches', () => {
+    const mats = [makeMat({ id: 'm1', currency: undefined })];
+    const firstPass = reconcileFilamentCurrency(mats, 'CAD');
+    expect(firstPass.length).toBe(1);
+    const after = mats.map(m => firstPass.find(p => p.id === m.id) ?? m);
+    const secondPass = reconcileFilamentCurrency(after, 'CAD');
+    expect(secondPass.length).toBe(0);
+  });
+
+  it('returns spread copies, never the original input reference', () => {
+    const original = makeMat({ id: 'm1', currency: undefined });
+    const patched = reconcileFilamentCurrency([original], 'CAD');
+    expect(patched[0]).not.toBe(original);  // new object identity
+    expect(original.currency).toBeUndefined();  // input not mutated
   });
 });
