@@ -35,6 +35,7 @@ Last activity: 2026-05-28 — Milestone v1.3 completed and archived
 | Date | Slug | Summary | Status |
 |------|------|---------|--------|
 | 2026-05-29 | bg2-fix-newly-added-filaments-in-asset-libra | Newly-added filaments now appear in the Cost Calculator dropdown — save defaults `currency` to the user's currency, FilamentSelector tolerates null-currency + buckets brand-less filaments under "Unbranded", and a one-time idempotent `reconcileFilamentCurrency` heals legacy null-currency rows | passed (live UAT) |
+| 2026-05-29 | bg2-fx-seed-conversion (follow-on) | Built-in Bambu filament seeds (stored in USD) now appear for non-USD users — a one-time `convertUsdFilaments` migration converts them to the user's currency at the day's real exchange rate (`fxRates.ts`: frankfurter.dev + fawazahmed0 fallbacks, never invents a rate; offline defers and retries). Persistent `fxSeedConversion` flag records rate+date provenance; runs exactly once ever | passed (live UAT) |
 
 ## v1.3 Phase Order Reference
 
