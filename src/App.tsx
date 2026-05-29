@@ -327,6 +327,7 @@ function App() {
             onResetPrinters={resetPrintersOnly}
             itemsPerPage={userProfile.assetLibraryItemsPerPage ?? 10}
             onItemsPerPageChange={(value) => updateUserProfile({ ...userProfile, assetLibraryItemsPerPage: value })}
+            userCurrency={userProfile.currency}
           />
         )}
 

@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { Asset, AssetCategory, BuiltInCategory } from '../types';
+import type { Asset, AssetCategory, BuiltInCategory, Currency } from '../types';
 import { CsvImportModal } from './CsvImportModal';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
@@ -17,6 +17,7 @@ interface AssetLibraryProps {
   onResetPrinters: () => void;
   itemsPerPage: number;
   onItemsPerPageChange: (value: number) => void;
+  userCurrency: Currency;
 }
 
 function AssetListSkeleton() {
@@ -428,6 +429,7 @@ export function AssetLibrary({
   onResetPrinters,
   itemsPerPage,
   onItemsPerPageChange,
+  userCurrency,
 }: AssetLibraryProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -626,7 +628,7 @@ export function AssetLibrary({
         notes: formData.notes,
         brand: formData.brand,
         filamentType: formData.filamentType,
-        currency: formData.currency,
+        currency: formData.currency ?? userCurrency,
         tags: formData.tags,
       };
 
