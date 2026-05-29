@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Material, Currency } from '../types';
-import { Button, Input } from './ui';
+import { Button } from './ui';
 
 interface FilamentSelectorProps {
   materials: Material[];
   selectedFilamentId: string;
   onSelect: (filament: Material) => void;
-  // Editable price/currency after selection
-  editedPrice: number;
-  editedCurrency: Currency;
+  // Seed the row's price/currency from the chosen asset on selection. The price
+  // is not shown or edited here (it lives in the Asset Library); these callbacks
+  // exist only so the cost calc has the per-gram value for the selected filament.
   onPriceChange: (price: number) => void;
   onCurrencyChange: (currency: Currency) => void;
   // User's preferred currency to filter materials
@@ -19,8 +19,6 @@ export function FilamentSelector({
   materials,
   selectedFilamentId,
   onSelect,
-  editedPrice,
-  editedCurrency,
   onPriceChange,
   onCurrencyChange,
   userCurrency,
@@ -52,12 +50,14 @@ export function FilamentSelector({
     });
   }, [filaments]);
 
-  // Get filaments by brand group. The 'Unbranded' group returns brand-less rows.
+  // Get filaments by brand group, sorted A-Z by name. Sort explicitly here — DB
+  // insertion order is not alphabetical, and the submenu must stay A-Z regardless
+  // of seed/save order. The 'Unbranded' group returns brand-less rows.
   const getFilamentsForBrand = (brand: string) => {
-    if (brand === UNBRANDED) {
-      return filaments.filter(f => !f.brand);
-    }
-    return filaments.filter(f => f.brand === brand);
+    const rows = brand === UNBRANDED
+      ? filaments.filter(f => !f.brand)
+      : filaments.filter(f => f.brand === brand);
+    return rows.sort((a, b) => a.name.localeCompare(b.name));
   };
 
   // Close dropdown when clicking outside
@@ -119,9 +119,7 @@ export function FilamentSelector({
           className="!justify-between text-left"
         >
           <span className={selectedFilament ? 'text-white' : 'text-slate-400'}>
-            {selectedFilament
-              ? `${selectedFilament.brand} ${selectedFilament.filamentType || selectedFilament.name}`
-              : 'Select filament...'}
+            {selectedFilament ? selectedFilament.name : 'Select filament...'}
           </span>
           <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -165,7 +163,7 @@ export function FilamentSelector({
                           fIndex === getFilamentsForBrand(brand).length - 1 ? 'rounded-b-lg' : ''
                         }`}
                       >
-                        {filament.filamentType || filament.name}
+                        {filament.name}
                       </div>
                     ))}
                   </div>
@@ -175,19 +173,6 @@ export function FilamentSelector({
           </div>
         )}
       </div>
-
-      {/* Editable price field (shown after selection) */}
-      {selectedFilament && (
-        <div>
-          <label className="block text-xs text-slate-400 mb-1">Price per gram ({editedCurrency})</label>
-          <Input
-            type="number"
-            step="0.001"
-            value={editedPrice || ''}
-            onChange={e => onPriceChange(parseFloat(e.target.value) || 0)}
-          />
-        </div>
-      )}
     </div>
   );
 }

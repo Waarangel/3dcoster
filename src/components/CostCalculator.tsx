@@ -874,8 +874,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                       editedPrice: filament.costPerUnit ?? 0,
                       editedCurrency: filament.currency || userCurrency,
                     })}
-                    editedPrice={row.editedPrice}
-                    editedCurrency={row.editedCurrency}
                     onPriceChange={(price) => updateFilamentRow(index, { editedPrice: price })}
                     onCurrencyChange={(currency) => updateFilamentRow(index, { editedCurrency: currency })}
                     userCurrency={userCurrency}
