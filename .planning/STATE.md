@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: v1.3 Hardening
 status: Awaiting next milestone
 stopped_at: Phase 26 context gathered
-last_updated: "2026-05-28T20:32:55.432Z"
-last_activity: 2026-05-28 — Milestone v1.3 completed and archived
+last_updated: "2026-05-29T12:12:00.000Z"
+last_activity: 2026-05-29 — Quick task bg2 (filament dropdown visibility fix) completed and verified via live UAT
 progress:
   total_phases: 10
   completed_phases: 10
@@ -29,6 +29,12 @@ Phase: Milestone v1.3 complete
 Plan: —
 Status: Awaiting next milestone
 Last activity: 2026-05-28 — Milestone v1.3 completed and archived
+
+## Quick Tasks Completed
+
+| Date | Slug | Summary | Status |
+|------|------|---------|--------|
+| 2026-05-29 | bg2-fix-newly-added-filaments-in-asset-libra | Newly-added filaments now appear in the Cost Calculator dropdown — save defaults `currency` to the user's currency, FilamentSelector tolerates null-currency + buckets brand-less filaments under "Unbranded", and a one-time idempotent `reconcileFilamentCurrency` heals legacy null-currency rows | passed (live UAT) |
 
 ## v1.3 Phase Order Reference
 
