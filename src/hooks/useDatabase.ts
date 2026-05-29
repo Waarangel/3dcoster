@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees, getFxSeedConversion, setFxSeedConversion } from '../db/database';
+import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees, getFxSeedConversion, setFxSeedConversion, clearFxSeedConversion } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency, convertUsdFilaments } from '../db/backfill';
@@ -278,6 +278,12 @@ export function useAssets() {
     const printerAssets = await db.materials.where('category').equals('printer').toArray();
     await db.materials.clear();
     await db.materials.bulkAdd([...defaultMaterials, ...printerAssets]);
+    // Fresh seeds ship in USD. Clear the one-time FX record and release the
+    // process latch so the conversion effect re-runs on the next assets emit and
+    // re-prices the catalog into the user's currency. Without this a non-USD
+    // user's reset leaves USD rows that the currency-filtered dropdown hides.
+    await clearFxSeedConversion();
+    fxSeedConversionRan = false;
   }, []);
 
   const resetPrintersOnly = useCallback(async () => {

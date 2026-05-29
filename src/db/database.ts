@@ -285,6 +285,15 @@ export async function setFxSeedConversion(value: FxSeedConversion): Promise<void
   return setSetting(settingsKeys.fxSeedConversion, value);
 }
 
+/** Remove the one-time FX conversion record so the conversion effect re-runs on
+ *  the next assets emit. Called when the filament catalog is re-seeded (reset to
+ *  defaults), since fresh seeds ship in USD and must be re-priced into the
+ *  user's currency — otherwise a non-USD user's reset leaves USD rows that the
+ *  currency-filtered dropdown hides. */
+export async function clearFxSeedConversion(): Promise<void> {
+  await db.settings.delete(settingsKeys.fxSeedConversion);
+}
+
 /** DATA-06 — structural validator for PrinterConfig stored in db.settings.
  *  Strict on numeric fields; loose on string fields. */
 export function isPrinterConfig(x: unknown): x is PrinterConfig {
