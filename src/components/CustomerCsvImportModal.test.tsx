@@ -26,6 +26,11 @@ const onCloseSpy = vi.fn<() => void>();
 // Now import the component under test (no vi.mock needed — component uses props only)
 const { CustomerCsvImportModal } = await import('./CustomerCsvImportModal');
 
+// Pre-warm papaparse so the lazy `await import('papaparse')` inside parseCustomerCsv
+// resolves from the module cache (one microtask) instead of racing module load —
+// keeps the upload→preview transition deterministic in the timed flush below.
+await import('papaparse');
+
 // ─── DOM harness ─────────────────────────────────────────────────────────────
 
 let container: HTMLDivElement | null = null;

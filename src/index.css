@@ -16,3 +16,17 @@ select {
   background-size: 1rem;
   padding-right: 2.5rem;
 }
+
+/* Respect the OS "reduce motion" preference (WCAG 2.3.3). Neutralizes the app's
+   CSS transitions/animations (side panels, mobile menu, image carousel, hovers)
+   for users with vestibular sensitivities, app-wide in one place. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

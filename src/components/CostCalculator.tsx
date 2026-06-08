@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useId } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage, UserProfile } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
@@ -25,8 +25,8 @@ interface CostCalculatorProps {
   userProfile: UserProfile;
   fxTable: FxRateTable | null;
   shippingConfig: ShippingConfig;
-  onSaveJob: (job: PrintJob, printHours: number) => void;
-  onUpdateJob: (job: PrintJob) => void;
+  onSaveJob: (job: PrintJob, printHours: number) => void | Promise<void>;
+  onUpdateJob: (job: PrintJob) => void | Promise<void>;
   editingJob: PrintJob | null;
   onCancelEdit: () => void;
 }
@@ -42,8 +42,9 @@ function getStoredValue<T>(key: string, defaultValue: T): T {
       const parsed = JSON.parse(stored);
       if (key in parsed) return parsed[key];
     }
-  } catch {
-    // Ignore parsing errors
+  } catch (e) {
+    console.error('[CostCalculator] Failed to parse sessionStorage:', e);
+    sessionStorage.removeItem(FORM_STORAGE_KEY);
   }
   return defaultValue;
 }
@@ -61,6 +62,27 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
   const distanceUnit = getDistanceUnit(userCurrency);
+
+  // Stable IDs for label↔input associations (WCAG 1.3.1 / 4.1.2). One per field;
+  // per-row filament grams derive their id as `${gramsBaseId}-${index}`.
+  const printNameId = useId();
+  const printerSelectId = useId();
+  const modelUrlId = useId();
+  const modelCostId = useId();
+  const authorMinPriceId = useId();
+  const gramsBaseId = useId();
+  const printTimeId = useId();
+  const failureRateId = useId();
+  const prepTimeId = useId();
+  const postProcessingId = useId();
+  const shippingMethodId = useId();
+  const shippingDistanceId = useId();
+  const carrierCostId = useId();
+  const sellingPlatformId = useId();
+  const profitMarginId = useId();
+  const targetProfitId = useId();
+  const sellingPriceId = useId();
+  const taxRateId = useId();
 
   // Convert a stored price from its native currency into the user's currency for
   // display and cost math. Falls back to the raw amount only when no rate table
@@ -111,8 +133,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         // Old format: has filamentId scalar -- graceful fallback per PERSIST-02
         // Just fall through to default
       }
-    } catch {
-      // Ignore parsing errors
+    } catch (e) {
+      console.error('[CostCalculator] Failed to parse filamentRows from sessionStorage:', e);
+      sessionStorage.removeItem(FORM_STORAGE_KEY);
     }
     return [makeDefaultRow(userCurrency)];
   });
@@ -589,7 +612,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   }, [validationError]);
 
   // Save job handler (create new or update existing)
-  const handleSaveJob = () => {
+  const handleSaveJob = async () => {
     if (!printName.trim()) {
       setValidationError('Please enter a name for this print job');
       return;
@@ -649,11 +672,15 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         currency: userCurrency,
       };
 
-      onUpdateJob(updatedJob);
-      clearForm();
-      onCancelEdit();
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 3000);
+      try {
+        await onUpdateJob(updatedJob);
+        clearForm();
+        onCancelEdit();
+        setJustSaved(true);
+        setTimeout(() => setJustSaved(false), 3000);
+      } catch {
+        setValidationError('Could not save the job — please try again.');
+      }
     } else {
       // Create new job
       const job: PrintJob = {
@@ -692,9 +719,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         currency: userCurrency,
       };
 
-      onSaveJob(job, printTimeHours);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 3000);
+      try {
+        await onSaveJob(job, printTimeHours);
+        setJustSaved(true);
+        setTimeout(() => setJustSaved(false), 3000);
+      } catch {
+        setValidationError('Could not save the job — please try again.');
+      }
     }
   };
 
@@ -742,9 +773,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     <div className="space-y-6">
       {/* Validation error toast */}
       {validationError && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-800 border border-red-500/40 rounded-lg p-3 shadow-lg shadow-black/30 flex items-center justify-between max-w-sm animate-in">
+        <div role="alert" aria-live="assertive" className="fixed top-4 right-4 z-50 bg-slate-800 border border-red-500/40 rounded-lg p-3 shadow-lg shadow-black/30 flex items-center justify-between max-w-sm animate-in">
           <div className="flex items-center gap-3 text-sm">
-            <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
             <span className="text-red-300">{validationError}</span>
@@ -753,9 +784,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             variant="ghost"
             btnSize="sm"
             onClick={() => setValidationError(null)}
+            aria-label="Dismiss"
             className="ml-2 text-slate-500 hover:text-slate-300"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </Button>
@@ -813,8 +845,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           {/* Identity row — Print Name takes 2/3, Printer takes 1/3 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
             <div className="md:col-span-2">
-              <label className="block text-xs text-slate-400 mb-1">Print Name *</label>
+              <label htmlFor={printNameId} className="block text-xs text-slate-400 mb-1">Print Name *</label>
               <Input
+                id={printNameId}
                 type="text"
                 value={printName}
                 onChange={e => setPrintName(e.target.value)}
@@ -823,11 +856,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Printer</label>
+              <label htmlFor={printerSelectId} className="block text-xs text-slate-400 mb-1">Printer</label>
               {printerInstances.length === 0 ? (
                 <p className="text-yellow-400 text-sm">No printers set up. Go to Printer Settings to add one.</p>
               ) : (
                 <Select
+                  id={printerSelectId}
                   value={selectedInstanceId}
                   onChange={e => setSelectedInstanceId(e.target.value)}
                 >
@@ -847,12 +881,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           {/* Model context row — URL flexes to fill, Cost + Author Min are compact. Wraps on narrow viewports. */}
           <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
             <div className="flex-1 min-w-[220px] max-w-md">
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+              <label htmlFor={modelUrlId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Model URL</span>
                 <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
                 <NewBadge feature="model-url" />
               </label>
               <Input
+                id={modelUrlId}
                 type="url"
                 value={modelUrl}
                 onChange={e => setModelUrl(e.target.value)}
@@ -861,8 +896,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Model Cost ({currencySymbol})</label>
+              <label htmlFor={modelCostId} className="block text-xs text-slate-400 mb-1">Model Cost ({currencySymbol})</label>
               <Input
+                id={modelCostId}
                 type="number"
                 step="0.01"
                 compact
@@ -889,11 +925,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
 
             <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+              <label htmlFor={authorMinPriceId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Author Min Price ({currencySymbol})</span>
                 <InfoTooltip text="Warn if selling below this" />
               </label>
               <Input
+                id={authorMinPriceId}
                 type="number"
                 step="0.01"
                 compact
@@ -924,9 +961,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   />
                 </div>
                 <div className="shrink-0 w-[196px]">
-                  <label className="block text-xs text-slate-400 mb-1">Grams</label>
+                  <label htmlFor={`${gramsBaseId}-${index}`} className="block text-xs text-slate-400 mb-1">Grams</label>
                   <div className="flex gap-1 items-center">
                     <Input
+                      id={`${gramsBaseId}-${index}`}
                       type="number"
                       value={row.grams || ''}
                       onChange={e => updateFilamentRow(index, { grams: parseFloat(e.target.value) || 0 })}
@@ -968,8 +1006,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           {/* Print parameters — flex-wrap so compact inputs pack tightly left-to-right (matches SettingsModal pattern). */}
           <div className="flex flex-wrap gap-x-4 gap-y-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
+              <label htmlFor={printTimeId} className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
               <Input
+                id={printTimeId}
                 type="number"
                 step="0.1"
                 compact
@@ -980,8 +1019,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
+              <label htmlFor={failureRateId} className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
               <Input
+                id={failureRateId}
                 type="number"
                 min="0"
                 max="99"
@@ -993,11 +1033,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
 
             <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+              <label htmlFor={prepTimeId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Prep Time (min)</span>
                 <InfoTooltip text="Slicing, bed prep, etc." />
               </label>
               <Input
+                id={prepTimeId}
                 type="number"
                 compact
                 value={prepTimeMinutes || ''}
@@ -1007,11 +1048,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             </div>
 
             <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+              <label htmlFor={postProcessingId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Post-Processing (min)</span>
                 <InfoTooltip text="Support removal, sanding, etc." />
               </label>
               <Input
+                id={postProcessingId}
                 type="number"
                 compact
                 value={postProcessingMinutes || ''}
@@ -1070,6 +1112,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   <Button
                     variant="danger"
                     btnSize="sm"
+                    aria-label={`Remove ${material?.name ?? 'material'}`}
                     onClick={() => removeMaterialUsage(index)}
                   >
                     ✕
@@ -1087,8 +1130,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Shipping Method</label>
+            <label htmlFor={shippingMethodId} className="block text-xs text-slate-400 mb-1">Shipping Method</label>
             <Select
+              id={shippingMethodId}
               value={shippingMethod}
               onChange={e => {
                 setShippingMethod(e.target.value as ShippingMethodType);
@@ -1103,11 +1147,12 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           {shippingMethod === 'dropoff' && (
             <div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+              <label htmlFor={shippingDistanceId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <span>Distance ({distanceUnit})</span>
                 <InfoTooltip text="Round-trip distance" />
               </label>
               <Input
+                id={shippingDistanceId}
                 type="number"
                 compact
                 value={distanceUnit === 'mi' ? (shippingDistanceKm > 0 ? kmToMiles(shippingDistanceKm).toFixed(1) : '') : (shippingDistanceKm || '')}
@@ -1126,8 +1171,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           )}
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Carrier Cost ({currencySymbol})</label>
+            <label htmlFor={carrierCostId} className="block text-xs text-slate-400 mb-1">Carrier Cost ({currencySymbol})</label>
             <Input
+              id={carrierCostId}
               type="number"
               step="0.01"
               compact
@@ -1213,6 +1259,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     <Button
                       variant="danger"
                       btnSize="sm"
+                      aria-label={`Remove ${material?.name ?? 'material'}`}
                       onClick={() => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
                     >
                       ✕
@@ -1253,8 +1300,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Selling Platform</label>
+              <label htmlFor={sellingPlatformId} className="block text-xs text-slate-400 mb-1">Selling Platform</label>
               <Select
+                id={sellingPlatformId}
                 value={marketplace}
                 onChange={e => setMarketplace(e.target.value as MarketplaceType)}
               >
@@ -1289,10 +1337,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-4">
           <div>
-            <label className="block text-sm font-medium text-white mb-1">Profit Margin</label>
+            <label htmlFor={profitMarginId} className="block text-sm font-medium text-white mb-1">Profit Margin</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
               <Input
+                id={profitMarginId}
                 type="number"
                 value={profitMarginPercent || ''}
                 onChange={e => {
@@ -1305,10 +1354,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-1">Target Profit</label>
+            <label htmlFor={targetProfitId} className="block text-sm font-medium text-white mb-1">Target Profit</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
               <Input
+                id={targetProfitId}
                 type="number"
                 step="0.01"
                 value={targetProfit || ''}
@@ -1322,10 +1372,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-1">Selling Price</label>
+            <label htmlFor={sellingPriceId} className="block text-sm font-medium text-white mb-1">Selling Price</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
               <Input
+                id={sellingPriceId}
                 type="number"
                 step="0.01"
                 value={sellingPrice || ''}
@@ -1339,10 +1390,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-1">Tax Rate</label>
+            <label htmlFor={taxRateId} className="block text-sm font-medium text-white mb-1">Tax Rate</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
               <Input
+                id={taxRateId}
                 type="number"
                 min="0"
                 max="99.9"

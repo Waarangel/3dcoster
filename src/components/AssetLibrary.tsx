@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useId, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { Asset, AssetCategory, BuiltInCategory, Currency } from '../types';
 import { convert, type FxRateTable } from '../utils/fxConvert';
@@ -20,6 +20,7 @@ interface AssetLibraryProps {
   onItemsPerPageChange: (value: number) => void;
   userCurrency: Currency;
   fxTable: FxRateTable | null;
+  loadError?: string | null;
 }
 
 function AssetListSkeleton() {
@@ -488,7 +489,27 @@ export function AssetLibrary({
   onItemsPerPageChange,
   userCurrency,
   fxTable,
+  loadError,
 }: AssetLibraryProps) {
+  // Stable per-instance ids wiring each form <label> to its input (WCAG 1.3.1 /
+  // 4.1.2). Declared once at the top — this is a single-instance form, not a
+  // loop — so the same id is reused whether the printer or material variant
+  // renders.
+  const nameId = useId();
+  const categoryId = useId();
+  const brandId = useId();
+  const unitId = useId();
+  const packageCostId = useId();
+  const unitsPerPackageId = useId();
+  const lifespanUnitsId = useId();
+  const purchasePriceId = useId();
+  const wattageId = useId();
+  const expectedLifespanHoursId = useId();
+  const nozzleCostId = useId();
+  const nozzleLifespanId = useId();
+  const notesId = useId();
+  const tagsId = useId();
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<AssetCategory | 'all'>('all');
@@ -502,6 +523,7 @@ export function AssetLibrary({
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [formError, setFormError] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -768,15 +790,20 @@ export function AssetLibrary({
     setFormError(null);
   };
 
-  const handleReset = () => {
-    if (filterCategory === 'printer') {
-      if (window.confirm('Reset all printers to defaults? This will replace your custom printers with the default printer list.')) {
-        onResetPrinters();
+  const handleReset = async () => {
+    setResetError(null);
+    try {
+      if (filterCategory === 'printer') {
+        if (window.confirm('Reset all printers to defaults? This will replace your custom printers with the default printer list.')) {
+          await onResetPrinters();
+        }
+      } else {
+        if (window.confirm('Reset all materials to defaults? This will replace your current materials with the default list.')) {
+          await onResetMaterials();
+        }
       }
-    } else {
-      if (window.confirm('Reset all materials to defaults? This will replace your current materials with the default list.')) {
-        onResetMaterials();
-      }
+    } catch {
+      setResetError('Could not reset — please try again.');
     }
   };
 
@@ -805,6 +832,11 @@ export function AssetLibrary({
 
   return (
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+      {loadError && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-3">
+          {loadError}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <h2 className="text-lg font-semibold text-white">Asset Library</h2>
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
@@ -843,6 +875,9 @@ export function AssetLibrary({
           )}
         </div>
       </div>
+      {resetError && (
+        <div className="text-sm text-red-400 mb-3">{resetError}</div>
+      )}
 
       {isLoading ? (
         <AssetListSkeleton />
@@ -882,6 +917,7 @@ export function AssetLibrary({
         {/* allow-raw-html */}
         <button
           onClick={() => handleFilterChange('all')}
+          aria-pressed={filterCategory === 'all'}
           className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors ${
             filterCategory === 'all'
               ? 'bg-slate-600 text-white'
@@ -895,6 +931,7 @@ export function AssetLibrary({
           <button
             key={cat}
             onClick={() => handleFilterChange(cat)}
+            aria-pressed={filterCategory === cat}
             className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
               filterCategory === cat
                 ? 'bg-slate-600 text-white'
@@ -905,7 +942,7 @@ export function AssetLibrary({
           </button>
         ))}
         <div className="relative ml-auto w-full sm:w-56">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <Input
@@ -913,6 +950,7 @@ export function AssetLibrary({
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             placeholder="Search..."
+            aria-label="Search assets"
             className="pl-9 pr-8 placeholder-slate-500"
           />
           {searchQuery && (
@@ -920,6 +958,7 @@ export function AssetLibrary({
               variant="ghost"
               btnSize="sm"
               onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+              aria-label="Clear search"
               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-lg leading-none"
             >
               ×
@@ -938,8 +977,9 @@ export function AssetLibrary({
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Name</label>
+              <label htmlFor={nameId} className="block text-xs text-slate-400 mb-1">Name</label>
               <Input
+                id={nameId}
                 type="text"
                 value={formData.name || ''}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -948,10 +988,11 @@ export function AssetLibrary({
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Category</label>
+              <label htmlFor={categoryId} className="block text-xs text-slate-400 mb-1">Category</label>
               {showCustomCategory ? (
                 <div className="flex gap-2">
                   <Input
+                    id={categoryId}
                     type="text"
                     value={customCategoryInput}
                     onChange={e => setCustomCategoryInput(e.target.value)}
@@ -970,6 +1011,7 @@ export function AssetLibrary({
               ) : (
                 <div className="flex gap-2">
                   <Select
+                    id={categoryId}
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value as AssetCategory })}
                     className="flex-1"
@@ -994,8 +1036,9 @@ export function AssetLibrary({
 
             {/* Brand field for all */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Brand (optional)</label>
+              <label htmlFor={brandId} className="block text-xs text-slate-400 mb-1">Brand (optional)</label>
               <Input
+                id={brandId}
                 type="text"
                 value={formData.brand || ''}
                 onChange={e => setFormData({ ...formData, brand: e.target.value })}
@@ -1007,8 +1050,9 @@ export function AssetLibrary({
             {isPrinterForm ? (
               <>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
+                  <label htmlFor={purchasePriceId} className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
                   <Input
+                    id={purchasePriceId}
                     type="number"
                     step="0.01"
                     compact
@@ -1019,8 +1063,9 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Wattage (avg during print)</label>
+                  <label htmlFor={wattageId} className="block text-xs text-slate-400 mb-1">Wattage (avg during print)</label>
                   <Input
+                    id={wattageId}
                     type="number"
                     compact
                     value={formData.wattage || ''}
@@ -1030,8 +1075,9 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Expected Lifespan (hours)</label>
+                  <label htmlFor={expectedLifespanHoursId} className="block text-xs text-slate-400 mb-1">Expected Lifespan (hours)</label>
                   <Input
+                    id={expectedLifespanHoursId}
                     type="number"
                     compact
                     value={formData.expectedLifespanHours || ''}
@@ -1040,8 +1086,9 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Nozzle Cost ($)</label>
+                  <label htmlFor={nozzleCostId} className="block text-xs text-slate-400 mb-1">Nozzle Cost ($)</label>
                   <Input
+                    id={nozzleCostId}
                     type="number"
                     step="0.01"
                     compact
@@ -1051,8 +1098,9 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Nozzle Lifespan (cm³)</label>
+                  <label htmlFor={nozzleLifespanId} className="block text-xs text-slate-400 mb-1">Nozzle Lifespan (cm³)</label>
                   <Input
+                    id={nozzleLifespanId}
                     type="number"
                     compact
                     value={formData.nozzleLifespanCm3 || ''}
@@ -1065,8 +1113,9 @@ export function AssetLibrary({
               /* Material-specific fields */
               <>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Unit (g, ml, sheet, etc.)</label>
+                  <label htmlFor={unitId} className="block text-xs text-slate-400 mb-1">Unit (g, ml, sheet, etc.)</label>
                   <Input
+                    id={unitId}
                     type="text"
                     value={formData.unit || ''}
                     onChange={e => setFormData({ ...formData, unit: e.target.value })}
@@ -1075,8 +1124,9 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Package Cost ($)</label>
+                  <label htmlFor={packageCostId} className="block text-xs text-slate-400 mb-1">Package Cost ($)</label>
                   <Input
+                    id={packageCostId}
                     type="number"
                     step="0.01"
                     compact
@@ -1087,8 +1137,9 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Units per Package</label>
+                  <label htmlFor={unitsPerPackageId} className="block text-xs text-slate-400 mb-1">Units per Package</label>
                   <Input
+                    id={unitsPerPackageId}
                     type="number"
                     compact
                     value={formData.unitsPerPackage || ''}
@@ -1098,11 +1149,12 @@ export function AssetLibrary({
                   />
                 </div>
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <label htmlFor={lifespanUnitsId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                     <span>Lifespan (uses, optional)</span>
                     <InfoTooltip text="For items that get reused (e.g., a brush)" />
                   </label>
                   <Input
+                    id={lifespanUnitsId}
                     type="number"
                     compact
                     value={formData.lifespanUnits || ''}
@@ -1114,8 +1166,9 @@ export function AssetLibrary({
             )}
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
+            <label htmlFor={notesId} className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
             <Input
+              id={notesId}
               type="text"
               value={formData.notes || ''}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
@@ -1124,9 +1177,10 @@ export function AssetLibrary({
           </div>
           {/* Tags */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Tags (optional)</label>
+            <label htmlFor={tagsId} className="block text-xs text-slate-400 mb-1">Tags (optional)</label>
             <div className="flex gap-2 mb-2">
               <Input
+                id={tagsId}
                 type="text"
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value)}
@@ -1250,12 +1304,12 @@ export function AssetLibrary({
           <div role="grid" aria-rowcount={paginatedAssets.length + 1} className="w-full text-sm">
             {/* Header (was <thead><tr>) */}
             <div role="row" className="grid grid-cols-7 gap-x-4 text-slate-400 text-left border-b border-slate-700">
-              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('name')}>Printer<SortIndicator field="name" /></div>
-              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></div>
-              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></div>
-              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('purchasePrice')}>Price<SortIndicator field="purchasePrice" /></div>
-              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('wattage')}>Wattage<SortIndicator field="wattage" /></div>
-              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('nozzleCost')}>Nozzle<SortIndicator field="nozzleCost" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('name')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('name'); } }}>Printer<SortIndicator field="name" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'brand' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('brand')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('brand'); } }}>Brand<SortIndicator field="brand" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('category')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('category'); } }}>Type<SortIndicator field="category" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'purchasePrice' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('purchasePrice')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('purchasePrice'); } }}>Price<SortIndicator field="purchasePrice" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'wattage' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('wattage')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('wattage'); } }}>Wattage<SortIndicator field="wattage" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'nozzleCost' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('nozzleCost')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('nozzleCost'); } }}>Nozzle<SortIndicator field="nozzleCost" /></div>
               <div role="columnheader" className="pb-2 font-medium text-right">Actions</div>
             </div>
             {/* Body (was <tbody>) */}
@@ -1286,11 +1340,11 @@ export function AssetLibrary({
           <div role="grid" aria-rowcount={paginatedAssets.length + 1} className="w-full text-sm">
             {/* Header (was <thead><tr>) */}
             <div role="row" className="grid grid-cols-6 gap-x-4 text-slate-400 text-left border-b border-slate-700">
-              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('name')}>Material<SortIndicator field="name" /></div>
-              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('brand')}>Brand<SortIndicator field="brand" /></div>
-              <div role="columnheader" className={sortHeaderClass} onClick={() => toggleSort('category')}>Type<SortIndicator field="category" /></div>
-              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('costPerUnit')}>Cost/Unit<SortIndicator field="costPerUnit" /></div>
-              <div role="columnheader" className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('packageCost')}>Package<SortIndicator field="packageCost" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('name')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('name'); } }}>Material<SortIndicator field="name" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'brand' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('brand')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('brand'); } }}>Brand<SortIndicator field="brand" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('category')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('category'); } }}>Type<SortIndicator field="category" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'costPerUnit' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('costPerUnit')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('costPerUnit'); } }}>Cost/Unit<SortIndicator field="costPerUnit" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'packageCost' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('packageCost')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('packageCost'); } }}>Package<SortIndicator field="packageCost" /></div>
               <div role="columnheader" className="pb-2 font-medium text-right">Actions</div>
             </div>
             {/* Body (was <tbody>) */}

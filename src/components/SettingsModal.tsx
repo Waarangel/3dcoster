@@ -170,11 +170,15 @@ export function SettingsModal({
   return (
     <SidePanel isOpen={isOpen} onClose={onClose} title={settingsTitle} size="lg">
       {/* Tabs */}
-        <div className="flex border-b border-slate-700">
+        <div className="flex border-b border-slate-700" role="tablist" aria-label="Settings sections">
           {tabs.map(tab => (
             // allow-raw-html: tab buttons use dynamic active/inactive class with border-b-2 indicator that no Button variant maps to (Pitfall 4)
             <button
               key={tab.id}
+              role="tab"
+              id={`settings-tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`settings-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex-1 px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center ${
                 activeTab === tab.id
@@ -188,7 +192,7 @@ export function SettingsModal({
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-4" role="tabpanel" id={`settings-panel-${activeTab}`} aria-labelledby={`settings-tab-${activeTab}`}>
           {/* Costs & Rates Tab — all global cost inputs that feed job math */}
           {activeTab === 'costs' && (
             <div className="space-y-6">

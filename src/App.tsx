@@ -47,6 +47,7 @@ function App() {
   const {
     assets,
     isLoading: assetsLoading,
+    error: assetsError,
     addAsset,
     updateAsset,
     deleteAsset,
@@ -202,6 +203,7 @@ function App() {
               onClick={() => setShowSettingsModal(true)}
               className="relative p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="Settings"
+              aria-label="Open settings"
             >
               <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -213,6 +215,7 @@ function App() {
               onClick={() => setShowProfileModal(true)}
               className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="User Settings"
+              aria-label="Open user profile"
             >
               <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -261,10 +264,14 @@ function App() {
       {/* Tabs */}
       <div className="bg-slate-800/50 border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex gap-1 flex-nowrap">
+          <div className="flex gap-1 flex-nowrap" role="tablist" aria-label="Main navigation">
             {tabs.map(tab => (
               <button
                 key={tab.id}
+                role="tab"
+                id={`tab-${tab.id}`}
+                aria-selected={activeTab === tab.id}
+                aria-controls={`tabpanel-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap min-h-[44px] flex items-center gap-1 ${
                   activeTab === tab.id
@@ -288,7 +295,12 @@ function App() {
       </div>
 
       {/* Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main
+        className="max-w-6xl mx-auto px-4 py-6"
+        role="tabpanel"
+        id={`tabpanel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+      >
         {activeTab === 'calculator' && (
           <CostCalculator
             materials={materials}
@@ -326,6 +338,7 @@ function App() {
           <AssetLibrary
             assets={assets}
             isLoading={assetsLoading}
+            loadError={assetsError}
             onAddAsset={addAsset}
             onUpdateAsset={updateAsset}
             onDeleteAsset={deleteAsset}
