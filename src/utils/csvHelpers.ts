@@ -1,4 +1,3 @@
-import Papa from 'papaparse';
 import type { Asset, Currency, FilamentType } from '../types';
 
 // ============================================
@@ -67,7 +66,8 @@ export interface CsvParseResult {
 // Columns for customer CSV
 const CUSTOMER_COLUMNS = ['name', 'email', 'company', 'address', 'notes'] as const;
 
-export function generateSampleCustomerCsv(): string {
+export async function generateSampleCustomerCsv(): Promise<string> {
+  const { default: Papa } = await import('papaparse');
   // SEC-01 / D-02: every cell passes through sanitizeCsvCell at the
   // cell-serialization boundary. Template strings are no-op in practice
   // (none start with a trigger char), but the invariant is grep-enforceable
@@ -81,7 +81,8 @@ export function generateSampleCustomerCsv(): string {
   });
 }
 
-export function generateSampleCsv(type: 'material' | 'printer'): string {
+export async function generateSampleCsv(type: 'material' | 'printer'): Promise<string> {
+  const { default: Papa } = await import('papaparse');
   if (type === 'printer') {
     // SEC-01 / D-02: every cell passes through sanitizeCsvCell at the
     // cell-serialization boundary (structural invariant — see comment on
@@ -113,7 +114,8 @@ export function generateSampleCsv(type: 'material' | 'printer'): string {
 // CSV PARSING
 // ============================================
 
-export function parseCsvFile(csvString: string, existingAssets: Asset[]): CsvParseResult {
+export async function parseCsvFile(csvString: string, existingAssets: Asset[]): Promise<CsvParseResult> {
+  const { default: Papa } = await import('papaparse');
   const globalErrors: string[] = [];
 
   if (!csvString.trim()) {
@@ -326,7 +328,8 @@ function checkDuplicates(rows: ParsedRow[], existingAssets: Asset[]): void {
 // EXPORT
 // ============================================
 
-export function generateExportCsv(assets: Asset[]): string {
+export async function generateExportCsv(assets: Asset[]): Promise<string> {
+  const { default: Papa } = await import('papaparse');
   const rows = assets.map(asset => {
     const row: Record<string, string> = {};
     for (const col of ALL_COLUMNS) {

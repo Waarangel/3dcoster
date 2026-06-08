@@ -43,9 +43,20 @@ export function CsvImportModal({ isOpen, onClose, existingAssets, onImportAssets
   }, [isOpen]);
 
   // Process uploaded CSV file
+  // SEC: cap raw CSV size at 5 MB to match CustomerCsvImportModal's guard —
+  // prevents a renamed Excel/binary file from pulling a large blob into memory.
+  const MAX_CSV_BYTES = 5 * 1024 * 1024;
+
   const processFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.csv')) {
       setError('Please select a .csv file');
+      return;
+    }
+    if (file.size > MAX_CSV_BYTES) {
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+      setError(
+        `File is ${sizeMb} MB. Keep asset CSVs under 5 MB — split a larger file into smaller batches.`
+      );
       return;
     }
 
@@ -53,7 +64,7 @@ export function CsvImportModal({ isOpen, onClose, existingAssets, onImportAssets
 
     try {
       const text = await file.text();
-      const result = parseCsvFile(text, existingAssets);
+      const result = await parseCsvFile(text, existingAssets);
 
       if (result.globalErrors.length > 0 && result.rows.length === 0) {
         setError(result.globalErrors.join('\n'));
@@ -240,7 +251,7 @@ function UploadStep({
           <Button
             variant="ghost"
             btnSize="sm"
-            onClick={() => downloadCsv(generateSampleCsv('material'), '3dcoster-materials-template.csv')}
+            onClick={async () => downloadCsv(await generateSampleCsv('material'), '3dcoster-materials-template.csv')}
             className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
           >
             📦 Materials template
@@ -248,7 +259,7 @@ function UploadStep({
           <Button
             variant="ghost"
             btnSize="sm"
-            onClick={() => downloadCsv(generateSampleCsv('printer'), '3dcoster-printers-template.csv')}
+            onClick={async () => downloadCsv(await generateSampleCsv('printer'), '3dcoster-printers-template.csv')}
             className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
           >
             🖨️ Printers template

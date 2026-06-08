@@ -98,8 +98,12 @@ async function simulateFileUpload(file: File): Promise<void> {
   Object.defineProperty(input!, 'files', { value: [file], configurable: true });
   await act(async () => {
     input!.dispatchEvent(new Event('change', { bubbles: true }));
-    // Flush any remaining async microtasks (file.text() promise)
-    await new Promise(resolve => setTimeout(resolve, 0));
+    // Flush async work: file.text() AND the dynamic import('papaparse') inside
+    // parseCustomerCsv (lazy-loaded for bundle size). The module load needs
+    // more than one tick; flush several macrotasks to let it settle + render.
+    for (let i = 0; i < 5; i++) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
   });
 }
 

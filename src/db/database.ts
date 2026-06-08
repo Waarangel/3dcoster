@@ -130,7 +130,8 @@ db.version(8).stores({
   if (settingsRow) {
     try {
       currency = (JSON.parse(settingsRow.value) as UserProfile).currency;
-    } catch {
+    } catch (err) {
+      console.error('[v8 migration] skipped — settings unreadable:', err);
       // Corrupt settings → fall through to 'USD'. The v9 reconcile (added below)
       // re-stamps these quotes if the user has a valid currency at next open.
     }
@@ -177,7 +178,8 @@ db.version(9).stores({
     const parsed = JSON.parse(settingsRow.value) as Partial<UserProfile>;
     if (typeof parsed.currency !== 'string' || parsed.currency.length === 0) return;
     userCurrency = parsed.currency;
-  } catch {
+  } catch (err) {
+    console.error('[v9 migration] skipped — settings unreadable:', err);
     return;
   }
 
@@ -221,7 +223,8 @@ db.version(10).stores({
     const parsed = JSON.parse(settingsRow.value) as Partial<UserProfile>;
     if (typeof parsed.currency !== 'string' || parsed.currency.length === 0) return;
     userCurrency = parsed.currency;
-  } catch {
+  } catch (err) {
+    console.error('[v10 migration] skipped — settings unreadable:', err);
     return;
   }
 
@@ -267,6 +270,7 @@ export async function getSetting<T>(
     }
     return parsed as T;
   } catch {
+    console.error(`[getSetting] failed to parse stored "${key}"; using default`);
     return defaultValue;
   }
 }

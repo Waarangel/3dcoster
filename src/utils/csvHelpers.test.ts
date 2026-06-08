@@ -10,6 +10,9 @@ import Papa from 'papaparse';
 import { parsePositiveNumber, sanitizeCsvCell, generateExportCsv, generateSampleCsv, generateSampleCustomerCsv } from './csvHelpers';
 import type { Asset } from '../types';
 
+// NOTE: generateExportCsv, generateSampleCsv, generateSampleCustomerCsv are now
+// async (dynamic papaparse import). Tests that call them must await them.
+
 describe('parsePositiveNumber', () => {
   // happy-path baselines
   it("'10' → 10", () => expect(parsePositiveNumber('10')).toBe(10));
@@ -117,41 +120,41 @@ describe('Phase 21 SEC-01 — generateExportCsv integration', () => {
     return result.data[0];
   }
 
-  it('name starting with = is prefixed with single-quote in exported CSV', () => {
+  it('name starting with = is prefixed with single-quote in exported CSV', async () => {
     const asset: Asset = { ...BASE_ASSET, name: '=HYPERLINK("https://evil.com","click")' };
-    const csv = generateExportCsv([asset]);
+    const csv = await generateExportCsv([asset]);
     const row = parseFirstDataRow(csv);
     expect(row.name.startsWith("'=")).toBe(true);
   });
 
-  it('brand starting with + is prefixed with single-quote in exported CSV', () => {
+  it('brand starting with + is prefixed with single-quote in exported CSV', async () => {
     const asset: Asset = { ...BASE_ASSET, brand: '+CMD' };
-    const csv = generateExportCsv([asset]);
+    const csv = await generateExportCsv([asset]);
     const row = parseFirstDataRow(csv);
     expect(row.brand.startsWith("'+")).toBe(true);
   });
 
-  it('notes starting with - is prefixed with single-quote in exported CSV', () => {
+  it('notes starting with - is prefixed with single-quote in exported CSV', async () => {
     const asset: Asset = { ...BASE_ASSET, notes: '-2+3' };
-    const csv = generateExportCsv([asset]);
+    const csv = await generateExportCsv([asset]);
     const row = parseFirstDataRow(csv);
     expect(row.notes.startsWith("'-")).toBe(true);
   });
 
-  it('safe name with no leading trigger is not prefixed (no false positive)', () => {
+  it('safe name with no leading trigger is not prefixed (no false positive)', async () => {
     const asset: Asset = { ...BASE_ASSET, name: 'Safe name' };
-    const csv = generateExportCsv([asset]);
+    const csv = await generateExportCsv([asset]);
     const row = parseFirstDataRow(csv);
     expect(row.name).toBe('Safe name');
   });
 
-  it('template generators produce no cells starting with =, +, -, or @', () => {
+  it('template generators produce no cells starting with =, +, -, or @', async () => {
     const triggerChars = new Set(['=', '+', '-', '@']);
-    const sources = [
+    const sources = await Promise.all([
       generateSampleCsv('printer'),
       generateSampleCsv('material'),
       generateSampleCustomerCsv(),
-    ];
+    ]);
     for (const csv of sources) {
       const result = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true });
       for (const row of result.data) {

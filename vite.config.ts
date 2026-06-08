@@ -48,6 +48,10 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Exclude marketing-carousel screenshots (~511 KB total) from the
+        // precache manifest — they are only used on the landing page and
+        // are too large to bake into the service worker for all users.
+        globIgnores: ['assets/image*.png'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -124,7 +128,9 @@ export default defineConfig(({ mode }) => ({
           // claimed by 'vendor' first, defeating the lazy-load goal (PDF-04).
           // /src/pdf/ matches the generator module. Surrounding slashes prevent
           // false matches on substrings.
-          if (id.includes('/src/pdf/') || id.includes('/jspdf/') || id.includes('/jspdf-autotable/')) {
+          if (id.includes('/src/pdf/') || id.includes('/jspdf/') || id.includes('/jspdf-autotable/')
+            || id.includes('/canvg/') || id.includes('/rgbcolor/') || id.includes('/svg-pathdata/')
+            || id.includes('/raf/') || id.includes('/performance-now/')) {
             return 'pdf';
           }
           if (id.includes('node_modules')) {

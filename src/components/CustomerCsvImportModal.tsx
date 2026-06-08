@@ -79,7 +79,7 @@ export function CustomerCsvImportModal({
     setError(null);
     try {
       const text = await file.text();
-      const result = parseCustomerCsv(text, existingCustomers);
+      const result = await parseCustomerCsv(text, existingCustomers);
       if (result.globalErrors.length > 0 && result.rows.length === 0) {
         setError(result.globalErrors.join('\n'));
         return;
@@ -269,7 +269,7 @@ function UploadStep({
           type="button"
           variant="ghost"
           btnSize="sm"
-          onClick={() => downloadCsv(generateSampleCustomerCsv(), 'customer-template.csv')}
+          onClick={async () => downloadCsv(await generateSampleCustomerCsv(), 'customer-template.csv')}
           className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
         >
           👥 Customer template

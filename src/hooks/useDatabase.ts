@@ -52,6 +52,7 @@ let assetCurrencyReconcileRan = false;
 export function useAssets() {
   const assets = useLiveQuery(() => db.materials.toArray(), []);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Initialize with defaults if empty (includes both materials and printers)
   useEffect(() => {
@@ -96,6 +97,7 @@ export function useAssets() {
         }
       } catch (error) {
         console.error('Error initializing assets:', error);
+        if (!cancelled) setError('Could not load your materials library — check available storage.');
       }
       if (!cancelled) {
         setIsLoading(false);
@@ -197,6 +199,7 @@ export function useAssets() {
   return {
     assets: assets ?? [],
     isLoading,
+    error,
     addAsset,
     updateAsset,
     deleteAsset,
@@ -288,6 +291,9 @@ export function usePrinterInstances() {
     let cancelled = false;
     db.printerInstances.count().then(() => {
       if (!cancelled) setIsLoading(false);
+    }).catch(err => {
+      console.error('usePrinterInstances load failed:', err);
+      if (!cancelled) setIsLoading(false);
     });
     return () => { cancelled = true; };
   }, []);
@@ -333,6 +339,9 @@ export function usePrinterSettings() {
   useEffect(() => {
     getPrinter(defaultPrinter).then(value => {
       setPrinterState(value);
+      setIsLoading(false);
+    }).catch(err => {
+      console.error('usePrinterSettings load failed:', err);
       setIsLoading(false);
     });
   }, []);
@@ -382,6 +391,9 @@ export function useElectricitySettings() {
     getElectricity(DEFAULT_ELECTRICITY).then(value => {
       setElectricityState(value);
       setIsLoading(false);
+    }).catch(err => {
+      console.error('useElectricitySettings load failed:', err);
+      setIsLoading(false);
     });
   }, []);
 
@@ -401,6 +413,9 @@ export function useLaborSettings() {
   useEffect(() => {
     getLabor(DEFAULT_LABOR).then(value => {
       setLaborState(value);
+      setIsLoading(false);
+    }).catch(err => {
+      console.error('useLaborSettings load failed:', err);
       setIsLoading(false);
     });
   }, []);
@@ -422,6 +437,9 @@ export function useUserProfile() {
     getUserProfile(DEFAULT_PROFILE).then(value => {
       setProfileState(value);
       setIsLoading(false);
+    }).catch(err => {
+      console.error('useUserProfile load failed:', err);
+      setIsLoading(false);
     });
   }, []);
 
@@ -441,6 +459,9 @@ export function useShippingConfig() {
   useEffect(() => {
     getShippingConfig(DEFAULT_SHIPPING).then(value => {
       setShippingState(value);
+      setIsLoading(false);
+    }).catch(err => {
+      console.error('useShippingConfig load failed:', err);
       setIsLoading(false);
     });
   }, []);
@@ -491,6 +512,9 @@ export function useMarketplaceFees() {
     getMarketplaceFees(defaultMarketplaceFees).then(value => {
       setFeesState(value);
       setIsLoading(false);
+    }).catch(err => {
+      console.error('useMarketplaceFees load failed:', err);
+      setIsLoading(false);
     });
   }, []);
 
@@ -527,7 +551,10 @@ export function useJobs() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    db.jobs.count().then(() => setIsLoading(false));
+    db.jobs.count().then(() => setIsLoading(false)).catch(err => {
+      console.error('useJobs load failed:', err);
+      setIsLoading(false);
+    });
   }, []);
 
   // Second extension hotfix: self-heal job.copiesSold against the actual

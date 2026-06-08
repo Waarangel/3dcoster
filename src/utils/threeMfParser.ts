@@ -1,4 +1,3 @@
-import JSZip from 'jszip';
 import { getMaterialDensity } from './gcodeParser';
 import type { FilamentType } from '../types';
 
@@ -119,6 +118,7 @@ function metresToGrams(metres: number, filamentType: string): number {
  * (i.e., slice_info.config is absent).
  */
 export async function parseThreeMf(file: File): Promise<ThreeMfParseResult> {
+  const { default: JSZip } = await import('jszip');
   const zip = await JSZip.loadAsync(file);
   const sliceInfoFile = zip.file('Metadata/slice_info.config');
 

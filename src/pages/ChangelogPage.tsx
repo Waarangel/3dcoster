@@ -133,8 +133,14 @@ function renderInlineMarkdown(text: string): (string | React.ReactElement)[] {
       // `code`
       parts.push(<code key={match.index} className="bg-slate-700 px-1.5 py-0.5 rounded text-blue-300 text-xs">{match[4]}</code>);
     } else if (match[5]) {
-      // [text](url)
-      parts.push(<a key={match.index} href={match[7]} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">{match[6]}</a>);
+      // [text](url) — only emit an anchor when the url is http/https to prevent
+      // javascript:, data:, or other unsafe scheme injection from CHANGELOG.md.
+      const url = match[7];
+      const isSafe = url.startsWith('http://') || url.startsWith('https://');
+      parts.push(isSafe
+        ? <a key={match.index} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">{match[6]}</a>
+        : <span key={match.index}>{match[6]}</span>
+      );
     }
     lastIndex = match.index + match[0].length;
   }

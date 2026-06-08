@@ -1,4 +1,3 @@
-import Papa from 'papaparse';
 import type { Customer } from '../types';
 
 /**
@@ -40,10 +39,11 @@ export interface CustomerCsvParseResult {
  * @param csvString  Raw CSV text (header row + data rows).
  * @param existingCustomers  Current library customers — used to flag email-match duplicates.
  */
-export function parseCustomerCsv(
+export async function parseCustomerCsv(
   csvString: string,
   existingCustomers: Customer[],
-): CustomerCsvParseResult {
+): Promise<CustomerCsvParseResult> {
+  const { default: Papa } = await import('papaparse');
   const globalErrors: string[] = [];
 
   if (!csvString.trim()) {

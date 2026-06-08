@@ -8,7 +8,6 @@ const DOWNLOAD_URL = 'https://3dcoster.vercel.app/download';
 
 interface UpdateInfo {
   version: string;
-  url: string;
 }
 
 function compareVersions(current: string, latest: string): boolean {
@@ -48,7 +47,6 @@ export function UpdateBanner() {
         if (compareVersions(APP_VERSION, latestVersion) && dismissedVersion !== latestVersion) {
           setUpdateInfo({
             version: latestVersion,
-            url: data.html_url,
           });
         }
       } catch (error) {

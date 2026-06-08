@@ -11,20 +11,20 @@ const csv = (headers: string[], ...rows: string[][]) =>
   [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 
 describe('parseCustomerCsv (Phase 15.1 — CL-03 / D-09 / D-07)', () => {
-  it('Test 1: empty string → globalErrors = ["CSV file is empty"], rows empty', () => {
-    const result = parseCustomerCsv('', []);
+  it('Test 1: empty string → globalErrors = ["CSV file is empty"], rows empty', async () => {
+    const result = await parseCustomerCsv('', []);
     expect(result.globalErrors).toEqual(['CSV file is empty']);
     expect(result.rows).toEqual([]);
   });
 
-  it('Test 2: header-only CSV → 0 rows, no global errors', () => {
-    const result = parseCustomerCsv('name,email,company,address,notes', []);
+  it('Test 2: header-only CSV → 0 rows, no global errors', async () => {
+    const result = await parseCustomerCsv('name,email,company,address,notes', []);
     expect(result.rows).toEqual([]);
     expect(result.globalErrors).toEqual([]);
   });
 
-  it('Test 3: row with only name → 1 row, customer.name preserved, customer.email undefined', () => {
-    const result = parseCustomerCsv(
+  it('Test 3: row with only name → 1 row, customer.name preserved, customer.email undefined', async () => {
+    const result = await parseCustomerCsv(
       csv(['name', 'email', 'company', 'address', 'notes'], ['Alice', '', '', '', '']),
       [],
     );
@@ -36,8 +36,8 @@ describe('parseCustomerCsv (Phase 15.1 — CL-03 / D-09 / D-07)', () => {
     expect(row.errors).toEqual([]);
   });
 
-  it('Test 4: row with only email in uppercase → customer.email is lowercased (discretion #8)', () => {
-    const result = parseCustomerCsv(
+  it('Test 4: row with only email in uppercase → customer.email is lowercased (discretion #8)', async () => {
+    const result = await parseCustomerCsv(
       csv(['name', 'email'], ['', 'ALICE@EXAMPLE.COM']),
       [],
     );
@@ -49,8 +49,8 @@ describe('parseCustomerCsv (Phase 15.1 — CL-03 / D-09 / D-07)', () => {
     expect(row.errors).toEqual([]);
   });
 
-  it('Test 5: row with both name and email blank (whitespace only) → "Name or Email required"', () => {
-    const result = parseCustomerCsv(
+  it('Test 5: row with both name and email blank (whitespace only) → "Name or Email required"', async () => {
+    const result = await parseCustomerCsv(
       csv(['name', 'email', 'company'], ['   ', '  ', 'AcmeCo']),
       [],
     );
@@ -60,8 +60,8 @@ describe('parseCustomerCsv (Phase 15.1 — CL-03 / D-09 / D-07)', () => {
     expect(row.errors).toEqual(['Name or Email required']);
   });
 
-  it('Test 6: row with email "not-an-email" (no @) → "Email format invalid"', () => {
-    const result = parseCustomerCsv(
+  it('Test 6: row with email "not-an-email" (no @) → "Email format invalid"', async () => {
+    const result = await parseCustomerCsv(
       csv(['name', 'email'], ['Bob', 'not-an-email']),
       [],
     );
@@ -71,8 +71,8 @@ describe('parseCustomerCsv (Phase 15.1 — CL-03 / D-09 / D-07)', () => {
     expect(row.errors).toEqual(['Email format invalid']);
   });
 
-  it('Test 7: uppercase headers (NAME, EMAIL, COMPANY, ADDRESS, NOTES) → case-insensitive parsing', () => {
-    const result = parseCustomerCsv(
+  it('Test 7: uppercase headers (NAME, EMAIL, COMPANY, ADDRESS, NOTES) → case-insensitive parsing', async () => {
+    const result = await parseCustomerCsv(
       csv(
         ['NAME', 'EMAIL', 'COMPANY', 'ADDRESS', 'NOTES'],
         ['Carol', 'carol@x.com', 'AcmeCo', '12 Lane', 'note here'],
@@ -89,8 +89,8 @@ describe('parseCustomerCsv (Phase 15.1 — CL-03 / D-09 / D-07)', () => {
     expect(row.errors).toEqual([]);
   });
 
-  it('Test 8: extra unknown column (phone) → ignored silently; known columns parse fine', () => {
-    const result = parseCustomerCsv(
+  it('Test 8: extra unknown column (phone) → ignored silently; known columns parse fine', async () => {
+    const result = await parseCustomerCsv(
       csv(['name', 'email', 'phone'], ['Dan', 'dan@x.com', '555-1234']),
       [],
     );
@@ -103,11 +103,11 @@ describe('parseCustomerCsv (Phase 15.1 — CL-03 / D-09 / D-07)', () => {
     expect(row.errors).toEqual([]);
   });
 
-  it('Test 9: existing Alice@Example.com matched by incoming alice@example.com (case-insensitive)', () => {
+  it('Test 9: existing Alice@Example.com matched by incoming alice@example.com (case-insensitive)', async () => {
     const existing: Customer[] = [
       { id: 'c-1', createdAt: new Date('2026-01-01'), email: 'Alice@Example.com' },
     ];
-    const result = parseCustomerCsv(
+    const result = await parseCustomerCsv(
       csv(['name', 'email'], ['Alice Smith', 'alice@example.com']),
       existing,
     );
@@ -231,13 +231,13 @@ describe('buildCustomersForImport (Phase 15.1 — D-11 merge semantics)', () => 
 // added to `customerCsv.ts` by mistake, these tests fail loudly — preserving
 // round-trip identity and trapping the regression at PR time.
 describe('Phase 21 SEC-03 — formula-injection + Unicode pass-through', () => {
-  it('Test 13: formula-injection in name → parser preserves "=HYPERLINK(...)" byte-for-byte', () => {
+  it('Test 13: formula-injection in name → parser preserves "=HYPERLINK(...)" byte-for-byte', async () => {
     // The raw cell value contains commas, so we hand-build a properly RFC-4180
     // quoted CSV. Embedded double-quotes are escaped by doubling (`""`).
     const csvString =
       'name,email,company,address,notes\n' +
       '"=HYPERLINK(""https://evil.com"",""click"")",,,,';
-    const result = parseCustomerCsv(csvString, []);
+    const result = await parseCustomerCsv(csvString, []);
     expect(result.globalErrors).toEqual([]);
     expect(result.rows).toHaveLength(1);
     const row = result.rows[0];
@@ -246,14 +246,14 @@ describe('Phase 21 SEC-03 — formula-injection + Unicode pass-through', () => {
     expect(row.customer!.name).toBe('=HYPERLINK("https://evil.com","click")');
   });
 
-  it('Test 14: formula-injection in notes → parser preserves "+CMD|\' /C calc\'!A0" byte-for-byte', () => {
+  it('Test 14: formula-injection in notes → parser preserves "+CMD|\' /C calc\'!A0" byte-for-byte', async () => {
     // The raw cell value contains a single-quote and `!` but no commas — the
     // `csv` helper produces valid CSV here without extra quoting.
     const csvString = csv(
       ['name', 'email', 'company', 'address', 'notes'],
       ['safe customer', '', '', '', "+CMD|' /C calc'!A0"],
     );
-    const result = parseCustomerCsv(csvString, []);
+    const result = await parseCustomerCsv(csvString, []);
     expect(result.globalErrors).toEqual([]);
     expect(result.rows).toHaveLength(1);
     const row = result.rows[0];
@@ -262,12 +262,12 @@ describe('Phase 21 SEC-03 — formula-injection + Unicode pass-through', () => {
     expect(row.customer!.notes).toBe("+CMD|' /C calc'!A0");
   });
 
-  it('Test 15: Unicode (Latin diacritic) in name → "Müller" preserved without NFC/NFD normalization', () => {
+  it('Test 15: Unicode (Latin diacritic) in name → "Müller" preserved without NFC/NFD normalization', async () => {
     const csvString = csv(
       ['name', 'email', 'company', 'address', 'notes'],
       ['Müller', '', '', '', ''],
     );
-    const result = parseCustomerCsv(csvString, []);
+    const result = await parseCustomerCsv(csvString, []);
     expect(result.globalErrors).toEqual([]);
     expect(result.rows).toHaveLength(1);
     const row = result.rows[0];
@@ -280,12 +280,12 @@ describe('Phase 21 SEC-03 — formula-injection + Unicode pass-through', () => {
     expect(row.customer!.name!.codePointAt(0)).toBe('Müller'.codePointAt(0));
   });
 
-  it('Test 16: Unicode (CJK ideographs) in name → "张三" preserved as two distinct code points', () => {
+  it('Test 16: Unicode (CJK ideographs) in name → "张三" preserved as two distinct code points', async () => {
     const csvString = csv(
       ['name', 'email', 'company', 'address', 'notes'],
       ['张三', '', '', '', ''],
     );
-    const result = parseCustomerCsv(csvString, []);
+    const result = await parseCustomerCsv(csvString, []);
     expect(result.globalErrors).toEqual([]);
     expect(result.rows).toHaveLength(1);
     const row = result.rows[0];
@@ -297,12 +297,12 @@ describe('Phase 21 SEC-03 — formula-injection + Unicode pass-through', () => {
     expect([...row.customer!.name!].length).toBe(2);
   });
 
-  it('Test 17: emoji in notes → "Great client 🎉" preserved with surrogate pair intact', () => {
+  it('Test 17: emoji in notes → "Great client 🎉" preserved with surrogate pair intact', async () => {
     const csvString = csv(
       ['name', 'email', 'company', 'address', 'notes'],
       ['Customer', '', '', '', 'Great client 🎉'],
     );
-    const result = parseCustomerCsv(csvString, []);
+    const result = await parseCustomerCsv(csvString, []);
     expect(result.globalErrors).toEqual([]);
     expect(result.rows).toHaveLength(1);
     const row = result.rows[0];

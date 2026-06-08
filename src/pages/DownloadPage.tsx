@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { isSafeHttpUrl } from '../utils/urlSecurity';
 
 type Platform = 'windows' | 'mac' | 'unknown';
 
@@ -51,11 +52,14 @@ export function DownloadPage() {
         const macSiliconAsset = assets.find(a => a.name.includes('aarch64') && a.name.endsWith('.dmg'));
         const macIntelAsset = assets.find(a => a.name.includes('x64') && a.name.endsWith('.dmg'));
 
+        const windowsUrl = windowsAsset?.browser_download_url;
+        const macSiliconUrl = macSiliconAsset?.browser_download_url;
+        const macIntelUrl = macIntelAsset?.browser_download_url;
         setRelease({
           version,
-          windowsUrl: windowsAsset?.browser_download_url || null,
-          macSiliconUrl: macSiliconAsset?.browser_download_url || null,
-          macIntelUrl: macIntelAsset?.browser_download_url || null,
+          windowsUrl: isSafeHttpUrl(windowsUrl) ? windowsUrl! : null,
+          macSiliconUrl: isSafeHttpUrl(macSiliconUrl) ? macSiliconUrl! : null,
+          macIntelUrl: isSafeHttpUrl(macIntelUrl) ? macIntelUrl! : null,
         });
       } catch {
         // Silently fail - fallback links will be used

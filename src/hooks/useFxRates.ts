@@ -68,7 +68,7 @@ export function useFxRates(): FxRateTable | null {
         if (!cancelled) setTable(stamped);
       } catch (err) {
         refreshRan = false;
-        if (import.meta.env.DEV) console.error('useFxRates refresh failed:', err);
+        console.error('useFxRates refresh failed:', err);
       }
     })();
 

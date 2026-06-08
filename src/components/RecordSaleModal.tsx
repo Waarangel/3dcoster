@@ -91,6 +91,7 @@ export function RecordSaleModal({
   const [saleShippingMethod, setSaleShippingMethod] = useState<ShippingMethodType>('local_pickup');
   const [saleShippingCost, setSaleShippingCost] = useState(0);
   const [saleMarketplace, setSaleMarketplace] = useState<MarketplaceType>('facebook_local');
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // ─── Stable ids for label/input pairing (A11Y-07) ─────────────────────────
   const saleQuantityId = useId();
@@ -233,8 +234,10 @@ export function RecordSaleModal({
 
   // ─── handleRecordSale (ported verbatim from JobsManager.tsx:1272-1420) ───
   const handleRecordSale = async () => {
+    setSaveError(null);
     if (saleQuantity <= 0) return;
 
+    try {
     const unitPrice = salePrice || job.sellingPrice;
     const marketplaceFee = calculateMarketplaceFee(unitPrice * saleQuantity, saleMarketplace);
 
@@ -383,6 +386,10 @@ export function RecordSaleModal({
 
     onSaved?.();
     onClose();
+  } catch (err) {
+    console.error('RecordSaleModal save failed:', err);
+    setSaveError('Could not save the sale — please try again.');
+  }
   };
 
   // ─── JSX ─────────────────────────────────────────────────────────────────
@@ -397,6 +404,12 @@ export function RecordSaleModal({
         {convertingFromQuote && (
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs text-blue-300 mb-3">
             Converting {formatQuoteNumber(convertingFromQuote.quoteNumber)} — review and adjust if needed.
+          </div>
+        )}
+
+        {saveError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-3">
+            {saveError}
           </div>
         )}
 
