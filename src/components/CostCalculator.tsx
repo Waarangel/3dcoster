@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage, UserProfile } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
 import { Button, Input, Select, InfoTooltip, CollapsibleSection } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
+import { convert, type FxRateTable } from '../utils/fxConvert';
 import { calculateCost, calculateTax } from '../utils/costCalc';
 import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
 import { etsyChecklist, policySummaryAsOf, policyLink } from '../data/etsyToS';
@@ -22,6 +23,7 @@ interface CostCalculatorProps {
   defaultProfitMargin: number;
   userCurrency: Currency;
   userProfile: UserProfile;
+  fxTable: FxRateTable | null;
   shippingConfig: ShippingConfig;
   onSaveJob: (job: PrintJob, printHours: number) => void;
   onUpdateJob: (job: PrintJob) => void;
@@ -54,11 +56,32 @@ interface FilamentRow {
   editedCurrency: Currency;
 }
 
-export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
+export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
   const distanceUnit = getDistanceUnit(userCurrency);
+
+  // Convert a stored price from its native currency into the user's currency for
+  // display and cost math. Falls back to the raw amount only when no rate table
+  // is cached yet (rare: offline before the first successful fetch) — the Asset
+  // Library surfaces an explicit "rate unavailable" hint for that state.
+  const convertToProfile = useCallback(
+    (amount: number, from: Currency): number => convert(amount, from, userCurrency, fxTable) ?? amount,
+    [userCurrency, fxTable],
+  );
+
+  // Materials with costPerUnit pre-converted into the user's currency, so every
+  // downstream cost computation and display operates in a single currency. Name,
+  // filamentType, and all other fields are preserved.
+  const materialsInProfile = useMemo<Material[]>(
+    () => materials.map(m =>
+      m.costPerUnit == null
+        ? m
+        : { ...m, costPerUnit: convertToProfile(m.costPerUnit, m.currency ?? userCurrency), currency: userCurrency },
+    ),
+    [materials, convertToProfile, userCurrency],
+  );
 
   // makeDefaultRow is a function (not a constant) so it captures userCurrency at call time
   const makeDefaultRow = (currency: Currency): FilamentRow => ({
@@ -313,11 +336,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // Calculate packaging materials cost
   const packagingCost = useMemo(() => {
     return packagingMaterials.reduce((total, usage) => {
-      const material = materials.find(m => m.id === usage.materialId);
+      const material = materialsInProfile.find(m => m.id === usage.materialId);
       if (!material) return total;
       return total + usage.quantity * (material.costPerUnit ?? 0);
     }, 0);
-  }, [packagingMaterials, materials]);
+  }, [packagingMaterials, materialsInProfile]);
 
   // Total shipping = carrier/delivery cost + packaging materials
   const totalShippingCost = shippingCost + packagingCost;
@@ -415,14 +438,28 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     return methods;
   }, [userCurrency, shippingConfig.customCarriers]);
 
-  // Cost calculation extracted to src/utils/costCalc.ts for testability (Phase 10, D-01)
+  // Filament rows with each per-gram price converted into the user's currency,
+  // so the cost math runs in a single currency regardless of the filament's
+  // native currency (grams + filamentId are preserved for the nozzle-wear calc).
+  const filamentRowsForCalc = useMemo(
+    () => filamentRows.map(row => ({
+      ...row,
+      editedPrice: convertToProfile(row.editedPrice, row.editedCurrency),
+      editedCurrency: userCurrency,
+    })),
+    [filamentRows, convertToProfile, userCurrency],
+  );
+
+  // Cost calculation extracted to src/utils/costCalc.ts for testability (Phase 10, D-01).
+  // Prices are fed in already converted to the user's currency (filamentRowsForCalc,
+  // materialsInProfile), so calculateCost itself stays currency-agnostic.
   const costs = useMemo((): CostBreakdown => calculateCost({
-    filamentRows,
+    filamentRows: filamentRowsForCalc,
     printTimeHours,
     selectedPrinter,
     selectedInstance,
     electricity,
-    materials,
+    materials: materialsInProfile,
     materialsUsed,
     prepTimeMinutes,
     postProcessingMinutes,
@@ -434,7 +471,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     modelCost,
     modelCostPerUnit,
   }), [
-    materials, filamentRows, printTimeHours, selectedPrinter, electricity,
+    materialsInProfile, filamentRowsForCalc, printTimeHours, selectedPrinter, electricity,
     selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
     postProcessingMinutes, failureRate, profitMarginPercent, targetProfit, sellingPrice,
     modelCost, modelCostPerUnit
@@ -876,7 +913,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     })}
                     onPriceChange={(price) => updateFilamentRow(index, { editedPrice: price })}
                     onCurrencyChange={(currency) => updateFilamentRow(index, { editedCurrency: currency })}
-                    userCurrency={userCurrency}
                   />
                 </div>
                 <div className="shrink-0 w-[196px]">
@@ -997,7 +1033,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         ) : (
           <div className="space-y-2">
             {materialsUsed.map((usage, index) => {
-              const material = materials.find(m => m.id === usage.materialId);
+              const material = materialsInProfile.find(m => m.id === usage.materialId);
               return (
                 <div key={index} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
                   <Select
@@ -1132,7 +1168,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           ) : (
             <div className="space-y-2">
               {packagingMaterials.map((usage, index) => {
-                const material = materials.find(m => m.id === usage.materialId);
+                const material = materialsInProfile.find(m => m.id === usage.materialId);
                 return (
                   <div key={index} className="flex items-center gap-3 bg-slate-700/50 p-2 rounded-lg">
                     <Select

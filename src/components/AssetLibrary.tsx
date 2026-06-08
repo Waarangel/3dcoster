@@ -1,6 +1,7 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { Asset, AssetCategory, BuiltInCategory, Currency } from '../types';
+import { convert, type FxRateTable } from '../utils/fxConvert';
 import { CsvImportModal } from './CsvImportModal';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
@@ -18,6 +19,7 @@ interface AssetLibraryProps {
   itemsPerPage: number;
   onItemsPerPageChange: (value: number) => void;
   userCurrency: Currency;
+  fxTable: FxRateTable | null;
 }
 
 function AssetListSkeleton() {
@@ -143,7 +145,28 @@ function getCategoryColor(category: AssetCategory): string {
 type AssetRowCallbacks = {
   onEdit: (asset: Asset) => void;
   onDelete: (id: string) => void;
+  userCurrency: Currency;
+  fxTable: FxRateTable | null;
 };
+
+// Render a stored price in the user's currency. Converts from the asset's native
+// currency via the cached FX rate table; when no rate is available yet (offline,
+// before the first successful fetch) it honestly shows the native currency code
+// + amount rather than a guessed number. Currency is shown as an ISO code
+// because several currencies (CAD/USD/AUD…) share the "$" symbol — the code is
+// what makes "the user's stated currency" unambiguous.
+function displayPrice(
+  amount: number,
+  native: Currency | undefined,
+  userCurrency: Currency,
+  fxTable: FxRateTable | null,
+  decimals: number,
+): string {
+  const from = native ?? userCurrency;
+  const converted = convert(amount, from, userCurrency, fxTable);
+  if (converted === null) return `${from} ${amount.toFixed(decimals)}`;
+  return `${userCurrency} ${converted.toFixed(decimals)}`;
+}
 
 type AssetRowPropsForList = {
   assets: Asset[];
@@ -155,6 +178,8 @@ const MobileCardItem = memo(function MobileCardItem({
   style,
   onEdit,
   onDelete,
+  userCurrency,
+  fxTable,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   return (
     <div
@@ -229,13 +254,13 @@ const MobileCardItem = memo(function MobileCardItem({
           <div className="flex items-baseline justify-between mb-1">
             <span className="text-sm text-slate-400">Cost/Unit</span>
             <span className="text-base font-mono font-medium text-white">
-              {asset.currency || '$'}{(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
+              {displayPrice(asset.costPerUnit ?? 0, asset.currency, userCurrency, fxTable, 3)}/{asset.unit}
             </span>
           </div>
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-slate-400">Package</span>
             <span className="text-sm font-mono text-slate-400">
-              {asset.currency || '$'}{(asset.packageCost ?? 0).toFixed(2)}
+              {displayPrice(asset.packageCost ?? 0, asset.currency, userCurrency, fxTable, 2)}
             </span>
           </div>
           {asset.lifespanUnits && (
@@ -269,8 +294,8 @@ const MobileCardItem = memo(function MobileCardItem({
   );
 });
 
-const MobileCardRow = ({ index, style, assets, onEdit, onDelete }: RowComponentProps<AssetRowPropsForList>) => (
-  <MobileCardItem asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} />
+const MobileCardRow = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable }: RowComponentProps<AssetRowPropsForList>) => (
+  <MobileCardItem asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} />
 );
 
 // --- Printer row (div-grid; 7 columns) ---
@@ -340,8 +365,8 @@ const PrinterRow = memo(function PrinterRow({
   );
 });
 
-const PrinterRowAdapter = ({ index, style, assets, onEdit, onDelete }: RowComponentProps<AssetRowPropsForList>) => (
-  <PrinterRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} />
+const PrinterRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable }: RowComponentProps<AssetRowPropsForList>) => (
+  <PrinterRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} />
 );
 
 // --- Material row (div-grid; 6 columns) ---
@@ -350,6 +375,8 @@ const MaterialRow = memo(function MaterialRow({
   style,
   onEdit,
   onDelete,
+  userCurrency,
+  fxTable,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   return (
     <div
@@ -387,10 +414,10 @@ const MaterialRow = memo(function MaterialRow({
         )}
       </div>
       <div role="cell" className="text-right font-mono">
-        {asset.currency || '$'} {(asset.costPerUnit ?? 0).toFixed(3)}/{asset.unit}
+        {displayPrice(asset.costPerUnit ?? 0, asset.currency, userCurrency, fxTable, 3)}/{asset.unit}
       </div>
       <div role="cell" className="text-right font-mono text-slate-400">
-        {asset.currency || '$'} {(asset.packageCost ?? 0).toFixed(2)}
+        {displayPrice(asset.packageCost ?? 0, asset.currency, userCurrency, fxTable, 2)}
       </div>
       <div role="cell" className="text-right">
         <Button
@@ -414,8 +441,8 @@ const MaterialRow = memo(function MaterialRow({
   );
 });
 
-const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete }: RowComponentProps<AssetRowPropsForList>) => (
-  <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} />
+const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable }: RowComponentProps<AssetRowPropsForList>) => (
+  <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} />
 );
 
 export function AssetLibrary({
@@ -430,6 +457,7 @@ export function AssetLibrary({
   itemsPerPage,
   onItemsPerPageChange,
   userCurrency,
+  fxTable,
 }: AssetLibraryProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -741,8 +769,8 @@ export function AssetLibrary({
   // skip unchanged rows. Same object shape feeds all three lists; only the
   // identity changes when paginatedAssets/startEdit/onDeleteAsset rotate.
   const listRowProps = useMemo<AssetRowPropsForList>(
-    () => ({ assets: paginatedAssets, onEdit: startEdit, onDelete: onDeleteAsset }),
-    [paginatedAssets, startEdit, onDeleteAsset]
+    () => ({ assets: paginatedAssets, onEdit: startEdit, onDelete: onDeleteAsset, userCurrency, fxTable }),
+    [paginatedAssets, startEdit, onDeleteAsset, userCurrency, fxTable]
   );
 
   return (
@@ -1172,7 +1200,7 @@ export function AssetLibrary({
           ) : (
             <div className="flex flex-col gap-3">
               {paginatedAssets.map(asset => (
-                <MobileCardItem key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} />
+                <MobileCardItem key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} />
               ))}
             </div>
           )
@@ -1218,7 +1246,7 @@ export function AssetLibrary({
             ) : (
               <div>
                 {paginatedAssets.map(asset => (
-                  <PrinterRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} />
+                  <PrinterRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} />
                 ))}
               </div>
             )}
@@ -1252,7 +1280,7 @@ export function AssetLibrary({
             ) : (
               <div>
                 {paginatedAssets.map(asset => (
-                  <MaterialRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} />
+                  <MaterialRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} />
                 ))}
               </div>
             )}

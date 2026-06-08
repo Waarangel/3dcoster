@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers } from './hooks/useDatabase';
+import { useFxRates } from './hooks/useFxRates';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
@@ -105,6 +106,11 @@ function App() {
     profile: userProfile,
     updateProfile: updateUserProfile,
   } = useUserProfile();
+
+  // Cached USD-based FX rate table for display-time currency conversion. Shared
+  // by the calculator and asset library so every price renders in the user's
+  // currency regardless of the price's native currency.
+  const fxTable = useFxRates();
 
   const {
     shipping: shippingConfig,
@@ -293,6 +299,7 @@ function App() {
             defaultProfitMargin={userProfile.defaultProfitMargin ?? 30}
             userCurrency={userProfile.currency}
             userProfile={userProfile}
+            fxTable={fxTable}
             shippingConfig={shippingConfig}
             onSaveJob={handleSaveJob}
             onUpdateJob={updateJob}
@@ -328,6 +335,7 @@ function App() {
             itemsPerPage={userProfile.assetLibraryItemsPerPage ?? 10}
             onItemsPerPageChange={(value) => updateUserProfile({ ...userProfile, assetLibraryItemsPerPage: value })}
             userCurrency={userProfile.currency}
+            fxTable={fxTable}
           />
         )}
 

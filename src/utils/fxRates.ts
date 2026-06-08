@@ -1,14 +1,11 @@
 import type { Currency } from '../types';
+import { CURRENCY_CONFIG } from './currency';
+import type { FxRateTable } from './fxConvert';
 
-/**
- * Result of a successful USD→target rate lookup. `rate` is how many units of
- * `target` one USD buys; `date` is the publish date the provider reported
- * (kept so the one-time seed conversion can record provenance for debugging).
- */
-export interface UsdRate {
-  rate: number;
-  date: string;
-}
+// Every currency the app supports — used to extract a full table from a
+// provider's USD cross-rates. Derived from the single source of truth so a new
+// currency in CURRENCY_CONFIG is picked up automatically.
+const ALL_CURRENCIES = Object.keys(CURRENCY_CONFIG) as Currency[];
 
 // Hard cap per provider so a hung request can't stall app startup. The FX
 // fetch runs off the critical path (after seeds load), but a 30s socket hang
@@ -40,44 +37,26 @@ function isFinitePositive(n: unknown): n is number {
  * public provider. Tries frankfurter.dev first, then the fawazahmed0
  * currency-api jsDelivr CDN, then its Cloudflare Pages mirror. Returns the
  * first valid rate, or `null` if every provider fails or returns garbage.
+/**
+ * Fetch the full USD→all-currencies cross-rate table from the same keyless
+ * public providers, for display-time conversion. fawazahmed0 covers every
+ * currency we support, so it is tried first here (frankfurter omits some);
+ * frankfurter is the fallback. Returns a partial table — a currency the
+ * provider didn't quote is simply absent, and callers treat that as no-data.
  *
- * NEVER invents or estimates a rate — a `null` return tells the caller to
- * defer the one-time seed conversion and retry on a later online launch
- * (project rule: no arbitrary numbers).
+ * NEVER invents a missing rate. Returns `null` only if every provider fails or
+ * yields no usable rates at all (project rule: no arbitrary numbers).
  *
  * Examples:
- *   await fetchUsdRate('CAD') → { rate: 1.3854, date: '2026-05-28' }
- *   await fetchUsdRate('USD') → { rate: 1, date: <today-ish> }   // identity short-circuit
- *   await fetchUsdRate('EUR') → null                              // all providers offline/blocked
+ *   await fetchUsdRateTable() → { base:'USD', rates:{ USD:1, CAD:1.385, EUR:0.92, … }, date:'2026-06-07' }
+ *   await fetchUsdRateTable() → null   // all providers offline/blocked
  *
  * Returns:
- *   Promise<UsdRate | null> — UsdRate { rate (number > 0), date (string) }, or null.
+ *   Promise<FxRateTable | null> — { base:'USD', rates (Partial<Record<Currency,number>>, includes USD:1), date (string) }
  */
-export async function fetchUsdRate(target: Currency): Promise<UsdRate | null> {
-  // USD→USD is the identity; no network call needed.
-  if (target === 'USD') {
-    return { rate: 1, date: new Date().toISOString().slice(0, 10) };
-  }
-
-  const lower = target.toLowerCase();
-
-  // Provider 1 — frankfurter.dev (ECB data). Response:
-  // { "amount": 1.0, "base": "USD", "date": "YYYY-MM-DD", "rates": { "CAD": 1.3854 } }
-  const frank = await fetchJson(
-    `https://api.frankfurter.dev/v1/latest?base=USD&symbols=${target}`,
-  );
-  if (frank && typeof frank === 'object') {
-    const o = frank as { date?: unknown; rates?: Record<string, unknown> };
-    const rate = o.rates?.[target];
-    if (isFinitePositive(rate) && typeof o.date === 'string') {
-      return { rate, date: o.date };
-    }
-  }
-
-  // Providers 2 & 3 — fawazahmed0 currency-api (jsDelivr, then Cloudflare
-  // mirror). Response: { "date": "YYYY-MM-DD", "usd": { "cad": 1.3867, ... } }
-  // Lowercase keys. frankfurter omits some of our 18 currencies (e.g. no MXN
-  // for a period historically); this provider covers the long tail.
+export async function fetchUsdRateTable(): Promise<FxRateTable | null> {
+  // fawazahmed0 first: a table needs broad coverage, and it quotes all 18
+  // currencies while frankfurter omits some.
   const fawazUrls = [
     `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json`,
     `https://latest.currency-api.pages.dev/v1/currencies/usd.json`,
@@ -86,12 +65,43 @@ export async function fetchUsdRate(target: Currency): Promise<UsdRate | null> {
     const data = await fetchJson(url);
     if (data && typeof data === 'object') {
       const o = data as { date?: unknown; usd?: Record<string, unknown> };
-      const rate = o.usd?.[lower];
-      if (isFinitePositive(rate) && typeof o.date === 'string') {
-        return { rate, date: o.date };
+      if (o.usd && typeof o.date === 'string') {
+        const table = buildTable(code => o.usd?.[code.toLowerCase()], o.date);
+        if (table) return table;
       }
     }
   }
 
+  // Fallback — frankfurter.dev, all symbols. Response:
+  // { "amount": 1.0, "base": "USD", "date": "YYYY-MM-DD", "rates": { "CAD": 1.3854, … } }
+  const frank = await fetchJson(`https://api.frankfurter.dev/v1/latest?base=USD`);
+  if (frank && typeof frank === 'object') {
+    const o = frank as { date?: unknown; rates?: Record<string, unknown> };
+    if (o.rates && typeof o.date === 'string') {
+      const table = buildTable(code => o.rates?.[code], o.date);
+      if (table) return table;
+    }
+  }
+
   return null;
+}
+
+// Assemble an FxRateTable from a provider lookup. USD is forced to 1. A rate is
+// included only when finite-positive; everything else is omitted (no-data).
+// Returns null if not a single non-USD rate came through (provider garbage).
+function buildTable(
+  lookup: (code: Currency) => unknown,
+  date: string,
+): FxRateTable | null {
+  const rates: Partial<Record<Currency, number>> = { USD: 1 };
+  let count = 0;
+  for (const code of ALL_CURRENCIES) {
+    if (code === 'USD') continue;
+    const rate = lookup(code);
+    if (isFinitePositive(rate)) {
+      rates[code] = rate;
+      count++;
+    }
+  }
+  return count > 0 ? { base: 'USD', rates, date } : null;
 }

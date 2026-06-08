@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, Currency } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote } from '../types';
 import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency } from './backfill';
+import type { FxRateTable } from '../utils/fxConvert';
 
 // Settings stored as key-value pairs
 interface Setting {
@@ -243,55 +244,34 @@ export const settingsKeys = {
   userProfile: 'userProfile',
   shipping: 'shipping',
   marketplaceFees: 'marketplaceFees',
-  fxSeedConversion: 'fxSeedConversion',
+  fxRateTable: 'fxRateTable',
 } as const;
 
-/**
- * Persistent record of the one-time USD→user-currency conversion of the
- * built-in (Bambu) filament seeds. Survives reloads in the `settings` store so
- * the conversion runs EXACTLY ONCE ever — a later currency switch leaves the
- * already-converted prices as-is (design decision). `done` gates the effect;
- * the remaining fields are provenance for debugging (which rate, from where).
- * Written only on a successful convert; an offline/no-rate launch leaves this
- * unset so the next online launch retries.
- */
-export interface FxSeedConversion {
-  done: boolean;
-  fromCurrency: Currency;
-  toCurrency: Currency;
-  rate: number;
-  date: string;
-}
-
-/** Structural validator for the FxSeedConversion settings row. Strict on the
- *  load-bearing `done` boolean; loose on currency strings (per isUserProfile,
- *  never narrow to the Currency union — future additions must not invalidate
- *  a stored done-flag and re-trigger conversion). */
-export function isFxSeedConversion(x: unknown): x is FxSeedConversion {
+/** Structural validator for the cached FX rate table. Requires the USD base, a
+ *  rates object, and a date string. Rates themselves are validated lazily at
+ *  conversion time (convert() rejects non-finite/non-positive entries), so a
+ *  partially-corrupt table still yields usable rates for the good currencies. */
+export function isFxRateTable(x: unknown): x is FxRateTable {
   if (typeof x !== 'object' || x === null) return false;
   const o = x as Record<string, unknown>;
-  return typeof o.done === 'boolean';
+  return o.base === 'USD'
+    && typeof o.rates === 'object' && o.rates !== null
+    && typeof o.date === 'string';
 }
 
-export async function getFxSeedConversion(): Promise<FxSeedConversion | null> {
-  return getSetting<FxSeedConversion | null>(
-    settingsKeys.fxSeedConversion,
+/** Read the cached USD-based FX rate table used for display-time currency
+ *  conversion, or null if none is cached yet. */
+export async function getFxRateTable(): Promise<FxRateTable | null> {
+  return getSetting<FxRateTable | null>(
+    settingsKeys.fxRateTable,
     null,
-    (p): p is FxSeedConversion | null => p === null || isFxSeedConversion(p),
+    (p): p is FxRateTable | null => p === null || isFxRateTable(p),
   );
 }
 
-export async function setFxSeedConversion(value: FxSeedConversion): Promise<void> {
-  return setSetting(settingsKeys.fxSeedConversion, value);
-}
-
-/** Remove the one-time FX conversion record so the conversion effect re-runs on
- *  the next assets emit. Called when the filament catalog is re-seeded (reset to
- *  defaults), since fresh seeds ship in USD and must be re-priced into the
- *  user's currency — otherwise a non-USD user's reset leaves USD rows that the
- *  currency-filtered dropdown hides. */
-export async function clearFxSeedConversion(): Promise<void> {
-  await db.settings.delete(settingsKeys.fxSeedConversion);
+/** Cache a freshly-fetched FX rate table in the settings store. */
+export async function setFxRateTable(value: FxRateTable): Promise<void> {
+  return setSetting(settingsKeys.fxRateTable, value);
 }
 
 /** DATA-06 — structural validator for PrinterConfig stored in db.settings.

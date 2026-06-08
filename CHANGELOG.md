@@ -21,7 +21,9 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
-_Add the next release's user-facing changes here. Promote to a versioned section before tagging._
+### Fixed
+- **Filaments always show in the picker** — the calculator's filament dropdown no longer hides filaments priced in a different currency (e.g. the built-in Bambu catalog for non-USD users). Every filament now appears regardless of its original currency, with no "Reset Filaments" workaround needed.
+- **Prices follow your currency** — filament and material prices in the Asset Library and calculator now convert to your selected currency and update immediately when you change it, instead of being stuck in the price's original currency. Conversion uses live exchange rates (cached for offline use); when no rate is available yet, the original currency is shown honestly rather than a guessed amount.
 
 ---
 

@@ -38,8 +38,6 @@ interface FilamentSelectorProps {
   // exist only so the cost calc has the per-gram value for the selected filament.
   onPriceChange: (price: number) => void;
   onCurrencyChange: (currency: Currency) => void;
-  // User's preferred currency to filter materials
-  userCurrency: Currency;
 }
 
 export function FilamentSelector({
@@ -48,18 +46,17 @@ export function FilamentSelector({
   onSelect,
   onPriceChange,
   onCurrencyChange,
-  userCurrency,
 }: FilamentSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Filter filaments by user's preferred currency.
-  // Tolerate null/undefined currency (legacy + freshly-added rows that never got a
-  // currency written) but still exclude a DIFFERENT explicit currency — never a
-  // false positive. Loose `== null` matches both undefined and null.
-  const filaments = materials.filter(m => m.category === 'filament' && (m.currency === userCurrency || m.currency == null));
+  // Show every filament regardless of its native currency. Prices are converted
+  // to the user's currency at display time (useFxRates), so there is no reason
+  // to hide a filament priced in another currency — the old currency-equality
+  // filter is exactly what stranded USD-seeded rows from non-USD users.
+  const filaments = materials.filter(m => m.category === 'filament');
   const selectedFilament = materials.find(m => m.id === selectedFilamentId);
 
   // Get unique brand groups. Brand-less filaments are bucketed under a synthetic

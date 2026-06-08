@@ -311,54 +311,6 @@ export function reconcileFilamentCurrency(materials: Material[], currency: strin
 }
 
 /**
- * convertUsdFilaments — one-time FX conversion of the USD-seeded filament
- * catalog (the built-in Bambu rows) into the user's currency.
- *
- * Pure. No Dexie, no React, no IO, no network. The useAssets effect fetches a
- * live USD→target rate (src/utils/fxRates.ts), calls this helper to compute the
- * patch set, bulkPuts the result, and persists a done-flag so it runs exactly
- * once ever. Extracted as a pure function so the multiply/scope/idempotency
- * contract is unit-testable under jsdom (mirrors reconcileFilamentCurrency).
- *
- * Scope: filament rows where currency === 'USD'. Multiplies the two stored
- * money fields — costPerUnit (per-gram) and packageCost — by `rate`, and sets
- * currency = target. NOTHING ELSE is touched: rows already in another currency,
- * null-currency rows (the reconcile helper's job), and non-filament rows are
- * skipped. Money is NOT rounded — costPerUnit is inherently sub-cent (~0.013)
- * and rounding to currency decimals would zero it out; the display layer
- * formats. Returns ONLY changed rows as spread copies.
- *
- * Caller guarantees `target !== 'USD'` and `rate > 0` (a USD user or a null
- * rate is handled upstream before this is called), but a no-op `target==='USD'`
- * or non-finite `rate` still safely returns [] rather than corrupting data.
- *
- * Examples:
- *   convertUsdFilaments([{ category: 'filament', currency: 'USD', costPerUnit: 0.013, packageCost: 12.99 }], 1.3854, 'CAD')
- *     → [{ ...row, currency: 'CAD', costPerUnit: 0.0180102, packageCost: 17.995... }]
- *   convertUsdFilaments([{ category: 'filament', currency: 'CAD', costPerUnit: 0.02 }], 1.3854, 'CAD') → []  // not USD
- *   convertUsdFilaments([{ category: 'consumable', currency: 'USD', costPerUnit: 1 }], 1.3854, 'CAD') → []  // not filament
- *   convertUsdFilaments([{ category: 'filament', currency: 'USD', costPerUnit: 0.013 }], NaN, 'CAD') → []  // bad rate, no-op
- */
-export function convertUsdFilaments(
-  materials: Material[],
-  rate: number,
-  target: Currency,
-): Material[] {
-  if (!Number.isFinite(rate) || rate <= 0) return [];
-  if (target === 'USD') return [];
-  const out: Material[] = [];
-  for (const m of materials) {
-    if (m.category !== 'filament') continue;
-    if (m.currency !== 'USD') continue;
-    const patched: Material = { ...m, currency: target };
-    if (typeof m.costPerUnit === 'number') patched.costPerUnit = m.costPerUnit * rate;
-    if (typeof m.packageCost === 'number') patched.packageCost = m.packageCost * rate;
-    out.push(patched);
-  }
-  return out;
-}
-
-/**
  * backfillCustomersFromSales — second extension D-32 (gap K fix).
  *
  * One-time pass to populate the Customer Library with any customer that
