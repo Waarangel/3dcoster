@@ -25,6 +25,14 @@ _Add the next release's user-facing changes here. Promote to a versioned section
 
 ---
 
+## [1.4.3] - 2026-06-08
+
+### Fixed
+- **Every price now shows your currency** — saved jobs, recorded sales, and the Printers tab no longer display a hardcoded "$". Job costs, sale prices, and printer cost-recovery stats now show in your selected currency. Existing jobs and sales are tagged with your current currency on first launch and displayed in the currency they were recorded in (a sale made at €20 always reads €20).
+- **Printer prices convert in the Asset Library** — printer purchase price and nozzle cost now convert to your currency like every other asset, instead of staying on "$".
+
+---
+
 ## [1.4.2] - 2026-06-08
 
 ### Fixed
