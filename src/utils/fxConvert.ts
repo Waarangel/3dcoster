@@ -12,7 +12,15 @@ import type { Currency } from '../types';
 export interface FxRateTable {
   base: 'USD';
   rates: Partial<Record<Currency, number>>;
+  /** The provider's publish date (YYYY-MM-DD). Provenance only. */
   date: string;
+  /**
+   * Epoch ms of when WE fetched and cached this table. Used for staleness —
+   * prefer this over `date`, which is the provider's publish date and can lag
+   * (e.g. weekend ECB data), making a freshly-fetched table look already stale.
+   * Optional: tables cached before this field existed fall back to `date`.
+   */
+  cachedAt?: number;
 }
 
 function isFinitePositive(n: unknown): n is number {

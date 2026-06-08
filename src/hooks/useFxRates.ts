@@ -13,10 +13,15 @@ const RATE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 // via IndexedDB, so concurrent mounts converge on the same data.
 let refreshRan = false;
 
-function isStale(table: FxRateTable): boolean {
-  const fetched = Date.parse(`${table.date}T00:00:00Z`);
-  if (Number.isNaN(fetched)) return true;
-  return Date.now() - fetched > RATE_MAX_AGE_MS;
+/**
+ * True when the cached table is older than RATE_MAX_AGE_MS. Measures age from
+ * `cachedAt` (when WE fetched it); falls back to the provider's publish `date`
+ * only for legacy tables cached before `cachedAt` existed. Exported for testing.
+ */
+export function isStale(table: FxRateTable): boolean {
+  const fetchedAt = table.cachedAt ?? Date.parse(`${table.date}T00:00:00Z`);
+  if (Number.isNaN(fetchedAt)) return true;
+  return Date.now() - fetchedAt > RATE_MAX_AGE_MS;
 }
 
 /**
@@ -56,8 +61,11 @@ export function useFxRates(): FxRateTable | null {
           refreshRan = false;
           return;
         }
-        await setFxRateTable(fresh);
-        if (!cancelled) setTable(fresh);
+        // Stamp the actual fetch time so staleness is measured from now, not
+        // from the provider's (possibly lagging) publish date.
+        const stamped: FxRateTable = { ...fresh, cachedAt: Date.now() };
+        await setFxRateTable(stamped);
+        if (!cancelled) setTable(stamped);
       } catch (err) {
         refreshRan = false;
         if (import.meta.env.DEV) console.error('useFxRates refresh failed:', err);

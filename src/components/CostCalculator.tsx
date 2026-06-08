@@ -64,8 +64,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   // Convert a stored price from its native currency into the user's currency for
   // display and cost math. Falls back to the raw amount only when no rate table
-  // is cached yet (rare: offline before the first successful fetch) — the Asset
-  // Library surfaces an explicit "rate unavailable" hint for that state.
+  // is cached yet (rare: offline before the first successful fetch).
+  //
+  // NOTE: this fallback differs from AssetLibrary's `convertForDisplay`, which
+  // shows the native currency CODE on a missing rate. Here we deliberately fall
+  // back to the raw number under the profile symbol, because the calculator
+  // renders every value with a single `currencySymbol` and can't mix codes
+  // mid-total. The trade-off (a USD figure shown under a CAD symbol) only occurs
+  // offline before the first fetch and self-heals once a rate loads.
   const convertToProfile = useCallback(
     (amount: number, from: Currency): number => convert(amount, from, userCurrency, fxTable) ?? amount,
     [userCurrency, fxTable],

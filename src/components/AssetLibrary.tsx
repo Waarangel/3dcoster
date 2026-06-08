@@ -258,7 +258,7 @@ const MobileCardItem = memo(function MobileCardItem({
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3 pt-2 border-t border-slate-700/50">
           <div className="text-slate-400">Price</div>
           <div className="text-right font-mono text-white">
-            ${asset.purchasePrice?.toFixed(2) || '0.00'}
+            <PriceCell amount={asset.purchasePrice ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
           </div>
           <div className="text-slate-400">Wattage</div>
           <div className="text-right font-mono text-white">
@@ -266,7 +266,7 @@ const MobileCardItem = memo(function MobileCardItem({
           </div>
           <div className="text-slate-400">Nozzle Cost</div>
           <div className="text-right font-mono text-slate-400">
-            ${asset.nozzleCost?.toFixed(2) || '0.00'}
+            <PriceCell amount={asset.nozzleCost ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
           </div>
           {asset.expectedLifespanHours && (
             <>
@@ -332,6 +332,8 @@ const PrinterRow = memo(function PrinterRow({
   style,
   onEdit,
   onDelete,
+  userCurrency,
+  fxTable,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   return (
     <div
@@ -363,13 +365,13 @@ const PrinterRow = memo(function PrinterRow({
         </span>
       </div>
       <div role="cell" className="text-right font-mono">
-        ${asset.purchasePrice?.toFixed(2) || '0.00'}
+        <PriceCell amount={asset.purchasePrice ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
       </div>
       <div role="cell" className="text-right font-mono">
         {asset.wattage || 0}W
       </div>
       <div role="cell" className="text-right font-mono text-slate-400">
-        ${asset.nozzleCost?.toFixed(2) || '0.00'}
+        <PriceCell amount={asset.nozzleCost ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
       </div>
       <div role="cell" className="text-right">
         <Button

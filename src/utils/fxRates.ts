@@ -33,11 +33,6 @@ function isFinitePositive(n: unknown): n is number {
 }
 
 /**
- * Fetch the current USD→`target` exchange rate from a keyless, CORS-enabled
- * public provider. Tries frankfurter.dev first, then the fawazahmed0
- * currency-api jsDelivr CDN, then its Cloudflare Pages mirror. Returns the
- * first valid rate, or `null` if every provider fails or returns garbage.
-/**
  * Fetch the full USD→all-currencies cross-rate table from the same keyless
  * public providers, for display-time conversion. fawazahmed0 covers every
  * currency we support, so it is tried first here (frankfurter omits some);
