@@ -25,6 +25,13 @@ _Add the next release's user-facing changes here. Promote to a versioned section
 
 ---
 
+## [1.4.5] - 2026-06-08
+
+### Fixed
+- **Accessibility follow-up** — fixed a screen-reader issue introduced in 1.4.4 where the main tabs and the Settings tabs referenced a content panel that couldn't be found. (Plus minor internal cleanups from a code review.)
+
+---
+
 ## [1.4.4] - 2026-06-08
 
 A reliability, accessibility, and performance release.
