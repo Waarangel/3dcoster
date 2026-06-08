@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote } from '../types';
-import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency } from './backfill';
+import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency, stampRecordCurrency } from './backfill';
 import type { FxRateTable } from '../utils/fxConvert';
 
 // Settings stored as key-value pairs
@@ -191,6 +191,45 @@ db.version(9).stores({
 
   if (import.meta.env.DEV) {
     console.info(`[v9 reconcile] patched ${patched.length} quotes from USD → ${userCurrency}`);
+  }
+});
+
+// v10 — stamp legacy PrintJob + Sale records with a snapshot `currency`. Their
+// money fields (costPerUnit, sellingPrice, unitPrice, totalRevenue, …) were
+// stored in the user's currency at save time but never tagged; without a tag
+// they render with a hardcoded "$". Backfill them with the user's profile
+// currency so they display correctly and stay fixed (historical records are
+// snapshots — never live-converted). Schema strings are identical to v9
+// (currency is non-indexed on both stores). Same two-layer bail-out as v9.
+db.version(10).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+  customers: 'id, name, email, lastUsedAt',
+  quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+}).upgrade(async tx => {
+  // Layer 1: no settings → brand-new device (no jobs/sales to stamp). Bail.
+  const settingsRow = await tx.table('settings').get('userProfile');
+  if (!settingsRow) return;
+
+  // Layer 2: corrupt / shape-incomplete settings → bail silently.
+  let userCurrency: string;
+  try {
+    const parsed = JSON.parse(settingsRow.value) as Partial<UserProfile>;
+    if (typeof parsed.currency !== 'string' || parsed.currency.length === 0) return;
+    userCurrency = parsed.currency;
+  } catch {
+    return;
+  }
+
+  await tx.table('jobs').toCollection().modify(job => stampRecordCurrency(job, userCurrency));
+  await tx.table('sales').toCollection().modify(sale => stampRecordCurrency(sale, userCurrency));
+
+  if (import.meta.env.DEV) {
+    console.info(`[v10 reconcile] stamped legacy jobs + sales with ${userCurrency}`);
   }
 });
 

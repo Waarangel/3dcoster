@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { PrinterConfig, PrinterInstance, PrintJob } from '../types';
+import type { PrinterConfig, PrinterInstance, PrintJob, Currency } from '../types';
+import { formatCurrency } from '../utils/currency';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PrinterIcon } from './ui/icons';
@@ -9,6 +10,7 @@ interface PrinterSettingsProps {
   printerInstances: PrinterInstance[];
   isLoading: boolean;
   jobs: PrintJob[];
+  userCurrency: Currency;
   onAddInstance: (instance: PrinterInstance) => void;
   onUpdateInstance: (instance: PrinterInstance) => void;
   onDeleteInstance: (id: string) => void;
@@ -44,6 +46,7 @@ export function PrinterSettings({
   printerInstances,
   isLoading,
   jobs,
+  userCurrency,
   onAddInstance,
   onUpdateInstance,
   onDeleteInstance,
@@ -355,11 +358,11 @@ export function PrinterSettings({
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
                             {totalUnitsSold === 0 ? (
-                              `No sales yet · $${purchasePrice.toFixed(2)} to recover`
+                              `No sales yet · ${formatCurrency(purchasePrice, userCurrency)} to recover`
                             ) : recoveryPercent >= 100 ? (
-                              `✓ Fully recovered! $${totalProfitFromSales.toFixed(2)} profit from ${totalUnitsSold} sales`
+                              `✓ Fully recovered! ${formatCurrency(totalProfitFromSales, userCurrency)} profit from ${totalUnitsSold} sales`
                             ) : (
-                              `$${totalProfitFromSales.toFixed(2)} profit from sales · $${remainingToRecover.toFixed(2)} remaining to recover`
+                              `${formatCurrency(totalProfitFromSales, userCurrency)} profit from sales · ${formatCurrency(remainingToRecover, userCurrency)} remaining to recover`
                             )}
                           </p>
                         </div>

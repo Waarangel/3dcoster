@@ -57,7 +57,7 @@ function mountSaleRow(opts: { sale?: Sale; onEdit?: (s: Sale) => void; onDelete?
   const onEdit = opts.onEdit ?? vi.fn();
   const onDelete = opts.onDelete ?? vi.fn();
   act(() => {
-    root!.render(<SaleRow sale={sale} jobId="j1" onEdit={onEdit} onDelete={onDelete} />);
+    root!.render(<SaleRow sale={sale} jobId="j1" userCurrency="USD" onEdit={onEdit} onDelete={onDelete} />);
   });
   return { sale, onEdit, onDelete };
 }
@@ -73,7 +73,8 @@ describe('SaleRow', () => {
     mountSaleRow({ sale: makeSale({ quantity: 2, unitPrice: 12.50 }) });
     const summary = container!.querySelector('summary');
     expect(summary).not.toBeNull();
-    // Live code format (SaleRow.tsx): `${sale.quantity}x @ $${sale.unitPrice.toFixed(2)}`
+    // Live code format (SaleRow.tsx): `${quantity}x @ ${formatCurrency(unitPrice, currency)}`.
+    // With userCurrency='USD' and no per-sale currency, formatCurrency(12.50,'USD') → "$12.50".
     // For quantity=2, unitPrice=12.50 → "2x @ $12.50"
     expect(summary!.textContent).toContain('2x @ $12.50');
   });

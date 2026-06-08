@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency, stampRecordCurrency } from './backfill';
 import type { PrintJob, Sale, Customer, Quote, PrinterInstance, PrinterConfig, Material } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -852,5 +852,32 @@ describe('reconcileAssetCurrency (asset-currency reconcile)', () => {
     const patched = reconcileAssetCurrency([original], 'CAD');
     expect(patched[0]).not.toBe(original);  // new object identity
     expect(original.currency).toBeUndefined();  // input not mutated
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stampRecordCurrency — v10 migration helper (mutates a job/sale in place).
+//   1. record with no currency → stamped
+//   2. record with an explicit currency → untouched (idempotent)
+//   3. null currency → stamped (loose == null)
+// ---------------------------------------------------------------------------
+
+describe('stampRecordCurrency (v10 jobs/sales backfill)', () => {
+  it('stamps a record that has no currency', () => {
+    const rec: Record<string, unknown> = { unitPrice: 20 };
+    stampRecordCurrency(rec, 'CAD');
+    expect(rec.currency).toBe('CAD');
+  });
+
+  it('never clobbers an explicit currency (idempotent)', () => {
+    const rec: Record<string, unknown> = { currency: 'EUR', unitPrice: 20 };
+    stampRecordCurrency(rec, 'CAD');
+    expect(rec.currency).toBe('EUR');
+  });
+
+  it('treats null currency as missing and stamps it', () => {
+    const rec: Record<string, unknown> = { currency: null, costPerUnit: 5 };
+    stampRecordCurrency(rec, 'USD');
+    expect(rec.currency).toBe('USD');
   });
 });

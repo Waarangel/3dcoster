@@ -358,6 +358,7 @@ describe('JobCard edit-in-place (Gap E)', () => {
       gapERoot.render(
         <JobCard
           job={opts.job}
+          userCurrency="USD"
           isSelected={false}
           info={makeBreakEvenInfo()}
           recentSales={undefined}
@@ -659,6 +660,7 @@ describe('JobCard Model source render-time URL guard (Phase 21 SEC-02)', () => {
       urlRoot.render(
         <JobCard
           job={job}
+          userCurrency="USD"
           // Model source block only renders inside `{isSelected && (...)}` —
           // expand the card so the block is reachable.
           isSelected={true}

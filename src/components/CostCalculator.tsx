@@ -646,6 +646,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         // existing `fixedCosts` memo (line 449-457) computed from current
         // printer/material state at Update time.
         fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
+        currency: userCurrency,
       };
 
       onUpdateJob(updatedJob);
@@ -688,6 +689,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         // existing `fixedCosts` memo (line 449-457) computed from current
         // printer/material state at Save (Create) time.
         fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
+        currency: userCurrency,
       };
 
       onSaveJob(job, printTimeHours);

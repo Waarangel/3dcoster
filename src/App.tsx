@@ -356,6 +356,7 @@ function App() {
             printerInstances={printerInstances}
             isLoading={instancesLoading}
             jobs={jobs}
+            userCurrency={userProfile.currency}
             onAddInstance={addInstance}
             onUpdateInstance={updateInstance}
             onDeleteInstance={deleteInstance}

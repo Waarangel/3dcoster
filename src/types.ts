@@ -362,6 +362,13 @@ export interface PrintJob {
   // backfills them on next page load. Non-indexed — Dexie schema string unchanged, no
   // migration needed (mirrors the Phase 14 D-18 schema-extension fields above).
   fixedCostsAtSave?: { depreciation: number; nozzleWear: number };
+  /**
+   * The currency this job's money fields (costPerUnit, sellingPrice, taxAmount)
+   * were calculated and stored in. A historical SNAPSHOT — stamped at save time
+   * and displayed verbatim, never live-converted. Undefined on legacy records
+   * until the v10 migration backfills it with the user's profile currency.
+   */
+  currency?: Currency;
 }
 
 // Sales record for a print job
@@ -391,6 +398,13 @@ export interface Sale {
    * originating Quote in the Recent Quotes section (plan 16-11).
    */
   convertedFromQuoteId?: string;
+  /**
+   * The currency this sale's money fields (unitPrice, totalRevenue, shippingCost,
+   * marketplaceFee) were recorded in. A historical SNAPSHOT — a sale that happened
+   * at €20 must always read €20, so this is stamped at save and never converted.
+   * Undefined on legacy records until the v10 migration backfills it.
+   */
+  currency?: Currency;
 }
 
 // User profile with preferences

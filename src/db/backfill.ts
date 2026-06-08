@@ -31,6 +31,21 @@ export function backfillTagsOnJob(job: Record<string, unknown>): void {
 }
 
 /**
+ * Stamp a historical record (PrintJob or Sale) with `currency` if it has none.
+ * Mutates in place (the Dexie `.modify()` pattern, like backfillTagsOnJob).
+ * Idempotent: a record that already carries a currency is left untouched. Used by
+ * the v10 migration to backfill legacy jobs/sales so their snapshot money fields
+ * display in the currency they were recorded in.
+ *
+ * Examples:
+ *   stampRecordCurrency({ unitPrice: 20 }, 'CAD')              // → record.currency = 'CAD'
+ *   stampRecordCurrency({ currency: 'EUR', unitPrice: 20 }, 'CAD') // → untouched (already tagged)
+ */
+export function stampRecordCurrency(record: Record<string, unknown>, currency: string): void {
+  if (record.currency == null) record.currency = currency;
+}
+
+/**
  * D-02 maximum number of tags per job. Excess silently dropped after this cap
  * (the input parser surfaces a one-time inline warning; the reconcile path is
  * silent because it runs on app boot and has no UI surface).

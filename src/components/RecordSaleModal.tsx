@@ -16,6 +16,7 @@ import { db } from '../db/database';
 import { Button, Input, Select, Textarea, Modal } from './ui';
 import { NewBadge } from './NewBadge';
 import { formatQuoteNumber } from '../utils/format';
+import { formatCurrency, getCurrencySymbol } from '../utils/currency';
 
 // ---------------------------------------------------------------------------
 // RecordSaleModal — Phase 22 HYG-06 (plan 22-03).
@@ -315,6 +316,7 @@ export function RecordSaleModal({
         shippingCost: saleShippingCost,
         marketplace: saleMarketplace,
         marketplaceFee: marketplaceFee,
+        currency: userCurrency,
       };
       await updateSale(updated);
     } else {
@@ -334,6 +336,7 @@ export function RecordSaleModal({
         // is being written as part of a Convert to Sale flow. The conversion's Quote patch
         // is written atomically in the same Dexie transaction below.
         convertedFromQuoteId: convertingFromQuote?.id,
+        currency: userCurrency,
       };
       if (convertingFromQuote) {
         // D-20 atomicity: Sale.add + Quote.put + job.copiesSold bump run in ONE
@@ -411,7 +414,7 @@ export function RecordSaleModal({
               />
             </div>
             <div>
-              <label htmlFor={salePriceId} className="block text-xs text-slate-400 mb-1">Price per Unit ($)</label>
+              <label htmlFor={salePriceId} className="block text-xs text-slate-400 mb-1">Price per Unit ({getCurrencySymbol(userCurrency)})</label>
               <Input
                 id={salePriceId}
                 type="number"
@@ -572,7 +575,7 @@ export function RecordSaleModal({
                 </Select>
               </div>
               <div>
-                <label htmlFor={saleShippingCostId} className="block text-xs text-slate-400 mb-1">Cost ($)</label>
+                <label htmlFor={saleShippingCostId} className="block text-xs text-slate-400 mb-1">Cost ({getCurrencySymbol(userCurrency)})</label>
                 <Input
                   id={saleShippingCostId}
                   type="number"
@@ -600,24 +603,24 @@ export function RecordSaleModal({
           <div className="pt-3 border-t border-slate-700 space-y-2">
             <div className="flex justify-between text-sm text-slate-400">
               <span>Sale Total</span>
-              <span className="font-mono">${(saleQuantity * salePrice).toFixed(2)}</span>
+              <span className="font-mono">{formatCurrency(saleQuantity * salePrice, userCurrency)}</span>
             </div>
             {saleShippingCost > 0 && (
               <div className="flex justify-between text-sm text-slate-400">
                 <span>+ Shipping Charged</span>
-                <span className="font-mono">${saleShippingCost.toFixed(2)}</span>
+                <span className="font-mono">{formatCurrency(saleShippingCost, userCurrency)}</span>
               </div>
             )}
             {marketplaceFee > 0 && (
               <div className="flex justify-between text-sm text-orange-400">
                 <span>- Marketplace Fee</span>
-                <span className="font-mono">-${marketplaceFee.toFixed(2)}</span>
+                <span className="font-mono">-{formatCurrency(marketplaceFee, userCurrency)}</span>
               </div>
             )}
             <div className="flex justify-between text-white font-semibold pt-2 border-t border-slate-600">
               <span>Net Revenue</span>
               <span className="font-mono">
-                ${((saleQuantity * salePrice) + saleShippingCost - marketplaceFee).toFixed(2)}
+                {formatCurrency((saleQuantity * salePrice) + saleShippingCost - marketplaceFee, userCurrency)}
               </span>
             </div>
           </div>

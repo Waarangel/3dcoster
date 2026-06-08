@@ -104,6 +104,8 @@ type JobCardProps = {
   isSelected: boolean;
   info: BreakEvenInfo;
   recentSales?: Sale[];
+  /** The user's currency — fallback for displaying a record whose snapshot currency is unset (legacy/pre-migration). */
+  userCurrency: Currency;
   getFilamentName: (id: string) => string;
   onToggleSelect: (id: string) => void;
   onOpenSaleForm: (job: PrintJob) => void;
@@ -418,6 +420,7 @@ export const JobCard = memo(function JobCard({
   isSelected,
   info,
   recentSales,
+  userCurrency,
   getFilamentName,
   onToggleSelect,
   onOpenSaleForm,
@@ -628,7 +631,7 @@ export const JobCard = memo(function JobCard({
               D-11 styling is preserved on the inline chips (text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400). */}
         </div>
         <div className="text-right">
-          <div className="text-lg font-semibold text-white">${info.revenueEarned.toFixed(2)}</div>
+          <div className="text-lg font-semibold text-white">{formatCurrency(info.revenueEarned, job.currency ?? userCurrency)}</div>
           <div className="text-xs text-slate-500">
             {job.copiesSold} sold
           </div>
@@ -644,15 +647,15 @@ export const JobCard = memo(function JobCard({
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div>
               <div className="text-xs text-slate-500">Cost/Unit</div>
-              <div className="font-mono text-slate-300">${job.costPerUnit.toFixed(2)}</div>
+              <div className="font-mono text-slate-300">{formatCurrency(job.costPerUnit, job.currency ?? userCurrency)}</div>
             </div>
             <div>
               <div className="text-xs text-slate-500">Profit/Unit</div>
-              <div className="font-mono text-green-400">${info.profitPerUnit.toFixed(2)}</div>
+              <div className="font-mono text-green-400">{formatCurrency(info.profitPerUnit, job.currency ?? userCurrency)}</div>
             </div>
             <div>
               <div className="text-xs text-slate-500">Unit Sell Price</div>
-              <div className="font-mono text-slate-300">${job.sellingPrice.toFixed(2)}</div>
+              <div className="font-mono text-slate-300">{formatCurrency(job.sellingPrice, job.currency ?? userCurrency)}</div>
             </div>
           </div>
 
@@ -770,6 +773,7 @@ export const JobCard = memo(function JobCard({
                     key={s.id}
                     sale={s}
                     jobId={job.id}
+                    userCurrency={userCurrency}
                     onEdit={onEditSale}
                     onDelete={onDeleteSale}
                   />
@@ -792,6 +796,7 @@ type JobRowProps = {
   jobs: PrintJob[];
   selectedJobId: string | null;
   selectedSales: Sale[];
+  userCurrency: Currency;
   getFilamentName: (id: string) => string;
   getBreakEvenInfo: (job: PrintJob) => BreakEvenInfo;
   onToggleSelect: (id: string) => void;
@@ -822,6 +827,7 @@ const JobRow = ({
   jobs,
   selectedJobId,
   selectedSales,
+  userCurrency,
   getFilamentName,
   getBreakEvenInfo,
   onToggleSelect,
@@ -852,6 +858,7 @@ const JobRow = ({
       isSelected={isSelected}
       info={getBreakEvenInfo(job)}
       recentSales={isSelected ? selectedSales : undefined}
+      userCurrency={userCurrency}
       getFilamentName={getFilamentName}
       onToggleSelect={onToggleSelect}
       onOpenSaleForm={onOpenSaleForm}
@@ -1262,6 +1269,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     jobs: searchedJobs,
     selectedJobId,
     selectedSales: sales,
+    userCurrency,
     getFilamentName,
     // PERF-01 (D-19, Pitfall 6): preserve JobRowProps shape with an arrow
     // wrapper so JobCard's prop interface stays unchanged.
@@ -1285,7 +1293,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onCancelAddTag: handleCancelAddTag,
     onSubmitAddTag: handleSubmitAddTag,
     onRemoveTag: handleRemoveTag,
-  }), [searchedJobs, selectedJobId, sales, getFilamentName, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
+  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1385,6 +1393,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       isSelected={isSelected}
                       info={breakEvenMap.get(job.id)!}
                       recentSales={isSelected ? sales : undefined}
+                      userCurrency={userCurrency}
                       getFilamentName={getFilamentName}
                       onToggleSelect={handleToggleSelect}
                       onOpenSaleForm={handleOpenSaleForm}

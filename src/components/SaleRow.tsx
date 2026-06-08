@@ -1,8 +1,9 @@
-import type { Sale } from '../types';
+import type { Sale, Currency } from '../types';
 import { Button } from './ui';
 import { useQuotes } from '../hooks/useDatabase';
 import { formatQuoteNumber } from '../utils/format';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
+import { formatCurrency } from '../utils/currency';
 
 /**
  * Informational text rendered next to a Sale's customer name when the
@@ -28,6 +29,8 @@ export function SaleFromQuoteSubtext({ convertedFromQuoteId, jobId }: { converte
 interface SaleRowProps {
   sale: Sale;
   jobId: string;
+  /** Fallback currency for legacy sales whose snapshot `currency` is unset. */
+  userCurrency: Currency;
   onEdit: (s: Sale) => void;
   onDelete: (s: Sale) => void;
 }
@@ -42,7 +45,8 @@ interface SaleRowProps {
  * webkit details-marker, rotating chevron via group-open:rotate-90, customer
  * block body with legacy `sale.customerName` fallback per Phase 14 D-21.
  */
-export function SaleRow({ sale, jobId, onEdit, onDelete }: SaleRowProps) {
+export function SaleRow({ sale, jobId, userCurrency, onEdit, onDelete }: SaleRowProps) {
+  const saleCurrency = sale.currency ?? userCurrency;
   // Phase 14 revised (2026-05-22): customer is per-sale.
   // Read from sale.customer (new) with fallback to sale.customerName (legacy).
   const saleCustomerName = sale.customer?.name || sale.customerName;
@@ -54,9 +58,10 @@ export function SaleRow({ sale, jobId, onEdit, onDelete }: SaleRowProps) {
     sale.customer?.notes ||
     sale.customerName
   );
+  const unitPriceLabel = formatCurrency(sale.unitPrice, saleCurrency);
   const summaryLabel = saleCustomerName
-    ? `${sale.quantity}x @ $${sale.unitPrice.toFixed(2)} (${saleCustomerName})`
-    : `${sale.quantity}x @ $${sale.unitPrice.toFixed(2)}`;
+    ? `${sale.quantity}x @ ${unitPriceLabel} (${saleCustomerName})`
+    : `${sale.quantity}x @ ${unitPriceLabel}`;
   return (
     <details
       className="text-sm text-slate-400 bg-slate-800 px-3 py-2 rounded group"
@@ -71,7 +76,7 @@ export function SaleRow({ sale, jobId, onEdit, onDelete }: SaleRowProps) {
             <SaleFromQuoteSubtext convertedFromQuoteId={sale.convertedFromQuoteId} jobId={jobId} />
           )}
         </span>
-        <span className="font-mono">${sale.totalRevenue.toFixed(2)}</span>
+        <span className="font-mono">{formatCurrency(sale.totalRevenue, saleCurrency)}</span>
       </summary>
       <div className="mt-2 pt-2 border-t border-slate-700 text-xs pl-5 flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
