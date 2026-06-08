@@ -103,6 +103,19 @@ When releasing a new version, update ALL FOUR artifacts:
 
 ### Release Steps
 
+> **🔒 MANDATORY GATE — code review before any `v*` tag.** Before bumping the
+> version or tagging, run a code review of the release diff
+> (`git diff <last-tag>..HEAD`) — `/code-review`, or a `code-reviewer` /
+> language-specific reviewer agent. Fix every CRITICAL/HIGH finding before
+> proceeding. A green build + passing tests + a smoke test is **NOT** a review:
+> it catches compile/test/obvious-runtime breakage, not logic bugs or problems
+> in code you didn't read. This gate matters MOST for large, parallel, or
+> agent-authored changesets — exactly the ones tempting to rush. (Added after
+> v1.4.4 shipped a real `aria-controls` a11y regression that the build gate
+> sailed past; a post-ship review caught it → v1.4.5.) Tagging triggers the
+> desktop build + nudges every desktop user, so the bar is "reviewed," not "compiles."
+
+0. **Code review the diff** and clear CRITICAL/HIGH findings (see gate above).
 1. Update CHANGELOG.md — promote `[Unreleased]` content into a new `## [X.Y.Z] - YYYY-MM-DD` section
 2. Update version numbers in the three version files
 3. **Verify locally**: `node scripts/extract-changelog.cjs vX.Y.Z` should print your release notes (no fallback warning)
