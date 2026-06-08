@@ -25,6 +25,25 @@ _Add the next release's user-facing changes here. Promote to a versioned section
 
 ---
 
+## [1.4.4] - 2026-06-08
+
+A reliability, accessibility, and performance release.
+
+### Added
+- **Accessibility** — the app is now fully keyboard-navigable (the filament picker, the main tabs, and sortable tables), screen-reader friendly (proper labels on every form field, button, and control), and respects your system's "reduce motion" setting.
+
+### Changed
+- **Faster to load** — trimmed the startup download and made the desktop/PWA install noticeably lighter.
+
+### Fixed
+- **No more silent failures** — saving a job or sale, loading your library, or resetting to defaults now shows a clear message if something goes wrong, instead of looking like it succeeded.
+- **Safer file imports** — oversized CSV and 3MF files are now rejected with a friendly message instead of freezing the tab.
+
+### Security
+- Hardened the desktop app's content security policy, validated external download/changelog links, and updated dependencies.
+
+---
+
 ## [1.4.3] - 2026-06-08
 
 ### Fixed
