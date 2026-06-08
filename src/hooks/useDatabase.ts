@@ -345,14 +345,41 @@ export function usePrinterSettings() {
   return { printer, updatePrinter, isLoading };
 }
 
+// Default settings, hoisted to module scope so they have a stable identity.
+// (Declaring them inside the hooks made them fresh objects each render, which
+// tripped react-hooks/exhaustive-deps on the once-on-mount loader effects.)
+const DEFAULT_ELECTRICITY: ElectricityConfig = { costPerKwh: 0.12 };
+const DEFAULT_LABOR: LaborConfig = { hourlyRate: 15 };
+const DEFAULT_PROFILE: UserProfile = {
+  currency: 'CAD',
+  laborHourlyRate: 15,
+  defaultProfitMargin: 30,
+  address: {
+    country: 'CA',
+  },
+};
+const DEFAULT_SHIPPING: ShippingConfig = {
+  maxDeliveryRadiusKm: 25,
+  gasPricePerLiter: 1.50,
+  vehicleFuelEfficiency: 10, // L/100km (typical car)
+  upsBaseCost: 15,
+  fedexBaseCost: 15,
+  purolatorBaseCost: 12,
+  uspsBaseCost: 10,
+  dhlBaseCost: 20,
+  royalMailBaseCost: 8,
+  australiaPostBaseCost: 12,
+  canadaPostBaseCost: 15,
+  customCarriers: [],
+};
+
 // Hook for electricity settings
 export function useElectricitySettings() {
-  const defaultElectricity: ElectricityConfig = { costPerKwh: 0.12 };
-  const [electricity, setElectricityState] = useState<ElectricityConfig>(defaultElectricity);
+  const [electricity, setElectricityState] = useState<ElectricityConfig>(DEFAULT_ELECTRICITY);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getElectricity(defaultElectricity).then(value => {
+    getElectricity(DEFAULT_ELECTRICITY).then(value => {
       setElectricityState(value);
       setIsLoading(false);
     });
@@ -368,12 +395,11 @@ export function useElectricitySettings() {
 
 // Hook for labor settings
 export function useLaborSettings() {
-  const defaultLabor: LaborConfig = { hourlyRate: 15 };
-  const [labor, setLaborState] = useState<LaborConfig>(defaultLabor);
+  const [labor, setLaborState] = useState<LaborConfig>(DEFAULT_LABOR);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getLabor(defaultLabor).then(value => {
+    getLabor(DEFAULT_LABOR).then(value => {
       setLaborState(value);
       setIsLoading(false);
     });
@@ -389,19 +415,11 @@ export function useLaborSettings() {
 
 // Hook for user profile (currency preference and labor rate)
 export function useUserProfile() {
-  const defaultProfile: UserProfile = {
-    currency: 'CAD',
-    laborHourlyRate: 15,
-    defaultProfitMargin: 30,
-    address: {
-      country: 'CA',
-    },
-  };
-  const [profile, setProfileState] = useState<UserProfile>(defaultProfile);
+  const [profile, setProfileState] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getUserProfile(defaultProfile).then(value => {
+    getUserProfile(DEFAULT_PROFILE).then(value => {
       setProfileState(value);
       setIsLoading(false);
     });
@@ -417,25 +435,11 @@ export function useUserProfile() {
 
 // Hook for shipping configuration
 export function useShippingConfig() {
-  const defaultShipping: ShippingConfig = {
-    maxDeliveryRadiusKm: 25,
-    gasPricePerLiter: 1.50,
-    vehicleFuelEfficiency: 10, // L/100km (typical car)
-    upsBaseCost: 15,
-    fedexBaseCost: 15,
-    purolatorBaseCost: 12,
-    uspsBaseCost: 10,
-    dhlBaseCost: 20,
-    royalMailBaseCost: 8,
-    australiaPostBaseCost: 12,
-    canadaPostBaseCost: 15,
-    customCarriers: [],
-  };
-  const [shipping, setShippingState] = useState<ShippingConfig>(defaultShipping);
+  const [shipping, setShippingState] = useState<ShippingConfig>(DEFAULT_SHIPPING);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getShippingConfig(defaultShipping).then(value => {
+    getShippingConfig(DEFAULT_SHIPPING).then(value => {
       setShippingState(value);
       setIsLoading(false);
     });
