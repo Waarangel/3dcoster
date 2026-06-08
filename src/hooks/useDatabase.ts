@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
-import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from '../db/backfill';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -37,15 +37,16 @@ let fixedCostsReconcileRan = false;
 // + CL-05 by-value lock).
 let customerEmailLowercaseRan = false;
 
-// quick-260529-bg2 — process-lifetime flag for the filament-currency reconcile.
-// Heals already-saved filament materials whose `currency` is null/undefined
-// (added before the save-layer fix wrote `currency`) so they become visible in
-// the FilamentSelector after one app launch. Same one-per-page-load pattern as
+// Process-lifetime flag for the asset-currency reconcile. Heals already-saved
+// assets whose `currency` is null/undefined (the built-in default supplies, plus
+// any legacy row saved before the currency field existed) by stamping them with
+// the user's profile currency, so they hold a concrete currency that converts at
+// display time instead of merely relabeling. Same one-per-page-load pattern as
 // customerEmailLowercaseRan above. WR-01: flag is set AFTER db.materials.bulkPut
 // completes, NOT before — so failures leave the flag false and the next mount
-// retries. reconcileFilamentCurrency is idempotent at the row level, so a second
+// retries. reconcileAssetCurrency is idempotent at the row level, so a second
 // pass writes nothing (and the flag short-circuits before any Dexie read anyway).
-let filamentCurrencyReconcileRan = false;
+let assetCurrencyReconcileRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -105,16 +106,18 @@ export function useAssets() {
     return () => { cancelled = true; };
   }, []);
 
-  // quick-260529-bg2 — one-time idempotent reconcile that heals already-saved
-  // filament materials with a null/undefined currency so they become visible in
-  // the FilamentSelector. Runs AFTER the init effect above so seeds exist first,
-  // and waits for the first liveQuery emission (`assets === undefined` guard) so
-  // we never patch against an empty pre-load snapshot. WR-01: the flag is set
-  // only AFTER the bulkPut await resolves — a thrown error leaves it false so the
-  // next mount retries. reconcileFilamentCurrency is pure/idempotent; explicit
-  // currencies (e.g. USD-seeded Bambu rows) are never clobbered.
+  // One-time idempotent reconcile that heals already-saved assets with a
+  // null/undefined currency by stamping them with the user's profile currency.
+  // This makes untagged items (the built-in default supplies, legacy rows) hold a
+  // concrete currency so they CONVERT at display time instead of just relabeling
+  // when the user switches currency. Runs AFTER the init effect above so seeds
+  // exist first, and waits for the first liveQuery emission (`assets === undefined`
+  // guard) so we never patch against an empty pre-load snapshot. WR-01: the flag is
+  // set only AFTER the bulkPut await resolves — a thrown error leaves it false so
+  // the next mount retries. Pure/idempotent; explicit currencies (e.g. USD-seeded
+  // Bambu rows) are never clobbered.
   useEffect(() => {
-    if (filamentCurrencyReconcileRan) return;
+    if (assetCurrencyReconcileRan) return;
     if (assets === undefined) return;  // wait for the first liveQuery emission
     let cancelled = false;
     (async () => {
@@ -128,18 +131,18 @@ export function useAssets() {
           address: { country: 'CA' },
         });
         if (cancelled) return;  // do NOT set flag — never wrote
-        const patches = reconcileFilamentCurrency(assets, profile.currency);
+        const patches = reconcileAssetCurrency(assets, profile.currency);
         if (cancelled) return;  // do NOT set flag — never wrote
         if (patches.length > 0) {
           await db.materials.bulkPut(patches);
         }
         // WR-01: mark only on full completion. Early `cancelled` returns leave
         // the flag false so a future mount retries.
-        filamentCurrencyReconcileRan = true;
+        assetCurrencyReconcileRan = true;
       } catch (err) {
         // Reconcile failures must NOT break the app — the read-layer null
         // tolerance already surfaces these rows. Flag stays false → next mount retries.
-        console.error('filamentCurrency reconcile failed:', err);
+        console.error('assetCurrency reconcile failed:', err);
       }
     })();
     return () => { cancelled = true; };

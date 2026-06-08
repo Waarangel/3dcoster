@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileFilamentCurrency } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from './backfill';
 import type { PrintJob, Sale, Customer, Quote, PrinterInstance, PrinterConfig, Material } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -792,17 +792,18 @@ describe('reconcileFixedCostsAtSave (Phase 22.1 DATA-07)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// reconcileFilamentCurrency — quick-260529-bg2 pure reconcile helper
+// reconcileAssetCurrency — pure reconcile helper
 //
-// Four cases asserting the contract:
+// Contract: stamp EVERY untagged asset (any category) with the user's profile
+// currency so it converts at display time instead of relabeling. Cases:
 //   1. null/undefined-currency filament → patched to the user currency (CAD)
-//   2. Explicit different currency (USD) → never clobbered, returns []
-//   3. Non-filament with null currency → untouched, returns []
-//   4. Already-patched filament → idempotent, returns []
+//   2. null/undefined-currency non-filament (packaging/tool) → ALSO patched (CAD)
+//   3. Explicit different currency (USD) → never clobbered, returns []
+//   4. Already-patched asset → idempotent, returns []
 //   + spread-copy isolation (output rows are not the input references)
 // ---------------------------------------------------------------------------
 
-describe('reconcileFilamentCurrency (quick-260529-bg2 reconcile)', () => {
+describe('reconcileAssetCurrency (asset-currency reconcile)', () => {
   function makeMat(overrides: Partial<Material>): Material {
     return {
       id: 'mat-1',
@@ -816,35 +817,39 @@ describe('reconcileFilamentCurrency (quick-260529-bg2 reconcile)', () => {
 
   it('patches a filament with null/undefined currency to the user currency (CAD)', () => {
     const mats = [makeMat({ id: 'm1', currency: undefined })];
-    const patched = reconcileFilamentCurrency(mats, 'CAD');
+    const patched = reconcileAssetCurrency(mats, 'CAD');
     expect(patched.length).toBe(1);
     expect(patched[0].currency).toBe('CAD');
   });
 
-  it('never clobbers an explicit currency (USD filament stays USD)', () => {
-    const mats = [makeMat({ id: 'm1', currency: 'USD' })];
-    const patched = reconcileFilamentCurrency(mats, 'CAD');
-    expect(patched.length).toBe(0);
+  it('patches non-filament assets too (packaging + tool with null currency)', () => {
+    const mats = [
+      makeMat({ id: 'm1', category: 'packaging', currency: undefined }),
+      makeMat({ id: 'm2', category: 'tool', currency: undefined }),
+    ];
+    const patched = reconcileAssetCurrency(mats, 'CAD');
+    expect(patched.length).toBe(2);
+    expect(patched.every(p => p.currency === 'CAD')).toBe(true);
   });
 
-  it('leaves non-filament rows untouched (consumable with null currency)', () => {
-    const mats = [makeMat({ id: 'm1', category: 'consumable', currency: undefined })];
-    const patched = reconcileFilamentCurrency(mats, 'CAD');
+  it('never clobbers an explicit currency (USD filament stays USD)', () => {
+    const mats = [makeMat({ id: 'm1', currency: 'USD' })];
+    const patched = reconcileAssetCurrency(mats, 'CAD');
     expect(patched.length).toBe(0);
   });
 
   it('is idempotent — rerunning on already-patched rows produces zero patches', () => {
-    const mats = [makeMat({ id: 'm1', currency: undefined })];
-    const firstPass = reconcileFilamentCurrency(mats, 'CAD');
+    const mats = [makeMat({ id: 'm1', category: 'packaging', currency: undefined })];
+    const firstPass = reconcileAssetCurrency(mats, 'CAD');
     expect(firstPass.length).toBe(1);
     const after = mats.map(m => firstPass.find(p => p.id === m.id) ?? m);
-    const secondPass = reconcileFilamentCurrency(after, 'CAD');
+    const secondPass = reconcileAssetCurrency(after, 'CAD');
     expect(secondPass.length).toBe(0);
   });
 
   it('returns spread copies, never the original input reference', () => {
     const original = makeMat({ id: 'm1', currency: undefined });
-    const patched = reconcileFilamentCurrency([original], 'CAD');
+    const patched = reconcileAssetCurrency([original], 'CAD');
     expect(patched[0]).not.toBe(original);  // new object identity
     expect(original.currency).toBeUndefined();  // input not mutated
   });

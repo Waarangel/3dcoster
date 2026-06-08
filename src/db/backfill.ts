@@ -279,31 +279,33 @@ export function reconcileQuoteCurrency(quotes: Quote[], currency: string): Quote
 }
 
 /**
- * reconcileFilamentCurrency — quick-260529-bg2 reconcile helper.
+ * reconcileAssetCurrency — heals already-saved assets whose `currency` is
+ * null/undefined by stamping them with the user's profile currency.
  *
- * Pure. Idempotent. No Dexie, no React, no IO. Heals already-saved filament
- * materials whose `currency` is null/undefined (added before the save-layer
- * fix wrote `currency`). The useAssets effect reads the persisted profile
- * currency, calls this helper to compute the patch set, then bulkPuts the
- * result. Extracted as a pure function so jsdom can exhaustively cover the
- * idempotency contract without fake-indexeddb (mirrors reconcileQuoteCurrency).
+ * Pure. Idempotent. No Dexie, no React, no IO. The useAssets effect reads the
+ * persisted profile currency, calls this helper to compute the patch set, then
+ * bulkPuts the result. Extracted as a pure function so jsdom can exhaustively
+ * cover the idempotency contract without fake-indexeddb.
  *
- * Filter: materials where category === 'filament' AND currency == null (loose,
- * matches both undefined and null). An explicit currency (e.g. the USD-seeded
- * Bambu rows) is NEVER clobbered — no FX rewrite, no false positives. Returns
- * ONLY the rows that need patching as spread copies (never the liveQuery cache
- * entry). Re-running on already-patched rows returns an empty array.
+ * An untagged asset (the built-in default supplies/tools/printers, plus any
+ * legacy row saved before the currency field existed) is treated as priced in
+ * the user's working currency: once stamped it becomes a concrete currency and
+ * converts correctly at display time. ALL categories are healed — not just
+ * filaments — because the display layer now converts every priced asset, so an
+ * untagged supply that only relabels (never converts) is a bug. An asset with an
+ * explicit currency (e.g. the USD-seeded Bambu rows) is NEVER clobbered — no FX
+ * rewrite, no false positives. Filter is loose `== null` (undefined or null).
+ * Returns ONLY the rows needing a patch as spread copies (never the liveQuery
+ * cache entry). Re-running on already-patched rows returns an empty array.
  *
  * Examples:
- *   reconcileFilamentCurrency([{ category: 'filament', currency: undefined }], 'CAD') → [{ ...row, currency: 'CAD' }]
- *   reconcileFilamentCurrency([{ category: 'filament', currency: 'USD' }], 'CAD') → []  // explicit currency untouched
- *   reconcileFilamentCurrency([{ category: 'consumable', currency: undefined }], 'CAD') → []  // non-filament untouched
- *   reconcileFilamentCurrency([{ category: 'filament', currency: 'CAD' }], 'CAD') → []  // already patched (idempotent)
+ *   reconcileAssetCurrency([{ category: 'packaging', currency: undefined }], 'CAD') → [{ ...row, currency: 'CAD' }]
+ *   reconcileAssetCurrency([{ category: 'filament', currency: 'USD' }], 'CAD') → []   // explicit currency untouched
+ *   reconcileAssetCurrency([{ category: 'tool', currency: 'CAD' }], 'CAD') → []       // already patched (idempotent)
  */
-export function reconcileFilamentCurrency(materials: Material[], currency: string): Material[] {
+export function reconcileAssetCurrency(materials: Material[], currency: string): Material[] {
   const out: Material[] = [];
   for (const m of materials) {
-    if (m.category !== 'filament') continue;
     if (m.currency != null) continue;
     out.push({ ...m, currency: currency as Currency });
   }
