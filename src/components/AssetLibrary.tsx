@@ -149,23 +149,51 @@ type AssetRowCallbacks = {
   fxTable: FxRateTable | null;
 };
 
-// Render a stored price in the user's currency. Converts from the asset's native
-// currency via the cached FX rate table; when no rate is available yet (offline,
-// before the first successful fetch) it honestly shows the native currency code
-// + amount rather than a guessed number. Currency is shown as an ISO code
-// because several currencies (CAD/USD/AUD…) share the "$" symbol — the code is
-// what makes "the user's stated currency" unambiguous.
-function displayPrice(
+// Convert a stored price into the user's currency for display. Returns the
+// formatted number plus the currency CODE to show — the profile currency
+// normally, or the asset's native currency when no rate is cached yet (offline,
+// before the first fetch), in which case the native amount is shown honestly
+// rather than a guessed number. The code is rendered separately and AFTER the
+// number (see PriceCell) so codes line up in a straight vertical column instead
+// of floating before each value. ISO code, not symbol — CAD/USD/AUD share "$".
+function convertForDisplay(
   amount: number,
   native: Currency | undefined,
   userCurrency: Currency,
   fxTable: FxRateTable | null,
   decimals: number,
-): string {
+): { value: string; code: Currency } {
   const from = native ?? userCurrency;
   const converted = convert(amount, from, userCurrency, fxTable);
-  if (converted === null) return `${from} ${amount.toFixed(decimals)}`;
-  return `${userCurrency} ${converted.toFixed(decimals)}`;
+  return converted === null
+    ? { value: amount.toFixed(decimals), code: from }
+    : { value: converted.toFixed(decimals), code: userCurrency };
+}
+
+// A price cell: right-aligned number with an optional `/unit` suffix and a muted
+// trailing currency code. Putting the code last keeps the codes aligned at the
+// cell's right edge so the column reads as a straight vertical, not a snake.
+function PriceCell({
+  amount,
+  native,
+  userCurrency,
+  fxTable,
+  decimals,
+  unit,
+}: {
+  amount: number;
+  native: Currency | undefined;
+  userCurrency: Currency;
+  fxTable: FxRateTable | null;
+  decimals: number;
+  unit?: string;
+}) {
+  const { value, code } = convertForDisplay(amount, native, userCurrency, fxTable, decimals);
+  return (
+    <>
+      {value}{unit ? `/${unit}` : ''} <span className="text-slate-500">{code}</span>
+    </>
+  );
 }
 
 type AssetRowPropsForList = {
@@ -254,13 +282,13 @@ const MobileCardItem = memo(function MobileCardItem({
           <div className="flex items-baseline justify-between mb-1">
             <span className="text-sm text-slate-400">Cost/Unit</span>
             <span className="text-base font-mono font-medium text-white">
-              {displayPrice(asset.costPerUnit ?? 0, asset.currency, userCurrency, fxTable, 3)}/{asset.unit}
+              <PriceCell amount={asset.costPerUnit ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={3} unit={asset.unit} />
             </span>
           </div>
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-slate-400">Package</span>
             <span className="text-sm font-mono text-slate-400">
-              {displayPrice(asset.packageCost ?? 0, asset.currency, userCurrency, fxTable, 2)}
+              <PriceCell amount={asset.packageCost ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
             </span>
           </div>
           {asset.lifespanUnits && (
@@ -414,10 +442,10 @@ const MaterialRow = memo(function MaterialRow({
         )}
       </div>
       <div role="cell" className="text-right font-mono">
-        {displayPrice(asset.costPerUnit ?? 0, asset.currency, userCurrency, fxTable, 3)}/{asset.unit}
+        <PriceCell amount={asset.costPerUnit ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={3} unit={asset.unit} />
       </div>
       <div role="cell" className="text-right font-mono text-slate-400">
-        {displayPrice(asset.packageCost ?? 0, asset.currency, userCurrency, fxTable, 2)}
+        <PriceCell amount={asset.packageCost ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
       </div>
       <div role="cell" className="text-right">
         <Button
