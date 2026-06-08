@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git *)",
+            "command": "cmd=$(jq -r '.tool_input.command // \"\"'); if printf '%s' \"$cmd\" | grep -Eq 'git tag v[0-9]|git push.*(--tags|v[0-9])'; then printf '%s' '{\"systemMessage\":\"⚠ Release gate (warn): run a code review of the diff (git diff <last-tag>..HEAD, e.g. /code-review) and clear CRITICAL/HIGH findings BEFORE tagging — build-green + tests is NOT a review. See .claude/CLAUDE.md Release Steps step 0.\",\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Release gate reminder: this command tags or pushes a release. Before it runs you should have done a code review of git diff <last-tag>..HEAD and cleared CRITICAL/HIGH findings. Build-green + passing tests is NOT a review. This is a non-blocking warning.\"}}'; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
