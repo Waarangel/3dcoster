@@ -29,6 +29,10 @@ const SLICER_LABELS: Record<string, string> = {
   unknown: 'Unknown Slicer',
 };
 
+// SEC: cap 3MF size at 200 MB to prevent zip-bomb OOM (a tiny ZIP can expand to
+// GB). 200 MB covers the largest real sliced 3MF files. Module scope = stable.
+const MAX_THREE_MF_BYTES = 200 * 1024 * 1024;
+
 export function GcodeImport({ assets, onImport }: GcodeImportProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -104,8 +108,6 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
   // small compressed blob. 200 MB covers the largest real-world sliced 3MF
   // files (Bambu multi-plate projects routinely run 50–100 MB) while keeping
   // a generous safety ceiling.
-  const MAX_THREE_MF_BYTES = 200 * 1024 * 1024;
-
   const processFile = useCallback(async (file: File) => {
     // Handle .3mf files (both .3mf and .gcode.3mf from Bambu Studio)
     if (file.name.toLowerCase().endsWith('.3mf')) {

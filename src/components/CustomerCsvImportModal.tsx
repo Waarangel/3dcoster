@@ -28,6 +28,10 @@ interface CustomerCsvImportModalProps {
 
 type Step = 'upload' | 'preview';
 
+// SEC: cap raw CSV size at 5 MB (zip-bomb / renamed-binary guard). Module scope
+// = stable identity, so the file handler's useCallback needs no dependency on it.
+const MAX_CSV_BYTES = 5 * 1024 * 1024;
+
 export function CustomerCsvImportModal({
   isOpen,
   existingCustomers,
@@ -62,8 +66,6 @@ export function CustomerCsvImportModal({
   // low-RAM devices. Customer CSVs at the scales we target (hundreds to
   // a few thousand rows) are well under this cap; users with larger
   // datasets are nudged to split into batches.
-  const MAX_CSV_BYTES = 5 * 1024 * 1024;
-
   const processFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.csv')) {
       setError('Please select a .csv file.');

@@ -271,7 +271,7 @@ function App() {
                 role="tab"
                 id={`tab-${tab.id}`}
                 aria-selected={activeTab === tab.id}
-                aria-controls={`tabpanel-${tab.id}`}
+                aria-controls="app-tabpanel"
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap min-h-[44px] flex items-center gap-1 ${
                   activeTab === tab.id
@@ -298,7 +298,7 @@ function App() {
       <main
         className="max-w-6xl mx-auto px-4 py-6"
         role="tabpanel"
-        id={`tabpanel-${activeTab}`}
+        id="app-tabpanel"
         aria-labelledby={`tab-${activeTab}`}
       >
         {activeTab === 'calculator' && (

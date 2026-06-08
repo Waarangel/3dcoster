@@ -178,7 +178,7 @@ export function SettingsModal({
               role="tab"
               id={`settings-tab-${tab.id}`}
               aria-selected={activeTab === tab.id}
-              aria-controls={`settings-panel-${tab.id}`}
+              aria-controls="settings-panel"
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex-1 px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center ${
                 activeTab === tab.id
@@ -192,7 +192,7 @@ export function SettingsModal({
         </div>
 
         {/* Content */}
-        <div className="p-4" role="tabpanel" id={`settings-panel-${activeTab}`} aria-labelledby={`settings-tab-${activeTab}`}>
+        <div className="p-4" role="tabpanel" id="settings-panel" aria-labelledby={`settings-tab-${activeTab}`}>
           {/* Costs & Rates Tab — all global cost inputs that feed job math */}
           {activeTab === 'costs' && (
             <div className="space-y-6">

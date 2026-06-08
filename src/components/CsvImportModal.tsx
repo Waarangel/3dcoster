@@ -19,6 +19,10 @@ interface CsvImportModalProps {
 
 type Step = 'upload' | 'preview';
 
+// SEC: cap raw CSV size at 5 MB — prevents a renamed Excel/binary file from
+// pulling a large blob into memory. Module scope = stable identity (no hook dep).
+const MAX_CSV_BYTES = 5 * 1024 * 1024;
+
 export function CsvImportModal({ isOpen, onClose, existingAssets, onImportAssets }: CsvImportModalProps) {
   const [step, setStep] = useState<Step>('upload');
   const [isDragOver, setIsDragOver] = useState(false);
@@ -43,10 +47,6 @@ export function CsvImportModal({ isOpen, onClose, existingAssets, onImportAssets
   }, [isOpen]);
 
   // Process uploaded CSV file
-  // SEC: cap raw CSV size at 5 MB to match CustomerCsvImportModal's guard —
-  // prevents a renamed Excel/binary file from pulling a large blob into memory.
-  const MAX_CSV_BYTES = 5 * 1024 * 1024;
-
   const processFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.csv')) {
       setError('Please select a .csv file');

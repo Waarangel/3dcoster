@@ -343,8 +343,7 @@ export function FilamentSelector({
                     onMouseEnter={handleSubMenuMouseEnter}
                     onMouseLeave={handleSubMenuMouseLeave}
                   >
-                    {getFilamentsForBrand(brand).map((filament, fIndex) => {
-                      const brandFilaments = getFilamentsForBrand(brand);
+                    {getFilamentsForBrand(brand).map((filament, fIndex, brandFilaments) => {
                       return (
                         // allow-raw-html: keyboard-accessible menu item — custom role/refs/keydown for menu nav
                         <button
