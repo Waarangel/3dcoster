@@ -185,6 +185,8 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 | 22 | Performance optimization | Free | 3 | 3 | 1.0 | Bundle splitting, virtualization. *Audit 2026-05-19: route lazy-loading done ([main.tsx:10-15](src/main.tsx:10)); remaining = `manualChunks` in vite.config and list virtualization for jobs/assets.* |
 | 23 | Unit tests for calcs | Free | 3 | 3 | 1.0 | Critical for confidence as features grow. *Audit 2026-05-19: vitest infra exists, one test ([threeMfParser.test.ts](src/utils/threeMfParser.test.ts)); remaining = tests for cost calculation logic in CostCalculator.* |
 | 24 | Accounting CSV export | Free | 2 | 2 | 1.0 | QBO/Wave format. Niche but straightforward. (See #12 for Schedule-C specifically.) |
+| 30 | Print troubleshooting helper | Free | 3 | 2 | 1.5 | Symptom → likely cause → fix (stringing, warping, layer shift, under-extrusion). Pure client-side knowledge base. Sticky + SEO. Pairs with #29. *(Source: Print3D Studios competitive analysis, 2026-06-08)* |
+| 29 | Filament guide / comparison | Free | 3 | 2.5 | 1.2 | Per-material traits, temps, recommended settings, "which filament for this job" — built on the filament + density data we already own. Print3D's version is only ~46 entries; easy to out-depth. *(Source: Print3D Studios competitive analysis, 2026-06-08)* |
 
 ### DO LATER — High effort or niche impact (Score <1.0)
 
@@ -194,6 +196,7 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 | 26 | Historical analytics | Free | 4 | 4 | 1.0 | Time-series data, charts, new DB schema. Big project. |
 | 27 | E2E tests | Free | 2 | 3 | 0.7 | Playwright/Cypress setup. Important but not user-facing. |
 | 28 | STL file analysis | Free | 3 | 5 | 0.6 | Requires 3D geometry parsing in browser. Complex. |
+| 31 | G-code analysis view | Free | 2 | 3 | 0.7 | Layer/toolpath/stat inspection on top of the existing G-code parser. We already parse for import; inspection is an extension but niche. *(Source: Print3D Studios competitive analysis, 2026-06-08)* |
 
 ### Free / Paid Line — Guiding Principle
 
@@ -312,6 +315,16 @@ These features enhance the core cost calculator and remain free forever.
 ### Material & Inventory (Free Tier)
 - [ ] **Material inventory tracking** - Track filament stock levels with low-stock alerts. Predict reorder timing based on usage velocity. *(Source: Competitor research, Feb 2026)*
 
+### Knowledge & Guidance (Free Tier)
+
+Closes in-lane gaps vs Print3D Studios while staying "for the person." Best shipped as a paired "Knowledge" surface — highest-fit, highest-SEO of the competitor gaps. *(Source: Print3D Studios competitive analysis, 2026-06-08)*
+
+- [ ] **Filament guide / comparison** - Per-material traits, print temps, recommended settings, pros/cons, and "which filament for this job." Built on the filament + density data already in the app. Print3D's guide is ~46 filaments; our Bambu catalog alone is 39 with full pricing — we can out-depth it easily.
+- [ ] **Print troubleshooting helper** - Symptom → likely cause → fix knowledge base (stringing, warping, layer shift, under-extrusion, adhesion). Pure client-side, no backend. Sticky and SEO-friendly; pairs naturally with the filament guide and the content blog.
+- [ ] **G-code analysis view** - Layer/toolpath/stat inspection on top of the existing G-code parser. Lower priority (niche) — we already parse G-code for import; this surfaces it.
+
+> **Out of scope (don't chase):** cloud slicer, file converters (SVG/DXF/STL→STEP), model/file library. Off-moat commodity utilities; file storage would also force a hosted/paid surface for no strategic gain. *(Print3D Studios competitive analysis, 2026-06-08)*
+
 ### Integrations (Free Tier)
 - [ ] **Slicer integration** - Pull data from PrusaSlicer, Bambu Studio, Cura
 - [ ] **Accounting export** - QuickBooks/Wave compatible CSV exports
@@ -374,6 +387,22 @@ These features enhance the core cost calculator and remain free forever.
 **Market Landscape (Feb 2026)**: 92 startups in 3D print management software (26 funded, 12 at Series A+). Most focus on printer management, not business management. Few have modern UX. Client portals are basic or nonexistent. The biggest gap is UX, not features — winning on design is a viable strategy. *(Source: Tracxn, competitor research)*
 
 **3DCoster's Unique Position**: No competitor starts from cost calculation and builds up. Everyone else starts from printer management (SimplyPrint, 3DPrinterOS) or order management (Layers, MTNEARZ). 3DCoster can offer quotes and invoices powered by REAL calculated costs — a defensible differentiator.
+
+**Print3D Studios (2026-06-08)**: Cloud-first "maker workspace + community + content + affiliate" ecosystem (12-surface feature stack, account-required). Breadth-first where we're depth-first. Their calculator is a subset of ours; their own social-proof numbers ("9+ models," "46+ filaments") reveal a mile-wide, inch-deep, early-stage product, and the whole product is behind a login wall (depth unverifiable; Order Management still "coming soon"). They are *ahead* of us on **go-to-market** — community (Discord), SEO content/blog, and affiliate-shop monetization — not on product depth. Three in-lane feature gaps worth closing (filament guide, troubleshooting helper, G-code analysis view, all Free). Off-moat features to ignore (cloud slicer, file converters, model library). Our paid differentiators (marketplace sync, real-cost quote widget, accounting, white-label) remain uncontested by this competitor. Full writeup: [docs/superpowers/ideas/2026-06-08-print3dstudios-competitive-analysis.md](superpowers/ideas/2026-06-08-print3dstudios-competitive-analysis.md).
+
+---
+
+## Growth / Go-To-Market
+
+> The biggest gap vs Print3D Studios is **not features — it's that they have a growth engine and we don't.** Our product is deeper; our go-to-market is thinner. These levers narrow the *perceived* gap and (for the affiliate shop) fund the free tier without a paywall. *(Source: Print3D Studios competitive analysis, 2026-06-08)*
+
+| Lever | Effort | Why it matters | Notes |
+|-------|--------|----------------|-------|
+| **Community (Discord)** | Low | A moat + acquisition + retention flywheel we completely lack; competitors lead with it | Start a Discord, link from app footer + landing; seed with changelog + feedback |
+| **Content / SEO blog** | Med (ongoing) | How makers *find* tools like this; we're invisible beyond `/changelog` | Maker guides (pricing, filament choice, troubleshooting) — feeds the free Knowledge features |
+| **Affiliate shop** | Low | **No-paywall revenue** that funds the free tier; ties to the filament library ("recommended filament/printers"); we currently have zero revenue | Near-term revenue experiment — independent of the paid-tier backend buildout |
+
+**Landing-page polish** (marketing surface only — the app is fine): bigger/bolder hero type, segment-based "choose your path" (sellers / beginners / fleets), visible social proof, a live dashboard data-viz mockup. *(Source: Print3D Studios competitive analysis, 2026-06-08)*
 
 ---
 
