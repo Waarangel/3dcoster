@@ -15,7 +15,13 @@ export default defineConfig(({ mode }) => ({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' (not 'autoUpdate'): a new deploy's service worker installs and
+      // WAITS rather than calling skipWaiting + purging the old precache out
+      // from under a live tab. That purge was what 404'd lazy route chunks
+      // mid-session and dumped users on the ErrorBoundary crash screen. The
+      // PwaUpdatePrompt component surfaces the waiting update as a dismissible
+      // banner; lazyWithRetry covers any residual stale-chunk fetch.
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: '3D Print Cost Calculator',

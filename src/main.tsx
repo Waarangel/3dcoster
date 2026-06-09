@@ -1,19 +1,23 @@
-import { StrictMode, Component, lazy, Suspense } from 'react'
+import { StrictMode, Component, Suspense } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.tsx'
+import { lazyWithRetry } from './utils/lazyWithRetry.ts'
+import { PwaUpdatePrompt } from './components/PwaUpdatePrompt.tsx'
 
-// Lazy load marketing pages (not needed for calculator startup)
-const LandingPage = lazy(() => import('./pages/LandingPage.tsx').then(m => ({ default: m.LandingPage })))
-const DownloadPage = lazy(() => import('./pages/DownloadPage.tsx').then(m => ({ default: m.DownloadPage })))
-const FeaturesPage = lazy(() => import('./pages/FeaturesPage.tsx').then(m => ({ default: m.FeaturesPage })))
-const RoadmapPage = lazy(() => import('./pages/RoadmapPage.tsx').then(m => ({ default: m.RoadmapPage })))
-const FeedbackPage = lazy(() => import('./pages/FeedbackPage.tsx').then(m => ({ default: m.FeedbackPage })))
-const FAQPage = lazy(() => import('./pages/FAQPage.tsx').then(m => ({ default: m.FAQPage })))
-const ChangelogPage = lazy(() => import('./pages/ChangelogPage.tsx').then(m => ({ default: m.ChangelogPage })))
+// Lazy load marketing pages (not needed for calculator startup).
+// lazyWithRetry auto-reloads once on a stale-chunk 404 after a redeploy,
+// instead of crashing into the ErrorBoundary below.
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage.tsx').then(m => ({ default: m.LandingPage })), 'LandingPage')
+const DownloadPage = lazyWithRetry(() => import('./pages/DownloadPage.tsx').then(m => ({ default: m.DownloadPage })), 'DownloadPage')
+const FeaturesPage = lazyWithRetry(() => import('./pages/FeaturesPage.tsx').then(m => ({ default: m.FeaturesPage })), 'FeaturesPage')
+const RoadmapPage = lazyWithRetry(() => import('./pages/RoadmapPage.tsx').then(m => ({ default: m.RoadmapPage })), 'RoadmapPage')
+const FeedbackPage = lazyWithRetry(() => import('./pages/FeedbackPage.tsx').then(m => ({ default: m.FeedbackPage })), 'FeedbackPage')
+const FAQPage = lazyWithRetry(() => import('./pages/FAQPage.tsx').then(m => ({ default: m.FAQPage })), 'FAQPage')
+const ChangelogPage = lazyWithRetry(() => import('./pages/ChangelogPage.tsx').then(m => ({ default: m.ChangelogPage })), 'ChangelogPage')
 
 // Page loading fallback
 function PageLoading() {
@@ -89,6 +93,9 @@ function Root() {
           )}
         </Routes>
       </Suspense>
+      {/* Web-only PWA update prompt. Desktop (Tauri) uses UpdateBanner instead,
+          so the service-worker hook never runs in the desktop build. */}
+      {!__IS_TAURI__ && <PwaUpdatePrompt />}
     </BrowserRouter>
   )
 }

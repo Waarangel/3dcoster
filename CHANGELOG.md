@@ -21,7 +21,8 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
-_Add the next release's user-facing changes here. Promote to a versioned section before tagging._
+### Fixed
+- **No more "Something went wrong" / "Reload App" crash screen.** After a new version was deployed, clicking a link in an already-open tab could crash the app and force a manual reload. The app now updates cleanly in the background and shows a small dismissible "new version available" prompt instead, and automatically recovers if it ever loads a stale page.
 
 ---
 
