@@ -35,22 +35,26 @@ export function FeaturesPage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-slate-700">
-                  <th className="text-left py-4 px-4 text-slate-400 font-medium">Feature</th>
-                  <th className="py-4 px-4 text-center bg-blue-500/5">
+                  <th className="text-left py-4 px-4 text-slate-400 font-medium align-top">Feature</th>
+                  <th className="py-4 px-4 text-center align-top bg-blue-500/5">
                     <div className="text-white font-semibold">3DCoster</div>
                     <div className="text-green-400 text-sm">Free</div>
                   </th>
-                  <th className="py-4 px-4 text-center">
+                  <th className="py-4 px-4 text-center align-top">
                     <div className="text-slate-300 font-medium">Prusa Calculator</div>
                     <div className="text-slate-500 text-sm">Free</div>
                   </th>
-                  <th className="py-4 px-4 text-center">
+                  <th className="py-4 px-4 text-center align-top">
                     <div className="text-slate-300 font-medium">Calc3dprint</div>
                     <div className="text-slate-500 text-sm">Free</div>
                   </th>
-                  <th className="py-4 px-4 text-center">
+                  <th className="py-4 px-4 text-center align-top">
                     <div className="text-slate-300 font-medium">LayerMath</div>
                     <div className="text-slate-500 text-sm">Free + £5-9/mo</div>
+                  </th>
+                  <th className="py-4 px-4 text-center align-top">
+                    <div className="text-slate-300 font-medium">3DPrintForce</div>
+                    <div className="text-slate-500 text-sm">Free + $12.50-39/mo</div>
                   </th>
                 </tr>
               </thead>
@@ -58,13 +62,14 @@ export function FeaturesPage() {
 
                 {/* ───── Section: Cost calculation ───── */}
                 <tr className="bg-slate-800/40 border-b border-slate-700">
-                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                  <td colSpan={6} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
                     Cost calculation
                   </td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Material cost calculation</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
@@ -75,6 +80,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (Pro)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes <span className="text-xs text-slate-500">(paid)</span></td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Slicer file import (G-code / 3MF, multi-slicer)</td>
@@ -82,10 +88,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">Limited</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (G-code)</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (G-code)</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Electricity costs</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
@@ -96,10 +104,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Nozzle &amp; parts wear</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
@@ -110,10 +120,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Labor time tracking (prep + post-processing)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
@@ -124,6 +136,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (5)</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (5)</td>
+                  <td className="py-4 px-4 text-center text-slate-500">—</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Break-even analysis</td>
@@ -131,11 +144,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">—</td>
                 </tr>
 
                 {/* ───── Section: Sales &amp; business management ───── */}
                 <tr className="bg-slate-800/40 border-b border-slate-700">
-                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                  <td colSpan={6} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
                     Sales &amp; business management
                   </td>
                 </tr>
@@ -145,6 +159,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Save jobs with sales history per job</td>
@@ -152,6 +167,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited (quote storage)</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited (SKU manager, Pro)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Marketplace fees (Etsy / eBay / Amazon Handmade)</td>
@@ -159,6 +175,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited (Etsy)</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (Etsy/eBay/Amazon)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Live Etsy order sync (90-day API import)</td>
@@ -166,11 +183,13 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (£5/mo)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes <span className="text-xs text-slate-500">(paid)</span></td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Shipping management (8 carriers + local delivery)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Limited (cost field only)</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited (cost field only)</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited (cost field only)</td>
                 </tr>
@@ -180,6 +199,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (Pro)</td>
+                  <td className="py-4 px-4 text-center text-slate-500">—</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Editable tags + free-text search across jobs</td>
@@ -187,11 +207,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">—</td>
                 </tr>
 
                 {/* ───── Section: Quotes &amp; compliance ───── */}
                 <tr className="bg-slate-800/40 border-b border-slate-700">
-                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                  <td colSpan={6} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
                     Quotes &amp; compliance
                   </td>
                 </tr>
@@ -201,10 +222,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">Limited (PDF export, no auto-#)</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Quote &rarr; Sale conversion (with status tracking)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
@@ -215,11 +238,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
 
                 {/* ───── Section: Platform &amp; access ───── */}
                 <tr className="bg-slate-800/40 border-b border-slate-700">
-                  <td colSpan={5} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
+                  <td colSpan={6} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-blue-400">
                     Platform &amp; access
                   </td>
                 </tr>
@@ -229,6 +253,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (Pro)</td>
+                  <td className="py-4 px-4 text-center text-green-400">Yes <span className="text-xs text-slate-500">(paid)</span></td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Works offline (PWA + IndexedDB)</td>
@@ -236,10 +261,12 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">Web only</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes (local parsing)</td>
                   <td className="py-4 px-4 text-center text-slate-500">Web only</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Web only</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">Desktop app (Windows + macOS)</td>
                   <td className="py-4 px-4 text-center text-green-400 bg-blue-500/5">Yes</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
@@ -250,6 +277,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
                   <td className="py-4 px-4 text-center text-slate-500">No</td>
+                  <td className="py-4 px-4 text-center text-slate-500">No</td>
                 </tr>
                 <tr className="border-b border-slate-800">
                   <td className="py-4 px-4 text-slate-300">No account required</td>
@@ -257,6 +285,7 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-green-400">Yes</td>
                   <td className="py-4 px-4 text-center text-slate-500">Free: yes / Paid: no</td>
+                  <td className="py-4 px-4 text-center text-slate-500">Calc: yes / Paid: no</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 text-slate-300 font-medium">Price</td>
@@ -264,16 +293,18 @@ export function FeaturesPage() {
                   <td className="py-4 px-4 text-center text-slate-400">Free</td>
                   <td className="py-4 px-4 text-center text-slate-400">Free</td>
                   <td className="py-4 px-4 text-center text-slate-400">Free / £5 / £9 mo</td>
+                  <td className="py-4 px-4 text-center text-slate-400">Free calc / $12.50-39 mo</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
           <p className="text-xs text-slate-500 mt-4 text-center">
-            Competitor feature availability checked May 2026 against each tool's public pricing
+            Competitor feature availability checked June 2026 against each tool's public pricing
             and features pages. "Limited" indicates partial coverage (e.g., the field is collected
-            but not woven through a full workflow). "(Pro)" indicates a feature gated behind
-            LayerMath's £9/mo Pro tier; "(£5/mo)" indicates LayerMath's Etsy Seller tier.
+            but not woven through a full workflow). "—" means the tool's public pages don't state
+            support either way. "(paid)" / "(Pro)" indicate features behind a paid tier
+            (LayerMath £5-9/mo; 3DPrintForce Starter/Growth, $12.50-39/mo).
           </p>
         </div>
       </section>

@@ -10,6 +10,7 @@ import App from './App.tsx'
 const LandingPage = lazy(() => import('./pages/LandingPage.tsx').then(m => ({ default: m.LandingPage })))
 const DownloadPage = lazy(() => import('./pages/DownloadPage.tsx').then(m => ({ default: m.DownloadPage })))
 const FeaturesPage = lazy(() => import('./pages/FeaturesPage.tsx').then(m => ({ default: m.FeaturesPage })))
+const RoadmapPage = lazy(() => import('./pages/RoadmapPage.tsx').then(m => ({ default: m.RoadmapPage })))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage.tsx').then(m => ({ default: m.FeedbackPage })))
 const FAQPage = lazy(() => import('./pages/FAQPage.tsx').then(m => ({ default: m.FAQPage })))
 const ChangelogPage = lazy(() => import('./pages/ChangelogPage.tsx').then(m => ({ default: m.ChangelogPage })))
@@ -80,6 +81,7 @@ function Root() {
               <Route path="/app" element={<App />} />
               <Route path="/download" element={<DownloadPage />} />
               <Route path="/features" element={<FeaturesPage />} />
+              <Route path="/roadmap" element={<RoadmapPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
