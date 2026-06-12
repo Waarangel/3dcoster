@@ -15,6 +15,7 @@ export const featureReleases: Record<string, Date> = {
   'search-jobs': new Date('2026-05-24'),
   'export-jobs-sales': new Date('2026-06-12'),
   'export-assets': new Date('2026-06-12'),
+  'jobs-summary-totals': new Date('2026-06-12'),
   // Add new features here with their release date
 };
 

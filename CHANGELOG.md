@@ -21,6 +21,9 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Added
+- **Summary totals on My Jobs.** A new bar above the jobs list shows your totals across all jobs at a glance: net revenue (after marketplace fees), profit, filament used (switches to kg past 1000 g), and total print time. Amounts recorded in other currencies are converted to your display currency using daily exchange rates; if a rate isn't available yet, the bar shows "—" instead of a misleading number.
+
 ### Changed
 - **Quote PDFs and update links now use 3dcoster.com.** The footer on customer-facing PDF quotes and the desktop "update available" download link point to the new home at [3dcoster.com](https://3dcoster.com) instead of the old 3dcoster.vercel.app address (which keeps working).
 

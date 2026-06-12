@@ -14,6 +14,9 @@ import { RecordSaleModal } from './RecordSaleModal';
 import { SaleRow } from './SaleRow';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
+import type { FxRateTable } from '../utils/fxConvert';
+import { computeJobFixedCosts, computeJobsAggregates } from '../utils/jobsAggregates';
+import { JobsSummaryBar } from './JobsSummaryBar';
 import { downloadCsv } from '../utils/csvHelpers';
 import { generateJobsExportCsv, generateSalesExportCsv, buildExportFilename } from '../utils/jobsExport';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
@@ -27,6 +30,8 @@ interface JobsManagerProps {
   shippingConfig: ShippingConfig;
   userCurrency: Currency;
   userProfile: UserProfile;
+  /** Cached USD-based FX table for display-time conversion of the summary totals (null until first fetch). */
+  fxTable: FxRateTable | null;
   onDeleteJob: (id: string) => Promise<void>;
   onEditJob: (job: PrintJob) => void;
   onSwitchTab: (tab: 'calculator' | 'jobs' | 'materials' | 'settings') => void;
@@ -72,10 +77,7 @@ export function computeBreakEvenInfo(
   // is true, the model fee is amortized into costPerUnit and excluded from
   // fixed-cost recovery. Without this, per-unit-licensed jobs show pill
   // breakEvenCopies higher than the Calculator widget for the same job.
-  const fixedModelCost = job.modelCostPerUnit ? 0 : job.modelCost;
-  const fixedNumerator = fixedModelCost
-    + (job.fixedCostsAtSave?.depreciation ?? 0)
-    + (job.fixedCostsAtSave?.nozzleWear ?? 0);
+  const fixedNumerator = computeJobFixedCosts(job);
   // WR-04: normalize non-finite break-even results to null so the UI can
   // render a "cannot be computed" fallback instead of leaking 'Infinity' /
   // 'NaN' into copy.
@@ -960,7 +962,7 @@ function TagIcon(props: SVGProps<SVGSVGElement>) {
 // onto the inline add-tag field without duplicating the literal string.
 export const ADD_TAG_PLACEHOLDER = 'trending, popular, out of date';
 
-export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, fxTable, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   // Print Quote modal state (plan 16-10 + D-27). Either:
   //   - { job, mode: 'create' }  → PrintQuoteModal renders in create mode
@@ -1070,6 +1072,13 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const breakEvenMap = useMemo(
     () => new Map(searchedJobs.map((j) => [j.id, computeBreakEvenInfo(j, salesByJob)])),
     [searchedJobs, salesByJob],
+  );
+
+  // Summary totals aggregate ALL jobs (not the search-filtered set) — the bar
+  // answers "how is my whole print business doing", independent of the filter.
+  const aggregates = useMemo(
+    () => computeJobsAggregates(jobs, salesByJob, userCurrency, fxTable),
+    [jobs, salesByJob, userCurrency, fxTable],
   );
 
   // Close the Record Sale modal and clear mode-selecting state. The modal's
@@ -1350,6 +1359,16 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
 
   return (
     <div className="space-y-6">
+      {/* Summary totals bar — hidden while loading and on the empty state
+          (nothing to total). NewBadge per project rule: absolute overlay on a
+          relative host, never an inline sibling that consumes layout width. */}
+      {!isLoading && jobs.length > 0 && (
+        <div className="relative">
+          <JobsSummaryBar aggregates={aggregates} userCurrency={userCurrency} />
+          <NewBadge feature="jobs-summary-totals" className="absolute -top-1 -right-1 pointer-events-none" />
+        </div>
+      )}
+
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h2 className="text-lg font-semibold text-white">My Print Jobs</h2>

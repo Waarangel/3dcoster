@@ -328,6 +328,7 @@ function App() {
             shippingConfig={shippingConfig}
             userCurrency={userProfile.currency}
             userProfile={userProfile}
+            fxTable={fxTable}
             onDeleteJob={deleteJob}
             onEditJob={handleEditJob}
             onSwitchTab={setActiveTab}

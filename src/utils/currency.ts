@@ -37,8 +37,11 @@ export const CURRENCY_CONFIG: Record<Currency, {
 export function formatCurrency(amount: number, currency: Currency): string {
   const config = CURRENCY_CONFIG[currency];
   if (!config) return `$${amount.toFixed(2)}`; // Fallback for unknown currency
-  const formatted = amount.toFixed(config.decimalPlaces);
-  return `${config.symbol}${formatted}`;
+  // Sign before symbol: "-$15.50", never "$-15.50". A value that rounds to
+  // zero at the currency's precision (e.g. -0.001) must not show a stray "-".
+  const formatted = Math.abs(amount).toFixed(config.decimalPlaces);
+  const sign = amount < 0 && Number(formatted) !== 0 ? '-' : '';
+  return `${sign}${config.symbol}${formatted}`;
 }
 
 // Get just the symbol for a currency

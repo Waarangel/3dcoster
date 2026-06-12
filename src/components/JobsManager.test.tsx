@@ -64,7 +64,14 @@ vi.mock('../hooks/useDatabase', () => ({
 const dbJobsPutSpy = vi.fn<(job: PrintJob) => Promise<void>>().mockResolvedValue();
 vi.mock('../db/database', () => ({ db: { jobs: { put: dbJobsPutSpy } } }));
 
-const { OrdersQuoteRows, JobCard, ADD_TAG_PLACEHOLDER, computeBreakEvenInfo } = await import('./JobsManager');
+const {
+  OrdersQuoteRows,
+  JobCard,
+  ADD_TAG_PLACEHOLDER,
+  computeBreakEvenInfo,
+} = await import('./JobsManager');
+const { JobsSummaryBar, FX_UNAVAILABLE_TITLE } = await import('./JobsSummaryBar');
+const { computeJobsAggregates, formatFilament, formatHours } = await import('../utils/jobsAggregates');
 const { SaleFromQuoteSubtext } = await import('./SaleRow');
 
 function makeQuote(overrides: Partial<Quote> = {}): Quote {
@@ -912,5 +919,298 @@ describe('PERF-08 — break-even formula round-trip (Phase 22.1)', () => {
     });
     const info = computeBreakEvenInfo(job, new Map<string, Sale[]>());
     expect(info.breakEvenCopies).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Jobs summary totals bar — aggregates across ALL jobs (My Jobs tab header).
+//
+// computeJobsAggregates must derive profit consistently with
+// computeBreakEvenInfo's cost model (fixedCostsAtSave snapshot + CR-02
+// modelCostPerUnit exclusion) — no third formula. Money fields live in
+// per-record snapshot currencies, so totals convert to the user's display
+// currency via utils/fxConvert.convert; a missing rate yields null (UI shows
+// "—"), never a raw cross-currency sum.
+// ---------------------------------------------------------------------------
+
+function makeSale(overrides: Partial<Sale> = {}): Sale {
+  return {
+    id: 'sale-' + Math.random().toString(36).slice(2, 9),
+    jobId: 'job-be-1',
+    quantity: 1,
+    unitPrice: 50,
+    totalRevenue: 50,
+    soldAt: new Date('2026-06-01T00:00:00Z'),
+    ...overrides,
+  };
+}
+
+function salesMap(...sales: Sale[]): Map<string, Sale[]> {
+  const map = new Map<string, Sale[]>();
+  for (const s of sales) {
+    const list = map.get(s.jobId);
+    if (list) list.push(s);
+    else map.set(s.jobId, [s]);
+  }
+  return map;
+}
+
+describe('computeJobsAggregates — single-currency totals', () => {
+  it('sums net revenue (totalRevenue - marketplaceFee), profit, grams x copiesSold, hours x copiesSold across jobs', () => {
+    const jobA = makeJob({
+      id: 'job-a',
+      costPerUnit: 10,
+      copiesSold: 2,
+      modelCost: 20,
+      fixedCostsAtSave: undefined,
+      filaments: [{ filamentId: 'f1', grams: 50 }],
+      printTimeHours: 2,
+      currency: 'USD',
+    });
+    const jobB = makeJob({
+      id: 'job-b',
+      costPerUnit: 5,
+      copiesSold: 0,
+      modelCost: 0,
+      fixedCostsAtSave: undefined,
+      filaments: [{ filamentId: 'f1', grams: 100 }],
+      printTimeHours: 3,
+      currency: 'USD',
+    });
+    const sale = makeSale({ jobId: 'job-a', totalRevenue: 60, marketplaceFee: 5, currency: 'USD' });
+
+    const agg = computeJobsAggregates([jobA, jobB], salesMap(sale), 'USD', null);
+
+    // revenue: 60 - 5 = 55
+    expect(agg.totalRevenue).toBe(55);
+    // profit: 55 - (10*2 + 20) = 15; job-b contributes 0 cost (0 copies, no fixed costs)
+    expect(agg.totalProfit).toBe(15);
+    // grams: 50*2 + 100*0 = 100
+    expect(agg.totalGrams).toBe(100);
+    // hours: 2*2 + 3*0 = 4
+    expect(agg.totalHours).toBe(4);
+  });
+
+  it('an unsold job with fixed costs drags profit negative (break-even cost model)', () => {
+    const job = makeJob({
+      id: 'job-unsold',
+      costPerUnit: 10,
+      copiesSold: 0,
+      modelCost: 25,
+      fixedCostsAtSave: undefined,
+      filaments: [],
+      printTimeHours: 1,
+      currency: 'USD',
+    });
+    const agg = computeJobsAggregates([job], new Map(), 'USD', null);
+    expect(agg.totalRevenue).toBe(0);
+    expect(agg.totalProfit).toBe(-25);
+  });
+
+  it('treats a missing marketplaceFee as 0', () => {
+    const job = makeJob({ id: 'job-a', costPerUnit: 0, copiesSold: 1, modelCost: 0, filaments: [], currency: 'USD' });
+    const sale = makeSale({ jobId: 'job-a', totalRevenue: 40, marketplaceFee: undefined, currency: 'USD' });
+    const agg = computeJobsAggregates([job], salesMap(sale), 'USD', null);
+    expect(agg.totalRevenue).toBe(40);
+  });
+});
+
+describe('computeJobsAggregates — cost model consistency with computeBreakEvenInfo', () => {
+  it('includes fixedCostsAtSave depreciation + nozzleWear in job cost (Phase 22.1 D-01)', () => {
+    const job = makeJob({
+      id: 'job-snap',
+      costPerUnit: 10,
+      copiesSold: 1,
+      modelCost: 0,
+      fixedCostsAtSave: { depreciation: 20, nozzleWear: 5 },
+      filaments: [],
+      currency: 'USD',
+    });
+    const sale = makeSale({ jobId: 'job-snap', totalRevenue: 50, currency: 'USD' });
+    const agg = computeJobsAggregates([job], salesMap(sale), 'USD', null);
+    // 50 - (10*1 + 25) = 15
+    expect(agg.totalProfit).toBe(15);
+  });
+
+  it('excludes modelCost from fixed costs when modelCostPerUnit=true (CR-02 mirror)', () => {
+    const job = makeJob({
+      id: 'job-lic',
+      costPerUnit: 10,
+      copiesSold: 1,
+      modelCost: 100,
+      modelCostPerUnit: true,
+      fixedCostsAtSave: { depreciation: 0, nozzleWear: 0 },
+      filaments: [],
+      currency: 'USD',
+    });
+    const sale = makeSale({ jobId: 'job-lic', totalRevenue: 50, currency: 'USD' });
+    const agg = computeJobsAggregates([job], salesMap(sale), 'USD', null);
+    // model fee is amortized into costPerUnit, NOT fixed recovery: 50 - 10 = 40
+    expect(agg.totalProfit).toBe(40);
+  });
+});
+
+describe('computeJobsAggregates — display-time currency conversion', () => {
+  // USD-based table: 1 USD = 0.5 EUR → 1 EUR = 2 USD
+  const table = { base: 'USD' as const, rates: { EUR: 0.5 }, date: '2026-06-12' };
+
+  it('converts per-record snapshot currencies into the user currency via the rate table', () => {
+    const job = makeJob({
+      id: 'job-eur',
+      costPerUnit: 10,
+      copiesSold: 1,
+      modelCost: 0,
+      fixedCostsAtSave: undefined,
+      filaments: [],
+      currency: 'EUR',
+    });
+    const sale = makeSale({ jobId: 'job-eur', totalRevenue: 30, currency: 'EUR' });
+    const agg = computeJobsAggregates([job], salesMap(sale), 'USD', table);
+    // 30 EUR = 60 USD revenue; cost 10 EUR = 20 USD → profit 40 USD
+    expect(agg.totalRevenue).toBeCloseTo(60, 10);
+    expect(agg.totalProfit).toBeCloseTo(40, 10);
+  });
+
+  it('returns null money totals (never a wrong number) when a record currency has no rate; grams/hours still computed', () => {
+    const job = makeJob({
+      id: 'job-zar',
+      costPerUnit: 10,
+      copiesSold: 2,
+      modelCost: 0,
+      filaments: [{ filamentId: 'f1', grams: 10 }],
+      printTimeHours: 1.5,
+      currency: 'ZAR',
+    });
+    const sale = makeSale({ jobId: 'job-zar', totalRevenue: 100, currency: 'ZAR' });
+    const agg = computeJobsAggregates([job], salesMap(sale), 'USD', table);
+    expect(agg.totalRevenue).toBeNull();
+    expect(agg.totalProfit).toBeNull();
+    expect(agg.totalGrams).toBe(20);
+    expect(agg.totalHours).toBe(3);
+  });
+
+  it('does not leak a partially-converted job revenue into the totals when a later sale fails conversion', () => {
+    // Job A fully converts; job B's sale currency (ZAR) has no rate. The
+    // partial jobNetRevenue accumulated before the inner-loop break must be
+    // discarded — money totals null, currency-free totals still complete.
+    const jobA = makeJob({
+      id: 'job-ok',
+      costPerUnit: 10,
+      copiesSold: 1,
+      modelCost: 0,
+      filaments: [{ filamentId: 'f1', grams: 10 }],
+      printTimeHours: 1,
+      currency: 'USD',
+    });
+    const jobB = makeJob({
+      id: 'job-bad-sale',
+      costPerUnit: 10,
+      copiesSold: 2,
+      modelCost: 0,
+      filaments: [{ filamentId: 'f1', grams: 10 }],
+      printTimeHours: 1,
+      currency: 'EUR', // job currency IS convertible — only the sale's isn't
+    });
+    const saleOk = makeSale({ jobId: 'job-ok', totalRevenue: 50, currency: 'USD' });
+    const saleEur = makeSale({ jobId: 'job-bad-sale', totalRevenue: 20, currency: 'EUR' });
+    const saleZar = makeSale({ jobId: 'job-bad-sale', totalRevenue: 100, currency: 'ZAR' });
+    const agg = computeJobsAggregates([jobA, jobB], salesMap(saleOk, saleEur, saleZar), 'USD', table);
+    expect(agg.totalRevenue).toBeNull();
+    expect(agg.totalProfit).toBeNull();
+    expect(agg.totalGrams).toBe(30);
+    expect(agg.totalHours).toBe(3);
+  });
+
+  it('falls back to the user currency for legacy records with no snapshot currency (identity, no table needed)', () => {
+    const job = makeJob({
+      id: 'job-legacy',
+      costPerUnit: 10,
+      copiesSold: 1,
+      modelCost: 0,
+      filaments: [],
+      currency: undefined,
+    });
+    const sale = makeSale({ jobId: 'job-legacy', totalRevenue: 25, currency: undefined });
+    const agg = computeJobsAggregates([job], salesMap(sale), 'CAD', null);
+    expect(agg.totalRevenue).toBe(25);
+    expect(agg.totalProfit).toBe(15);
+  });
+});
+
+describe('formatFilament / formatHours', () => {
+  it('shows grams below 1000 and kg at/above 1000', () => {
+    expect(formatFilament(0)).toBe('0 g');
+    expect(formatFilament(999)).toBe('999 g');
+    expect(formatFilament(1000)).toBe('1.00 kg');
+    expect(formatFilament(1500)).toBe('1.50 kg');
+  });
+
+  it('never displays "1000 g" — values that round up to 1000 switch to kg', () => {
+    // 999.5 < 1000 but Math.round would render "1000 g"; the display rule is
+    // keyed on what the user SEES (mirrors the formatHours 99.96 guard).
+    expect(formatFilament(999.5)).toBe('1.00 kg');
+    expect(formatFilament(999.4)).toBe('999 g');
+  });
+
+  it('shows one decimal under 100h and whole hours from 100h', () => {
+    expect(formatHours(5)).toBe('5.0');
+    expect(formatHours(99.94)).toBe('99.9');
+    expect(formatHours(99.95)).toBe('100');
+    expect(formatHours(150)).toBe('150');
+  });
+
+  it('never displays "100.0" — values that round up to 100.0 switch to whole hours', () => {
+    // 99.96 < 100 but toFixed(1) would render "100.0"; the display rule is
+    // keyed on what the user SEES, so this must render as "100".
+    expect(formatHours(99.96)).toBe('100');
+  });
+});
+
+describe('JobsSummaryBar — rendering', () => {
+  it('renders all four totals formatted in the user currency', () => {
+    act(() => {
+      root!.render(
+        <JobsSummaryBar
+          aggregates={{ totalRevenue: 55, totalProfit: 15.5, totalGrams: 1500, totalHours: 4 }}
+          userCurrency="USD"
+        />,
+      );
+    });
+    const text = container!.textContent ?? '';
+    expect(text).toContain('Total Revenue');
+    expect(text).toContain('Total Profit');
+    expect(text).toContain('Filament Used');
+    expect(text).toContain('Print Time');
+    expect(text).toContain('$55.00');
+    expect(text).toContain('$15.50');
+    expect(text).toContain('1.50 kg');
+    expect(text).toContain('4.0h');
+  });
+
+  it('null money totals render an em dash with a screen-reader explanation, while grams/hours still show', () => {
+    act(() => {
+      root!.render(
+        <JobsSummaryBar
+          aggregates={{ totalRevenue: null, totalProfit: null, totalGrams: 100, totalHours: 2 }}
+          userCurrency="USD"
+        />,
+      );
+    });
+    // The explanation must be programmatically exposed (sr-only text), not
+    // hidden in a mouse-only title attribute — WCAG 1.3.1. One per null total.
+    const srExplanations = Array.from(container!.querySelectorAll('.sr-only')).filter(
+      (el) => (el.textContent ?? '').includes(FX_UNAVAILABLE_TITLE),
+    );
+    expect(srExplanations).toHaveLength(2);
+    // The visible dash stays for sighted users (with the tooltip as a bonus),
+    // but is hidden from AT so "dash" isn't announced without context.
+    const dashes = Array.from(container!.querySelectorAll('[aria-hidden="true"]')).filter(
+      (el) => (el.textContent ?? '').trim() === '—',
+    );
+    expect(dashes).toHaveLength(2);
+    const text = container!.textContent ?? '';
+    expect(text).toContain('100 g');
+    expect(text).toContain('2.0h');
+    expect(text).not.toContain('$');
   });
 });
