@@ -135,6 +135,7 @@ When releasing a new version, update ALL FOUR artifacts:
    - macOS Apple Silicon: `_aarch64.dmg`
    - macOS Intel: `_x64.dmg`
 7. Release published with all artifacts AND with the CHANGELOG.md section as the body
+8. `discord-notify.yml` posts the release notes to the community Discord automatically when the release publishes (requires the `DISCORD_RELEASE_WEBHOOK` repo secret — a Discord channel webhook URL; missing secret = soft-gate warning, never blocks). Retroactive/manual posts: Actions → "Discord release notification" → Run workflow with the tag, or `gh workflow run discord-notify.yml -f tag=vX.Y.Z`
 
 ### Why this matters
 Earlier releases (v1.2.3, v1.2.4, v1.3.0, v1.3.1) shipped with only "See the [changelog](commits/...) for details" as the release body because the workflow had no source of detailed notes. Result: the `/changelog` page on the marketing site looked progressively emptier as the project matured. The CHANGELOG.md + extract-script + soft-warning system was added 2026-05-28 to prevent that pattern from recurring.

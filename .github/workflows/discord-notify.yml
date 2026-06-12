@@ -1,0 +1,71 @@
+name: Discord release notification
+
+# Posts the CHANGELOG.md release notes to the community Discord whenever a
+# GitHub release is published (fired by release.yml's tauri-action), and on
+# manual dispatch for retroactive posts.
+#
+# Requires the DISCORD_RELEASE_WEBHOOK repository secret — a Discord channel
+# webhook URL (channel → Edit → Integrations → Webhooks). Missing secret is a
+# soft gate: the job warns and exits green, mirroring the changelog-extraction
+# soft gate in release.yml.
+#
+# Timing note: the `published` event fires when tauri-action first creates the
+# release, which can be minutes before all three platform assets finish
+# uploading. The post links to the release page rather than embedding asset
+# links, so early arrivals just see assets appear shortly after.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to announce (e.g. v1.5.0)'
+        required: true
+        type: string
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Post release notes to Discord
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::warning::DISCORD_RELEASE_WEBHOOK secret not set — skipping Discord changelog post."
+            exit 0
+          fi
+
+          NOTES="$(node scripts/extract-changelog.cjs "$TAG")"
+
+          # Discord-ify the notes: drop the Download section (the embed links
+          # to the release page instead), drop the "What's New" heading (the
+          # embed title covers it), and convert ### headers to bold since
+          # Discord embeds don't render markdown headers.
+          BODY="$(printf '%s\n' "$NOTES" \
+            | sed '/^## Download$/,$d' \
+            | sed "s/^## What's New\$//" \
+            | sed 's/^---$//' \
+            | sed -E 's/^### (.*)$/**\1**/' \
+            | head -c 3900)"
+
+          # Embed description hard limit is 4096 chars; 3900 leaves headroom.
+          jq -n \
+            --arg title "3DCoster $TAG is out" \
+            --arg desc "$BODY" \
+            --arg url "https://github.com/$REPO/releases/tag/$TAG" \
+            '{embeds: [{title: $title, description: $desc, url: $url, color: 3447003}]}' \
+          | curl -sf -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK" \
+            && echo "Posted $TAG release notes to Discord." \
+            || echo "::warning::Discord post failed (webhook rejected or unreachable) — release is unaffected."
