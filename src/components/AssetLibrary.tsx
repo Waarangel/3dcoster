@@ -479,6 +479,11 @@ const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurren
   <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} />
 );
 
+const SortIndicator = ({ field, sortField, sortDirection }: { field: string; sortField: string; sortDirection: 'asc' | 'desc' }) => {
+  if (sortField !== field) return null;
+  return <span className="ml-1 text-[0.6em] align-middle">{sortDirection === 'asc' ? '▲' : '▼'}</span>;
+};
+
 export function AssetLibrary({
   assets,
   isLoading,
@@ -836,11 +841,6 @@ export function AssetLibrary({
     }
   }, [exportableAssets, exportScope, isExporting]);
 
-  const SortIndicator = ({ field }: { field: string }) => {
-    if (sortField !== field) return null;
-    return <span className="ml-1 text-[0.6em] align-middle">{sortDirection === 'asc' ? '▲' : '▼'}</span>;
-  };
-
   const sortHeaderClass = 'pb-2 font-medium cursor-pointer hover:text-slate-200 transition-colors select-none';
 
   // Dynamic row-height caches (CR-02 fix). Numeric rowHeight clipped rows
@@ -862,7 +862,7 @@ export function AssetLibrary({
   return (
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
       {loadError && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-3">
+        <div role="alert" className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-3">
           {loadError}
         </div>
       )}
@@ -878,10 +878,10 @@ export function AssetLibrary({
                 className="relative flex-1 sm:flex-none gap-1.5"
                 title="Import assets from CSV"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                <span className="hidden sm:inline">Import CSV</span>
+                <span className="sr-only sm:not-sr-only">Import CSV</span>
               </Button>
               {assets.length > 0 && (
                 // NewBadge: absolute overlay on the relative button host —
@@ -930,7 +930,7 @@ export function AssetLibrary({
         <div role="alert" className="text-sm text-red-400 mb-3">{exportError}</div>
       )}
       {resetError && (
-        <div className="text-sm text-red-400 mb-3">{resetError}</div>
+        <div role="alert" className="text-sm text-red-400 mb-3">{resetError}</div>
       )}
 
       {isLoading ? (
@@ -1358,12 +1358,12 @@ export function AssetLibrary({
           <div role="grid" aria-rowcount={paginatedAssets.length + 1} className="w-full text-sm">
             {/* Header (was <thead><tr>) */}
             <div role="row" className="grid grid-cols-7 gap-x-4 text-slate-400 text-left border-b border-slate-700">
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('name')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('name'); } }}>Printer<SortIndicator field="name" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'brand' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('brand')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('brand'); } }}>Brand<SortIndicator field="brand" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('category')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('category'); } }}>Type<SortIndicator field="category" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'purchasePrice' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('purchasePrice')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('purchasePrice'); } }}>Price<SortIndicator field="purchasePrice" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'wattage' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('wattage')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('wattage'); } }}>Wattage<SortIndicator field="wattage" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'nozzleCost' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('nozzleCost')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('nozzleCost'); } }}>Nozzle<SortIndicator field="nozzleCost" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('name')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('name'); } }}>Printer<SortIndicator sortField={sortField} sortDirection={sortDirection} field="name" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'brand' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('brand')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('brand'); } }}>Brand<SortIndicator sortField={sortField} sortDirection={sortDirection} field="brand" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('category')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('category'); } }}>Type<SortIndicator sortField={sortField} sortDirection={sortDirection} field="category" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'purchasePrice' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('purchasePrice')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('purchasePrice'); } }}>Price<SortIndicator sortField={sortField} sortDirection={sortDirection} field="purchasePrice" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'wattage' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('wattage')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('wattage'); } }}>Wattage<SortIndicator sortField={sortField} sortDirection={sortDirection} field="wattage" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'nozzleCost' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('nozzleCost')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('nozzleCost'); } }}>Nozzle<SortIndicator sortField={sortField} sortDirection={sortDirection} field="nozzleCost" /></div>
               <div role="columnheader" className="pb-2 font-medium text-right">Actions</div>
             </div>
             {/* Body (was <tbody>) */}
@@ -1394,11 +1394,11 @@ export function AssetLibrary({
           <div role="grid" aria-rowcount={paginatedAssets.length + 1} className="w-full text-sm">
             {/* Header (was <thead><tr>) */}
             <div role="row" className="grid grid-cols-6 gap-x-4 text-slate-400 text-left border-b border-slate-700">
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('name')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('name'); } }}>Material<SortIndicator field="name" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'brand' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('brand')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('brand'); } }}>Brand<SortIndicator field="brand" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('category')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('category'); } }}>Type<SortIndicator field="category" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'costPerUnit' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('costPerUnit')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('costPerUnit'); } }}>Cost/Unit<SortIndicator field="costPerUnit" /></div>
-              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'packageCost' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('packageCost')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('packageCost'); } }}>Package<SortIndicator field="packageCost" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('name')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('name'); } }}>Material<SortIndicator sortField={sortField} sortDirection={sortDirection} field="name" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'brand' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('brand')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('brand'); } }}>Brand<SortIndicator sortField={sortField} sortDirection={sortDirection} field="brand" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'category' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={sortHeaderClass} onClick={() => toggleSort('category')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('category'); } }}>Type<SortIndicator sortField={sortField} sortDirection={sortDirection} field="category" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'costPerUnit' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('costPerUnit')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('costPerUnit'); } }}>Cost/Unit<SortIndicator sortField={sortField} sortDirection={sortDirection} field="costPerUnit" /></div>
+              <div role="columnheader" tabIndex={0} aria-sort={sortField === 'packageCost' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`${sortHeaderClass} text-right`} onClick={() => toggleSort('packageCost')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort('packageCost'); } }}>Package<SortIndicator sortField={sortField} sortDirection={sortDirection} field="packageCost" /></div>
               <div role="columnheader" className="pb-2 font-medium text-right">Actions</div>
             </div>
             {/* Body (was <tbody>) */}
