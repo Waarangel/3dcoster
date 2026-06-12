@@ -28,3 +28,6 @@ src-tauri/target/
 
 # Vitest coverage output
 coverage/
+
+# Claude Code local worktrees
+.claude/worktrees/
