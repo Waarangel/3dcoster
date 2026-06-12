@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "3dcoster",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "4173"],
+      "port": 4173
+    },
+    {
+      "name": "3dcoster-csp",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-with-headers.mjs"],
+      "port": 4173
+    }
+  ]
+}
