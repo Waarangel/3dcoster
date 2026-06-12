@@ -153,7 +153,7 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 | 3 | Customer details on quotes | Free | 3 | 1 | 3.0 | Add name/email/phone fields to job. Simple schema change. *Audit 2026-05-19: `Sale.customerName` already exists ([types.ts:184](src/types.ts:184)); remaining work = add email/phone and attach to `PrintJob`, not just Sale.* |
 | 4 | Printer maintenance budget | Free | 3 | 1 | 3.0 | Single cost field per printer. Crosslink has it. *Audit 2026-05-19: alerts ship via [MaintenanceAlertModal.tsx](src/components/MaintenanceAlertModal.tsx); the service-cost field on `PrinterInstance` is the missing piece.* |
 | 5 | Support material waste % | Free | 3 | 1 | 3.0 | Single percentage field. Quick win. |
-| 6 | Export to CSV/Excel (jobs + sales) | Free | 4 | 1.5 | 2.7 | JSON→CSV conversion. Users have asked. *Audit 2026-05-19: assets CSV export already shipped via [csvHelpers.ts:307](src/utils/csvHelpers.ts:307) (`generateExportCsv`); remaining work = jobs + sales CSV (different schema).* |
+| 32 | JSON full backup / restore | Free | 4 | 1.5 | 2.7 | Whole-database export + restore from Settings. All user data lives only in IndexedDB — one cleared browser profile loses everything; this is data-loss insurance for every user. Deliberately a separate UI surface from CSV export (backup is an app-safety action, not data analysis). Quietly builds the serialization layer a future paid cloud-sync tier needs. *(Source: export-format UX review, 2026-06-12)* |
 | 7 | Bed adhesion consumables | Free | 2 | 1 | 2.0 | Add-on cost field. Trivial. |
 | 8 | Empty states with CTAs | Free | 3 | 1.5 | 2.0 | Illustrations + copy for blank screens. Polish. |
 | 9 | Inconsistent styling pass | Free | 3 | 1.5 | 2.0 | Already flagged by users. Use existing ui/ components. |
@@ -165,6 +165,7 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 
 | Feature | Shipped | Evidence |
 |---------|---------|----------|
+| Export to CSV (jobs + sales + assets) — was #6 | 2026-06-12 (in `[Unreleased]`) | [jobsExport.ts](src/utils/jobsExport.ts) (`generateJobsExportCsv`, `generateSalesExportCsv`); assets export wired in [AssetLibrary.tsx](src/components/AssetLibrary.tsx). Exports respect active filter/search with record count on the button; snapshot currency preserved verbatim; formula-injection guarded via `sanitizeCsvCell`. XLSX deliberately skipped — CSV opens natively in Excel/Sheets/Numbers; SheetJS is heavy with licensing churn. |
 | G-code import | v1.0 milestone | [gcodeParser.ts](src/utils/gcodeParser.ts), [GcodeImport.tsx](src/components/GcodeImport.tsx) — multi-slicer (Prusa, Bambu, Cura, IdeaMaker, OrcaSlicer, SuperSlicer) |
 | Multi-material prints | v1.0 milestone | `PrintJob.filaments: FilamentUsage[]` ([types.ts:146](src/types.ts:146)); add/remove rows in [CostCalculator.tsx:89-99](src/components/CostCalculator.tsx:89) |
 | Default profit margin setting | 2026-05-18 | UserProfile field + SettingsModal Pricing tab |
@@ -187,6 +188,7 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 | 24 | Accounting CSV export | Free | 2 | 2 | 1.0 | QBO/Wave format. Niche but straightforward. (See #12 for Schedule-C specifically.) |
 | 30 | Print troubleshooting helper | Free | 3 | 2 | 1.5 | Symptom → likely cause → fix (stringing, warping, layer shift, under-extrusion). Pure client-side knowledge base. Sticky + SEO. Pairs with #29. *(Source: Print3D Studios competitive analysis, 2026-06-08)* |
 | 29 | Filament guide / comparison | Free | 3 | 2.5 | 1.2 | Per-material traits, temps, recommended settings, "which filament for this job" — built on the filament + density data we already own. Print3D's version is only ~46 entries; easy to out-depth. *(Source: Print3D Studios competitive analysis, 2026-06-08)* |
+| 33 | PDF sales report | Free | 3 | 2.5 | 1.2 | Monthly/yearly sales summary as a designed PDF *document*: totals, revenue by marketplace, fees, profit. For tax records and loan applications. Explicitly NOT a format option on the CSV export buttons — CSV is data, PDF is a document; a format picker would add a decision to every export. Reuses the already-lazy-loaded jsPDF chunk. Pairs with #12 Schedule-C and #24 accounting export. *(Source: export-format UX review, 2026-06-12)* |
 
 ### DO LATER — High effort or niche impact (Score <1.0)
 

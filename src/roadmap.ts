@@ -20,10 +20,22 @@ export interface RoadmapItem {
 
 export const roadmapItems: RoadmapItem[] = [
   {
+    title: 'Full backup & restore',
+    description:
+      'Download your entire 3DCoster database — jobs, sales, assets, customers, settings — as a single backup file, and restore it on any device. Your safety net against a cleared browser or a new computer.',
+    stage: 'planning',
+  },
+  {
+    title: 'PDF sales report',
+    description:
+      'A clean, printable summary of your sales — totals, revenue by marketplace, fees, and profit for any month or year. Made for tax season and anyone who asks for "something official".',
+    stage: 'planning',
+  },
+  {
     title: 'Per-marketplace pricing optimization',
     description:
       'Set channel-specific target prices so Etsy, Amazon, and TikTok each hit your margin after their different fees — computed locally, no account needed.',
-    stage: 'planning',
+    stage: 'research',
   },
   {
     title: 'Live marketplace order sync',
