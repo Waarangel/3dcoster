@@ -175,7 +175,7 @@ Located in `src/components/ui/`:
 ## Key URLs & APIs
 
 - **GitHub Repo**: https://github.com/Waarangel/3dcoster
-- **Live Site**: https://3dcoster.vercel.app
+- **Live Site**: https://3dcoster.com (canonical custom domain since 2026-06-12; apex 307s to www. The legacy https://3dcoster.vercel.app still serves and redirects are path-preserving, but ALL user-facing surfaces — PDF quote footer, UpdateBanner download link, changelog copy, meta tags — must use 3dcoster.com)
 - **Releases API**: https://api.github.com/repos/Waarangel/3dcoster/releases/latest
 - **Feedback Form**: Formspree (https://formspree.io/f/mbdgwnjl)
 
