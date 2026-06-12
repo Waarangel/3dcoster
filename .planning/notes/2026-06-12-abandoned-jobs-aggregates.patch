@@ -1,0 +1,112 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index c29119f..fa9e7ff 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -253,7 +253,8 @@ function App() {
+               >
+                 <span className="sm:hidden">{tab.shortLabel}</span>
+                 <span className="hidden sm:inline">{tab.label}</span>
+-                {tab.id === 'settings' && <NewBadge feature="printer-maintenance-alerts" />}
++                {tab.id === 'settings' && <NewBadge feature="printer-maintenance-alerts" className="absolute -top-1 -right-1" />}
++                {tab.id === 'jobs' && <NewBadge feature="jobs-dashboard" className="absolute -top-1 -right-1" />}
+                 {activeTab === tab.id && (
+                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                 )}
+diff --git a/src/components/JobsManager.tsx b/src/components/JobsManager.tsx
+index 3f26ba1..26156a4 100644
+--- a/src/components/JobsManager.tsx
++++ b/src/components/JobsManager.tsx
+@@ -37,6 +37,33 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
+     return map;
+   }, [allSales]);
+ 
++  const aggregates = useMemo(() => {
++    let totalRevenue = 0;
++    let totalProfit = 0;
++    let totalGrams = 0;
++    let totalHours = 0;
++
++    for (const job of jobs) {
++      const jobSales = salesByJob.get(job.id) ?? [];
++      const jobRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue - (s.marketplaceFee ?? 0), 0);
++      const jobCost = job.costPerUnit * job.copiesSold + job.modelCost;
++      totalRevenue += jobRevenue;
++      totalProfit += jobRevenue - jobCost;
++
++      const gramsPerCopy = job.filaments.reduce((sum, f) => sum + (f.grams ?? 0), 0);
++      totalGrams += gramsPerCopy * job.copiesSold;
++      totalHours += job.printTimeHours * job.copiesSold;
++    }
++
++    return { totalRevenue, totalProfit, totalGrams, totalHours };
++  }, [jobs, salesByJob]);
++
++  const formatFilament = (grams: number) =>
++    grams >= 1000 ? `${(grams / 1000).toFixed(2)} kg` : `${Math.round(grams)} g`;
++
++  const formatHours = (hours: number) =>
++    hours >= 100 ? hours.toFixed(0) : hours.toFixed(1);
++
+   const selectedJob = jobs.find(j => j.id === selectedJobId);
+ 
+   // Get available shipping methods based on currency
+@@ -95,10 +122,10 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
+     }
+   };
+ 
+-  // Calculate break-even info for a job using actual sale revenue
++  // Calculate break-even info for a job using actual sale revenue (net of marketplace fees)
+   const getBreakEvenInfo = useCallback((job: PrintJob) => {
+     const jobSales = salesByJob.get(job.id) ?? [];
+-    const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue, 0);
++    const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue - (s.marketplaceFee ?? 0), 0);
+     const totalCost = job.costPerUnit * job.copiesSold + job.modelCost;
+     const actualProfit = actualRevenue - totalCost;
+ 
+@@ -207,6 +234,34 @@ export function JobsManager({ jobs, materials, printers, printerInstances, shipp
+ 
+   return (
+     <div className="space-y-6">
++      {/* Aggregate Stats Dashboard */}
++      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
++        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
++          <div className="text-xs text-slate-400 uppercase tracking-wide">Total Profit</div>
++          <div className={`mt-1 text-2xl font-bold ${aggregates.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
++            ${aggregates.totalProfit.toFixed(2)}
++          </div>
++        </div>
++        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
++          <div className="text-xs text-slate-400 uppercase tracking-wide">Total Revenue</div>
++          <div className="mt-1 text-2xl font-bold text-white">
++            ${aggregates.totalRevenue.toFixed(2)}
++          </div>
++        </div>
++        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
++          <div className="text-xs text-slate-400 uppercase tracking-wide">Filament Used</div>
++          <div className="mt-1 text-2xl font-bold text-white">
++            {formatFilament(aggregates.totalGrams)}
++          </div>
++        </div>
++        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
++          <div className="text-xs text-slate-400 uppercase tracking-wide">Hours Printed</div>
++          <div className="mt-1 text-2xl font-bold text-white">
++            {formatHours(aggregates.totalHours)}h
++          </div>
++        </div>
++      </div>
++
+       {/* Jobs List */}
+       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+         <h2 className="text-lg font-semibold text-white mb-4">My Print Jobs</h2>
+diff --git a/src/features.ts b/src/features.ts
+index f2a9ab8..1a3fc44 100644
+--- a/src/features.ts
++++ b/src/features.ts
+@@ -18,6 +18,7 @@ export const featureReleases: Record<string, Date> = {
+   'gcode-import': new Date('2026-02-14'),
+   'printer-maintenance-alerts': new Date('2026-04-15'),
+   '3mf-import': new Date('2026-04-15'),
++  'jobs-dashboard': new Date('2026-05-10'),
+   // Add new features here with their release date
+ };
+ 
