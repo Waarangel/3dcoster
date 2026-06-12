@@ -4,6 +4,7 @@ import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, li
 import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
+import { BackupRestoreSection } from './BackupRestoreSection';
 import { Button, Input, SidePanel } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 
@@ -62,8 +63,8 @@ export function SettingsModal({
       ? `${regionTaxResolved.provinceName}, ${regionTaxResolved.countryCode}`
       : 'Region';
 
-  // Tab state — 3-tab IA: Costs & Rates (all cost inputs), Delivery (local + carriers), Marketplaces
-  const [activeTab, setActiveTab] = useState<'costs' | 'delivery' | 'marketplaces'>('costs');
+  // Tab state — 4-tab IA: Costs & Rates (all cost inputs), Delivery (local + carriers), Marketplaces, Data (backup/restore)
+  const [activeTab, setActiveTab] = useState<'costs' | 'delivery' | 'marketplaces' | 'data'>('costs');
 
   // Custom carrier form state
   const [newCarrierName, setNewCarrierName] = useState('');
@@ -155,6 +156,7 @@ export function SettingsModal({
     { id: 'costs' as const, label: 'Costs & Rates' },
     { id: 'delivery' as const, label: 'Delivery' },
     { id: 'marketplaces' as const, label: 'Marketplaces' },
+    { id: 'data' as const, label: 'Data' },
   ];
 
   const settingsTitle = (
@@ -187,6 +189,11 @@ export function SettingsModal({
               }`}
             >
               {tab.label}
+              {/* NewBadge: absolute overlay on the relative tab button — never
+                  consumes layout width in the flex-1 tab bar (project badge rule). */}
+              {tab.id === 'data' && (
+                <NewBadge feature="full-backup" className="absolute -top-1 -right-1 pointer-events-none" />
+              )}
             </button>
           ))}
         </div>
@@ -819,6 +826,10 @@ export function SettingsModal({
               </div>
             </div>
           )}
+
+          {/* Data Tab — backup/restore. Content lives in its own component
+              file (this modal sits at the 800-line cap). */}
+          {activeTab === 'data' && <BackupRestoreSection />}
         </div>
     </SidePanel>
   );

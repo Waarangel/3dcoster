@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui';
+import { APP_VERSION } from '../version';
 
-// Current app version - update this when releasing new versions
-export const APP_VERSION = '1.5.0';
+// Canonical version lives in src/version.ts (utilities read it too);
+// re-exported here so existing importers keep working.
+export { APP_VERSION };
 
 const DOWNLOAD_URL = 'https://3dcoster.com/download';
 

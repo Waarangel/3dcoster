@@ -153,7 +153,6 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 | 3 | Customer details on quotes | Free | 3 | 1 | 3.0 | Add name/email/phone fields to job. Simple schema change. *Audit 2026-05-19: `Sale.customerName` already exists ([types.ts:184](src/types.ts:184)); remaining work = add email/phone and attach to `PrintJob`, not just Sale.* |
 | 4 | Printer maintenance budget | Free | 3 | 1 | 3.0 | Single cost field per printer. Crosslink has it. *Audit 2026-05-19: alerts ship via [MaintenanceAlertModal.tsx](src/components/MaintenanceAlertModal.tsx); the service-cost field on `PrinterInstance` is the missing piece.* |
 | 5 | Support material waste % | Free | 3 | 1 | 3.0 | Single percentage field. Quick win. |
-| 32 | JSON full backup / restore | Free | 4 | 1.5 | 2.7 | Whole-database export + restore from Settings. All user data lives only in IndexedDB — one cleared browser profile loses everything; this is data-loss insurance for every user. Deliberately a separate UI surface from CSV export (backup is an app-safety action, not data analysis). Quietly builds the serialization layer a future paid cloud-sync tier needs. *(Source: export-format UX review, 2026-06-12)* |
 | 7 | Bed adhesion consumables | Free | 2 | 1 | 2.0 | Add-on cost field. Trivial. |
 | 8 | Empty states with CTAs | Free | 3 | 1.5 | 2.0 | Illustrations + copy for blank screens. Polish. |
 | 9 | Inconsistent styling pass | Free | 3 | 1.5 | 2.0 | Already flagged by users. Use existing ui/ components. |
@@ -165,6 +164,7 @@ All features scored by **Impact (1-5)** / **Effort (1-5)** = **Priority Score**.
 
 | Feature | Shipped | Evidence |
 |---------|---------|----------|
+| JSON full backup / restore — was #32 | 2026-06-12 (in `[Unreleased]`) | [backupExport.ts](src/utils/backupExport.ts) / [backupRestore.ts](src/utils/backupRestore.ts) / [BackupRestoreSection.tsx](src/components/BackupRestoreSection.tsx) — Settings → Data tab. Replace-all restore in one atomic transaction; whole-file validation with prototype-pollution rejection; explicit per-store Date rehydration (DATE_FIELDS); full reload after restore so boot reconciles re-run. Serialization layer doubles as the future cloud-sync foundation. |
 | Export to CSV (jobs + sales + assets) — was #6 | 2026-06-12 (in `[Unreleased]`) | [jobsExport.ts](src/utils/jobsExport.ts) (`generateJobsExportCsv`, `generateSalesExportCsv`); assets export wired in [AssetLibrary.tsx](src/components/AssetLibrary.tsx). Exports respect active filter/search with record count on the button; snapshot currency preserved verbatim; formula-injection guarded via `sanitizeCsvCell`. XLSX deliberately skipped — CSV opens natively in Excel/Sheets/Numbers; SheetJS is heavy with licensing churn. |
 | G-code import | v1.0 milestone | [gcodeParser.ts](src/utils/gcodeParser.ts), [GcodeImport.tsx](src/components/GcodeImport.tsx) — multi-slicer (Prusa, Bambu, Cura, IdeaMaker, OrcaSlicer, SuperSlicer) |
 | Multi-material prints | v1.0 milestone | `PrintJob.filaments: FilamentUsage[]` ([types.ts:146](src/types.ts:146)); add/remove rows in [CostCalculator.tsx:89-99](src/components/CostCalculator.tsx:89) |

@@ -83,7 +83,7 @@ When releasing a new version, update ALL FOUR artifacts:
 
 1. **`CHANGELOG.md`** — promote `## [Unreleased]` content into a new `## [X.Y.Z] - YYYY-MM-DD` section
 
-2. **`src/components/UpdateBanner.tsx`** - `APP_VERSION` constant
+2. **`src/version.ts`** - `APP_VERSION` constant (canonical home; UpdateBanner re-exports it)
    ```ts
    export const APP_VERSION = '1.1.0';
    ```
