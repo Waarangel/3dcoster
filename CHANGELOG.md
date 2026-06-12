@@ -21,6 +21,12 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Changed
+- **Quote PDFs and update links now use 3dcoster.com.** The footer on customer-facing PDF quotes and the desktop "update available" download link point to the new home at [3dcoster.com](https://3dcoster.com) instead of the old 3dcoster.vercel.app address (which keeps working).
+
+### Security
+- The web app at [3dcoster.com](https://3dcoster.com) now ships hardened security headers (Content-Security-Policy, X-Frame-Options, and friends), matching the protection the desktop app already had. Nothing changes in how you use the app — it just blocks whole classes of injection and clickjacking attacks.
+
 ---
 
 ## [1.5.0] - 2026-06-12

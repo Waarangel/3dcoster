@@ -347,9 +347,9 @@ describe('generateQuotePdf', () => {
   // 17. Footer — website URL
   // -------------------------------------------------------------------------
 
-  it('includes 3dcoster.vercel.app in footer', async () => {
+  it('includes 3dcoster.com in footer', async () => {
     const bytes = await generateQuotePdfBytes(makeQuote());
-    expect(pdfExtractText(bytes)).toContain('3dcoster.vercel.app');
+    expect(pdfExtractText(bytes)).toContain('3dcoster.com');
   });
 
   // -------------------------------------------------------------------------

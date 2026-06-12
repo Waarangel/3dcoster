@@ -4,7 +4,7 @@ import { Button } from './ui';
 // Current app version - update this when releasing new versions
 export const APP_VERSION = '1.5.0';
 
-const DOWNLOAD_URL = 'https://3dcoster.vercel.app/download';
+const DOWNLOAD_URL = 'https://3dcoster.com/download';
 
 interface UpdateInfo {
   version: string;

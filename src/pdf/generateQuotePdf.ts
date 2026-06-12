@@ -255,7 +255,7 @@ function renderFooter(doc: jsPDF): void {
   doc.setFontSize(9);
   doc.setFont(FONT_ID, 'normal');
   doc.setTextColor(120, 120, 120);
-  doc.text('Made with 3DCoster — 3dcoster.vercel.app', MARGIN_LEFT, pageHeight - 30);
+  doc.text('Made with 3DCoster — 3dcoster.com', MARGIN_LEFT, pageHeight - 30);
   doc.setTextColor(0, 0, 0);
 }
 
