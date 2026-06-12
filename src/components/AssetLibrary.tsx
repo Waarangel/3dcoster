@@ -2,7 +2,10 @@ import { memo, useCallback, useId, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { Asset, AssetCategory, BuiltInCategory, Currency } from '../types';
 import { convert, type FxRateTable } from '../utils/fxConvert';
+import { downloadCsv, generateExportCsv } from '../utils/csvHelpers';
+import { buildExportFilename } from '../utils/jobsExport';
 import { CsvImportModal } from './CsvImportModal';
+import { NewBadge } from './NewBadge';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PackageIcon } from './ui/icons';
@@ -524,6 +527,8 @@ export function AssetLibrary({
   const [currentPage, setCurrentPage] = useState(1);
   const [formError, setFormError] = useState<string | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -807,6 +812,30 @@ export function AssetLibrary({
     }
   };
 
+  // Export-what-you-see: the active category filter and search scope the
+  // export, mirroring the Reset button's filter-scoped behavior in the same
+  // toolbar. Unfiltered "all" exports the full library including printers
+  // (searchedAssets excludes printers in the "all" view, so it is only used
+  // while a search is active — i.e. when the visible list excludes them too).
+  const exportableAssets = searchQuery.trim() ? searchedAssets : filteredAssets;
+  const exportScope = searchQuery.trim()
+    ? 'filtered'
+    : filterCategory !== 'all' ? filterCategory : undefined;
+
+  const handleExportCsv = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      downloadCsv(await generateExportCsv(exportableAssets), buildExportFilename('assets', exportScope));
+    } catch (err) {
+      console.error('Assets CSV export failed:', err);
+      setExportError('Could not export assets to CSV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [exportableAssets, exportScope, isExporting]);
+
   const SortIndicator = ({ field }: { field: string }) => {
     if (sortField !== field) return null;
     return <span className="ml-1 text-[0.6em] align-middle">{sortDirection === 'asc' ? '▲' : '▼'}</span>;
@@ -855,6 +884,28 @@ export function AssetLibrary({
                 <span className="hidden sm:inline">Import CSV</span>
               </Button>
               {assets.length > 0 && (
+                // NewBadge: absolute overlay on the relative button host —
+                // never consumes layout width (project badge rule).
+                <Button
+                  variant="secondary"
+                  btnSize="sm"
+                  onClick={handleExportCsv}
+                  disabled={isExporting || exportableAssets.length === 0}
+                  className="relative flex-1 sm:flex-none gap-1.5"
+                  title={exportScope
+                    ? 'Export the currently filtered assets to CSV'
+                    : 'Export all assets to CSV'}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span className="sr-only sm:not-sr-only">
+                    Export CSV{exportScope ? ` (${exportableAssets.length})` : ''}
+                  </span>
+                  <NewBadge feature="export-assets" className="absolute -top-1 -right-1 pointer-events-none" />
+                </Button>
+              )}
+              {assets.length > 0 && (
                 <Button
                   variant="secondary"
                   btnSize="sm"
@@ -875,6 +926,9 @@ export function AssetLibrary({
           )}
         </div>
       </div>
+      {exportError && (
+        <div role="alert" className="text-sm text-red-400 mb-3">{exportError}</div>
+      )}
       {resetError && (
         <div className="text-sm text-red-400 mb-3">{resetError}</div>
       )}

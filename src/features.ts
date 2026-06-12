@@ -13,6 +13,8 @@ export const featureReleases: Record<string, Date> = {
   'pdf-quote': new Date('2026-05-23'),
   'tags': new Date('2026-05-24'),
   'search-jobs': new Date('2026-05-24'),
+  'export-jobs-sales': new Date('2026-06-12'),
+  'export-assets': new Date('2026-06-12'),
   // Add new features here with their release date
 };
 

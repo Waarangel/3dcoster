@@ -14,6 +14,8 @@ import { RecordSaleModal } from './RecordSaleModal';
 import { SaleRow } from './SaleRow';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
+import { downloadCsv } from '../utils/csvHelpers';
+import { generateJobsExportCsv, generateSalesExportCsv, buildExportFilename } from '../utils/jobsExport';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
 import { isSafeHttpUrl } from '../utils/urlSecurity';
 import { parseTagsInput } from '../db/backfill';
@@ -996,6 +998,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   const [editingTitleJobId, setEditingTitleJobId] = useState<string | null>(null);
   const [addingTagJobId, setAddingTagJobId] = useState<string | null>(null);
 
+  // CSV export feedback. exportError clears on the next attempt; isExporting
+  // guards against double-click duplicate downloads while papaparse lazy-loads.
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
   // D-06 debounce — 250ms. No project-wide `useDebounce` hook exists (currently
   // single-surface only); PATTERNS.md No-Analog rule says don't extract until 2+ surfaces.
   useEffect(() => {
@@ -1301,10 +1308,93 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     setSearchQuery('');
   }, []);
 
+  // CSV export — lookup maps are built at click time (export is rare; a
+  // useMemo would re-derive on every jobs/materials change for nothing).
+  // Money fields export VERBATIM in each record's snapshot currency.
+  // Export-what-you-see: an active search scopes the jobs export, so
+  // tag/customer searches double as selective export with no extra UI.
+  const isJobsSearchActive = debouncedSearchQuery.trim().length > 0;
+
+  const handleExportJobs = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      const assetNamesById = new Map(materials.map(m => [m.id, m.name]));
+      downloadCsv(
+        await generateJobsExportCsv(searchedJobs, assetNamesById),
+        buildExportFilename('jobs', isJobsSearchActive ? 'filtered' : undefined),
+      );
+    } catch (err) {
+      console.error('Jobs CSV export failed:', err);
+      setExportError('Could not export jobs to CSV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [searchedJobs, materials, isExporting, isJobsSearchActive]);
+
+  const handleExportSales = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      const jobsById = new Map(jobs.map(j => [j.id, j]));
+      downloadCsv(await generateSalesExportCsv(allSales ?? [], jobsById), buildExportFilename('sales'));
+    } catch (err) {
+      console.error('Sales CSV export failed:', err);
+      setExportError('Could not export sales to CSV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [jobs, allSales, isExporting]);
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold text-white mb-4">My Print Jobs</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+          <h2 className="text-lg font-semibold text-white">My Print Jobs</h2>
+          {jobs.length > 0 && (
+            // NewBadge: absolute overlay on the relative GROUP host — one badge
+            // covers both new export buttons without consuming layout width
+            // (project badge rule).
+            <div className="relative flex gap-2 w-full sm:w-auto flex-wrap">
+              <Button
+                variant="secondary"
+                btnSize="sm"
+                onClick={handleExportJobs}
+                disabled={isExporting || searchedJobs.length === 0}
+                className="flex-1 sm:flex-none gap-1.5"
+                title={isJobsSearchActive
+                  ? 'Export the jobs matching your search to CSV'
+                  : 'Export all jobs to CSV'}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="sr-only sm:not-sr-only">
+                  Export Jobs{isJobsSearchActive ? ` (${searchedJobs.length})` : ''}
+                </span>
+              </Button>
+              <Button
+                variant="secondary"
+                btnSize="sm"
+                onClick={handleExportSales}
+                disabled={isExporting || (allSales ?? []).length === 0}
+                className="flex-1 sm:flex-none gap-1.5"
+                title="Export all sales to CSV (includes customer names and emails)"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="sr-only sm:not-sr-only">Export Sales</span>
+              </Button>
+              <NewBadge feature="export-jobs-sales" className="absolute -top-1 -right-1 pointer-events-none" />
+            </div>
+          )}
+        </div>
+        {exportError && (
+          <div role="alert" className="text-sm text-red-400 mb-3">{exportError}</div>
+        )}
 
         {isLoading ? (
           <JobsListSkeleton />

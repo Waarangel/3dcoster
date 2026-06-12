@@ -21,6 +21,9 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Added
+- **Export your data to CSV.** New Export buttons let you download your print jobs, sales, and asset library as spreadsheet-ready CSV files — handy for bookkeeping, tax prep, or backups. Exports respect your active filter or search (the button shows exactly how many records you're getting, and the filename says when it's a filtered set), each row keeps the currency it was originally recorded in, and exports are protected against spreadsheet formula injection.
+
 ### Fixed
 - **No more "Something went wrong" / "Reload App" crash screen.** After a new version was deployed, clicking a link in an already-open tab could crash the app and force a manual reload. The app now updates cleanly in the background and shows a small dismissible "new version available" prompt instead, and automatically recovers if it ever loads a stale page.
 
