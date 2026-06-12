@@ -21,6 +21,10 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+---
+
+## [1.6.0] - 2026-06-12
+
 ### Added
 - **Full backup & restore.** A new Data tab in Settings lets you download your entire 3DCoster database — jobs, sales, assets, customers, quotes, and settings — as a single file, and restore it on any device. Restoring shows exactly what will be replaced before anything happens, and a failed restore leaves your existing data untouched. Your safety net against a cleared browser or a new computer.
 - **Summary totals on My Jobs.** A new bar above the jobs list shows your totals across all jobs at a glance: net revenue (after marketplace fees), profit, filament used (switches to kg past 1000 g), and total print time. Amounts recorded in other currencies are converted to your display currency using daily exchange rates; if a rate isn't available yet, the bar shows "—" instead of a misleading number.
