@@ -1,22 +1,20 @@
 name: Discord release notification
 
-# Posts the CHANGELOG.md release notes to the community Discord whenever a
-# GitHub release is published (fired by release.yml's tauri-action), and on
-# manual dispatch for retroactive posts.
+# MANUAL/RETROACTIVE Discord posts only. The AUTOMATIC per-release post lives
+# as the notify-discord job inside release.yml — it cannot live here behind a
+# `release: published` trigger because tauri-action creates releases with the
+# workflow's GITHUB_TOKEN, and events created by GITHUB_TOKEN never trigger
+# other workflows (GitHub's recursion guard; v1.6.0 published silently before
+# this was understood).
 #
 # Requires the DISCORD_RELEASE_WEBHOOK repository secret — a Discord channel
 # webhook URL (channel → Edit → Integrations → Webhooks). Missing secret is a
-# soft gate: the job warns and exits green, mirroring the changelog-extraction
-# soft gate in release.yml.
+# soft gate: the job warns and exits green.
 #
-# Timing note: the `published` event fires when tauri-action first creates the
-# release, which can be minutes before all three platform assets finish
-# uploading. The post links to the release page rather than embedding asset
-# links, so early arrivals just see assets appear shortly after.
+# Usage: Actions → "Discord release notification" → Run workflow with a tag,
+# or `gh workflow run discord-notify.yml -f tag=vX.Y.Z`.
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:

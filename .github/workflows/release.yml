@@ -88,3 +88,52 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+  # Posts the release notes to the community Discord after all platform
+  # builds finish. This job lives HERE (not behind discord-notify.yml's
+  # `release: published` trigger) because tauri-action creates the release
+  # with the workflow's GITHUB_TOKEN, and events created by GITHUB_TOKEN
+  # never trigger other workflows (GitHub's recursion guard) — learned the
+  # hard way when v1.6.0 published silently. discord-notify.yml remains for
+  # manual/retroactive posts. Soft gate: missing webhook secret warns and
+  # skips; a Discord outage never fails the release.
+  notify-discord:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Post release notes to Discord
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::warning::DISCORD_RELEASE_WEBHOOK secret not set — skipping Discord changelog post."
+            exit 0
+          fi
+
+          NOTES="$(node scripts/extract-changelog.cjs "$TAG")"
+
+          BODY="$(printf '%s\n' "$NOTES" \
+            | sed '/^## Download$/,$d' \
+            | sed "s/^## What's New\$//" \
+            | sed 's/^---$//' \
+            | sed -E 's/^### (.*)$/**\1**/' \
+            | head -c 3900)"
+
+          jq -n \
+            --arg title "3DCoster $TAG is out" \
+            --arg desc "$BODY" \
+            --arg url "https://github.com/$REPO/releases/tag/$TAG" \
+            '{embeds: [{title: $title, description: $desc, url: $url, color: 3447003}]}' \
+          | curl -sf -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK" \
+            && echo "Posted $TAG release notes to Discord." \
+            || echo "::warning::Discord post failed (webhook rejected or unreachable) — release is unaffected."
