@@ -213,6 +213,10 @@ The core application — cost calculation, jobs, sales tracking, multi-printer f
 
 See "Paid Tiers" section near the bottom of this doc for the full tier breakdown. Reference: [Free/Paid line research, 2026-05-19](#).
 
+> **⚠ OPEN QUESTION (raised 2026-06-12, unresolved):** The principle above keeps tax helpers, CSV exports, and sales tracking *free*. In conversation the founder voiced a sharper line — *"free for individuals, paid for business"* — which would move self-service business features (sales reports, tax/accounting exports, shop inventory) to paid. These two framings diverge, and sales tracking + the Jobs totals bar already shipped free, so the line needs sharpening, not just a slogan. **Decision pending.** It governs whether the PDF sales report and material inventory tracking (both currently In Development as free) stay free. Until resolved, only features that are free under *both* readings (e.g. the ROI calculator — a pure individual "should I buy this printer?" decision) should advance on the free roadmap.
+>
+> **Craftybase** ([craftybase.com](https://craftybase.com), maker inventory + bookkeeping, ~$19–59/mo) is the competitor benchmark for the **paid/business tier**, NOT for the free `/features` calculator comparison (apples-to-oranges — keep it off that table). Framing: free tier = "a better print calculator than Prusa/LayerMath/3DPrintForce"; paid tier = "a lighter, 3D-native alternative to Craftybase." Run a proper Craftybase analysis before positioning against it (we currently have ~none).
+
 ### PAID TIER BUILD ORDER
 
 Build in phases. Each phase unlocks the next. P1 = highest-leverage paywall + foundation.
