@@ -213,7 +213,27 @@ The core application — cost calculation, jobs, sales tracking, multi-printer f
 
 See "Paid Tiers" section near the bottom of this doc for the full tier breakdown. Reference: [Free/Paid line research, 2026-05-19](#).
 
-> **⚠ OPEN QUESTION (raised 2026-06-12, unresolved):** The principle above keeps tax helpers, CSV exports, and sales tracking *free*. In conversation the founder voiced a sharper line — *"free for individuals, paid for business"* — which would move self-service business features (sales reports, tax/accounting exports, shop inventory) to paid. These two framings diverge, and sales tracking + the Jobs totals bar already shipped free, so the line needs sharpening, not just a slogan. **Decision pending.** It governs whether the PDF sales report and material inventory tracking (both currently In Development as free) stay free. Until resolved, only features that are free under *both* readings (e.g. the ROI calculator — a pure individual "should I buy this printer?" decision) should advance on the free roadmap.
+#### Free/Pro feature model — "floor & ceiling" (decided 2026-06-12)
+
+The split is **not two lists of features**. Every capability has a **free self-service floor** (you do it, runs locally on your data) and a **Pro ceiling** (the tool does it for you, on our infra, or wears your brand). **No capability is fully locked away — everyone gets a working version free; Pro removes the manual/local limits.** This monetizes without gutting the free wedge.
+
+| Capability | Free floor (self-service, local) | Pro ceiling (automated / hosted / branded) |
+|---|---|---|
+| Quotes | PDF with "Made with 3DCoster" footer | White-label (logo, no footer), email delivery, customer portal |
+| Inventory *(in dev)* | Manual stock, deduct-on-job, on-screen low-stock flag | Email/push low-stock alerts, auto-reorder, supplier sync, multi-location |
+| Sales reports *(in dev)* | Generate + download PDF/CSV for any range | Scheduled auto-email, send-to-accountant, branded |
+| Accounting | CSV export (Schedule-C / QBO-Wave) you file | Live QuickBooks/Wave API sync |
+| Shipping | Manual carrier-rate calculator | Live rates + printable labels |
+| Marketplace | Fee math + per-channel target pricing | Live order sync (auto-pulls Etsy orders) |
+| Data portability | Backup / restore (shipped free) | Cloud sync / multi-device |
+
+**Paid-only exceptions** (no meaningful free floor): AI photo-to-quote (compute cost — maybe N free trials), team/multi-user (multi-seat), live-API integrations (recurring cost + backend). Note backup/restore is the free floor *under* cloud sync — the pattern already works.
+
+**Design rule (every free feature we build):** architect the floor so the Pro ceiling bolts on as an **additive layer, not a rewrite** — e.g. reports = `aggregate() -> render()` so scheduled/emailed/branded delivery wraps the same core; inventory = a stock model an alerts/reorder service can subscribe to later. Every free feature is then also a Pro foundation, and we never give away value we can't upsell on top of.
+
+**Resolves the earlier free/paid question:** PDF sales report and material inventory tracking **ship free** (their floors); their automation/hosted layers become Pro hooks later. Still TBD: marketing *wording* (deferred), and whether any single floor is too generous (current lean: keep a free manual version of everything, including live-rate shipping).
+
+> **⚠ OPEN QUESTION (raised 2026-06-12, unresolved):** The principle above keeps tax helpers, CSV exports, and sales tracking *free*. In conversation the founder voiced a sharper line — *"free for individuals, paid for business"* — which would move self-service business features (sales reports, tax/accounting exports, shop inventory) to paid. These two framings diverge, and sales tracking + the Jobs totals bar already shipped free, so the line needs sharpening, not just a slogan. **(SUPERSEDED 2026-06-12 by the Free/Pro floor/ceiling model above — PDF report + inventory ship free as floors; only marketing wording remains open. Original note kept for context.)**
 >
 > **Craftybase** ([craftybase.com](https://craftybase.com), maker inventory + bookkeeping, ~$19–59/mo) is the competitor benchmark for the **paid/business tier**, NOT for the free `/features` calculator comparison (apples-to-oranges — keep it off that table). Framing: free tier = "a better print calculator than Prusa/LayerMath/3DPrintForce"; paid tier = "a lighter, 3D-native alternative to Craftybase." Run a proper Craftybase analysis before positioning against it (we currently have ~none).
 
