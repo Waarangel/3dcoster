@@ -328,13 +328,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     switch (shippingMethod) {
       case 'local_pickup':
         return 0;
-      case 'dropoff':
+      case 'dropoff': {
         // Round trip distance * fuel consumption * fuel price.
         // Ceil to the next cent so float math (e.g. 6.354179999…) doesn't leak
         // into the input value or the totals — always at-or-above the real cost.
         const roundTripKm = shippingDistanceKm * 2;
         const litersUsed = (roundTripKm / 100) * shippingConfig.vehicleFuelEfficiency;
         return Math.ceil(litersUsed * shippingConfig.gasPricePerLiter * 100) / 100;
+      }
       case 'ups':
         return shippingConfig.upsBaseCost;
       case 'fedex':
@@ -351,13 +352,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         return shippingConfig.australiaPostBaseCost;
       case 'canada_post':
         return shippingConfig.canadaPostBaseCost;
-      default:
+      default: {
         // Check if it's a custom carrier
         const customCarrier = shippingConfig.customCarriers?.find(c => c.id === shippingMethod);
         if (customCarrier) {
           return customCarrier.defaultCost;
         }
         return 0;
+      }
     }
   }, [shippingMethod, shippingDistanceKm, shippingOverrideCost, shippingConfig]);
 
@@ -404,24 +406,27 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       case 'kijiji':
         return 0;
 
-      case 'facebook_shipped':
+      case 'facebook_shipped': {
         // 10% selling fee (min $0.80) + 2.9% payment processing
         const fbSellingFee = Math.max(0.80, sellingPrice * 0.10);
         const fbProcessingFee = sellingPrice * 0.029;
         return fbSellingFee + fbProcessingFee;
+      }
 
-      case 'etsy':
+      case 'etsy': {
         // 6.5% transaction + 3% payment + $0.25 payment fixed + $0.20 listing
         const etsyTransactionFee = sellingPrice * 0.065;
         const etsyPaymentFee = sellingPrice * 0.03 + 0.25;
         const etsyListingFee = 0.20;
         return etsyTransactionFee + etsyPaymentFee + etsyListingFee;
+      }
 
-      case 'etsy_offsite_ad':
+      case 'etsy_offsite_ad': {
         // Same as Etsy + 15% offsite ad fee
         const etsyBase = sellingPrice * 0.065 + sellingPrice * 0.03 + 0.25 + 0.20;
         const offsiteAdFee = sellingPrice * 0.15;
         return etsyBase + offsiteAdFee;
+      }
 
       default:
         return 0;
