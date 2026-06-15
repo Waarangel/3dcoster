@@ -12,6 +12,10 @@
           {
             "type": "command",
             "command": "node scripts/release-cadence-guard.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node scripts/web-deploy-guard.mjs"
           }
         ]
       }
