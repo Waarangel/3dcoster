@@ -14,6 +14,7 @@ import { MaintenanceAlertModal } from './components/MaintenanceAlertModal';
 import { NewBadge } from './components/NewBadge';
 import { Footer } from './components/Footer';
 import { UpdateBanner } from './components/UpdateBanner';
+import { ToastProvider } from './components/ui';
 import { isMaintenanceDismissed, markMaintenanceDismissed, MAINTENANCE_INTERVAL } from './utils/maintenanceDismissed';
 
 type Tab = 'calculator' | 'jobs' | 'materials' | 'customers' | 'settings';
@@ -173,6 +174,7 @@ function App() {
   ];
 
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Update Banner (desktop only) */}
       <UpdateBanner />
@@ -380,6 +382,7 @@ function App() {
 
       <Footer variant="minimal" />
     </div>
+    </ToastProvider>
   );
 }
 

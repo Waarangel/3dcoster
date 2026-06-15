@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { Asset } from '../types';
 import { parseGcode, matchFilamentType, findBestFilamentMatch, readGcodeFile } from '../utils/gcodeParser';
 import { parseThreeMf } from '../utils/threeMfParser';
-import { Button } from './ui';
+import { Button, useToast } from './ui';
 
 interface GcodeImportProps {
   assets: Asset[];
@@ -33,24 +33,41 @@ const SLICER_LABELS: Record<string, string> = {
 // GB). 200 MB covers the largest real sliced 3MF files. Module scope = stable.
 const MAX_THREE_MF_BYTES = 200 * 1024 * 1024;
 
+// Rich body for the "import succeeded" toast. The shared ToastViewport supplies
+// the container, the success icon, and the dismiss button; this renders only
+// the content (slicer + time + per-filament breakdown).
+function ImportSuccessToast({ info }: { info: SuccessInfo }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <span className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full">
+          {info.slicer}
+        </span>
+        {info.time && <span className="text-green-300">{info.time}</span>}
+      </div>
+      <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+        {info.filaments.map((f, i) => (
+          <div key={`${f.type ?? 'filament'}-${i}`} className="flex items-center gap-2">
+            <span className="text-green-300">{f.grams.toFixed(1)}g</span>
+            {f.type && <span className="text-green-300">{f.type}</span>}
+            {f.matched && <span className="text-slate-400">-&gt; {f.matched}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function GcodeImport({ assets, onImport }: GcodeImportProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successInfo, setSuccessInfo] = useState<SuccessInfo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-dismiss success banner after 8 seconds
-  useEffect(() => {
-    if (!successInfo) return;
-    const timer = setTimeout(() => setSuccessInfo(null), 8000);
-    return () => clearTimeout(timer);
-  }, [successInfo]);
+  const toast = useToast();
 
   const processThreeMfFile = useCallback(async (file: File) => {
     setIsParsing(true);
     setError(null);
-    setSuccessInfo(null);
 
     try {
       const result = await parseThreeMf(file);
@@ -84,24 +101,29 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
         printName: printName || undefined,
       });
 
-      setSuccessInfo({
-        slicer: `3MF \u2014 ${result.plateCount} plate${result.plateCount !== 1 ? 's' : ''}`,
-        time: `${result.totalPrintTimeHours.toFixed(2)}h`,
-        filaments: result.filamentsByType.map(f => ({
-          type: f.type,
-          matched: (() => {
-            const id = findBestFilamentMatch(f.type, null, assets, null);
-            return id ? (assets.find(a => a.id === id)?.name ?? null) : null;
-          })(),
-          grams: f.grams,
-        })),
-      });
+      toast.success(
+        <ImportSuccessToast
+          info={{
+            slicer: `3MF \u2014 ${result.plateCount} plate${result.plateCount !== 1 ? 's' : ''}`,
+            time: `${result.totalPrintTimeHours.toFixed(2)}h`,
+            filaments: result.filamentsByType.map(f => ({
+              type: f.type,
+              matched: (() => {
+                const id = findBestFilamentMatch(f.type, null, assets, null);
+                return id ? (assets.find(a => a.id === id)?.name ?? null) : null;
+              })(),
+              grams: f.grams,
+            })),
+          }}
+        />,
+        { duration: 8000 }
+      );
     } catch (err) {
       setError(err instanceof Error ? `Failed to parse 3MF: ${err.message}` : 'Failed to parse 3MF');
     } finally {
       setIsParsing(false);
     }
-  }, [assets, onImport]);
+  }, [assets, onImport, toast]);
 
   // SEC: reject oversized 3MF files before handing them to JSZip/the parser.
   // A maliciously crafted ZIP (zip-bomb) can expand gigabytes of data from a
@@ -127,7 +149,6 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
 
     setIsParsing(true);
     setError(null);
-    setSuccessInfo(null);
 
     try {
       const content = await readGcodeFile(file);
@@ -182,24 +203,29 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
         printName: printName || undefined,
       });
 
-      // Show brief success banner
-      setSuccessInfo({
-        slicer: SLICER_LABELS[result.slicer] || result.slicer,
-        time: result.rawPrintTimeString || `${(result.printTimeHours ?? 0).toFixed(2)}h`,
-        filaments: filaments.map((f, i) => ({
-          type: result.filamentTypes[i]
-            ? matchFilamentType(result.filamentTypes[i], result.filamentSettingsIds[i] ?? null)
-            : null,
-          matched: f.filamentId ? (assets.find(a => a.id === f.filamentId)?.name ?? null) : null,
-          grams: f.grams,
-        })),
-      });
+      // Show brief success toast
+      toast.success(
+        <ImportSuccessToast
+          info={{
+            slicer: SLICER_LABELS[result.slicer] || result.slicer,
+            time: result.rawPrintTimeString || `${(result.printTimeHours ?? 0).toFixed(2)}h`,
+            filaments: filaments.map((f, i) => ({
+              type: result.filamentTypes[i]
+                ? matchFilamentType(result.filamentTypes[i], result.filamentSettingsIds[i] ?? null)
+                : null,
+              matched: f.filamentId ? (assets.find(a => a.id === f.filamentId)?.name ?? null) : null,
+              grams: f.grams,
+            })),
+          }}
+        />,
+        { duration: 8000 }
+      );
     } catch (err) {
       setError(err instanceof Error ? `Failed to read G-code file: ${err.message}` : 'Failed to read G-code file');
     } finally {
       setIsParsing(false);
     }
-  }, [assets, onImport, processThreeMfFile]);
+  }, [assets, onImport, processThreeMfFile, toast]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -217,46 +243,6 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
 
   return (
     <div className="mb-4">
-      {/* Success toast — fixed position, no layout shift */}
-      {successInfo && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-800 border border-green-500/40 rounded-lg p-3 shadow-lg shadow-black/30 flex items-center justify-between max-w-sm animate-in">
-          <div className="flex items-center gap-3 text-sm">
-            <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full">
-                  {successInfo.slicer}
-                </span>
-                {successInfo.time && (
-                  <span className="text-green-300">{successInfo.time}</span>
-                )}
-              </div>
-              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
-                {successInfo.filaments.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-green-300">{f.grams.toFixed(1)}g</span>
-                    {f.type && <span className="text-green-300">{f.type}</span>}
-                    {f.matched && <span className="text-slate-400">-&gt; {f.matched}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            btnSize="sm"
-            onClick={() => setSuccessInfo(null)}
-            className="ml-2 text-slate-500 hover:text-slate-300"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-      )}
-
       {/* Error */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400 mb-2 flex items-start justify-between gap-3">

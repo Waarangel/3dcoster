@@ -9,3 +9,5 @@ export { InfoTooltip } from './InfoTooltip';
 export { CollapsibleSection } from './CollapsibleSection';
 export { Modal } from './Modal';
 export { SidePanel } from './SidePanel';
+export { ToastProvider, useToast } from './toast';
+export type { ToastApi, ToastOptions, ToastVariant } from './toast';
