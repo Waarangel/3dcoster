@@ -282,7 +282,7 @@ function _buildDoc(quote: Quote): jsPDF {
   y = renderMetaAndCustomer(doc, quote, y);
   y = renderLineItems(doc, quote, y);
   y = renderTotals(doc, quote, y);
-  y = renderNotesAndTerms(doc, quote, y);
+  renderNotesAndTerms(doc, quote, y);
   renderFooter(doc);
 
   return doc;

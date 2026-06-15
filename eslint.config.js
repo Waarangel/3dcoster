@@ -22,5 +22,24 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // eslint-plugin-react-hooks@7's "recommended" preset turns on React
+      // Compiler "rules of React" that flag working, pre-existing patterns this
+      // (non-Compiler) codebase was not written against. rules-of-hooks and
+      // exhaustive-deps stay as real signal; the Compiler + fast-refresh rules
+      // are downgraded to warnings so they remain visible (a backlog to adopt
+      // later) without failing `npm run lint`. See the 2026-06-15 audit.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/globals': 'warn',
+      'react-refresh/only-export-components': 'warn',
+      // Honor the `_` prefix convention for intentionally-unused vars/args.
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+    },
   },
 ])

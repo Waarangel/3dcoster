@@ -529,13 +529,6 @@ export interface MarketplaceFees {
   customMarketplaces: CustomMarketplace[];
 }
 
-// App-wide settings (separate from user profile)
-export interface AppSettings {
-  // Future: API keys for shipping integrations
-  // canadaPostApiKey?: string;
-  // uspsApiKey?: string;
-  // etc.
-
-  // Theme preferences (future)
-  // theme?: 'dark' | 'light' | 'system';
-}
+// App-wide settings (separate from user profile). Reserved for future settings
+// (shipping API keys, theme preferences, etc.) — intentionally empty for now.
+export type AppSettings = Record<string, never>;

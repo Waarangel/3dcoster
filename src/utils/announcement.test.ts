@@ -52,7 +52,6 @@ describe('parseAnnouncement', () => {
   });
 
   it('rejects an unsafe url scheme (XSS guard)', () => {
-    // eslint-disable-next-line no-script-url
     expect(parseAnnouncement({ ...valid, url: 'javascript:alert(1)' })).toBeNull();
     expect(parseAnnouncement({ ...valid, url: 'data:text/html,<script>1</script>' })).toBeNull();
     expect(parseAnnouncement({ ...valid, url: 'ftp://x' })).toBeNull();

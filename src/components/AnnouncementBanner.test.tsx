@@ -87,7 +87,6 @@ describe('AnnouncementBanner (container + gating)', () => {
   });
 
   it('shows nothing when the payload is invalid (unsafe url)', async () => {
-    // eslint-disable-next-line no-script-url
     mockFetchOnce({ ...active, url: 'javascript:alert(1)' });
     await act(async () => { root.render(<AnnouncementBanner />); });
     await flush();
