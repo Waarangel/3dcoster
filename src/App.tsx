@@ -94,6 +94,7 @@ function App() {
 
   const {
     printers,
+    addPrinter,
   } = usePrinters();
 
   const {
@@ -380,6 +381,7 @@ function App() {
             onAddInstance={addInstance}
             onUpdateInstance={updateInstance}
             onDeleteInstance={deleteInstance}
+            onAddPrinter={addPrinter}
           />
         )}
       </main>

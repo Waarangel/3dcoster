@@ -21,6 +21,13 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Added
+- **Add your own printer.** If your printer isn't in the built-in list, you can now add it as a custom model — just enter its name, average wattage, price, and expected lifespan in Printer Settings, and it's available everywhere like any built-in printer.
+- **12 more printers in the catalog.** Added popular models including the Creality Ender-3 V3 SE/KE, K1 Max and K2 Plus, Prusa CORE One and XL, Anycubic Kobra 2 Pro / Kobra S1, Elegoo Neptune 4 / 4 Plus, Qidi Q1 Pro, and FlashForge Adventurer 5M.
+
+### Fixed
+- **More accurate electricity costs for several printers.** The Creality Ender-3 V3 and K1, Anycubic Kobra 3, and Elegoo Neptune 4 Pro were using their peak power-supply rating instead of real average printing draw, which overstated their electricity cost (often 2–3×). Wattages are now based on measured average draw, so cost comparisons across brands are fair. Also bumped the Bambu X1C/X1E figures and updated the Prusa MK4 to the current MK4S.
+
 ---
 
 ## [1.6.0] - 2026-06-12

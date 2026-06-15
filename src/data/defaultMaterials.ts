@@ -241,9 +241,15 @@ export const defaultMaterials: Asset[] = [
 ];
 
 // ============================================
-// BAMBU LAB PRINTERS - As Assets
-// Wattage is average during printing (not peak)
-// Expected lifespan based on typical hobby/prosumer usage
+// DEFAULT PRINTER CATALOG - As Assets
+// wattage = AVERAGE power draw while printing (steady state), NOT the PSU/peak
+//   rating. The heat-up spike (700–1000W) lasts <90s and is amortized into the
+//   average via the bed duty cycle. ANY value >250W is almost certainly a
+//   mis-entered PSU rating — re-check it. (2026-06-15 audit fixed 4 printers
+//   that carried PSU ratings: Ender-3 V3, K1, Kobra 3, Neptune 4 Pro.)
+// expectedLifespanHours = estimated useful service life (hobby/prosumer), used
+//   for depreciation — inherently an estimate.
+// purchasePrice = base-unit USD (NOT combos/bundles with AMS/CFS/ACE).
 // ============================================
 
 export const defaultPrinterAssets: Asset[] = [
@@ -309,7 +315,7 @@ export const defaultPrinterAssets: Asset[] = [
     brand: 'Bambu Lab',
     purchasePrice: 1199,
     expectedLifespanHours: 8000,
-    wattage: 120,
+    wattage: 150,
     nozzleCost: 12,
     nozzleLifespanCm3: 15000,
   },
@@ -320,7 +326,7 @@ export const defaultPrinterAssets: Asset[] = [
     brand: 'Bambu Lab',
     purchasePrice: 1699,
     expectedLifespanHours: 10000,
-    wattage: 130,
+    wattage: 170,
     nozzleCost: 12,
     nozzleLifespanCm3: 15000,
   },
@@ -365,7 +371,7 @@ export const defaultPrinterAssets: Asset[] = [
     brand: 'Creality',
     purchasePrice: 199,
     expectedLifespanHours: 4000,
-    wattage: 350,
+    wattage: 120,
     nozzleCost: 5,
     nozzleLifespanCm3: 10000,
   },
@@ -376,13 +382,13 @@ export const defaultPrinterAssets: Asset[] = [
     brand: 'Creality',
     purchasePrice: 399,
     expectedLifespanHours: 5000,
-    wattage: 350,
+    wattage: 150,
     nozzleCost: 8,
     nozzleLifespanCm3: 12000,
   },
   {
     id: 'prusa-mk4',
-    name: 'Prusa MK4',
+    name: 'Prusa MK4S',
     category: 'printer',
     brand: 'Prusa',
     purchasePrice: 799,
@@ -390,7 +396,7 @@ export const defaultPrinterAssets: Asset[] = [
     wattage: 100,
     nozzleCost: 25,
     nozzleLifespanCm3: 15000,
-    notes: 'Kit price - assembled is $1099',
+    notes: 'Kit price - assembled is $929',
   },
   {
     id: 'prusa-mini',
@@ -411,7 +417,7 @@ export const defaultPrinterAssets: Asset[] = [
     brand: 'Elegoo',
     purchasePrice: 259,
     expectedLifespanHours: 4000,
-    wattage: 310,
+    wattage: 140,
     nozzleCost: 5,
     nozzleLifespanCm3: 10000,
   },
@@ -422,9 +428,151 @@ export const defaultPrinterAssets: Asset[] = [
     brand: 'Anycubic',
     purchasePrice: 349,
     expectedLifespanHours: 4000,
-    wattage: 400,
+    wattage: 160,
     nozzleCost: 6,
     nozzleLifespanCm3: 10000,
+  },
+  // --- Added 2026-06-15 (sourced spec audit) -------------------------------
+  // Creality
+  {
+    id: 'creality-ender3-v3-se',
+    name: 'Creality Ender-3 V3 SE',
+    category: 'printer',
+    brand: 'Creality',
+    purchasePrice: 199,
+    expectedLifespanHours: 4000,
+    wattage: 100,
+    nozzleCost: 5,
+    nozzleLifespanCm3: 10000,
+  },
+  {
+    id: 'creality-ender3-v3-ke',
+    name: 'Creality Ender-3 V3 KE',
+    category: 'printer',
+    brand: 'Creality',
+    purchasePrice: 269,
+    expectedLifespanHours: 4000,
+    wattage: 110,
+    nozzleCost: 5,
+    nozzleLifespanCm3: 10000,
+  },
+  {
+    id: 'creality-k1-max',
+    name: 'Creality K1 Max',
+    category: 'printer',
+    brand: 'Creality',
+    purchasePrice: 699,
+    expectedLifespanHours: 5000,
+    wattage: 180,
+    nozzleCost: 8,
+    nozzleLifespanCm3: 12000,
+  },
+  {
+    id: 'creality-k2-plus',
+    name: 'Creality K2 Plus',
+    category: 'printer',
+    brand: 'Creality',
+    purchasePrice: 1499,
+    expectedLifespanHours: 6000,
+    wattage: 220,
+    nozzleCost: 12,
+    nozzleLifespanCm3: 15000,
+    notes: 'Base price - usually sold as a CFS combo (~$1649+)',
+  },
+  // Prusa
+  {
+    id: 'prusa-core-one',
+    name: 'Prusa CORE One',
+    category: 'printer',
+    brand: 'Prusa',
+    purchasePrice: 1199,
+    expectedLifespanHours: 9000,
+    wattage: 110,
+    nozzleCost: 25,
+    nozzleLifespanCm3: 15000,
+    notes: 'Kit price - assembled is $1599',
+  },
+  {
+    id: 'prusa-xl',
+    name: 'Prusa XL (single-tool)',
+    category: 'printer',
+    brand: 'Prusa',
+    purchasePrice: 1999,
+    expectedLifespanHours: 10000,
+    wattage: 130,
+    nozzleCost: 25,
+    nozzleLifespanCm3: 15000,
+    notes: 'Semi-assembled, single toolhead',
+  },
+  // Anycubic
+  {
+    id: 'anycubic-kobra-2-pro',
+    name: 'Anycubic Kobra 2 Pro',
+    category: 'printer',
+    brand: 'Anycubic',
+    purchasePrice: 279,
+    expectedLifespanHours: 4000,
+    wattage: 120,
+    nozzleCost: 6,
+    nozzleLifespanCm3: 10000,
+  },
+  {
+    id: 'anycubic-kobra-s1',
+    name: 'Anycubic Kobra S1',
+    category: 'printer',
+    brand: 'Anycubic',
+    purchasePrice: 499,
+    expectedLifespanHours: 4500,
+    wattage: 180,
+    nozzleCost: 6,
+    nozzleLifespanCm3: 12000,
+    notes: 'Base price - combo with ACE Pro is ~$1099',
+  },
+  // Elegoo
+  {
+    id: 'elegoo-neptune-4',
+    name: 'Elegoo Neptune 4',
+    category: 'printer',
+    brand: 'Elegoo',
+    purchasePrice: 219,
+    expectedLifespanHours: 4000,
+    wattage: 130,
+    nozzleCost: 5,
+    nozzleLifespanCm3: 10000,
+  },
+  {
+    id: 'elegoo-neptune-4-plus',
+    name: 'Elegoo Neptune 4 Plus',
+    category: 'printer',
+    brand: 'Elegoo',
+    purchasePrice: 309,
+    expectedLifespanHours: 4000,
+    wattage: 150,
+    nozzleCost: 5,
+    nozzleLifespanCm3: 10000,
+  },
+  // Qidi & FlashForge
+  {
+    id: 'qidi-q1-pro',
+    name: 'Qidi Q1 Pro',
+    category: 'printer',
+    brand: 'Qidi',
+    purchasePrice: 599,
+    expectedLifespanHours: 5000,
+    wattage: 160,
+    nozzleCost: 10,
+    nozzleLifespanCm3: 15000,
+  },
+  {
+    id: 'flashforge-adventurer-5m',
+    name: 'FlashForge Adventurer 5M',
+    category: 'printer',
+    brand: 'FlashForge',
+    purchasePrice: 279,
+    expectedLifespanHours: 4500,
+    wattage: 150,
+    nozzleCost: 8,
+    nozzleLifespanCm3: 12000,
   },
 ];
 
