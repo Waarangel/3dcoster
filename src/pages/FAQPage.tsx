@@ -78,7 +78,7 @@ const faqs: FAQItem[] = [
   {
     category: 'features',
     question: 'What are "New" badges?',
-    answer: 'Features added in the last 3 days show a "New" badge. After you see a feature, the badge disappears after 3 days. This helps you discover new functionality.',
+    answer: 'Recently added features show a "New" badge for up to 14 days after release. Once you\'ve seen a feature, its badge fades after about 36 hours. This helps you discover new functionality without it nagging forever.',
   },
 
   // Technical
@@ -106,6 +106,21 @@ const faqs: FAQItem[] = [
     category: 'technical',
     question: 'macOS says the app is "damaged" - what do I do?',
     answer: 'This happens because the app isn\'t signed with an Apple Developer certificate. It\'s not actually damaged. To fix: Right-click (or Ctrl+click) the app, select "Open", then click "Open" in the dialog. You only need to do this once. Alternatively, run this in Terminal: xattr -cr /Applications/3DCoster.app',
+  },
+  {
+    category: 'technical',
+    question: 'How do I run the Linux AppImage?',
+    answer: 'Download the .AppImage, then make it executable: right-click it > Properties > Permissions > tick "Allow executing file as program", or run "chmod +x 3DCoster_*.AppImage" in a terminal. Then double-click it or run "./3DCoster_*.AppImage". No installation needed - it runs on most modern distributions.',
+  },
+  {
+    category: 'technical',
+    question: 'Should I use the AppImage, .deb, or .rpm on Linux?',
+    answer: 'Use the AppImage if you just want to run the app with no install (it works on almost any distro - just make it executable). Use the .deb on Debian/Ubuntu ("sudo apt install ./3DCoster_*.deb") or the .rpm on Fedora/RHEL/openSUSE ("sudo dnf install ./3DCoster-*.rpm") if you\'d rather have it in your app menu and managed by your package manager.',
+  },
+  {
+    category: 'technical',
+    question: 'Linux says the app isn\'t trusted or won\'t launch - what do I do?',
+    answer: 'Like the macOS build, the Linux binary is unsigned, so your system may not flag it as trusted automatically. For the AppImage, make sure the executable bit is set (see the AppImage question above). The .deb and .rpm packages declare their dependencies (including WebKitGTK 4.1) and will pull them in via your package manager; the AppImage bundles what it needs.',
   },
 ];
 

@@ -21,6 +21,9 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Added
+- **Linux desktop app.** 3DCoster now ships a native Linux build alongside Windows and macOS. Grab an AppImage (runs on almost any distribution — no install, just make it executable), a `.deb` for Debian/Ubuntu, or an `.rpm` for Fedora/RHEL, all from the [download page](https://3dcoster.com/download). Like the other desktop builds it works fully offline and keeps your data on your machine.
+
 ---
 
 ## [1.6.0] - 2026-06-12
