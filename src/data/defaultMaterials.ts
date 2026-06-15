@@ -304,7 +304,7 @@ export const defaultPrinterAssets: Asset[] = [
   },
   {
     id: 'bambu-x1c',
-    name: 'Bambu Lab X1 Carbon',
+    name: 'Bambu Lab X1C',
     category: 'printer',
     brand: 'Bambu Lab',
     purchasePrice: 1199,
