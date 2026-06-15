@@ -14,6 +14,7 @@ import { MaintenanceAlertModal } from './components/MaintenanceAlertModal';
 import { NewBadge } from './components/NewBadge';
 import { Footer } from './components/Footer';
 import { UpdateBanner } from './components/UpdateBanner';
+import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { ToastProvider } from './components/ui';
 import { isMaintenanceDismissed, markMaintenanceDismissed, MAINTENANCE_INTERVAL } from './utils/maintenanceDismissed';
 
@@ -178,6 +179,9 @@ function App() {
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Update Banner (desktop only) */}
       <UpdateBanner />
+
+      {/* Survey / announcement banner (remote-config driven) */}
+      <AnnouncementBanner />
 
       {/* Header */}
       <header className="bg-slate-800 border-b border-slate-700">
