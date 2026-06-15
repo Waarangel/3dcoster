@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { PrinterSettings } from './PrinterSettings';
+import { ToastProvider } from './ui';
 import type { PrinterConfig } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -49,17 +50,19 @@ afterEach(() => {
 function renderSettings(onAddPrinter: (c: PrinterConfig) => void) {
   act(() => {
     root.render(
-      <PrinterSettings
-        printers={[sampleModel]}
-        printerInstances={[]}
-        isLoading={false}
-        jobs={[]}
-        userCurrency="USD"
-        onAddInstance={() => {}}
-        onUpdateInstance={() => {}}
-        onDeleteInstance={() => {}}
-        onAddPrinter={onAddPrinter}
-      />
+      <ToastProvider>
+        <PrinterSettings
+          printers={[sampleModel]}
+          printerInstances={[]}
+          isLoading={false}
+          jobs={[]}
+          userCurrency="USD"
+          onAddInstance={() => {}}
+          onUpdateInstance={() => {}}
+          onDeleteInstance={() => {}}
+          onAddPrinter={onAddPrinter}
+        />
+      </ToastProvider>
     );
   });
 }

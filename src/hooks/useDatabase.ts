@@ -48,6 +48,12 @@ let customerEmailLowercaseRan = false;
 // pass writes nothing (and the flag short-circuits before any Dexie read anyway).
 let assetCurrencyReconcileRan = false;
 
+// Process-lifetime flag for the 2026-06-15 printer-catalog migration (corrects
+// PSU-rating wattages + adds 12 new models). Same one-per-page-load pattern as
+// the reconciles above, so it doesn't re-run (or re-add a deleted default) on
+// every App remount when navigating between /app and the marketing routes.
+let printerCatalogReconcileRan = false;
+
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
   const assets = useLiveQuery(() => db.materials.toArray(), []);
@@ -104,11 +110,16 @@ export function useAssets() {
           // default-id row IN PLACE (ids unchanged → printer instances keep
           // resolving) and adds the new ones. User custom models (ids prefixed
           // 'custom-') are NOT in defaultPrinterAssets, so they are never touched.
-          const ender3v3 = await db.materials.get('creality-ender3-v3');
-          if (cancelled) return;
+          if (!printerCatalogReconcileRan) {
+            const ender3v3 = await db.materials.get('creality-ender3-v3');
+            if (cancelled) return;
 
-          if (!ender3v3 || ender3v3.wattage === 350) {
-            await db.materials.bulkPut(defaultPrinterAssets);
+            if (!ender3v3 || ender3v3.wattage === 350) {
+              await db.materials.bulkPut(defaultPrinterAssets);
+            }
+            // Mark only after the (possible) write resolves, so a thrown error
+            // leaves it false and the next mount retries.
+            printerCatalogReconcileRan = true;
           }
         }
       } catch (error) {

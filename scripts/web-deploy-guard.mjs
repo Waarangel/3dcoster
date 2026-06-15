@@ -31,14 +31,18 @@ process.stdin.on('end', () => {
 
   if (!/\bgit\s+push\b/.test(bare)) process.exit(0); // not a push at all
 
-  const targetsMain = /\bgit\s+push\b[^\n]*\bmain\b/.test(bare);
+  // Match `main` only as a standalone token, so branches like `main-v2` or
+  // `my-main-feature` are NOT mistaken for the main branch.
+  const targetsMain = /\bgit\s+push\b[^\n]*(?<![\w-])main(?![\w-])/.test(bare);
   // Bare `git push` (no explicit remote) pushes the current branch to its
   // upstream; if that's main it's a deploy, and we can't know the branch here.
   const isBarePush = !/\bgit\s+push\b[^\n]*\b(origin|upstream)\b/.test(bare);
 
   if (!targetsMain && !isBarePush) process.exit(0); // pushing a feature branch → fine
 
-  if (/\bDEPLOY_OK=1\b/.test(command)) process.exit(0); // explicit, deliberate opt-in
+  // Check the opt-in on the quote-stripped string so a token hidden inside a
+  // quoted arg (e.g. a commit message) can't bypass the gate.
+  if (/\bDEPLOY_OK=1\b/.test(bare)) process.exit(0); // explicit, deliberate opt-in
 
   process.stderr.write(
     '⛔ BLOCKED: this `git push` targets `main`, which auto-deploys LIVE to ' +

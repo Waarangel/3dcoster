@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { PrinterConfig, PrinterInstance, PrintJob, Currency } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
+import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PrinterIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
@@ -79,6 +79,8 @@ export function PrinterSettings({
   const [customModelPrice, setCustomModelPrice] = useState<number>(0);
   const [customModelLifespan, setCustomModelLifespan] = useState<number>(5000);
 
+  const toast = useToast();
+
   const canSaveCustomModel =
     customModelName.trim() !== '' && customModelWattage > 0 && customModelPrice > 0 && customModelLifespan > 0;
 
@@ -108,12 +110,16 @@ export function PrinterSettings({
       nozzleCost: DEFAULT_NOZZLE_COST,
       nozzleLifespanCm3: DEFAULT_NOZZLE_LIFESPAN_CM3,
     };
-    // Await the Dexie write so the model exists before we auto-select it (the
-    // dropdown is driven by useLiveQuery, which emits just after the write).
-    await onAddPrinter(config);
-    setNewInstancePrinterId(config.id);
-    setAddingCustomModel(false);
-    resetCustomModelForm();
+    try {
+      // Await the Dexie write so the model exists before we auto-select it (the
+      // dropdown is driven by useLiveQuery, which emits just after the write).
+      await onAddPrinter(config);
+      setNewInstancePrinterId(config.id);
+      setAddingCustomModel(false);
+      resetCustomModelForm();
+    } catch {
+      toast.error('Could not save the printer model — please try again.');
+    }
   };
 
   const handleCancelCustomModel = () => {
@@ -352,7 +358,7 @@ export function PrinterSettings({
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => { handleCancelCustomModel(); setShowAddForm(false); }}
               >
                 Cancel
               </Button>
