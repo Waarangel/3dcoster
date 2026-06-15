@@ -4,6 +4,16 @@ import { formatCurrency } from '../utils/currency';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PrinterIcon } from './ui/icons';
+import { NewBadge } from './NewBadge';
+
+// Sentinel option value in the Printer Model dropdown that opens the
+// custom-model form instead of selecting an existing model.
+const ADD_CUSTOM_MODEL = '__add_custom_model__';
+
+// Default nozzle specs for a new custom model (hardened-steel-ish), matching
+// the catalog convention.
+const DEFAULT_NOZZLE_COST = 8;
+const DEFAULT_NOZZLE_LIFESPAN_CM3 = 15000;
 
 interface PrinterSettingsProps {
   printers: PrinterConfig[];
@@ -14,6 +24,7 @@ interface PrinterSettingsProps {
   onAddInstance: (instance: PrinterInstance) => void;
   onUpdateInstance: (instance: PrinterInstance) => void;
   onDeleteInstance: (id: string) => void;
+  onAddPrinter: (config: PrinterConfig) => void | Promise<void>;
 }
 
 function PrinterListSkeleton() {
@@ -50,6 +61,7 @@ export function PrinterSettings({
   onAddInstance,
   onUpdateInstance,
   onDeleteInstance,
+  onAddPrinter,
 }: PrinterSettingsProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newInstanceNickname, setNewInstanceNickname] = useState('');
@@ -59,6 +71,55 @@ export function PrinterSettings({
   const [newInstanceRecoveryMonths, setNewInstanceRecoveryMonths] = useState(12);
   const [newInstanceMonthlyHours, setNewInstanceMonthlyHours] = useState(40);
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null);
+
+  // Custom printer-model form (lets users add a model not in the default catalog)
+  const [addingCustomModel, setAddingCustomModel] = useState(false);
+  const [customModelName, setCustomModelName] = useState('');
+  const [customModelWattage, setCustomModelWattage] = useState<number>(0);
+  const [customModelPrice, setCustomModelPrice] = useState<number>(0);
+  const [customModelLifespan, setCustomModelLifespan] = useState<number>(5000);
+
+  const canSaveCustomModel =
+    customModelName.trim() !== '' && customModelWattage > 0 && customModelPrice > 0 && customModelLifespan > 0;
+
+  const handleModelSelectChange = (value: string) => {
+    if (value === ADD_CUSTOM_MODEL) {
+      setAddingCustomModel(true);
+    } else {
+      setNewInstancePrinterId(value);
+    }
+  };
+
+  const resetCustomModelForm = () => {
+    setCustomModelName('');
+    setCustomModelWattage(0);
+    setCustomModelPrice(0);
+    setCustomModelLifespan(5000);
+  };
+
+  const handleSaveCustomModel = async () => {
+    if (!canSaveCustomModel) return;
+    const config: PrinterConfig = {
+      id: `custom-${Date.now()}`,
+      name: customModelName.trim(),
+      purchasePrice: customModelPrice,
+      expectedLifespanHours: customModelLifespan,
+      wattage: customModelWattage,
+      nozzleCost: DEFAULT_NOZZLE_COST,
+      nozzleLifespanCm3: DEFAULT_NOZZLE_LIFESPAN_CM3,
+    };
+    // Await the Dexie write so the model exists before we auto-select it (the
+    // dropdown is driven by useLiveQuery, which emits just after the write).
+    await onAddPrinter(config);
+    setNewInstancePrinterId(config.id);
+    setAddingCustomModel(false);
+    resetCustomModelForm();
+  };
+
+  const handleCancelCustomModel = () => {
+    setAddingCustomModel(false);
+    resetCustomModelForm();
+  };
 
   // Get default price when printer model changes
   const selectedPrinterConfig = printers.find(p => p.id === newInstancePrinterId);
@@ -124,14 +185,19 @@ export function PrinterSettings({
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Printer Model</label>
+                <label htmlFor="printer-model-select" className="relative inline-block text-xs text-slate-400 mb-1">
+                  Printer Model
+                  <NewBadge feature="custom-printer-model" className="absolute -top-1.5 -right-4 pointer-events-none" />
+                </label>
                 <Select
-                  value={newInstancePrinterId}
-                  onChange={e => setNewInstancePrinterId(e.target.value)}
+                  id="printer-model-select"
+                  value={addingCustomModel ? ADD_CUSTOM_MODEL : newInstancePrinterId}
+                  onChange={e => handleModelSelectChange(e.target.value)}
                 >
                   {printers.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
+                  <option value={ADD_CUSTOM_MODEL}>＋ Add a custom model…</option>
                 </Select>
               </div>
               <div>
@@ -145,6 +211,69 @@ export function PrinterSettings({
                 />
               </div>
             </div>
+
+            {/* Custom model form (when "Add a custom model…" is chosen) */}
+            {addingCustomModel && (
+              <div className="mt-3 p-4 bg-slate-800 rounded-lg border border-blue-500/40">
+                <h4 className="text-sm font-medium text-white mb-1">New Custom Model</h4>
+                <p className="text-xs text-slate-400 mb-3">Add a printer that isn't in the list. It'll be saved and selectable for any printer you add.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Model Name *</label>
+                    <Input
+                      type="text"
+                      value={customModelName}
+                      onChange={e => setCustomModelName(e.target.value)}
+                      placeholder="e.g., Sovol SV08"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                      <span>Avg Wattage (W) *</span>
+                      <InfoTooltip text="Average power draw while printing — NOT the PSU/peak rating. Most FDM printers average ~100–180W in steady state (the heat-up spike is brief)." />
+                    </label>
+                    <Input
+                      type="number"
+                      compact
+                      value={customModelWattage || ''}
+                      onChange={e => setCustomModelWattage(parseFloat(e.target.value) || 0)}
+                      placeholder="120"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Price / MSRP ($) *</label>
+                    <Input
+                      type="number"
+                      compact
+                      value={customModelPrice || ''}
+                      onChange={e => setCustomModelPrice(parseFloat(e.target.value) || 0)}
+                      placeholder="599"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                      <span>Expected Lifespan (hrs) *</span>
+                      <InfoTooltip text="Estimated print-hours of useful service life, used to spread the machine cost over jobs. ~4000–10000h is typical." />
+                    </label>
+                    <Input
+                      type="number"
+                      compact
+                      value={customModelLifespan || ''}
+                      onChange={e => setCustomModelLifespan(parseFloat(e.target.value) || 0)}
+                      placeholder="5000"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Button variant="success" btnSize="sm" onClick={handleSaveCustomModel} disabled={!canSaveCustomModel}>
+                    Save Model
+                  </Button>
+                  <Button variant="secondary" btnSize="sm" onClick={handleCancelCustomModel}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Cost Recovery Settings */}
             <div className="mt-4 pt-4 border-t border-slate-600">
@@ -217,7 +346,7 @@ export function PrinterSettings({
               <Button
                 variant="success"
                 onClick={handleAddInstance}
-                disabled={!newInstanceNickname.trim()}
+                disabled={!newInstanceNickname.trim() || addingCustomModel || !newInstancePrinterId}
               >
                 Add Printer
               </Button>

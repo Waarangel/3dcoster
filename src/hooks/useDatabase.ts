@@ -94,6 +94,22 @@ export function useAssets() {
             // Add all Bambu catalog entries, using bulkPut to update any existing entries
             await db.materials.bulkPut(bambuFilamentAssets);
           }
+
+          // Migration (2026-06-15): re-apply the printer catalog to existing
+          // users to (a) correct 4 mis-entered PSU-rating wattages + bump X1C/
+          // X1E + rename MK4→MK4S, and (b) add 12 new models. Detect by the
+          // corrected wattage VALUE (not just a new key) so it fires for ANY
+          // user still carrying the old 350W PSU rating on the Ender-3 V3, even
+          // if they somehow already have the new models. bulkPut updates each
+          // default-id row IN PLACE (ids unchanged → printer instances keep
+          // resolving) and adds the new ones. User custom models (ids prefixed
+          // 'custom-') are NOT in defaultPrinterAssets, so they are never touched.
+          const ender3v3 = await db.materials.get('creality-ender3-v3');
+          if (cancelled) return;
+
+          if (!ender3v3 || ender3v3.wattage === 350) {
+            await db.materials.bulkPut(defaultPrinterAssets);
+          }
         }
       } catch (error) {
         console.error('Error initializing assets:', error);
@@ -187,9 +203,13 @@ export function useAssets() {
   }, []);
 
   const resetPrintersOnly = useCallback(async () => {
-    // Only reset printer assets
+    // Reset default printer models to the latest catalog, but PRESERVE any
+    // user-created custom models (ids prefixed 'custom-') so a reset doesn't
+    // silently delete machines the user defined themselves.
+    const existing = await db.materials.where('category').equals('printer').toArray();
+    const customModels = existing.filter(a => a.id.startsWith('custom-'));
     await db.materials.where('category').equals('printer').delete();
-    await db.materials.bulkAdd(defaultPrinterAssets);
+    await db.materials.bulkAdd([...defaultPrinterAssets, ...customModels]);
   }, []);
 
   const bulkImportAssets = useCallback(async (importAssets: Asset[]) => {

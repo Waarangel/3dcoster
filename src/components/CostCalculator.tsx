@@ -3,7 +3,7 @@ import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, Mater
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
-import { Button, Input, Select, InfoTooltip, CollapsibleSection } from './ui';
+import { Button, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { convert, type FxRateTable } from '../utils/fxConvert';
 import { calculateCost, calculateTax } from '../utils/costCalc';
@@ -202,8 +202,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // Job saved feedback
   const [justSaved, setJustSaved] = useState(false);
 
-  // Validation error toast
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const toast = useToast();
 
   // Persist form state to sessionStorage whenever values change
   useEffect(() => {
@@ -329,13 +328,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     switch (shippingMethod) {
       case 'local_pickup':
         return 0;
-      case 'dropoff':
+      case 'dropoff': {
         // Round trip distance * fuel consumption * fuel price.
         // Ceil to the next cent so float math (e.g. 6.354179999…) doesn't leak
         // into the input value or the totals — always at-or-above the real cost.
         const roundTripKm = shippingDistanceKm * 2;
         const litersUsed = (roundTripKm / 100) * shippingConfig.vehicleFuelEfficiency;
         return Math.ceil(litersUsed * shippingConfig.gasPricePerLiter * 100) / 100;
+      }
       case 'ups':
         return shippingConfig.upsBaseCost;
       case 'fedex':
@@ -352,13 +352,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         return shippingConfig.australiaPostBaseCost;
       case 'canada_post':
         return shippingConfig.canadaPostBaseCost;
-      default:
+      default: {
         // Check if it's a custom carrier
         const customCarrier = shippingConfig.customCarriers?.find(c => c.id === shippingMethod);
         if (customCarrier) {
           return customCarrier.defaultCost;
         }
         return 0;
+      }
     }
   }, [shippingMethod, shippingDistanceKm, shippingOverrideCost, shippingConfig]);
 
@@ -405,24 +406,27 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       case 'kijiji':
         return 0;
 
-      case 'facebook_shipped':
+      case 'facebook_shipped': {
         // 10% selling fee (min $0.80) + 2.9% payment processing
         const fbSellingFee = Math.max(0.80, sellingPrice * 0.10);
         const fbProcessingFee = sellingPrice * 0.029;
         return fbSellingFee + fbProcessingFee;
+      }
 
-      case 'etsy':
+      case 'etsy': {
         // 6.5% transaction + 3% payment + $0.25 payment fixed + $0.20 listing
         const etsyTransactionFee = sellingPrice * 0.065;
         const etsyPaymentFee = sellingPrice * 0.03 + 0.25;
         const etsyListingFee = 0.20;
         return etsyTransactionFee + etsyPaymentFee + etsyListingFee;
+      }
 
-      case 'etsy_offsite_ad':
+      case 'etsy_offsite_ad': {
         // Same as Etsy + 15% offsite ad fee
         const etsyBase = sellingPrice * 0.065 + sellingPrice * 0.03 + 0.25 + 0.20;
         const offsiteAdFee = sellingPrice * 0.15;
         return etsyBase + offsiteAdFee;
+      }
 
       default:
         return 0;
@@ -604,25 +608,18 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     sessionStorage.removeItem(FORM_STORAGE_KEY);
   };
 
-  // Auto-dismiss validation error
-  useEffect(() => {
-    if (!validationError) return;
-    const timer = setTimeout(() => setValidationError(null), 5000);
-    return () => clearTimeout(timer);
-  }, [validationError]);
-
   // Save job handler (create new or update existing)
   const handleSaveJob = async () => {
     if (!printName.trim()) {
-      setValidationError('Please enter a name for this print job');
+      toast.error('Please enter a name for this print job');
       return;
     }
     if (filamentRows.every(r => !r.filamentId)) {
-      setValidationError('Please select at least one filament');
+      toast.error('Please select at least one filament');
       return;
     }
     if (!selectedInstanceId || !printerInstances.some(p => p.id === selectedInstanceId)) {
-      setValidationError('Please select a printer');
+      toast.error('Please select a printer');
       return;
     }
 
@@ -679,7 +676,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         setJustSaved(true);
         setTimeout(() => setJustSaved(false), 3000);
       } catch {
-        setValidationError('Could not save the job — please try again.');
+        toast.error('Could not save the job — please try again.');
       }
     } else {
       // Create new job
@@ -724,7 +721,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         setJustSaved(true);
         setTimeout(() => setJustSaved(false), 3000);
       } catch {
-        setValidationError('Could not save the job — please try again.');
+        toast.error('Could not save the job — please try again.');
       }
     }
   };
@@ -771,29 +768,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   return (
     <div className="space-y-6">
-      {/* Validation error toast */}
-      {validationError && (
-        <div role="alert" aria-live="assertive" className="fixed top-4 right-4 z-50 bg-slate-800 border border-red-500/40 rounded-lg p-3 shadow-lg shadow-black/30 flex items-center justify-between max-w-sm animate-in">
-          <div className="flex items-center gap-3 text-sm">
-            <svg aria-hidden="true" className="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <span className="text-red-300">{validationError}</span>
-          </div>
-          <Button
-            variant="ghost"
-            btnSize="sm"
-            onClick={() => setValidationError(null)}
-            aria-label="Dismiss"
-            className="ml-2 text-slate-500 hover:text-slate-300"
-          >
-            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-      )}
-
       {/* Editing Banner */}
       {editingJob && (
         <div className="bg-blue-600/20 border border-blue-500/50 rounded-xl p-4 flex items-center justify-between">

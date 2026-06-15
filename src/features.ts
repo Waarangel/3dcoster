@@ -17,6 +17,7 @@ export const featureReleases: Record<string, Date> = {
   'export-assets': new Date('2026-06-12'),
   'jobs-summary-totals': new Date('2026-06-12'),
   'full-backup': new Date('2026-06-12'),
+  'custom-printer-model': new Date('2026-06-15'),
   // Add new features here with their release date
 };
 
