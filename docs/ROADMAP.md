@@ -358,6 +358,59 @@ Closes in-lane gaps vs Print3D Studios while staying "for the person." Best ship
 
 ---
 
+## v2.0 Vision — The Cost-Truth & Insight Engine
+
+> Founder-greenlit feature set for a future **v2.0** release (2026-06-15 brainstorm). The
+> through-line: these are the differentiators competitors *don't* touch — deepen cost
+> realism (our moat), turn cost into decisions, and connect the cost engine to the rest
+> of the maker's business — all without breaking local-first / no-backend. Most are free
+> floors; a couple have a Pro hosted ceiling and ride the backend pivot. Floor/ceiling
+> model: see "Free/Pro feature model" above and [[project_free_paid_line_open_question]].
+>
+> **Explicitly DECLINED — do NOT re-add** (founder call, 2026-06-15):
+> - **Print-farm queue/scheduling optimizer** — not our demographic; drifts into 3DPrintForce's ops lane instead of deepening the cost moat.
+> - **Live competitor-price scraping** — marketplace-ToS risk + nudges makers toward a race to the bottom. A *manual* "paste a price, see your margin at it" is the acceptable substitute if ever wanted.
+
+### A. Cost realism (the moat, deeper) — all free floor
+
+- [ ] **Empirical failure-cost engine** — log a failure with % completion (a print that dies at 90% wastes far more than one that fails on layer 2); derive the real failure rate per **printer × material** from history and fold scrap (filament + time + electricity) into true cost automatically. No calculator prices failure. Doubles as a failure ledger / diagnostic history. *Feeds: spool lifecycle (below).*
+- [ ] **Time-of-use electricity modeling** — cost energy by *when* the print runs (peak vs off-peak tariffs); a 14h overnight print genuinely costs less. Optional edge: free grid-carbon API for a "run at 2am, save $X and cut carbon" nudge.
+- [ ] **Abrasive wear + maintenance amortization** — track cumulative abrasive-hours (CF/GF on brass) and maintenance events; amortize into a *real* cost-per-hour and predict the next nozzle/belt/bed swap. *Builds on the "Printer maintenance/service budget" backlog item above.*
+
+### B. Insight & decisions — all free floor, mostly low build (data already exists)
+
+- [ ] **True hourly wage + product profitability ranking** — "your phone stands earn $8.10/printer-hour; your dragons earn $1.50/hr and hold a machine 11 hours." Decision-grade reframe of existing job data; the insight no cost calculator dares surface.
+- [ ] **Printer payback / ROI tracker** — *retrospective* per-machine P&L: "this X1C has earned back its purchase price; now net +$340." Complements (does not duplicate) the *prospective* "Should I buy this printer?" ROI calculator already in the backlog — same data, opposite time direction.
+- [ ] **What-if margin sensitivity simulator** — sliders for filament price / electricity / failure rate → watch margin move. Turns the calculator into a strategy sandbox.
+
+### C. Connected cost (the engine reaches the rest of the business)
+
+- [ ] **Filament-price → catalog reprice alerts** — when a material price or FX moves, flag "7 saved products now fall under target margin — reprice?" Makes 3DCoster reactive guardian, not one-shot calculator. Free floor; cheap on data already stored.
+- [ ] **Instant-quote share link** — customer uploads an STL/3MF and gets the maker's price from their saved cost config. **Free floor:** local in-app quote via in-browser mesh-volume estimate (Three.js, no slicer needed) — *builds on the "STL file analysis" backlog item.* **Pro ceiling:** hosted quote page linkable from an Etsy/IG bio. Natural backend-pivot anchor; biggest "calculator → business tool" swing.
+
+### D. Maker-life — free floor
+
+- [ ] **Spool lifecycle / moisture tracking** — opened date, drying-session log, humidity exposure → "this PETG is likely wet; wet filament is your top failure cause." Hyper-specific to 3DP; feeds the failure-cost engine; builds on inventory tracking.
+- [ ] **Hobby→business tax-threshold tracker** — warn when cumulative revenue crosses the user's jurisdiction's taxable threshold (UK £1k trading allowance, US hobby/business line, etc.). Privacy-friendly (all local), unowned space. Distinct from VAT-on-price and the Schedule-C/COGS exporter already in backlog.
+
+### E. Architecture as a feature
+
+- [ ] **Local-network / file-based sync** — multi-device (desktop ↔ phone) *without* a backend, via local network or a user-owned Dropbox/Drive folder. Turns the "no backend, you own your data" constraint into a headline cloud competitors structurally can't match. Free floor (local/file); a hosted-sync option could be a Pro ceiling.
+
+### Recommended first wave (build order)
+
+When v2.0 work starts, the highest value-per-effort entry points — all **free-floor insight layers on data already stored**, so low build risk and immediately on-moat:
+
+1. **Empirical failure-cost engine** (A) — the deepest moat extension; nothing else prices failure.
+2. **Filament-price → catalog reprice alerts** (C) — cheap, turns the calculator reactive.
+3. **Printer payback / ROI tracker** (B) — near-zero build (existing depreciation data), sticky, motivating.
+
+Then the **big swing: instant-quote share link** (C) — higher build + the natural justification for the backend/Pro pivot. Validate real demand (maker forums, support requests) before committing build time on any of these.
+
+*(Source: v2.0 vision brainstorm, founder + Claude, 2026-06-15)*
+
+---
+
 ## Competitor Comparison Reference
 
 ### Cost Calculators (Free Tier Competitors)
