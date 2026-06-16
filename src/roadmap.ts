@@ -49,6 +49,14 @@ export const roadmapItems: RoadmapItem[] = [
       'Real carrier rates and printable labels inside 3DCoster, so the shipping cost baked into your price matches what you actually pay.',
     stage: 'research',
   },
+  {
+    title: 'Use 3DCoster in your language',
+    description:
+      'The app is English-only today. Because 3DCoster is open source, the plan is to let the community translate it — numbers and currency already format per-region. We are scoping the groundwork now. If you would like to help translate, come say hi.',
+    stage: 'research',
+    href: 'https://github.com/Waarangel/3dcoster',
+    hrefLabel: 'Help translate',
+  },
 ];
 
 export interface StageMeta {

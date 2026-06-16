@@ -33,14 +33,40 @@ export const CURRENCY_CONFIG: Record<Currency, {
   ZAR: { name: 'South African Rand', symbol: 'R', country: 'ZA', countryName: 'South Africa', decimalPlaces: 2, distanceUnit: 'km', fuelUnit: 'L' },
 };
 
-// Format a number as currency
-export function formatCurrency(amount: number, currency: Currency): string {
+// Format a number as currency.
+//
+// The numeric portion goes through Intl.NumberFormat so it gains locale-correct
+// digit grouping (e.g. "1,234.50") instead of a bare "1234.50". The currency
+// SYMBOL, decimal-place count, and sign ordering stay curated here on purpose —
+// we don't use Intl's `style: 'currency'`, which would override our chosen
+// symbols (e.g. render CHF as "CHF" not "Fr", or USD/CAD as "US$"/"CA$") and
+// move the symbol position. Keeping them explicit preserves the exact look of
+// PDF quotes across all 18 currencies.
+//
+// `locale` is the i18n seam: today it defaults to en-US (period decimal, comma
+// grouping), but it's a separate axis from `currency` so a future locale layer
+// can pass e.g. 'de-DE' to get "1.234,50" without touching call sites. Language
+// (currency) and locale (number format) are intentionally decoupled.
+//
+// Examples:
+//   formatCurrency(15.5, 'USD')      → "$15.50"
+//   formatCurrency(1234.5, 'EUR')    → "€1,234.50"
+//   formatCurrency(100, 'JPY')       → "¥100"        (0 decimal places)
+//   formatCurrency(-15.5, 'USD')     → "-$15.50"     (sign before symbol)
+export function formatCurrency(amount: number, currency: Currency, locale: string = 'en-US'): string {
   const config = CURRENCY_CONFIG[currency];
   if (!config) return `$${amount.toFixed(2)}`; // Fallback for unknown currency
   // Sign before symbol: "-$15.50", never "$-15.50". A value that rounds to
   // zero at the currency's precision (e.g. -0.001) must not show a stray "-".
-  const formatted = Math.abs(amount).toFixed(config.decimalPlaces);
-  const sign = amount < 0 && Number(formatted) !== 0 ? '-' : '';
+  const abs = Math.abs(amount);
+  const formatted = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: config.decimalPlaces,
+    maximumFractionDigits: config.decimalPlaces,
+  }).format(abs);
+  // Compute zero-ness from the number, not the grouped string (which Number()
+  // can't parse once it contains separators).
+  const roundsToZero = Number(abs.toFixed(config.decimalPlaces)) === 0;
+  const sign = amount < 0 && !roundsToZero ? '-' : '';
   return `${sign}${config.symbol}${formatted}`;
 }
 

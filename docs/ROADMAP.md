@@ -440,6 +440,50 @@ Closes in-lane gaps vs Print3D Studios while staying "for the person." Best ship
 
 ---
 
+## Internationalization (i18n) — decision & timing (decided 2026-06-15)
+
+**Decision: stay i18n-*ready*, defer i18n-*done*.** UI strings are hardcoded English
+across ~70 `.tsx` files. We are NOT extracting all strings to translation files
+now (zero non-English users; it would tax every Pro-tier feature still being built
+and add bundle weight against the <150 kb landing budget). We are also NOT doing
+nothing — the retrofit cost scales with codebase size, and the codebase is about
+to 2–3× with inventory, PDF reports, and the Pro tier.
+
+**What's done now (cheap, high-leverage):**
+- [x] All money/number formatting routes through `src/utils/currency.ts` →
+  `formatCurrency()`, which now uses `Intl.NumberFormat` (locale-correct digit
+  grouping) and takes an optional `locale` param as the i18n seam. Currency
+  symbols, decimal-place counts, and sign ordering stay curated (NOT Intl
+  `style: 'currency'`) so PDF-quote rendering is unchanged except for added
+  thousands grouping. Dates already go through `Intl.RelativeTimeFormat`
+  (`formatRelativeDate.ts`).
+
+**Pattern discipline to hold while building new features:**
+- No sentence concatenation in JSX (keep whole sentences as single strings).
+- All number/currency/date output goes through the `src/utils` formatters, never
+  raw `.toFixed()` / string concat at call sites.
+- Don't bake English grammar (pluralization, word order) into logic.
+
+**Trigger to start full extraction (do it when ANY fires):**
+1. First genuine request for a *specific* language.
+2. A decision to target a non-English market for SEO/marketing.
+3. The backend/Pro pivot — already a large architectural moment; bundle i18n in.
+
+**When triggered:**
+- Library: `react-i18next` (de-facto standard; lazy-load locales per language to
+  protect the bundle; translations are static JSON, stays offline/local-first).
+- **Decouple the three conflated axes:** *language* (UI strings), *locale*
+  (number/date format — the `locale` param already exists), and *currency*
+  (money). Today `distanceUnit`/`fuelUnit`/decimals are derived from currency in
+  `CURRENCY_CONFIG`; a Canadian pricing in EUR is a valid combo, so split these.
+- **Open-source accelerant:** the i18n *scaffolding* is what unlocks free
+  community translations — contributors will drop a `de.json` if the framework
+  exists but won't build the framework. Standing up the english-only plumbing
+  early (with a public "research" roadmap card inviting translators) has higher
+  ROI here than in a closed product.
+
+---
+
 ## User Feedback (v1.1)
 
 ### Positive
