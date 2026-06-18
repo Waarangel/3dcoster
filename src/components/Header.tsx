@@ -2,11 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui';
 
-export function Header() {
+type HeaderVariant = 'dark' | 'light';
+
+interface HeaderProps {
+  /** 'dark' (default) keeps the original dark chrome for all app/marketing pages.
+   *  'light' is the warm "Quiet Workshop" landing treatment. */
+  variant?: HeaderVariant;
+}
+
+export function Header({ variant = 'dark' }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
+
+  const isLight = variant === 'light';
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -31,31 +41,55 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [mobileMenuOpen]);
 
+  const navClass = isLight
+    ? 'fixed top-0 left-0 right-0 z-50 bg-[var(--paper)]/80 backdrop-blur-sm border-b border-[var(--hairline)]'
+    : 'fixed top-0 left-0 right-0 z-50 bg-[var(--bg)]/80 backdrop-blur-sm border-b border-[var(--hairline)]';
+
+  const linkClass = isLight
+    ? 'px-4 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors text-sm font-medium'
+    : 'px-4 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors text-sm font-medium';
+
+  const ctaClass = isLight
+    ? 'px-4 py-2 bg-[var(--pine)] hover:bg-[var(--pine-strong)] text-white rounded-lg transition-colors text-sm font-medium'
+    : 'px-4 py-2 bg-[var(--brand)] hover:bg-[var(--brand-soft)] text-white rounded-lg transition-colors text-sm font-medium';
+
+  const mobilePanelClass = isLight
+    ? 'bg-[var(--paper)]/95 backdrop-blur-sm border-t border-[var(--hairline)] px-6 py-3 flex flex-col gap-1'
+    : 'bg-[var(--bg)]/95 backdrop-blur-sm border-t border-[var(--hairline)] px-6 py-3 flex flex-col gap-1';
+
+  const mobileLinkClass = isLight
+    ? 'flex items-center px-4 py-3 min-h-[44px] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-sunk)] rounded-lg transition-colors text-sm font-medium'
+    : 'flex items-center px-4 py-3 min-h-[44px] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-sm font-medium';
+
+  const mobileCtaClass = isLight
+    ? 'flex items-center justify-center px-4 py-3 min-h-[44px] bg-[var(--pine)] hover:bg-[var(--pine-strong)] text-white rounded-lg transition-colors text-sm font-medium mt-1'
+    : 'flex items-center justify-center px-4 py-3 min-h-[44px] bg-[var(--brand)] hover:bg-[var(--brand-soft)] text-white rounded-lg transition-colors text-sm font-medium mt-1';
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700/50">
+    <nav className={navClass}>
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center" aria-label="3DCoster home">
-          <img src="/3DCosterLogoWithWords.svg" alt="3DCoster" className="h-9 w-auto" />
+        <Link to="/" className="flex items-center gap-2.5" aria-label="3DCoster home">
+          {isLight ? (
+            <>
+              {/* Full-color wordmark SVG has a white wordmark (dark-only); on light we
+                  compose the icon mark with a display-font wordmark in ink. */}
+              <img src="/3DCosterLogoOnly.svg" alt="" className="h-8 w-auto" aria-hidden="true" />
+              <span className="font-display text-xl font-extrabold text-[var(--ink)]">3DCoster</span>
+            </>
+          ) : (
+            <img src="/3DCosterLogoWithWords.svg" alt="3DCoster" className="h-9 w-auto" />
+          )}
         </Link>
 
         {/* Desktop navigation - hidden below md */}
         <div className="hidden md:flex items-center gap-4">
-          <Link
-            to="/features"
-            className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
-          >
+          <Link to="/features" className={linkClass}>
             Features
           </Link>
-          <Link
-            to="/download"
-            className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
-          >
+          <Link to="/download" className={linkClass}>
             Download
           </Link>
-          <Link
-            to="/app"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-          >
+          <Link to="/app" className={ctaClass}>
             Go to App
           </Link>
         </div>
@@ -66,7 +100,7 @@ export function Header() {
           variant="ghost"
           btnSize="sm"
           onClick={() => setMobileMenuOpen((prev) => !prev)}
-          className="md:hidden w-11 h-11 rounded-lg"
+          className={`md:hidden w-11 h-11 rounded-lg ${isLight ? 'text-[var(--ink)]' : ''}`}
           aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileMenuOpen}
         >
@@ -105,26 +139,14 @@ export function Header() {
           mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="bg-slate-900/95 backdrop-blur-sm border-t border-slate-700/50 px-6 py-3 flex flex-col gap-1">
-          <Link
-            to="/features"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center px-4 py-3 min-h-[44px] text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors text-sm font-medium"
-          >
+        <div className={mobilePanelClass}>
+          <Link to="/features" onClick={() => setMobileMenuOpen(false)} className={mobileLinkClass}>
             Features
           </Link>
-          <Link
-            to="/download"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center px-4 py-3 min-h-[44px] text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors text-sm font-medium"
-          >
+          <Link to="/download" onClick={() => setMobileMenuOpen(false)} className={mobileLinkClass}>
             Download
           </Link>
-          <Link
-            to="/app"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center justify-center px-4 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium mt-1"
-          >
+          <Link to="/app" onClick={() => setMobileMenuOpen(false)} className={mobileCtaClass}>
             Go to App
           </Link>
         </div>

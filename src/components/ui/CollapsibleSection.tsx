@@ -29,7 +29,7 @@ export function CollapsibleSection({
           onClick={() => setOpen(o => !o)}
           aria-expanded={open}
           aria-controls={bodyId}
-          className="w-full flex items-center justify-between text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded min-h-[44px]"
+          className="w-full flex items-center justify-between text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded min-h-[44px]"
         >
           <div className="flex items-center gap-2">
             <span className="text-lg font-semibold text-white">{title}</span>
