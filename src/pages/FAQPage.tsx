@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { Reveal } from '../components/motion/Reveal';
 
 interface FAQItem {
   question: string;
@@ -24,7 +25,7 @@ const faqs: FAQItem[] = [
   {
     category: 'getting-started',
     question: 'Is 3DCoster really free?',
-    answer: 'Yes, completely free and open source under the MIT license. No ads, no premium tiers, no data collection. If you find it useful, you can support development via Buy Me a Coffee.',
+    answer: 'The core calculator and selling workflow are free to use and open source under the MIT license — no ads, no data collection. If you find it useful, you can support development via Buy Me a Coffee.',
   },
   {
     category: 'getting-started',
@@ -95,7 +96,7 @@ const faqs: FAQItem[] = [
   {
     category: 'technical',
     question: 'Will my data sync between devices?',
-    answer: 'Not currently - data is stored locally on each device. Cloud sync is being considered for future versions, but privacy and keeping it free are priorities.',
+    answer: 'Not currently - data is stored locally on each device. Cloud sync is being considered for future versions, with privacy and keeping your data on your own device kept a priority.',
   },
   {
     category: 'technical',
@@ -126,93 +127,101 @@ export function FAQPage() {
     : faqs.filter(faq => faq.category === activeCategory);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
       <Header />
 
       {/* Main Content */}
-      <main className="flex-1 pt-24 pb-16 px-6">
-        <div className="max-w-4xl mx-auto">
+      <main className="flex-1 pt-32 pb-16 px-6">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">Frequently Asked Questions</h1>
-            <p className="text-slate-400 text-lg">
-              Everything you need to know about using 3DCoster
-            </p>
-          </div>
-
-          {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeCategory === cat.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* FAQ Accordion */}
-          <div className="space-y-3">
-            {filteredFaqs.map((faq, index) => (
-              <div
-                key={index}
-                className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden"
-              >
-                <button
-                  onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between gap-4"
-                >
-                  <span className="text-white font-medium">{faq.question}</span>
-                  <svg
-                    className={`w-5 h-5 text-slate-400 transition-transform ${
-                      openIndex === index ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {openIndex === index && (
-                  <div className="px-6 pb-4 text-slate-400">
-                    {faq.answer}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Still have questions */}
-          <div className="mt-12 text-center">
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
-              <h2 className="text-xl font-semibold text-white mb-2">Still have questions?</h2>
-              <p className="text-slate-400 mb-6">
-                Can't find what you're looking for? Reach out to the community or report an issue.
+          <Reveal trigger="mount">
+            <div className="text-center mb-12">
+              <h1 className="font-display text-4xl font-bold text-[var(--ink)] mb-4">Frequently Asked Questions</h1>
+              <p className="text-[var(--ink-soft)] text-lg">
+                Everything you need to know about using 3DCoster
               </p>
-              <div className="flex items-center justify-center gap-4">
-                <a
-                  href="https://github.com/Waarangel/3dcoster/issues"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
-                >
-                  Report an Issue
-                </a>
-                <Link
-                  to="/feedback"
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-                >
-                  Send Feedback
-                </Link>
-              </div>
             </div>
+          </Reveal>
+
+          <div className="max-w-3xl mx-auto">
+            {/* Category Filter */}
+            <div className="flex flex-wrap justify-center gap-2 mb-8">
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition duration-200 ease-out ${
+                    activeCategory === cat.id
+                      ? 'bg-[var(--brand)] text-white'
+                      : 'bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* FAQ Accordion */}
+            <Reveal trigger="inView">
+              <div className="space-y-3">
+                {filteredFaqs.map((faq, index) => (
+                  <div
+                    key={index}
+                    className="bg-[var(--surface)] border border-[var(--hairline)] rounded-2xl overflow-hidden transition duration-200 ease-out hover:border-[rgba(23,150,255,0.4)]"
+                  >
+                    <button
+                      onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                      className="w-full px-6 py-4 text-left flex items-center justify-between gap-4"
+                    >
+                      <span className="text-[var(--ink)] font-medium">{faq.question}</span>
+                      <svg
+                        className={`w-5 h-5 text-[var(--brand-soft)] transition-transform ${
+                          openIndex === index ? 'rotate-180' : ''
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {openIndex === index && (
+                      <div className="px-6 pb-4 text-[var(--ink-soft)]">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+
+            {/* Still have questions */}
+            <Reveal trigger="inView">
+              <div className="mt-12 text-center">
+                <div className="bg-[var(--surface)] border border-[var(--hairline)] rounded-2xl p-8">
+                  <h2 className="font-display text-xl font-semibold text-[var(--ink)] mb-2">Still have questions?</h2>
+                  <p className="text-[var(--ink-soft)] mb-6">
+                    Can't find what you're looking for? Reach out to the community or report an issue.
+                  </p>
+                  <div className="flex items-center justify-center gap-4">
+                    <a
+                      href="https://github.com/Waarangel/3dcoster/issues"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 bg-[var(--surface-2)] hover:bg-[var(--surface-2)] hover:border-[rgba(23,150,255,0.4)] border border-[var(--hairline)] text-[var(--ink)] rounded-lg transition duration-200 ease-out text-sm font-medium"
+                    >
+                      Report an Issue
+                    </a>
+                    <Link
+                      to="/feedback"
+                      className="px-5 py-2.5 bg-[var(--brand)] hover:bg-[var(--brand-soft)] text-white rounded-lg transition duration-200 ease-out text-sm font-medium"
+                    >
+                      Send Feedback
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </main>

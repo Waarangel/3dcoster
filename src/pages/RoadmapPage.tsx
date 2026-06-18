@@ -1,41 +1,45 @@
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { Reveal } from '../components/motion/Reveal';
 import { roadmapItems, STAGES } from '../roadmap';
 import type { RoadmapStage, RoadmapItem } from '../roadmap';
 
-// Full literal class strings per stage so Tailwind keeps them in the build.
+// Per-stage accents harmonized into the dark token palette. Stages stay
+// distinguishable (bar colour + count tint), with the brand-blue family
+// reserved for the active "In Development" column and neutral ink tints for
+// the earlier research/planning stages.
 const stageStyles: Record<RoadmapStage, { bar: string; count: string; hover: string }> = {
   research: {
-    bar: 'bg-indigo-500',
-    count: 'bg-indigo-500/15 text-indigo-300',
-    hover: 'hover:border-indigo-500/50',
+    bar: 'bg-[var(--surface-2)]',
+    count: 'bg-[var(--surface-2)] text-[var(--ink-faint)]',
+    hover: 'hover:border-[var(--hairline-strong)]',
   },
   planning: {
-    bar: 'bg-blue-500',
-    count: 'bg-blue-500/15 text-blue-300',
-    hover: 'hover:border-blue-500/50',
+    bar: 'bg-[var(--ink-faint)]',
+    count: 'bg-[var(--surface-2)] text-[var(--ink-soft)]',
+    hover: 'hover:border-[var(--hairline-strong)]',
   },
   'in-development': {
-    bar: 'bg-emerald-500',
-    count: 'bg-emerald-500/15 text-emerald-300',
-    hover: 'hover:border-emerald-500/50',
+    bar: 'bg-[var(--brand)]',
+    count: 'bg-[rgba(23,150,255,0.1)] text-[var(--brand-soft)]',
+    hover: 'hover:border-[rgba(23,150,255,0.4)]',
   },
 };
 
 function RoadmapCard({ item, hover }: { item: RoadmapItem; hover: string }) {
   return (
     <div
-      className={`bg-slate-800/60 border border-slate-700 rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 ${hover}`}
+      className={`rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] p-5 transition duration-200 ease-out hover:-translate-y-1 ${hover}`}
     >
-      <h3 className="text-white font-semibold leading-snug mb-2">{item.title}</h3>
-      <p className="text-slate-400 text-sm leading-relaxed">{item.description}</p>
+      <h3 className="font-display text-[var(--ink)] font-semibold leading-snug mb-2">{item.title}</h3>
+      <p className="text-[var(--ink-soft)] text-sm leading-relaxed">{item.description}</p>
       {item.href && (
         <a
           href={item.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+          className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-[var(--brand-soft)] transition-colors hover:text-[var(--brand)]"
         >
           {item.hrefLabel ?? 'Learn more'}
           <span aria-hidden="true">→</span>
@@ -47,41 +51,41 @@ function RoadmapCard({ item, hover }: { item: RoadmapItem; hover: string }) {
 
 export function RoadmapPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
       <Header />
 
       {/* Hero */}
       <section className="pt-32 pb-12 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">Roadmap</h1>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+        <Reveal trigger="mount" className="max-w-4xl mx-auto text-center">
+          <h1 className="font-display text-4xl md:text-5xl font-bold text-[var(--ink)] mb-6">Roadmap</h1>
+          <p className="text-xl text-[var(--ink-soft)] max-w-2xl mx-auto">
             Where 3DCoster is headed — what we're researching, what's being planned, and what's
             actively in the works. A direction of travel, not a dated promise.
           </p>
-        </div>
+        </Reveal>
       </section>
 
       {/* Board */}
       <section className="pb-16 px-6">
         <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3 items-start">
-          {STAGES.map((stage) => {
+          {STAGES.map((stage, i) => {
             const items = roadmapItems.filter((item) => item.stage === stage.id);
             const styles = stageStyles[stage.id];
             return (
-              <div key={stage.id} className="flex flex-col">
+              <Reveal key={stage.id} trigger="inView" delay={i * 0.06} className="flex flex-col">
                 {/* Column header */}
-                <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-800/40 mb-4">
+                <div className="rounded-2xl overflow-hidden border border-[var(--hairline)] bg-[var(--surface)] mb-4">
                   <div className={`h-1 ${styles.bar}`} />
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-1">
-                      <h2 className="text-white font-semibold">{stage.label}</h2>
+                      <h2 className="font-display text-[var(--ink)] font-semibold">{stage.label}</h2>
                       <span
                         className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-semibold ${styles.count}`}
                       >
                         {items.length}
                       </span>
                     </div>
-                    <p className="text-slate-500 text-sm">{stage.blurb}</p>
+                    <p className="text-[var(--ink-faint)] text-sm">{stage.blurb}</p>
                   </div>
                 </div>
 
@@ -92,12 +96,12 @@ export function RoadmapPage() {
                       <RoadmapCard key={item.title} item={item} hover={styles.hover} />
                     ))
                   ) : (
-                    <div className="border border-dashed border-slate-700 rounded-xl p-5 text-center text-slate-500 text-sm">
+                    <div className="border border-dashed border-[var(--hairline)] rounded-2xl p-5 text-center text-[var(--ink-faint)] text-sm">
                       Nothing here right now.
                     </div>
                   )}
                 </div>
-              </div>
+              </Reveal>
             );
           })}
         </div>
@@ -105,17 +109,18 @@ export function RoadmapPage() {
 
       {/* CTA */}
       <section className="pb-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-2xl p-12 border border-blue-500/20">
-            <h2 className="text-2xl font-bold text-white mb-4">Want something on this board?</h2>
-            <p className="text-slate-400 mb-8 max-w-xl mx-auto">
+        <Reveal trigger="inView" className="max-w-4xl mx-auto text-center">
+          <div className="bg-[rgba(23,150,255,0.1)] rounded-2xl p-12 border border-[rgba(23,150,255,0.25)]">
+            <h2 className="font-display text-2xl font-bold text-[var(--ink)] mb-4">Want something on this board?</h2>
+            <p className="text-[var(--ink-soft)] mb-8 max-w-xl mx-auto">
               The roadmap is shaped by what sellers actually ask for. Tell us what would make
               3DCoster more useful — it might be the next thing we pick up.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link
                 to="/feedback"
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold shadow-lg shadow-blue-500/25"
+                className="px-8 py-4 bg-[var(--brand)] hover:bg-[var(--brand-soft)] text-white rounded-xl transition duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] font-semibold"
+                style={{ boxShadow: '0 8px 30px -8px var(--brand-glow)' }}
               >
                 Request a Feature
               </Link>
@@ -123,13 +128,13 @@ export function RoadmapPage() {
                 href="https://github.com/Waarangel/3dcoster/issues"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors font-semibold"
+                className="px-8 py-4 bg-[var(--surface-2)] border border-[var(--hairline-strong)] hover:border-[rgba(23,150,255,0.4)] text-[var(--ink)] rounded-xl transition duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] font-semibold"
               >
                 Open an Issue on GitHub
               </a>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       <Footer />

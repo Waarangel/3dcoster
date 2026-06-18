@@ -34,20 +34,21 @@ export function FeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
       <Header />
 
       {/* Content */}
-      <section className="pt-32 pb-20 px-6">
+      <section className="relative overflow-hidden pt-32 pb-20 px-6">
+        <div className="hero-aura pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
-            <div className="w-16 h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-[rgba(23,150,255,0.1)] border border-[rgba(23,150,255,0.2)] rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-[var(--brand-soft)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </div>
-            <h1 className="text-4xl font-bold text-white mb-4">Send Us Feedback</h1>
-            <p className="text-slate-400 text-lg">
+            <h1 className="font-display text-4xl font-extrabold text-[var(--ink)] mb-4">Send us feedback</h1>
+            <p className="text-[var(--ink-soft)] text-lg">
               Found a bug? Have an idea? We'd love to hear from you.
             </p>
           </div>
@@ -59,11 +60,11 @@ export function FeedbackPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-white mb-2">Thanks for your feedback!</h2>
-              <p className="text-slate-400 mb-6">We'll review it and get back to you if needed.</p>
+              <h2 className="font-display text-xl font-bold text-[var(--ink)] mb-2">Thanks for your feedback!</h2>
+              <p className="text-[var(--ink-soft)] mb-6">We'll review it and get back to you if needed.</p>
               <button
                 onClick={() => setStatus('idle')}
-                className="text-blue-400 hover:text-blue-300 transition-colors"
+                className="text-[var(--brand-soft)] hover:text-[var(--ink)] transition-colors"
               >
                 Send another message
               </button>
@@ -74,7 +75,7 @@ export function FeedbackPage() {
                 <div className="space-y-6">
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                    <label htmlFor="email" className="block text-sm font-medium text-[var(--ink-soft)] mb-2">
                       Email (optional)
                     </label>
                     <Input
@@ -84,12 +85,12 @@ export function FeedbackPage() {
                       placeholder="your@email.com"
                       inputSize="lg"
                     />
-                    <p className="text-slate-500 text-xs mt-1">Only if you'd like a response</p>
+                    <p className="text-[var(--ink-faint)] text-xs mt-1">Only if you'd like a response</p>
                   </div>
 
                   {/* Type */}
                   <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-slate-300 mb-2">
+                    <label htmlFor="type" className="block text-sm font-medium text-[var(--ink-soft)] mb-2">
                       Feedback Type
                     </label>
                     <Select id="type" name="type" selectSize="lg">
@@ -102,7 +103,7 @@ export function FeedbackPage() {
 
                   {/* Message */}
                   <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-slate-300 mb-2">
+                    <label htmlFor="message" className="block text-sm font-medium text-[var(--ink-soft)] mb-2">
                       Your Message
                     </label>
                     <Textarea
