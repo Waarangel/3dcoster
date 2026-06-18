@@ -320,6 +320,7 @@ function App() {
             userProfile={userProfile}
             fxTable={fxTable}
             shippingConfig={shippingConfig}
+            marketplaceFees={marketplaceFees}
             onSaveJob={handleSaveJob}
             onUpdateJob={updateJob}
             editingJob={editingJob}

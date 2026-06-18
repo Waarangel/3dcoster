@@ -4,7 +4,7 @@ import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window'
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus } from '../types';
 import { useSales, useAllSales, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
-import { Button, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal } from './ui';
+import { Button, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { SearchIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
@@ -963,6 +963,7 @@ function TagIcon(props: SVGProps<SVGSVGElement>) {
 export const ADD_TAG_PLACEHOLDER = 'trending, popular, out of date';
 
 export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, fxTable, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+  const toast = useToast();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   // Print Quote modal state (plan 16-10 + D-27). Either:
   //   - { job, mode: 'create' }  → PrintQuoteModal renders in create mode
@@ -1146,13 +1147,17 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // D-28: DeclineQuoteModal onConfirm — writes status='declined' + decisionAt + declineReason atomically.
   const handleConfirmDecline = useCallback(async ({ reason }: { reason: string }) => {
     if (!decliningQuote) return;
-    await updateQuoteFromHook({
-      ...decliningQuote,
-      status: 'declined',
-      decisionAt: new Date(),
-      declineReason: reason || undefined,  // empty string → leave undefined for cleanliness
-    });
-  }, [decliningQuote, updateQuoteFromHook]);
+    try {
+      await updateQuoteFromHook({
+        ...decliningQuote,
+        status: 'declined',
+        decisionAt: new Date(),
+        declineReason: reason || undefined,  // empty string → leave undefined for cleanliness
+      });
+    } catch {
+      toast.error('Could not decline the quote — please try again.');
+    }
+  }, [decliningQuote, updateQuoteFromHook, toast]);
 
   // Stable callbacks so React.memo on JobCard can skip rows whose data
   // didn't change. State setters are already stable; only derived handlers
@@ -1241,11 +1246,15 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
 
   const confirmDeleteJob = async () => {
     if (!deleteConfirmJobId) return;
-    await onDeleteJob(deleteConfirmJobId);
-    if (selectedJobId === deleteConfirmJobId) {
-      setSelectedJobId(null);
+    try {
+      await onDeleteJob(deleteConfirmJobId);
+      if (selectedJobId === deleteConfirmJobId) {
+        setSelectedJobId(null);
+      }
+      setDeleteConfirmJobId(null);  // only dismiss the modal once the delete succeeds
+    } catch {
+      toast.error('Could not delete the job — please try again.');
     }
-    setDeleteConfirmJobId(null);
   };
 
   const getFilamentName = useCallback((filamentId: string) => {

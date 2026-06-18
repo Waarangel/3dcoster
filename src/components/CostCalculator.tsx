@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback, useId } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, FilamentUsage, UserProfile } from '../types';
+import { useState, useEffect, useMemo, useCallback, useId, useRef } from 'react';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
@@ -25,6 +25,7 @@ interface CostCalculatorProps {
   userProfile: UserProfile;
   fxTable: FxRateTable | null;
   shippingConfig: ShippingConfig;
+  marketplaceFees: MarketplaceFees;
   onSaveJob: (job: PrintJob, printHours: number) => void | Promise<void>;
   onUpdateJob: (job: PrintJob) => void | Promise<void>;
   editingJob: PrintJob | null;
@@ -50,14 +51,26 @@ function getStoredValue<T>(key: string, defaultValue: T): T {
 }
 
 // Internal form state for multi-filament rows (NOT the DB FilamentUsage type)
+// Monotonic source of stable, view-only row keys for the dynamic filament &
+// material lists. A key is assigned when a row enters component state and is
+// never persisted — it's stripped before a job is written to IndexedDB — so
+// React gets stable keys (no index keys on reorderable/deletable lists) without
+// leaking a view concern into the stored schema.
+let rowKeySeq = 0;
+const nextRowKey = (): string => `row-${++rowKeySeq}`;
+
 interface FilamentRow {
+  uid: string;
   filamentId: string;
   grams: number;
   editedPrice: number;
   editedCurrency: Currency;
 }
 
-export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
+// MaterialUsage augmented with a stable view-only key (see nextRowKey).
+type MaterialRow = MaterialUsage & { uid: string };
+
+export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, marketplaceFees, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
@@ -113,11 +126,17 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   // makeDefaultRow is a function (not a constant) so it captures userCurrency at call time
   const makeDefaultRow = (currency: Currency): FilamentRow => ({
+    uid: nextRowKey(),
     filamentId: '',
     grams: 0,
     editedPrice: 0,
     editedCurrency: currency,
   });
+
+  // Wrap a stored MaterialUsage in a view-only key for the editable list, and
+  // strip it back out before the job is persisted (keeps the stored schema clean).
+  const toMaterialRow = (usage: MaterialUsage): MaterialRow => ({ ...usage, uid: nextRowKey() });
+  const stripRowKey = (row: MaterialRow): MaterialUsage => ({ materialId: row.materialId, quantity: row.quantity });
 
   // Print job inputs - restore from sessionStorage if available
   const [printName, setPrintName] = useState(() => getStoredValue('printName', ''));
@@ -128,7 +147,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         const parsed = JSON.parse(stored);
         // New format: has filamentRows array
         if (Array.isArray(parsed.filamentRows) && parsed.filamentRows.length > 0) {
-          return parsed.filamentRows as FilamentRow[];
+          // Reassign view-only keys from the live sequence so restored rows can't
+          // collide with freshly-added ones (persisted keys are not trusted).
+          return (parsed.filamentRows as FilamentRow[]).map(r => ({ ...r, uid: nextRowKey() }));
         }
         // Old format: has filamentId scalar -- graceful fallback per PERSIST-02
         // Just fall through to default
@@ -170,7 +191,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(() => getStoredValue('prepTimeMinutes', 0));
   const [postProcessingMinutes, setPostProcessingMinutes] = useState(() => getStoredValue('postProcessingMinutes', 0));
   const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
-  const [materialsUsed, setMaterialsUsed] = useState<MaterialUsage[]>(() => getStoredValue('materialsUsed', []));
+  const [materialsUsed, setMaterialsUsed] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('materialsUsed', []).map(toMaterialRow));
 
   // Pricing inputs (interlinked)
   const [profitMarginPercent, setProfitMarginPercent] = useState(() => getStoredValue('profitMarginPercent', defaultProfitMargin));
@@ -188,7 +209,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [shippingMethod, setShippingMethod] = useState<ShippingMethodType>(() => getStoredValue('shippingMethod', 'local_pickup'));
   const [shippingDistanceKm, setShippingDistanceKm] = useState(() => getStoredValue('shippingDistanceKm', 0));
   const [shippingOverrideCost, setShippingOverrideCost] = useState<number | null>(() => getStoredValue('shippingOverrideCost', null));
-  const [packagingMaterials, setPackagingMaterials] = useState<MaterialUsage[]>(() => getStoredValue('packagingMaterials', []));
+  const [packagingMaterials, setPackagingMaterials] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('packagingMaterials', []).map(toMaterialRow));
 
   // Marketplace
   const [marketplace, setMarketplace] = useState<MarketplaceType>(() => getStoredValue('marketplace', 'none'));
@@ -199,8 +220,19 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     () => editingJob?.etsyChecks ?? getStoredValue('etsyChecks', {} as Record<string, boolean>)
   );
 
-  // Job saved feedback
+  // Job saved feedback. The reset timer is held in a ref so it can be cleared on
+  // unmount and coalesced across rapid saves (avoids a setState on an unmounted
+  // component and stacked timers cancelling the "saved" flag early).
   const [justSaved, setJustSaved] = useState(false);
+  const justSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flagJustSaved = () => {
+    setJustSaved(true);
+    if (justSavedTimer.current) clearTimeout(justSavedTimer.current);
+    justSavedTimer.current = setTimeout(() => setJustSaved(false), 3000);
+  };
+  useEffect(() => () => {
+    if (justSavedTimer.current) clearTimeout(justSavedTimer.current);
+  }, []);
 
   const toast = useToast();
 
@@ -255,7 +287,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setPrepTimeMinutes(editingJob.prepTimeMinutes);
       setPostProcessingMinutes(editingJob.postProcessingMinutes);
       setFailureRate(editingJob.failureRate);
-      setMaterialsUsed(editingJob.materialsUsed);
+      setMaterialsUsed(editingJob.materialsUsed.map(toMaterialRow));
       setSellingPrice(editingJob.sellingPrice);
       setTaxRateOverride(editingJob.taxRate);
       setEtsyChecks(editingJob.etsyChecks ?? {});
@@ -265,7 +297,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       if (editingJob.shippingMethod !== undefined) setShippingMethod(editingJob.shippingMethod);
       if (editingJob.shippingDistanceKm !== undefined) setShippingDistanceKm(editingJob.shippingDistanceKm);
       if (editingJob.shippingOverrideCost !== undefined) setShippingOverrideCost(editingJob.shippingOverrideCost);
-      if (editingJob.packagingMaterials !== undefined) setPackagingMaterials(editingJob.packagingMaterials);
+      if (editingJob.packagingMaterials !== undefined) setPackagingMaterials(editingJob.packagingMaterials.map(toMaterialRow));
       if (editingJob.marketplace !== undefined) setMarketplace(editingJob.marketplace);
       // Seed profit margin + target profit from the saved cost basis so the
       // user sees the historical margin immediately, not the user-profile default.
@@ -283,6 +315,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       const restoredRows: FilamentRow[] = (editingJob.filaments ?? []).map(fu => {
         const asset = materials.find(m => m.id === fu.filamentId);
         return {
+          uid: nextRowKey(),
           filamentId: fu.filamentId,
           grams: fu.grams,
           editedPrice: fu.pricePerGram ?? asset?.costPerUnit ?? 0,
@@ -396,7 +429,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     return options;
   }, [userCurrency]);
 
-  // Calculate marketplace fees based on selling price
+  // Calculate marketplace fees based on selling price. Rates come from the live
+  // Settings → Marketplaces config (defaults match each platform's published
+  // fees); percent fields are stored as whole numbers (e.g. 10 = 10%).
   const marketplaceFee = useMemo(() => {
     if (sellingPrice <= 0) return 0;
 
@@ -407,31 +442,33 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         return 0;
 
       case 'facebook_shipped': {
-        // 10% selling fee (min $0.80) + 2.9% payment processing
-        const fbSellingFee = Math.max(0.80, sellingPrice * 0.10);
-        const fbProcessingFee = sellingPrice * 0.029;
+        // selling fee (with a floor) + payment processing
+        const fbSellingFee = Math.max(marketplaceFees.facebookMinFee, sellingPrice * (marketplaceFees.facebookShippedPercent / 100));
+        const fbProcessingFee = sellingPrice * (marketplaceFees.facebookProcessingPercent / 100);
         return fbSellingFee + fbProcessingFee;
       }
 
       case 'etsy': {
-        // 6.5% transaction + 3% payment + $0.25 payment fixed + $0.20 listing
-        const etsyTransactionFee = sellingPrice * 0.065;
-        const etsyPaymentFee = sellingPrice * 0.03 + 0.25;
-        const etsyListingFee = 0.20;
-        return etsyTransactionFee + etsyPaymentFee + etsyListingFee;
+        // transaction + payment % + fixed payment fee + listing fee
+        const etsyTransactionFee = sellingPrice * (marketplaceFees.etsyTransactionPercent / 100);
+        const etsyPaymentFee = sellingPrice * (marketplaceFees.etsyPaymentPercent / 100) + marketplaceFees.etsyPaymentFixed;
+        return etsyTransactionFee + etsyPaymentFee + marketplaceFees.etsyListingFee;
       }
 
       case 'etsy_offsite_ad': {
-        // Same as Etsy + 15% offsite ad fee
-        const etsyBase = sellingPrice * 0.065 + sellingPrice * 0.03 + 0.25 + 0.20;
-        const offsiteAdFee = sellingPrice * 0.15;
+        // Same as Etsy + offsite ad fee
+        const etsyBase = sellingPrice * (marketplaceFees.etsyTransactionPercent / 100)
+          + sellingPrice * (marketplaceFees.etsyPaymentPercent / 100)
+          + marketplaceFees.etsyPaymentFixed
+          + marketplaceFees.etsyListingFee;
+        const offsiteAdFee = sellingPrice * (marketplaceFees.etsyOffsiteAdPercent / 100);
         return etsyBase + offsiteAdFee;
       }
 
       default:
         return 0;
     }
-  }, [marketplace, sellingPrice]);
+  }, [marketplace, sellingPrice, marketplaceFees]);
 
   // Get available shipping methods based on currency
   const availableShippingMethods = useMemo(() => {
@@ -632,6 +669,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         currency: r.editedPrice > 0 ? r.editedCurrency : undefined,
       }));
 
+    // Drop the view-only row keys before persisting (keeps the stored schema clean).
+    const materialsUsedToSave = materialsUsed.map(stripRowKey);
+    const packagingMaterialsToSave = packagingMaterials.map(stripRowKey);
+
     if (editingJob) {
       // Update existing job
       const updatedJob: PrintJob = {
@@ -647,7 +688,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         modelUrl: modelUrl.trim() || undefined,
         prepTimeMinutes,
         postProcessingMinutes,
-        materialsUsed,
+        materialsUsed: materialsUsedToSave,
         failureRate,
         costPerUnit: trueCost,
         sellingPrice,
@@ -657,7 +698,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         shippingMethod,
         shippingDistanceKm,
         shippingOverrideCost,
-        packagingMaterials,
+        packagingMaterials: packagingMaterialsToSave,
         marketplace,
         tags: editingJob.tags,
         // Phase 22.1 D-03 — snapshot the Calculator's broader break-even fixed
@@ -673,8 +714,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         await onUpdateJob(updatedJob);
         clearForm();
         onCancelEdit();
-        setJustSaved(true);
-        setTimeout(() => setJustSaved(false), 3000);
+        flagJustSaved();
       } catch {
         toast.error('Could not save the job — please try again.');
       }
@@ -694,7 +734,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         modelUrl: modelUrl.trim() || undefined,
         prepTimeMinutes,
         postProcessingMinutes,
-        materialsUsed,
+        materialsUsed: materialsUsedToSave,
         failureRate,
         costPerUnit: trueCost,
         sellingPrice,
@@ -704,7 +744,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         shippingMethod,
         shippingDistanceKm,
         shippingOverrideCost,
-        packagingMaterials,
+        packagingMaterials: packagingMaterialsToSave,
         marketplace,
         copiesSold: 0,
         // Phase 22.1 D-03 — snapshot the Calculator's broader break-even fixed
@@ -718,8 +758,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
       try {
         await onSaveJob(job, printTimeHours);
-        setJustSaved(true);
-        setTimeout(() => setJustSaved(false), 3000);
+        flagJustSaved();
       } catch {
         toast.error('Could not save the job — please try again.');
       }
@@ -753,7 +792,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // Add material to job
   const addMaterialUsage = () => {
     if (nonFilaments.length === 0) return;
-    setMaterialsUsed([...materialsUsed, { materialId: nonFilaments[0].id, quantity: 1 }]);
+    setMaterialsUsed([...materialsUsed, toMaterialRow({ materialId: nonFilaments[0].id, quantity: 1 })]);
   };
 
   const updateMaterialUsage = (index: number, field: keyof MaterialUsage, value: string | number) => {
@@ -804,6 +843,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               const newRows: FilamentRow[] = filaments.map(f => {
                 const asset = f.filamentId ? materials.find(m => m.id === f.filamentId) : null;
                 return {
+                  uid: nextRowKey(),
                   filamentId: f.filamentId ?? '',
                   grams: f.grams,
                   editedPrice: asset?.costPerUnit ?? 0,
@@ -920,7 +960,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             <label className="block text-xs text-slate-400">Filaments *</label>
 
             {filamentRows.map((row, index) => (
-              <div key={index} className="flex items-start gap-2 bg-slate-700/30 p-3 rounded-lg">
+              <div key={row.uid} className="flex items-start gap-2 bg-slate-700/30 p-3 rounded-lg">
                 <div className="flex-1 min-w-0">
                   <FilamentSelector
                     materials={materials}
@@ -1059,7 +1099,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             {materialsUsed.map((usage, index) => {
               const material = materialsInProfile.find(m => m.id === usage.materialId);
               return (
-                <div key={index} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
+                <div key={usage.uid} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
                   <Select
                     value={usage.materialId}
                     onChange={e => updateMaterialUsage(index, 'materialId', e.target.value)}
@@ -1181,7 +1221,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               btnSize="sm"
               onClick={() => {
                 if (consumables.length > 0) {
-                  setPackagingMaterials([...packagingMaterials, { materialId: consumables[0].id, quantity: 1 }]);
+                  setPackagingMaterials([...packagingMaterials, toMaterialRow({ materialId: consumables[0].id, quantity: 1 })]);
                 }
               }}
               disabled={consumables.length === 0}
@@ -1198,7 +1238,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               {packagingMaterials.map((usage, index) => {
                 const material = materialsInProfile.find(m => m.id === usage.materialId);
                 return (
-                  <div key={index} className="flex items-center gap-3 bg-slate-700/50 p-2 rounded-lg">
+                  <div key={usage.uid} className="flex items-center gap-3 bg-slate-700/50 p-2 rounded-lg">
                     <Select
                       value={usage.materialId}
                       onChange={e => {
