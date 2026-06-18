@@ -152,6 +152,15 @@ export default defineConfig(({ mode }) => ({
               || id.includes('/@remix-run/') || id.includes('/scheduler/')) {
               return 'react-vendor';
             }
+            // Motion (ex-Framer Motion) is imported ONLY by the marketing surfaces
+            // (the lazy LandingPage). Give it a dedicated chunk so Rollup loads it
+            // with those routes instead of folding it into the shared `vendor`
+            // chunk — which the calculator app pulls for papaparse/jszip/etc.,
+            // and would otherwise drag ~35 KB gzip of unused motion onto /app.
+            if (id.includes('/motion/') || id.includes('/motion-dom/')
+              || id.includes('/motion-utils/') || id.includes('/framer-motion/')) {
+              return 'motion-vendor';
+            }
             if (id.includes('/dexie/') || id.includes('/dexie-react-hooks/')) return 'dexie-vendor';
             return 'vendor';
           }

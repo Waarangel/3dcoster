@@ -5,6 +5,62 @@ body {
   min-height: 100vh;
 }
 
+/* ── "Cost-Truth Dark" design tokens ─────────────────────────────────────
+   Calm, deep, brand-blue dark theme built AROUND the 3DCoster logo blue
+   (#1796FF) so the mark belongs instead of fighting the accent. Layered
+   depth + controlled glow, not flat slate. Easing curves per Emil Kowalski.
+   Full rationale in /DESIGN.md. */
+:root {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Brand — the logo blue is the hero */
+  --brand: #1796ff;
+  --brand-soft: #5bb3ff;
+  --brand-deep: #0b6fd4;
+  --brand-glow: rgba(23, 150, 255, 0.32);
+
+  /* Surfaces — deep blue-ink; calm, lets the brand glow read */
+  --bg: #0a0e18;
+  --surface: #121829;
+  --surface-2: #18203a;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+
+  /* Ink */
+  --ink: #f2f5fb;        /* primary   ~16:1 on bg */
+  --ink-soft: #a8b3c7;   /* secondary ~9:1 */
+  --ink-faint: #74809a;  /* tertiary  ~4.7:1 */
+
+  /* Warm highlight — reserved for the support/coffee band only */
+  --amber: #f0b429;
+  --amber-soft: rgba(240, 180, 41, 0.14);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em; /* tight grotesque, but ≥ -0.04em floor */
+  text-wrap: balance;
+}
+
+/* Brand aura behind the hero — atmosphere + depth, not flat slate. */
+.hero-aura {
+  background: radial-gradient(58% 50% at 50% -8%, var(--brand-glow), transparent 66%);
+}
+
+/* Gentle discoverability hint for the expand-breakdown control (collapsed only).
+   Neutralised for reduced-motion users by the global rule below. */
+@keyframes chevron-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2.5px); }
+}
+.chevron-hint {
+  animation: chevron-bob 1.8s var(--ease-out-quint) infinite;
+}
+
 /* Force custom styling on native select elements (fixes Tauri/WebView OS-native rendering) */
 select {
   appearance: none;
