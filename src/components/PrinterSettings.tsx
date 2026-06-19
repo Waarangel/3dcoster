@@ -10,6 +10,15 @@ import { NewBadge } from './NewBadge';
 // custom-model form instead of selecting an existing model.
 const ADD_CUSTOM_MODEL = '__add_custom_model__';
 
+// Stable unique id (crypto.randomUUID when available; jsdom-safe Date.now
+// fallback). Module-scope so it's outside render and avoids a collision window
+// between two adds in the same millisecond. Matches the codebase id idiom.
+function makeId(prefix: string): string {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? `${prefix}-${crypto.randomUUID()}`
+    : `${prefix}-${Date.now()}`;
+}
+
 // Default nozzle specs for a new custom model (hardened-steel-ish), matching
 // the catalog convention.
 const DEFAULT_NOZZLE_COST = 8;
@@ -102,7 +111,7 @@ export function PrinterSettings({
   const handleSaveCustomModel = async () => {
     if (!canSaveCustomModel) return;
     const config: PrinterConfig = {
-      id: `custom-${Date.now()}`,
+      id: makeId('custom'),
       name: customModelName.trim(),
       purchasePrice: customModelPrice,
       expectedLifespanHours: customModelLifespan,
@@ -134,7 +143,7 @@ export function PrinterSettings({
     if (!newInstanceNickname.trim() || !newInstancePrinterId) return;
 
     const instance: PrinterInstance = {
-      id: `instance-${Date.now()}`,
+      id: makeId('instance'),
       printerConfigId: newInstancePrinterId,
       nickname: newInstanceNickname.trim(),
       printHours: newInstanceHours,

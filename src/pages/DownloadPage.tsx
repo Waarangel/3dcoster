@@ -27,7 +27,9 @@ function detectPlatform(): Platform {
   if (userAgent.includes('mac')) return 'mac';
   // Android UAs also contain "linux"; exclude them so mobile users aren't
   // pointed at a desktop binary.
-  if (userAgent.includes('linux') && !userAgent.includes('android')) return 'linux';
+  // ChromeOS UAs use "CrOS" and contain neither "linux" nor "android"; the
+  // Linux binaries run there once the user enables the Linux container.
+  if ((userAgent.includes('linux') || userAgent.includes('cros')) && !userAgent.includes('android')) return 'linux';
   return 'unknown';
 }
 
@@ -250,12 +252,14 @@ export function DownloadPage() {
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <a
                     href={downloadUrls.linuxDeb}
+                    aria-label="Download .deb for Debian/Ubuntu"
                     className="block w-full py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors font-medium text-center text-xs"
                   >
                     .deb
                   </a>
                   <a
                     href={downloadUrls.linuxRpm}
+                    aria-label="Download .rpm for Fedora/RHEL"
                     className="block w-full py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors font-medium text-center text-xs"
                   >
                     .rpm

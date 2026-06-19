@@ -85,8 +85,10 @@ jobs:
         # that surfaces in the build log (soft gate — never blocks shipping).
         # See scripts/extract-changelog.cjs for full behavior.
         shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
-          NOTES="$(node scripts/extract-changelog.cjs "${{ github.ref_name }}")"
+          NOTES="$(node scripts/extract-changelog.cjs "$TAG")"
           {
             echo "RELEASE_BODY<<RELEASE_BODY_EOF_3DCOSTER"
             echo "$NOTES"

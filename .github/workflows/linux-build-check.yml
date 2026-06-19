@@ -13,6 +13,11 @@ name: Linux Build Check
 # Download the artifact from the run's summary page, unzip, and the .AppImage
 # can be run directly after `chmod +x`. This whole file can be deleted once the
 # Linux build is proven and shipping via release.yml.
+# Least-privilege: this workflow only builds + uploads Actions artifacts; it
+# never creates a release, so a read-only token is sufficient.
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
