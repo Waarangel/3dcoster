@@ -1,4 +1,4 @@
-import { memo, useCallback, useId, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { Asset, AssetCategory, BuiltInCategory, Currency } from '../types';
 import { convert, type FxRateTable } from '../utils/fxConvert';
@@ -6,6 +6,8 @@ import { downloadCsv, generateExportCsv } from '../utils/csvHelpers';
 import { buildExportFilename } from '../utils/jobsExport';
 import { CsvImportModal } from './CsvImportModal';
 import { NewBadge } from './NewBadge';
+import { StockBadge } from './inventory/StockBadge';
+import { useStockEvents } from '../hooks/useStockEvents';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PackageIcon } from './ui/icons';
@@ -151,6 +153,9 @@ type AssetRowCallbacks = {
   onDelete: (id: string) => void;
   userCurrency: Currency;
   fxTable: FxRateTable | null;
+  // v1.8 inventory: derived current stock per asset id. Optional so the printer
+  // row path (which never shows stock) needs no threading.
+  stockByAssetId?: ReadonlyMap<string, number>;
 };
 
 // Convert a stored price into the user's currency for display. Returns the
@@ -411,7 +416,9 @@ const MaterialRow = memo(function MaterialRow({
   onDelete,
   userCurrency,
   fxTable,
+  stockByAssetId,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
+  const stock = stockByAssetId?.get(asset.id) ?? null;
   return (
     <div
       role="row"
@@ -431,6 +438,9 @@ const MaterialRow = memo(function MaterialRow({
               </span>
             ))}
           </div>
+        )}
+        {stock != null && (
+          <div className="mt-1"><StockBadge stock={stock} threshold={asset.lowStockThreshold} unit={asset.unit} /></div>
         )}
       </div>
       <div role="cell" className="text-slate-400">
@@ -475,8 +485,8 @@ const MaterialRow = memo(function MaterialRow({
   );
 });
 
-const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable }: RowComponentProps<AssetRowPropsForList>) => (
-  <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} />
+const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable, stockByAssetId }: RowComponentProps<AssetRowPropsForList>) => (
+  <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
 );
 
 const SortIndicator = ({ field, sortField, sortDirection }: { field: string; sortField: string; sortDirection: 'asc' | 'desc' }) => {
@@ -517,6 +527,8 @@ export function AssetLibrary({
   const nozzleLifespanId = useId();
   const notesId = useId();
   const tagsId = useId();
+  const stockOnHandId = useId();
+  const lowStockThresholdId = useId();
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -536,6 +548,18 @@ export function AssetLibrary({
   const [isExporting, setIsExporting] = useState(false);
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Live inventory (v1.8): current stock per asset, shown as a StockBadge on each
+  // material row. The threshold + manual stock level are set in the edit form.
+  const { stockByAssetId, logManualAdjustment } = useStockEvents();
+  // "Stock on hand" form field (transient — stock lives in the ledger, not the
+  // asset). Pre-filled with the current derived stock when an edit opens; only
+  // depends on editingId so it doesn't fight the user when the ledger updates.
+  const [stockOnHandInput, setStockOnHandInput] = useState('');
+  useEffect(() => {
+    setStockOnHandInput(editingId ? String(stockByAssetId.get(editingId) ?? '') : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingId]);
 
   // Get all unique categories from assets (built-in + custom)
   const allCategories = useMemo(() => {
@@ -715,6 +739,7 @@ export function AssetLibrary({
         unitsPerPackage: formData.unitsPerPackage,
         packageCost: formData.packageCost,
         lifespanUnits: formData.lifespanUnits,
+        lowStockThreshold: formData.lowStockThreshold,
         notes: formData.notes,
         brand: formData.brand,
         filamentType: formData.filamentType,
@@ -728,6 +753,16 @@ export function AssetLibrary({
       } else {
         onAddAsset(material);
       }
+      // v1.8: set stock on hand to the entered value via a ledger adjustment
+      // (delta from current derived stock). Empty input = leave stock untouched.
+      if (stockOnHandInput.trim() !== '') {
+        const target = parseFloat(stockOnHandInput);
+        if (Number.isFinite(target)) {
+          const delta = target - (stockByAssetId.get(material.id) ?? 0);
+          if (delta !== 0) void logManualAdjustment(material.id, delta, 'Set in Asset Library');
+        }
+      }
+      setStockOnHandInput('');
     }
 
     setFormData({ category: 'consumable' });
@@ -855,8 +890,8 @@ export function AssetLibrary({
   // skip unchanged rows. Same object shape feeds all three lists; only the
   // identity changes when paginatedAssets/startEdit/onDeleteAsset rotate.
   const listRowProps = useMemo<AssetRowPropsForList>(
-    () => ({ assets: paginatedAssets, onEdit: startEdit, onDelete: onDeleteAsset, userCurrency, fxTable }),
-    [paginatedAssets, startEdit, onDeleteAsset, userCurrency, fxTable]
+    () => ({ assets: paginatedAssets, onEdit: startEdit, onDelete: onDeleteAsset, userCurrency, fxTable, stockByAssetId }),
+    [paginatedAssets, startEdit, onDeleteAsset, userCurrency, fxTable, stockByAssetId]
   );
 
   return (
@@ -1216,6 +1251,34 @@ export function AssetLibrary({
                     placeholder=""
                   />
                 </div>
+                <div>
+                  <label htmlFor={stockOnHandId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Stock on hand ({formData.unit || 'units'}, optional)</span>
+                    <InfoTooltip text="How much you have right now. Logging jobs deducts from this automatically." />
+                  </label>
+                  <Input
+                    id={stockOnHandId}
+                    type="number"
+                    compact
+                    value={stockOnHandInput}
+                    onChange={e => setStockOnHandInput(e.target.value)}
+                    placeholder=""
+                  />
+                </div>
+                <div>
+                  <label htmlFor={lowStockThresholdId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Low-stock alert at ({formData.unit || 'units'}, optional)</span>
+                    <InfoTooltip text="Flag this material as low once stock drops to or below this amount." />
+                  </label>
+                  <Input
+                    id={lowStockThresholdId}
+                    type="number"
+                    compact
+                    value={formData.lowStockThreshold ?? ''}
+                    onChange={e => setFormData({ ...formData, lowStockThreshold: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                    placeholder=""
+                  />
+                </div>
               </>
             )}
           </div>
@@ -1418,7 +1481,7 @@ export function AssetLibrary({
             ) : (
               <div>
                 {paginatedAssets.map(asset => (
-                  <MaterialRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} />
+                  <MaterialRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
                 ))}
               </div>
             )}
