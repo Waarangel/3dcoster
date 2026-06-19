@@ -7,6 +7,7 @@ import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
 import { CostCalculator } from './components/CostCalculator';
 import { CustomerLibrary } from './components/CustomerLibrary';
+import { ReportsSection } from './components/ReportsSection';
 import { JobsManager } from './components/JobsManager';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -18,7 +19,7 @@ import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { ToastProvider } from './components/ui';
 import { isMaintenanceDismissed, markMaintenanceDismissed, MAINTENANCE_INTERVAL } from './utils/maintenanceDismissed';
 
-type Tab = 'calculator' | 'jobs' | 'materials' | 'customers' | 'settings';
+type Tab = 'calculator' | 'jobs' | 'materials' | 'customers' | 'reports' | 'settings';
 
 // Detect if running in standalone mode (PWA installed or Tauri desktop app)
 function useIsStandalone(): boolean {
@@ -173,6 +174,7 @@ function App() {
     { id: 'jobs', label: 'My Jobs', shortLabel: 'Jobs' },
     { id: 'materials', label: 'Asset Library', shortLabel: 'Assets' },
     { id: 'customers', label: 'Customers', shortLabel: 'Customers' },
+    { id: 'reports', label: 'Reports', shortLabel: 'Reports' },
     { id: 'settings', label: 'Printers', shortLabel: 'Printers' },
   ];
 
@@ -250,9 +252,6 @@ function App() {
         marketplaceFees={marketplaceFees}
         userCurrency={userProfile.currency}
         userProfile={userProfile}
-        allSales={allSales}
-        jobs={jobs}
-        fxTable={fxTable}
         onElectricityChange={updateElectricity}
         onShippingChange={updateShippingConfig}
         onMarketplaceFeesChange={updateMarketplaceFees}
@@ -388,6 +387,12 @@ function App() {
             onDeleteInstance={deleteInstance}
             onAddPrinter={addPrinter}
           />
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <ReportsSection allSales={allSales} jobs={jobs} userCurrency={userProfile.currency} fxTable={fxTable} />
+          </div>
         )}
       </main>
 
