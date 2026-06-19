@@ -220,6 +220,22 @@ Or: `xattr -cr /Applications/3DCoster.app`
 - **Colors**: Slate-based dark theme with blue accent
 - **Spacing**: Use Tailwind scale consistently (4, 6, 8)
 
+### Action buttons & icons (MANDATORY — keep this consistent)
+- **Row/item actions use shared icon buttons, not words.** For per-row/per-item
+  Edit, Delete, and Remove, use `EditButton` (pencil), `DeleteButton` (trash), and
+  `RemoveButton` (✕) from `src/components/ui` — or the generic `IconButton` for any
+  other repeated icon action. Never re-introduce a `<Button>Edit</Button>` text
+  button or a hand-rolled pencil/trash `<svg>` button in a list row.
+- **Prefer icons wherever an icon reads clearly** for secondary/repeated actions.
+- **Every icon-only control needs a descriptive `aria-label`.** The icon-button
+  components take a required `label` (e.g. the item name) and build `aria-label`
+  from it (`Edit {label}` / `Delete {label}`). Never ship an unlabelled icon button.
+- **Primary CTAs keep their text** (e.g. "Record Sale", "Create Quote", "+ Add
+  Printer", "Download PDF report", form Save/Cancel) — optionally with a leading icon.
+- The icon buttons wrap the shared `Button` primitive — **never a raw `<button>`**
+  (the `lint:no-raw-html` build check forbids raw form elements; intentional
+  exceptions carry a `// allow-raw-html` comment AND their own aria-label).
+
 ### Navigation
 - Marketing pages use shared `Header` component
 - Desktop app routes directly to calculator (no marketing pages)
