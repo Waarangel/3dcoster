@@ -39,9 +39,12 @@ const changelogPath = path.join(__dirname, '..', 'CHANGELOG.md');
 const DOWNLOAD_SECTION = [
   '## Download',
   '',
+  '- **Windows**: Download the `_x64-setup.exe` file',
   '- **macOS (Apple Silicon)**: Download the `_aarch64.dmg` file',
   '- **macOS (Intel)**: Download the `_x64.dmg` file',
-  '- **Windows**: Download the `.msi` file',
+  '- **Linux (AppImage)**: Download the `_amd64.AppImage` file, then make it executable (`chmod +x`)',
+  '- **Linux (Debian/Ubuntu)**: Download the `_amd64.deb` file',
+  '- **Linux (Fedora/RHEL)**: Download the `.x86_64.rpm` file',
   ''
 ].join('\n');
 
