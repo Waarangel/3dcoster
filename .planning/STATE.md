@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: v1.8 Inventory & Sales Reporting
 status: In progress
-stopped_at: Phase 29 complete; Phase 30 next
+stopped_at: Phase 30 complete; Phase 31 (ship prep) next
 last_updated: "2026-06-19T00:00:00.000Z"
-last_activity: 2026-06-19 — Phase 29 (inventory UI) done; 639 tests pass, build green
+last_activity: 2026-06-19 — Phase 30 (PDF sales report) done; build green, PDF stays lazy
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-05-25). Milestone roadmap: [milestones/v
 ## Current Position
 
 Milestone: **v1.8 Inventory & Sales Reporting** (branch `feat/v1.8-inventory-reports`, worktree `../3DCoster-v1.8`)
-Phase: **29 — Inventory UI ✅ DONE**
-  - `StockBadge` (6 tests) on desktop rows + mobile cards (`stockByAssetId` threaded through virtualized + non-virtualized paths, optional prop so printer path untouched). Edit form: "Stock on hand" (ledger delta via `logManualAdjustment`, pre-filled) + "Low-stock alert at" (on Asset). `LowStockBar` header strip + one-time first-run nudge (localStorage-dismissible). Commits `1c72ae4`, `00bef65`. See→set→deduct→flag loop fully works.
-Next: **Phase 30 — PDF sales report** (pure `computeSalesReport()` + tests → lazy `generateSalesReportPdf()` → `ReportsSection` in Settings → Data tab; Month/Year/Custom range + preview + PDF/CSV).
-Status: In progress (3/5 phases)
+Phase: **30 — PDF sales report ✅ DONE**
+  - Pure `computeSalesReport()` (6 tests, null-contract) → lazy `generateSalesReportPdf()` (2 smoke tests, mirrors generateQuotePdf + `__IS_TAURI__`) → `ReportsSection` in Settings → Data tab (Month/Year/Custom range + live preview + PDF/CSV). PDF confirmed lazy by the build gate. Commits `add426b`, `90049b6`, `8722a4c`.
+Next: **Phase 31 — ship prep** (features.ts + NewBadge for BOTH features; remove inventory + PDF-report from `src/roadmap.ts` In Development; CHANGELOG `[1.8.0]`; release-diff code review; bump 4 version files; tag on/after 2026-06-24).
+Status: In progress (4/5 phases)
 
-> Deferred to Phase 31 ship prep: **NewBadge + `features.ts`** for inventory (the badge gates on release date, so it's added when v1.8 tags). Visual/browser UAT of the inventory UI also pending (demo holds :4173).
+> Pending for Phase 31 / before tag: **NewBadge + `features.ts`** (inventory + reports), **roadmap.ts** removal, **full UAT** (user wants a full UAT at the end — demo holds :4173), mandatory **release-diff review**, version bump.
 
 > **GSD revived for v1.8** — management lapsed after v1.3 (Phase 26, 2026-05-28); v1.4–v1.7 shipped ad-hoc.
 > Phase numbering continues at 27. v1.4–v1.7 recorded as shipped-outside-GSD in ROADMAP.md.
