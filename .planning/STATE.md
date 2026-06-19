@@ -26,9 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-25). Milestone roadmap: [milestones/v
 ## Current Position
 
 Milestone: **v1.8 Inventory & Sales Reporting** (branch `feat/v1.8-inventory-reports`, worktree `../3DCoster-v1.8`)
-Phase: **28 — Inventory deduction wiring ✅ DONE** (deduct-on-save/edit/delete via useJobs tx; `useStockEvents` hook; 6 writer integration tests)
-Next: **Phase 29 — Inventory UI** (AssetLibrary StockBadge/StockEditor/LowStockBar + threshold field + first-run prompt)
-Status: In progress (2/5 phases)
+Phase: **29 — Inventory UI 🔨 IN PROGRESS**
+  - ✅ `StockBadge` component built + tested (6 tests) — `src/components/inventory/StockBadge.tsx` (shows "X g left", amber low / red out-of-stock, ⚠ + words so not colour-alone).
+  - ⏳ Remaining: thread `useStockEvents.stockByAssetId` through AssetLibrary's **virtualized rows** (rowProps → MaterialRow + material MobileCardItem) to show the badge; add **current-stock + low-stock-threshold fields** to the material edit form (+ save: threshold on Asset, stock via `logManualAdjustment`); **LowStockBar** header strip; **first-run** "set your stock" prompt; NewBadge + `features.ts`.
+Prev: **28 ✅ DONE** (deduct-on-save/edit/delete via useJobs tx; `useStockEvents` hook)
+Status: In progress (2.5/5 phases — Phase 29 partial)
 
 > **GSD revived for v1.8** — management lapsed after v1.3 (Phase 26, 2026-05-28); v1.4–v1.7 shipped ad-hoc.
 > Phase numbering continues at 27. v1.4–v1.7 recorded as shipped-outside-GSD in ROADMAP.md.
