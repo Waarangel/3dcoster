@@ -4,6 +4,7 @@ import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, s
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from '../db/backfill';
+import { upsertJobStockEvents, removeJobStockEvents } from '../db/stockEventsWriter';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -750,11 +751,21 @@ export function useJobs() {
   }, [jobs === undefined]);
 
   const addJob = useCallback(async (job: PrintJob) => {
-    await db.jobs.add(job);
+    // v1.8 inventory: deduct material stock atomically with the job write.
+    await db.transaction('rw', db.jobs, db.stockEvents, async () => {
+      await db.jobs.add(job);
+      await upsertJobStockEvents(db, job, new Date());
+    });
   }, []);
 
   const updateJob = useCallback(async (job: PrintJob) => {
-    await db.jobs.put({ ...job, updatedAt: new Date() });
+    const updated = { ...job, updatedAt: new Date() };
+    // Re-derive this job's stock events from its current saved state — keyed by
+    // job id, so an edit replaces the prior deduction rather than stacking.
+    await db.transaction('rw', db.jobs, db.stockEvents, async () => {
+      await db.jobs.put(updated);
+      await upsertJobStockEvents(db, updated, new Date());
+    });
   }, []);
 
   const deleteJob = useCallback(async (id: string) => {
@@ -762,9 +773,11 @@ export function useJobs() {
     // Without the tx wrap, a crash between the two writes leaves orphan
     // sales referencing a deleted jobId — the same DATA-01 concern that
     // motivated wrapping addSale/deleteSale/updateSale in plan 20-01.
-    await db.transaction('rw', db.sales, db.jobs, async () => {
+    // v1.8: also clear the job's stock events so deletion releases its deduction.
+    await db.transaction('rw', db.sales, db.jobs, db.stockEvents, async () => {
       await db.sales.where('jobId').equals(id).delete();
       await db.jobs.delete(id);
+      await removeJobStockEvents(db, id);
     });
   }, []);
 

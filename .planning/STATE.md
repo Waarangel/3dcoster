@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: v1.8 Inventory & Sales Reporting
 status: In progress
-stopped_at: Phase 27 complete; Phase 28 next
+stopped_at: Phase 28 complete; Phase 29 next
 last_updated: "2026-06-19T00:00:00.000Z"
-last_activity: 2026-06-19 — Phase 27 (inventory ledger foundation) committed (184c7a0); 626 tests pass
+last_activity: 2026-06-19 — Phase 28 (deduction wiring) done; 632 tests pass, build green
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 1
-  percent: 20
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-05-25). Milestone roadmap: [milestones/v
 ## Current Position
 
 Milestone: **v1.8 Inventory & Sales Reporting** (branch `feat/v1.8-inventory-reports`, worktree `../3DCoster-v1.8`)
-Phase: **27 — Inventory ledger foundation ✅ DONE** (commit `184c7a0`)
-Next: **Phase 28 — Inventory deduction wiring** (useStockEvents + applyJobStockEvents + deleteJob tx + handleSaveJob)
-Status: In progress (1/5 phases)
+Phase: **28 — Inventory deduction wiring ✅ DONE** (deduct-on-save/edit/delete via useJobs tx; `useStockEvents` hook; 6 writer integration tests)
+Next: **Phase 29 — Inventory UI** (AssetLibrary StockBadge/StockEditor/LowStockBar + threshold field + first-run prompt)
+Status: In progress (2/5 phases)
 
 > **GSD revived for v1.8** — management lapsed after v1.3 (Phase 26, 2026-05-28); v1.4–v1.7 shipped ad-hoc.
 > Phase numbering continues at 27. v1.4–v1.7 recorded as shipped-outside-GSD in ROADMAP.md.
