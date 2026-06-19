@@ -27,6 +27,16 @@ jobs:
           - platform: 'windows-latest'
             args: '--bundles nsis'
             tauri_platform: 'windows'
+          # Linux: pin ubuntu-22.04 (glibc 2.35), NOT ubuntu-latest. The build
+          # bakes in a glibc floor equal to the runner's, so a 24.04 build
+          # (glibc 2.39) would silently fail to launch on 22.04-era distros
+          # with "GLIBC_2.39 not found". 22.04 also ships libwebkit2gtk-4.1
+          # (which Tauri 2 requires) and is the runner the official
+          # tauri-action example uses. empty args + bundle.targets "all"
+          # (tauri.conf.json) yields .AppImage + .deb + .rpm.
+          - platform: 'ubuntu-22.04'
+            args: ''
+            tauri_platform: 'linux'
 
     runs-on: ${{ matrix.platform }}
 
@@ -43,6 +53,22 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      # Tauri 2 on Linux links against WebKitGTK 4.1 and needs librsvg +
+      # patchelf for AppImage bundling. Gated to the Linux row so the macOS
+      # and Windows runners skip it entirely. This is the canonical
+      # tauri-action dependency list.
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            file
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2

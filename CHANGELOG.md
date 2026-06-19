@@ -21,12 +21,23 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+---
+
+## [1.7.0] - 2026-06-18
+
 ### Added
+- **Linux desktop app.** 3DCoster now ships a native Linux build alongside Windows and macOS. Grab an AppImage (runs on almost any distribution — no install, just make it executable), a `.deb` for Debian/Ubuntu, or an `.rpm` for Fedora/RHEL, all from the [download page](https://3dcoster.com/download). Like the other desktop builds it works fully offline and keeps your data on your machine.
 - **Add your own printer.** If your printer isn't in the built-in list, you can now add it as a custom model — just enter its name, average wattage, price, and expected lifespan in Printer Settings, and it's available everywhere like any built-in printer.
 - **12 more printers in the catalog.** Added popular models including the Creality Ender-3 V3 SE/KE, K1 Max and K2 Plus, Prusa CORE One and XL, Anycubic Kobra 2 Pro / Kobra S1, Elegoo Neptune 4 / 4 Plus, Qidi Q1 Pro, and FlashForge Adventurer 5M.
 
+### Changed
+- **Easier-to-read large numbers.** Currency amounts now use thousands separators based on your region (e.g. $1,234.56 instead of $1234.56), so big totals are clearer at a glance.
+- **Bambu Lab X1 Carbon is now labelled "X1C"** in the printer list, matching Bambu's own naming.
+
 ### Fixed
+- **Your custom marketplace fees now apply in the calculator.** If you'd adjusted Etsy or Facebook fees in Settings → Marketplaces, the calculator was still using the built-in defaults when working out platform fees and profit — it now uses your values.
 - **More accurate electricity costs for several printers.** The Creality Ender-3 V3 and K1, Anycubic Kobra 3, and Elegoo Neptune 4 Pro were using their peak power-supply rating instead of real average printing draw, which overstated their electricity cost (often 2–3×). Wattages are now based on measured average draw, so cost comparisons across brands are fair. Also bumped the Bambu X1C/X1E figures and updated the Prusa MK4 to the current MK4S.
+- **Steadier material-row editing in the calculator.** Removing a post-processing or packaging row no longer risks the remaining rows picking up the wrong values, and a failed delete now shows an error instead of quietly doing nothing.
 
 ---
 

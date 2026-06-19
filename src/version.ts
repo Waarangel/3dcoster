@@ -2,4 +2,4 @@
 // (with CHANGELOG.md, src-tauri/tauri.conf.json, src-tauri/Cargo.toml).
 // Lives in its own module so utilities (backupExport meta, etc.) can read it
 // without importing component code.
-export const APP_VERSION = '1.6.0';
+export const APP_VERSION = '1.7.0';
