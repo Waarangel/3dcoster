@@ -1,5 +1,5 @@
 export type FilamentType =
-  | 'PLA' | 'PLA Matte' | 'PLA Silk' | 'PLA Tough' | 'PLA-CF' | 'PLA Translucent'
+  | 'PLA' | 'PLA Matte' | 'PLA Silk' | 'PLA Tough' | 'PLA-CF' | 'PLA Translucent' | 'PLA Pure'
   | 'PETG' | 'PETG HF' | 'PETG-CF' | 'PETG Translucent'
   | 'ABS' | 'ASA'
   | 'TPU' | 'TPU 95A' | 'TPU 85A'

@@ -54,6 +54,10 @@ let assetCurrencyReconcileRan = false;
 // the reconciles above, so it doesn't re-run (or re-add a deleted default) on
 // every App remount when navigating between /app and the marketing routes.
 let printerCatalogReconcileRan = false;
+// One-shot flag so the Bambu PLA Pure catalog top-up (added 2026-06-19) runs at
+// most once per process. Existing users already have the Bambu catalog, so the
+// first-seed probe ('bambu-pla-sparkle') skips for them — this adds the newer row.
+let bambuPlaPureReconcileRan = false;
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -121,6 +125,21 @@ export function useAssets() {
             // Mark only after the (possible) write resolves, so a thrown error
             // leaves it false and the next mount retries.
             printerCatalogReconcileRan = true;
+          }
+
+          // v1.8: top up the Bambu catalog with PLA Pure for users who already
+          // have the catalog (the first-seed probe above only fires for users
+          // WITHOUT it). Probe the new id; if absent, bulkPut the catalog —
+          // idempotent: it updates existing default rows in place (ids unchanged,
+          // so filament selections keep resolving) and adds the new one. Custom
+          // user filaments aren't in bambuFilamentAssets, so they're untouched.
+          if (!bambuPlaPureReconcileRan) {
+            const hasPlaPure = await db.materials.get('bambu-pla-pure');
+            if (cancelled) return;
+            if (!hasPlaPure) {
+              await db.materials.bulkPut(bambuFilamentAssets);
+            }
+            bambuPlaPureReconcileRan = true;
           }
         }
       } catch (error) {

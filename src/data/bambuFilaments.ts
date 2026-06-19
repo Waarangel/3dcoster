@@ -19,6 +19,20 @@ export const bambuFilaments: Omit<Asset, 'id'>[] = [
     tags: ['bambu-import', '1kg'],
   },
   {
+    // PLA Pure — launched 2026-06-15; food-safe / UL Greenguard / EN 71-3 toy-safe.
+    // Price added manually from us.store.bambulab.com: $24.99 / 1kg spool (USD).
+    name: 'Bambu PLA Pure',
+    category: 'filament',
+    brand: 'Bambu Lab',
+    filamentType: 'PLA Pure',
+    unit: 'g',
+    unitsPerPackage: 1000,
+    packageCost: 24.99,
+    costPerUnit: 0.02499,
+    currency: 'USD',
+    tags: ['bambu-import', '1kg'],
+  },
+  {
     name: 'Bambu PLA Matte',
     category: 'filament',
     brand: 'Bambu Lab',

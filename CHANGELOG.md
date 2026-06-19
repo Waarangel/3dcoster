@@ -21,6 +21,9 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Added
+- **Bambu PLA Pure in the filament catalog.** Bambu Lab's new food-safe / toy-safe PLA (launched June 2026) is now a built-in filament with current pricing, so you can cost prints with it straight away — existing libraries get it added automatically.
+
 ---
 
 ## [1.7.0] - 2026-06-18
