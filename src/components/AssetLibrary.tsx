@@ -7,6 +7,7 @@ import { buildExportFilename } from '../utils/jobsExport';
 import { CsvImportModal } from './CsvImportModal';
 import { NewBadge } from './NewBadge';
 import { StockBadge } from './inventory/StockBadge';
+import { LowStockBar } from './inventory/LowStockBar';
 import { useStockEvents } from '../hooks/useStockEvents';
 import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
@@ -217,7 +218,9 @@ const MobileCardItem = memo(function MobileCardItem({
   onDelete,
   userCurrency,
   fxTable,
+  stockByAssetId,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
+  const stock = stockByAssetId?.get(asset.id) ?? null;
   return (
     <div
       role="listitem"
@@ -308,6 +311,12 @@ const MobileCardItem = memo(function MobileCardItem({
               </span>
             </div>
           )}
+          {stock != null && (
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="text-sm text-slate-400">In stock</span>
+              <StockBadge stock={stock} threshold={asset.lowStockThreshold} unit={asset.unit} />
+            </div>
+          )}
         </div>
       )}
 
@@ -331,8 +340,8 @@ const MobileCardItem = memo(function MobileCardItem({
   );
 });
 
-const MobileCardRow = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable }: RowComponentProps<AssetRowPropsForList>) => (
-  <MobileCardItem asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} />
+const MobileCardRow = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable, stockByAssetId }: RowComponentProps<AssetRowPropsForList>) => (
+  <MobileCardItem asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
 );
 
 // --- Printer row (div-grid; 7 columns) ---
@@ -878,6 +887,28 @@ export function AssetLibrary({
 
   const sortHeaderClass = 'pb-2 font-medium cursor-pointer hover:text-slate-200 transition-colors select-none';
 
+  // Inventory header signals (v1.8): low-stock list + a one-time first-run nudge.
+  const lowStockAssets = useMemo(
+    () => assets
+      .filter(a => {
+        if (a.category === 'printer') return false;
+        const s = stockByAssetId.get(a.id);
+        if (s == null) return false;
+        return s <= 0 || (a.lowStockThreshold != null && s <= a.lowStockThreshold);
+      })
+      .map(a => ({ id: a.id, name: a.name })),
+    [assets, stockByAssetId]
+  );
+  const [stockPromptDismissed, setStockPromptDismissed] = useState(() => {
+    try { return localStorage.getItem('inventory-prompt-dismissed') === '1'; } catch { return false; }
+  });
+  // Show only before any stock is tracked, and only when there are materials to track.
+  const showStockPrompt = !stockPromptDismissed && stockByAssetId.size === 0 && assets.some(a => a.category !== 'printer');
+  const dismissStockPrompt = () => {
+    try { localStorage.setItem('inventory-prompt-dismissed', '1'); } catch { /* private mode — just dismiss for the session */ }
+    setStockPromptDismissed(true);
+  };
+
   // Dynamic row-height caches (CR-02 fix). Numeric rowHeight clipped rows
   // with notes/tags/lifespan content; useDynamicRowHeight measures the
   // actual rendered height per row. defaultRowHeight values match the
@@ -901,6 +932,15 @@ export function AssetLibrary({
           {loadError}
         </div>
       )}
+      {showStockPrompt && (
+        <div role="status" className="mb-3 flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2.5 text-sm text-blue-200">
+          <div className="flex-1">
+            <strong className="text-blue-100">Track your material stock.</strong> Add a “Stock on hand” amount when you edit a filament or supply — 3DCoster deducts it as you log jobs and flags anything running low.
+          </div>
+          <Button variant="ghost" btnSize="sm" onClick={dismissStockPrompt} aria-label="Dismiss" className="shrink-0 text-blue-300 hover:text-blue-100">✕</Button>
+        </div>
+      )}
+      <LowStockBar lowAssets={lowStockAssets} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <h2 className="text-lg font-semibold text-white">Asset Library</h2>
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
@@ -1401,7 +1441,7 @@ export function AssetLibrary({
           ) : (
             <div className="flex flex-col gap-3">
               {paginatedAssets.map(asset => (
-                <MobileCardItem key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} />
+                <MobileCardItem key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
               ))}
             </div>
           )
