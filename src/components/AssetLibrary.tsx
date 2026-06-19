@@ -149,6 +149,17 @@ function getCategoryColor(category: AssetCategory): string {
 // for the small-list branch.
 // ---------------------------------------------------------------------------
 
+// Stock is consumed in grams (filament) or each asset's own unit, but filament is
+// bought/counted in SPOOLS. So for filament we show + enter spools (each spool =
+// unitsPerPackage grams) and convert to grams (the consumption unit) behind the
+// scenes; everything else uses its own unit. `perUnit` is grams-per-spool (or 1).
+function stockUnit(asset: Pick<Asset, 'category' | 'unit' | 'unitsPerPackage'>): { unit: string; perUnit: number } {
+  if (asset.category === 'filament' && asset.unitsPerPackage && asset.unitsPerPackage > 0) {
+    return { unit: 'spools', perUnit: asset.unitsPerPackage };
+  }
+  return { unit: asset.unit || 'units', perUnit: 1 };
+}
+
 type AssetRowCallbacks = {
   onEdit: (asset: Asset) => void;
   onDelete: (id: string) => void;
@@ -221,6 +232,7 @@ const MobileCardItem = memo(function MobileCardItem({
   stockByAssetId,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   const stock = stockByAssetId?.get(asset.id) ?? null;
+  const su = stockUnit(asset);
   return (
     <div
       role="listitem"
@@ -314,7 +326,7 @@ const MobileCardItem = memo(function MobileCardItem({
           {stock != null && (
             <div className="flex items-baseline justify-between mt-1">
               <span className="text-sm text-slate-400">In stock</span>
-              <StockBadge stock={stock} threshold={asset.lowStockThreshold} unit={asset.unit} />
+              <StockBadge stock={stock == null ? null : stock / su.perUnit} threshold={asset.lowStockThreshold == null ? undefined : asset.lowStockThreshold / su.perUnit} unit={su.unit} />
             </div>
           )}
         </div>
@@ -402,6 +414,7 @@ const MaterialRow = memo(function MaterialRow({
   stockByAssetId,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   const stock = stockByAssetId?.get(asset.id) ?? null;
+  const su = stockUnit(asset);
   return (
     <div
       role="row"
@@ -423,7 +436,7 @@ const MaterialRow = memo(function MaterialRow({
           </div>
         )}
         {stock != null && (
-          <div className="mt-1"><StockBadge stock={stock} threshold={asset.lowStockThreshold} unit={asset.unit} /></div>
+          <div className="mt-1"><StockBadge stock={stock == null ? null : stock / su.perUnit} threshold={asset.lowStockThreshold == null ? undefined : asset.lowStockThreshold / su.perUnit} unit={su.unit} /></div>
         )}
       </div>
       <div role="cell" className="text-slate-400">
@@ -526,9 +539,14 @@ export function AssetLibrary({
   // depends on editingId so it doesn't fight the user when the ledger updates.
   const [stockOnHandInput, setStockOnHandInput] = useState('');
   useEffect(() => {
-    setStockOnHandInput(editingId ? String(stockByAssetId.get(editingId) ?? '') : '');
+    const asset = editingId ? assets.find(a => a.id === editingId) : undefined;
+    const grams = editingId ? stockByAssetId.get(editingId) : undefined;
+    // Pre-fill in the asset's display unit (grams ÷ grams-per-spool for filament).
+    setStockOnHandInput(asset && grams != null ? String(grams / stockUnit(asset).perUnit) : '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId]);
+  // Display unit for the stock fields, derived from the in-progress form values.
+  const formStockUnit = stockUnit({ category: formData.category as AssetCategory, unit: formData.unit, unitsPerPackage: formData.unitsPerPackage });
 
   // Get all unique categories from assets (built-in + custom)
   const allCategories = useMemo(() => {
@@ -727,7 +745,8 @@ export function AssetLibrary({
       if (stockOnHandInput.trim() !== '') {
         const target = parseFloat(stockOnHandInput);
         if (Number.isFinite(target)) {
-          const delta = target - (stockByAssetId.get(material.id) ?? 0);
+          const targetBase = target * formStockUnit.perUnit; // spools → grams (×1 otherwise)
+          const delta = targetBase - (stockByAssetId.get(material.id) ?? 0);
           if (delta !== 0) void logManualAdjustment(material.id, delta, 'Set in Asset Library');
         }
       }
@@ -1253,8 +1272,8 @@ export function AssetLibrary({
                 </div>
                 <div>
                   <label htmlFor={stockOnHandId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                    <span>Stock on hand ({formData.unit || 'units'}, optional)</span>
-                    <InfoTooltip text="How much you have right now. Logging jobs deducts from this automatically." />
+                    <span>Stock on hand ({formStockUnit.unit}, optional)</span>
+                    <InfoTooltip text={formStockUnit.unit === 'spools' ? 'How many spools you have right now. Logging a job deducts the grams it uses automatically.' : 'How much you have right now. Logging jobs deducts from this automatically.'} />
                   </label>
                   <Input
                     id={stockOnHandId}
@@ -1267,15 +1286,15 @@ export function AssetLibrary({
                 </div>
                 <div>
                   <label htmlFor={lowStockThresholdId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                    <span>Low-stock alert at ({formData.unit || 'units'}, optional)</span>
+                    <span>Low-stock alert at ({formStockUnit.unit}, optional)</span>
                     <InfoTooltip text="Flag this material as low once stock drops to or below this amount." />
                   </label>
                   <Input
                     id={lowStockThresholdId}
                     type="number"
                     compact
-                    value={formData.lowStockThreshold ?? ''}
-                    onChange={e => setFormData({ ...formData, lowStockThreshold: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                    value={formData.lowStockThreshold == null ? '' : formData.lowStockThreshold / formStockUnit.perUnit}
+                    onChange={e => setFormData({ ...formData, lowStockThreshold: e.target.value === '' ? undefined : parseFloat(e.target.value) * formStockUnit.perUnit })}
                     placeholder=""
                   />
                 </div>
