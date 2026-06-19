@@ -1,33 +1,38 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: v1.3 Hardening
-status: Awaiting next milestone
-stopped_at: Phase 26 context gathered
-last_updated: "2026-05-29T12:12:00.000Z"
-last_activity: 2026-05-29 — Quick task bg2 (filament dropdown visibility fix) completed and verified via live UAT
+milestone: v1.8
+milestone_name: v1.8 Inventory & Sales Reporting
+status: In progress
+stopped_at: Phase 27 complete; Phase 28 next
+last_updated: "2026-06-19T00:00:00.000Z"
+last_activity: 2026-06-19 — Phase 27 (inventory ledger foundation) committed (184c7a0); 626 tests pass
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 43
-  completed_plans: 43
-  percent: 100
+  total_phases: 5
+  completed_phases: 1
+  total_plans: 5
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-25)
+See: .planning/PROJECT.md (updated 2026-05-25). Milestone roadmap: [milestones/v1.8-ROADMAP.md](milestones/v1.8-ROADMAP.md). Plan: `docs/V1.8_PLAN.md`.
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Milestone complete
+**Current focus:** v1.8 — material inventory tracking (#20) + PDF sales report (#33), free-tier floors.
 
 ## Current Position
 
-Phase: Milestone v1.3 complete
-Plan: —
-Status: Awaiting next milestone
+Milestone: **v1.8 Inventory & Sales Reporting** (branch `feat/v1.8-inventory-reports`, worktree `../3DCoster-v1.8`)
+Phase: **27 — Inventory ledger foundation ✅ DONE** (commit `184c7a0`)
+Next: **Phase 28 — Inventory deduction wiring** (useStockEvents + applyJobStockEvents + deleteJob tx + handleSaveJob)
+Status: In progress (1/5 phases)
+
+> **GSD revived for v1.8** — management lapsed after v1.3 (Phase 26, 2026-05-28); v1.4–v1.7 shipped ad-hoc.
+> Phase numbering continues at 27. v1.4–v1.7 recorded as shipped-outside-GSD in ROADMAP.md.
+
 Last activity: 2026-05-28 — Milestone v1.3 completed and archived
 
 ## Quick Tasks Completed

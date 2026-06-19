@@ -1,7 +1,7 @@
 # Roadmap: 3DCoster
 
 **Project:** 3D printing cost calculator (Web + Tauri desktop) — local-first, free tier.
-**Status:** v1.3 Hardening shipped 2026-05-28. Awaiting v1.4 milestone definition.
+**Status:** v1.8 Inventory & Sales Reporting **in progress** (Phase 27/5 done). v1.4–v1.7 shipped outside GSD.
 
 ---
 
@@ -11,9 +11,8 @@
 - ✅ **v1.1 Polish & Foundation** — Phases 7–11 (shipped 2026-05-20) — pre-GSD-archive
 - ✅ **v1.2 Quote-to-Customer** — Phases 12–17 (shipped 2026-05-25) — [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md)
 - ✅ **v1.3 Hardening** — Phases 18–26 (shipped 2026-05-28) — [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md)
-- 📋 **v1.4** — not yet defined. Carry-over backlog candidates listed below.
-
-Active scope is empty. Use `/gsd:new-milestone` to scope v1.4.
+- ⚠️ **v1.4 – v1.7 — shipped OUTSIDE GSD** (ad-hoc, 2026-05-29 → 2026-06-19). GSD management lapsed after v1.3; these were tracked via CHANGELOG + ad-hoc planning, not GSD phases. Highlights: v1.5 CSV export + roadmap page; v1.6 backup/restore + 3dcoster.com + CSP; v1.7 **Linux desktop builds** + 12 printers + calculator correctness fixes.
+- 🔨 **v1.8 Inventory & Sales Reporting** — Phases 27–31 (IN PROGRESS, Phase 27 done) — [milestones/v1.8-ROADMAP.md](milestones/v1.8-ROADMAP.md). **GSD revived here.**
 
 ---
 
