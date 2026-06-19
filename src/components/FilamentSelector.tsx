@@ -52,8 +52,10 @@ export function FilamentSelector({
   // Tracks which brand row has keyboard focus (independent of mouse hover).
   // The submenu renders when either hoveredBrand OR focusedBrand matches the brand.
   const [focusedBrand, setFocusedBrand] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Ref to the trigger button so we can return focus on close.
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -93,11 +95,24 @@ export function FilamentSelector({
     return rows.sort((a, b) => a.name.localeCompare(b.name));
   };
 
+  // Flat typeahead results — matches brand + name + type, so typing "Pure" finds
+  // "Bambu PLA Pure" directly without drilling through brand submenus. Capped so
+  // a broad query never renders the whole catalogue.
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return materials
+      .filter(m => m.category === 'filament' && `${m.brand ?? ''} ${m.name} ${m.filamentType ?? ''}`.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, 50);
+  }, [materials, searchQuery]);
+
   // Close dropdown and return focus to the trigger.
   const closeMenu = useCallback(() => {
     setIsOpen(false);
     setHoveredBrand(null);
     setFocusedBrand(null);
+    setSearchQuery('');
     triggerRef.current?.focus();
   }, []);
 
@@ -113,6 +128,15 @@ export function FilamentSelector({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Focus the search box on open so the user can type immediately. (The query is
+  // reset by the trigger/closeMenu so each open starts fresh — done in handlers,
+  // not here, to avoid a setState-in-effect.)
+  useEffect(() => {
+    if (!isOpen) return;
+    const id = setTimeout(() => searchInputRef.current?.focus(), 0);
+    return () => clearTimeout(id);
+  }, [isOpen]);
 
   // Handle brand hover with delay to prevent flickering
   const handleBrandMouseEnter = (brand: string) => {
@@ -273,6 +297,7 @@ export function FilamentSelector({
             setIsOpen(!isOpen);
             setHoveredBrand(null);
             setFocusedBrand(null);
+            setSearchQuery('');
           }}
           onKeyDown={handleTriggerKeyDown}
           aria-haspopup="menu"
@@ -299,6 +324,40 @@ export function FilamentSelector({
             className="absolute z-50 mt-1 w-full bg-slate-700 rounded-lg shadow-lg border border-slate-600"
             role="menu"
           >
+            <div className="p-2 border-b border-slate-600">
+              {/* allow-raw-html: search field needs a direct ref for focus-on-open; matches this component's custom-control pattern */}
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape') closeMenu(); }}
+                placeholder="Search filaments…"
+                aria-label="Search filaments"
+                className="w-full px-2.5 py-1.5 text-sm bg-slate-800 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            {searchQuery.trim() ? (
+              <div className="max-h-72 overflow-y-auto">
+                {searchResults.length === 0 ? (
+                  <div className="px-3 py-3 text-sm text-slate-400">No filaments match “{searchQuery.trim()}”.</div>
+                ) : (
+                  searchResults.map(filament => (
+                    // allow-raw-html: keyboard-accessible menu item, matches the existing rows
+                    <button
+                      key={filament.id}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => handleFilamentSelect(filament)}
+                      className={`w-full px-3 py-2.5 hover:bg-slate-600 cursor-pointer text-sm text-left ${selectedFilamentId === filament.id ? 'bg-blue-600/30 text-blue-300' : 'text-white'}`}
+                    >
+                      {brandedName(filament)}
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : (
+            <>
             {brands.map((brand, index) => (
               <div
                 key={brand}
@@ -376,6 +435,8 @@ export function FilamentSelector({
                 )}
               </div>
             ))}
+            </>
+            )}
           </div>
         )}
       </div>
