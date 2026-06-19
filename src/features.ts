@@ -18,6 +18,10 @@ export const featureReleases: Record<string, Date> = {
   'jobs-summary-totals': new Date('2026-06-12'),
   'full-backup': new Date('2026-06-12'),
   'custom-printer-model': new Date('2026-06-15'),
+  // v1.8 — Inventory & Sales Reporting (dated at UAT; confirm still within the
+  // 14-day window at the v1.8.0 tag in Phase 31)
+  'material-inventory': new Date('2026-06-19'),
+  'sales-report': new Date('2026-06-19'),
   // Add new features here with their release date
 };
 
