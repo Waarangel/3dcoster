@@ -14,7 +14,7 @@ interface ReportsSectionProps {
   fxTable: FxRateTable | null;
 }
 
-type RangeMode = 'month' | 'year' | 'custom';
+type RangeMode = 'month' | 'quarter' | 'year' | 'ytd' | 'custom';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -26,12 +26,17 @@ function nowParts(): { year: number; month: number } {
 function isoDay(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+function endOfToday(): Date {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+}
 
 export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: ReportsSectionProps) {
   const toast = useToast();
   const [mode, setMode] = useState<RangeMode>('month');
   const [year, setYear] = useState(() => nowParts().year);
   const [month, setMonth] = useState(() => nowParts().month);
+  const [quarter, setQuarter] = useState(() => Math.floor(nowParts().month / 3));
   const [customStart, setCustomStart] = useState(() => isoDay(new Date(nowParts().year, nowParts().month, 1)));
   const [customEnd, setCustomEnd] = useState(() => isoDay(new Date()));
   const [busy, setBusy] = useState(false);
@@ -44,12 +49,24 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
   }, [allSales]);
 
   const range = useMemo<SalesReportRange>(() => {
+    if (mode === 'quarter') {
+      const sm = quarter * 3;
+      return {
+        start: new Date(year, sm, 1, 0, 0, 0, 0),
+        end: new Date(year, sm + 3, 0, 23, 59, 59, 999),
+        label: `Q${quarter + 1} ${year}`,
+      };
+    }
     if (mode === 'year') {
       return {
         start: new Date(year, 0, 1, 0, 0, 0, 0),
         end: new Date(year, 11, 31, 23, 59, 59, 999),
         label: String(year),
       };
+    }
+    if (mode === 'ytd') {
+      const y = nowParts().year;
+      return { start: new Date(y, 0, 1, 0, 0, 0, 0), end: endOfToday(), label: `${y} YTD` };
     }
     if (mode === 'custom') {
       const start = new Date(`${customStart}T00:00:00`);
@@ -61,7 +78,7 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
       end: new Date(year, month + 1, 0, 23, 59, 59, 999),
       label: `${MONTHS[month]} ${year}`,
     };
-  }, [mode, year, month, customStart, customEnd]);
+  }, [mode, year, month, quarter, customStart, customEnd]);
 
   const jobsById = useMemo(() => new Map(jobs.map(j => [j.id, j])), [jobs]);
   const data = useMemo(() => computeSalesReport(allSales, jobsById, range, userCurrency, fxTable), [allSales, jobsById, range, userCurrency, fxTable]);
@@ -103,7 +120,9 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
           <label className="block text-xs text-slate-400 mb-1">Period</label>
           <Select selectSize="sm" value={mode} onChange={e => setMode(e.target.value as RangeMode)}>
             <option value="month">Month</option>
+            <option value="quarter">Quarter</option>
             <option value="year">Year</option>
+            <option value="ytd">Year to date</option>
             <option value="custom">Custom range</option>
           </Select>
         </div>
@@ -113,6 +132,24 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
               <label className="block text-xs text-slate-400 mb-1">Month</label>
               <Select selectSize="sm" value={month} onChange={e => setMonth(Number(e.target.value))}>
                 {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+              </Select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Year</label>
+              <Select selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
+                {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+              </Select>
+            </div>
+          </>
+        )}
+        {mode === 'quarter' && (
+          <>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Quarter</label>
+              <Select selectSize="sm" value={quarter} onChange={e => setQuarter(Number(e.target.value))}>
+                {[0, 1, 2, 3].map(q => (
+                  <option key={q} value={q}>Q{q + 1} ({MONTHS[q * 3].slice(0, 3)}–{MONTHS[q * 3 + 2].slice(0, 3)})</option>
+                ))}
               </Select>
             </div>
             <div>
