@@ -7,6 +7,7 @@ import './index.css'
 import App from './App.tsx'
 import { lazyWithRetry } from './utils/lazyWithRetry.ts'
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt.tsx'
+import { ScrollToTop } from './components/ScrollToTop.tsx'
 
 // Lazy load marketing pages (not needed for calculator startup).
 // lazyWithRetry auto-reloads once on a stale-chunk 404 after a redeploy,
@@ -68,6 +69,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 function Root() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Suspense fallback={<PageLoading />}>
         <Routes>
           {__IS_TAURI__ ? (
