@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
+import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile, Sale, PrintJob } from '../types';
+import type { FxRateTable } from '../utils/fxConvert';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
 import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { BackupRestoreSection } from './BackupRestoreSection';
+import { ReportsSection } from './ReportsSection';
 import { Button, Input, SidePanel } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 
@@ -16,6 +18,9 @@ interface SettingsModalProps {
   marketplaceFees: MarketplaceFees;
   userCurrency: Currency;
   userProfile: UserProfile;
+  allSales: Sale[];
+  jobs: PrintJob[];
+  fxTable: FxRateTable | null;
   onElectricityChange: (config: ElectricityConfig) => void;
   onShippingChange: (config: ShippingConfig) => void;
   onMarketplaceFeesChange: (fees: MarketplaceFees) => void;
@@ -31,6 +36,9 @@ export function SettingsModal({
   marketplaceFees,
   userCurrency,
   userProfile,
+  allSales,
+  jobs,
+  fxTable,
   onElectricityChange,
   onShippingChange,
   onMarketplaceFeesChange,
@@ -829,7 +837,12 @@ export function SettingsModal({
 
           {/* Data Tab — backup/restore. Content lives in its own component
               file (this modal sits at the 800-line cap). */}
-          {activeTab === 'data' && <BackupRestoreSection />}
+          {activeTab === 'data' && (
+            <div className="space-y-8">
+              <ReportsSection allSales={allSales} jobs={jobs} userCurrency={userCurrency} fxTable={fxTable} />
+              <BackupRestoreSection />
+            </div>
+          )}
         </div>
     </SidePanel>
   );

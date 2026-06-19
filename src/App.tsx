@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers } from './hooks/useDatabase';
+import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers, useAllSales } from './hooks/useDatabase';
 import { useFxRates } from './hooks/useFxRates';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
@@ -115,6 +115,7 @@ function App() {
   // by the calculator and asset library so every price renders in the user's
   // currency regardless of the price's native currency.
   const fxTable = useFxRates();
+  const allSales = useAllSales();
 
   const {
     shipping: shippingConfig,
@@ -249,6 +250,9 @@ function App() {
         marketplaceFees={marketplaceFees}
         userCurrency={userProfile.currency}
         userProfile={userProfile}
+        allSales={allSales}
+        jobs={jobs}
+        fxTable={fxTable}
         onElectricityChange={updateElectricity}
         onShippingChange={updateShippingConfig}
         onMarketplaceFeesChange={updateMarketplaceFees}
