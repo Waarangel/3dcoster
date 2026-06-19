@@ -7,7 +7,8 @@ import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { BackupRestoreSection } from './BackupRestoreSection';
 import { ReportsSection } from './ReportsSection';
-import { Button, Input, SidePanel } from './ui';
+import { Button, IconButton, EditButton, DeleteButton, Input, SidePanel } from './ui';
+import { CheckIcon } from './ui/icons';
 import { InfoTooltip } from './ui/InfoTooltip';
 
 interface SettingsModalProps {
@@ -493,39 +494,25 @@ export function SettingsModal({
                               onChange={e => handleUpdateCarrier(carrier.id, 'defaultCost', Math.max(0, parseFloat(e.target.value) || 0))}
                               className="text-right"
                             />
-                            <Button
-                              variant="ghost"
-                              btnSize="sm"
+                            <IconButton
+                              label={`Done editing ${carrier.name}`}
+                              icon={<CheckIcon className="w-4 h-4" />}
                               onClick={() => setEditingCarrierId(null)}
                               className="text-green-400 hover:text-green-300"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </Button>
+                            />
                           </>
                         ) : (
                           <>
                             <span className="flex-1 text-sm text-white">{carrier.name}</span>
                             <span className="text-sm text-slate-300 font-mono">{currencySymbol}{carrier.defaultCost.toFixed(2)}</span>
-                            <Button
-                              variant="ghost"
-                              btnSize="sm"
+                            <EditButton
+                              label={carrier.name}
                               onClick={() => setEditingCarrierId(carrier.id)}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </Button>
-                            <Button
-                              variant="danger"
-                              btnSize="sm"
+                            />
+                            <DeleteButton
+                              label={carrier.name}
                               onClick={() => handleDeleteCarrier(carrier.id)}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </Button>
+                            />
                           </>
                         )}
                       </div>
@@ -746,39 +733,25 @@ export function SettingsModal({
                               placeholder="Fixed"
                               className="text-right"
                             />
-                            <Button
-                              variant="ghost"
-                              btnSize="sm"
+                            <IconButton
+                              label={`Done editing ${mp.name}`}
+                              icon={<CheckIcon className="w-4 h-4" />}
                               onClick={() => setEditingMarketplaceId(null)}
                               className="text-green-400 hover:text-green-300"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </Button>
+                            />
                           </>
                         ) : (
                           <>
                             <span className="flex-1 text-sm text-white">{mp.name}</span>
                             <span className="text-xs text-slate-400">{mp.feePercent}% + {currencySymbol}{mp.fixedFee.toFixed(2)}</span>
-                            <Button
-                              variant="ghost"
-                              btnSize="sm"
+                            <EditButton
+                              label={mp.name}
                               onClick={() => setEditingMarketplaceId(mp.id)}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </Button>
-                            <Button
-                              variant="danger"
-                              btnSize="sm"
+                            />
+                            <DeleteButton
+                              label={mp.name}
                               onClick={() => handleDeleteMarketplace(mp.id)}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </Button>
+                            />
                           </>
                         )}
                       </div>

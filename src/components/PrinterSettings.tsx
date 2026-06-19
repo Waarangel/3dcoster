@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { PrinterConfig, PrinterInstance, PrintJob, Currency } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast } from './ui';
+import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PrinterIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
@@ -512,22 +512,14 @@ export function PrinterSettings({
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button
-                          variant="secondary"
-                          btnSize="sm"
+                        <EditButton
+                          label={instance.nickname}
                           onClick={() => setEditingInstanceId(instance.id)}
-                          className="text-xs"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="danger"
-                          btnSize="sm"
+                        />
+                        <DeleteButton
+                          label={instance.nickname}
                           onClick={() => handleDeleteInstance(instance.id)}
-                          className="text-xs"
-                        >
-                          Delete
-                        </Button>
+                        />
                       </div>
                     </div>
                   )}

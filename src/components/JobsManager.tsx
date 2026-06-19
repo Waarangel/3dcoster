@@ -4,7 +4,7 @@ import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window'
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus } from '../types';
 import { useSales, useAllSales, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
-import { Button, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
+import { Button, EditButton, DeleteButton, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { SearchIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
@@ -738,23 +738,18 @@ export const JobCard = memo(function JobCard({
               </Button>
               <NewBadge feature="pdf-quote" className="absolute -top-1 -right-1" />
             </div>
-            {/* D-31: Edit demoted to ghost+border so the visual hierarchy reads Record Sale (green) > Print Quote (blue) > Edit (ghost) > Delete (red-tinted).
-                Hover lightens background to slate-600 so it stands out against the expanded card's bg-slate-700; ghost's default hover:bg-slate-700 is invisible against that background. */}
-            <Button
-              variant="ghost"
-              btnSize="sm"
+            {/* D-31: Edit/Delete are row/item actions on the job — iconified (pencil/trash)
+                per the UI Conventions in .claude/CLAUDE.md, sitting after the primary
+                CTAs (Record Sale / Create Quote) which keep their text. */}
+            <EditButton
+              label={job.name}
               className="border border-slate-600 hover:!bg-slate-600"
               onClick={(e) => { e.stopPropagation(); onEdit(job); }}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="danger"
-              btnSize="sm"
+            />
+            <DeleteButton
+              label={job.name}
               onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}
-            >
-              Delete
-            </Button>
+            />
           </div>
 
           {/* D-23: Unified "Orders" section per job. OrdersSection internally

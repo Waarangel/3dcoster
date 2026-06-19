@@ -1,4 +1,5 @@
 export { Button, ButtonLink, getButtonClasses } from './Button';
+export { IconButton, EditButton, DeleteButton, RemoveButton } from './IconButton';
 export { Input } from './Input';
 export { Select } from './Select';
 export { Textarea } from './Textarea';

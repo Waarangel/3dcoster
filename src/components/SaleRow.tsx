@@ -1,5 +1,5 @@
 import type { Sale, Currency } from '../types';
-import { Button } from './ui';
+import { EditButton, DeleteButton } from './ui';
 import { useQuotes } from '../hooks/useDatabase';
 import { formatQuoteNumber } from '../utils/format';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
@@ -106,20 +106,14 @@ export function SaleRow({ sale, jobId, userCurrency, onEdit, onDelete }: SaleRow
           )}
         </div>
         <div className="flex gap-1.5 shrink-0">
-          <Button
-            variant="primary"
-            btnSize="sm"
+          <EditButton
+            label={saleCustomerName ? `sale for ${saleCustomerName}` : 'sale'}
             onClick={e => { e.stopPropagation(); onEdit(sale); }}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="danger"
-            btnSize="sm"
+          />
+          <DeleteButton
+            label={saleCustomerName ? `sale for ${saleCustomerName}` : 'sale'}
             onClick={e => { e.stopPropagation(); onDelete(sale); }}
-          >
-            Delete
-          </Button>
+          />
         </div>
       </div>
     </details>

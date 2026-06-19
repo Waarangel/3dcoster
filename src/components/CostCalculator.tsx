@@ -3,7 +3,7 @@ import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, Mater
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
-import { Button, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
+import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { convert, type FxRateTable } from '../utils/fxConvert';
 import { calculateCost, calculateTax } from '../utils/costCalc';
@@ -1123,14 +1123,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   <span className="text-slate-300 text-sm font-mono w-16 text-right">
                     {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
                   </span>
-                  <Button
-                    variant="danger"
-                    btnSize="sm"
-                    aria-label={`Remove ${material?.name ?? 'material'}`}
+                  <RemoveButton
+                    label={material?.name ?? 'material'}
                     onClick={() => removeMaterialUsage(index)}
-                  >
-                    ✕
-                  </Button>
+                  />
                 </div>
               );
             })}
@@ -1270,14 +1266,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     <span className="text-slate-300 text-sm font-mono w-14 text-right">
                       {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
                     </span>
-                    <Button
-                      variant="danger"
-                      btnSize="sm"
-                      aria-label={`Remove ${material?.name ?? 'material'}`}
+                    <RemoveButton
+                      label={material?.name ?? 'material'}
                       onClick={() => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
-                    >
-                      ✕
-                    </Button>
+                    />
                   </div>
                 );
               })}

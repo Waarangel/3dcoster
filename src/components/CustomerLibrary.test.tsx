@@ -240,13 +240,12 @@ describe('CustomerLibrary — delete confirmation flow (Test 4)', () => {
     // Stub window.confirm to auto-confirm
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    // Find and click the Delete button (text rendered as "Delete" in the button span)
-    // CustomerRowItem renders: <span className="hidden sm:inline ml-1">Delete</span>
-    // findButton trims and compares — need to check full text
-    const deleteBtn = Array.from(document.body.querySelectorAll('button')).find(
-      (b) => (b.textContent ?? '').includes('Delete') && !b.textContent?.includes('customer')
-    ) as HTMLButtonElement | undefined;
-    expect(deleteBtn).not.toBeUndefined();
+    // Find and click the Delete button. CustomerRowItem now renders an
+    // icon-only DeleteButton labelled `aria-label="Delete {name}"`.
+    const deleteBtn = document.body.querySelector(
+      `button[aria-label="Delete ${customer.name}"]`
+    ) as HTMLButtonElement | null;
+    expect(deleteBtn).not.toBeNull();
 
     await act(async () => {
       deleteBtn!.click();
@@ -270,10 +269,10 @@ describe('CustomerLibrary — delete confirmation flow (Test 4)', () => {
 
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-    const deleteBtn = Array.from(document.body.querySelectorAll('button')).find(
-      (b) => (b.textContent ?? '').includes('Delete') && !b.textContent?.includes('customer')
-    ) as HTMLButtonElement | undefined;
-    expect(deleteBtn).not.toBeUndefined();
+    const deleteBtn = document.body.querySelector(
+      `button[aria-label="Delete ${customer.name}"]`
+    ) as HTMLButtonElement | null;
+    expect(deleteBtn).not.toBeNull();
 
     await act(async () => {
       deleteBtn!.click();
@@ -295,11 +294,11 @@ describe('CustomerLibrary — edit modal open/close (Test 5)', () => {
     // The CustomerEditModal should not be visible initially (isOpen=false keeps it closed)
     expect(document.body.textContent ?? '').not.toContain('Edit customer');
 
-    // Find and click the Edit button
-    const editBtn = Array.from(document.body.querySelectorAll('button')).find(
-      (b) => (b.textContent ?? '').includes('Edit') && !b.textContent?.includes('customer') && !b.textContent?.includes('Customer')
-    ) as HTMLButtonElement | undefined;
-    expect(editBtn).not.toBeUndefined();
+    // Find and click the Edit button (icon-only, labelled `Edit {name}`)
+    const editBtn = document.body.querySelector(
+      `button[aria-label="Edit ${customer.name}"]`
+    ) as HTMLButtonElement | null;
+    expect(editBtn).not.toBeNull();
 
     await act(async () => {
       editBtn!.click();

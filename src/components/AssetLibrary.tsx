@@ -9,7 +9,7 @@ import { NewBadge } from './NewBadge';
 import { StockBadge } from './inventory/StockBadge';
 import { LowStockBar } from './inventory/LowStockBar';
 import { useStockEvents } from '../hooks/useStockEvents';
-import { Button, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
+import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PackageIcon } from './ui/icons';
 
@@ -320,21 +320,9 @@ const MobileCardItem = memo(function MobileCardItem({
         </div>
       )}
 
-      <div className="flex gap-2 pt-2 border-t border-slate-700/50">
-        <Button
-          variant="secondary"
-          onClick={() => onEdit(asset)}
-          className="flex-1 text-blue-400"
-        >
-          Edit
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() => onDelete(asset.id)}
-          className="flex-1 text-red-400"
-        >
-          Delete
-        </Button>
+      <div className="flex gap-2 pt-2 border-t border-slate-700/50 justify-end">
+        <EditButton label={asset.name} onClick={() => onEdit(asset)} />
+        <DeleteButton label={asset.name} onClick={() => onDelete(asset.id)} />
       </div>
     </div>
   );
@@ -392,22 +380,8 @@ const PrinterRow = memo(function PrinterRow({
         <PriceCell amount={asset.nozzleCost ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
       </div>
       <div role="cell" className="text-right">
-        <Button
-          variant="ghost"
-          btnSize="sm"
-          onClick={() => onEdit(asset)}
-          className="text-blue-400 hover:text-blue-300 mr-2"
-        >
-          Edit
-        </Button>
-        <Button
-          variant="ghost"
-          btnSize="sm"
-          onClick={() => onDelete(asset.id)}
-          className="text-red-400 hover:text-red-300"
-        >
-          Delete
-        </Button>
+        <EditButton label={asset.name} onClick={() => onEdit(asset)} className="mr-1" />
+        <DeleteButton label={asset.name} onClick={() => onDelete(asset.id)} />
       </div>
     </div>
   );
@@ -473,22 +447,8 @@ const MaterialRow = memo(function MaterialRow({
         <PriceCell amount={asset.packageCost ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
       </div>
       <div role="cell" className="text-right">
-        <Button
-          variant="ghost"
-          btnSize="sm"
-          onClick={() => onEdit(asset)}
-          className="text-blue-400 hover:text-blue-300 mr-2"
-        >
-          Edit
-        </Button>
-        <Button
-          variant="ghost"
-          btnSize="sm"
-          onClick={() => onDelete(asset.id)}
-          className="text-red-400 hover:text-red-300"
-        >
-          Delete
-        </Button>
+        <EditButton label={asset.name} onClick={() => onEdit(asset)} className="mr-1" />
+        <DeleteButton label={asset.name} onClick={() => onDelete(asset.id)} />
       </div>
     </div>
   );

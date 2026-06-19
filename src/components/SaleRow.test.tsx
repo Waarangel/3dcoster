@@ -89,12 +89,13 @@ describe('SaleRow', () => {
       details.open = true;
     });
 
-    // Locate the Edit button by its visible text. SaleRow renders the
-    // primary Button with literal "Edit" content (per SaleRow.tsx).
-    const editBtn = Array.from(container!.querySelectorAll('button')).find(
-      b => b.textContent?.trim() === 'Edit'
-    );
-    expect(editBtn).toBeDefined();
+    // Locate the Edit button by its aria-label. SaleRow now renders an
+    // icon-only EditButton; with no customer on the fixture the label is
+    // `Edit sale` (per SaleRow.tsx).
+    const editBtn = container!.querySelector(
+      'button[aria-label="Edit sale"]'
+    ) as HTMLButtonElement | null;
+    expect(editBtn).not.toBeNull();
 
     act(() => { editBtn!.click(); });
 
