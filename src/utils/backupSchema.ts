@@ -47,6 +47,7 @@ export interface BackupData {
   settings: { key: string; value: string }[];
   customers: unknown[];
   quotes: unknown[];
+  stockEvents: unknown[];
 }
 
 export interface BackupFile {
@@ -55,12 +56,12 @@ export interface BackupFile {
 }
 
 /**
- * The 8 store names in fixed order — the single source of truth for
+ * The 9 store names in fixed order — the single source of truth for
  * iteration in export, validation, and the restore transaction.
  */
 export const BACKUP_STORES = [
   'materials', 'printers', 'printerInstances', 'jobs',
-  'sales', 'settings', 'customers', 'quotes',
+  'sales', 'settings', 'customers', 'quotes', 'stockEvents',
 ] as const;
 export type BackupStoreName = (typeof BACKUP_STORES)[number];
 
@@ -81,4 +82,5 @@ export const DATE_FIELDS: Record<BackupStoreName, readonly string[]> = {
   settings: [],
   customers: ['createdAt', 'lastUsedAt'],
   quotes: ['createdAt', 'sentAt', 'decisionAt', 'convertedAt'],
+  stockEvents: ['timestamp'],
 };

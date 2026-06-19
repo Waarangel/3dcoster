@@ -33,6 +33,7 @@ function makeTestDb(): Dexie {
     settings: 'key',
     customers: 'id, name, email, lastUsedAt',
     quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+    stockEvents: 'id, assetId, refId, timestamp',
   });
   return db;
 }
@@ -73,6 +74,10 @@ async function seedFullDb(db: Dexie): Promise<void> {
     convertedAt: new Date('2026-06-05T12:00:00.000Z'),
   });
   await db.table('settings').put({ key: 'userProfile', value: '{"currency":"CAD","laborHourlyRate":25}' });
+  await db.table('stockEvents').put({
+    id: 'job-1__mat-1', assetId: 'mat-1', delta: -120, kind: 'job', refId: 'job-1',
+    timestamp: new Date('2026-06-01T10:30:00.000Z'),
+  });
 }
 
 /** Export from a db and run it through real JSON to flatten Dates. */
@@ -121,6 +126,11 @@ describe('restore round-trip fidelity', () => {
 
     const instance = await target.table('printerInstances').get('pi-1');
     expect(instance.purchaseDate).toBeInstanceOf(Date);
+
+    const stockEvent = await target.table('stockEvents').get('job-1__mat-1');
+    expect(stockEvent.delta).toBe(-120);
+    expect(stockEvent.timestamp).toBeInstanceOf(Date);
+    expect(stockEvent.timestamp.getTime()).toBe(new Date('2026-06-01T10:30:00.000Z').getTime());
   });
 
   it('optional date fields that are absent stay absent', async () => {

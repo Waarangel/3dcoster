@@ -31,6 +31,7 @@ function makeTestDb(): Dexie {
     settings: 'key',
     customers: 'id, name, email, lastUsedAt',
     quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+    stockEvents: 'id, assetId, refId, timestamp',
   });
   return db;
 }

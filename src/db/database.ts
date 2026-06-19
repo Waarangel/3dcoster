@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, StockEvent } from '../types';
 import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency, stampRecordCurrency } from './backfill';
 import type { FxRateTable } from '../utils/fxConvert';
 
@@ -19,6 +19,7 @@ const db = new Dexie('3DCosterDB') as Dexie & {
   settings: EntityTable<Setting, 'key'>;
   customers: EntityTable<Customer, 'id'>;
   quotes: EntityTable<Quote, 'id'>;
+  stockEvents: EntityTable<StockEvent, 'id'>;
 };
 
 // Schema - version 3 (added jobs and sales tables)
@@ -234,6 +235,21 @@ db.version(10).stores({
   if (import.meta.env.DEV) {
     console.info(`[v10 reconcile] stamped legacy jobs + sales with ${userCurrency}`);
   }
+});
+
+// v11 (v1.8): add the inventory `stockEvents` ledger. New empty store, so no
+// upgrade/backfill — existing users start at zero derived stock and set their
+// levels via the one-time Asset Library prompt.
+db.version(11).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+  customers: 'id, name, email, lastUsedAt',
+  quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+  stockEvents: 'id, assetId, refId, timestamp',
 });
 
 // Reload this tab if another tab loads a newer schema (SCHEMA-02 / D-10 / D-11).

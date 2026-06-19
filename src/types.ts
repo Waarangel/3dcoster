@@ -51,6 +51,9 @@ export interface Asset {
   unitsPerPackage?: number;
   packageCost?: number;
   lifespanUnits?: number;
+  // v1.8 inventory: warn when derived stock falls to/below this (asset's native
+  // unit — grams for filament, units otherwise). Undefined = no low-stock flag.
+  lowStockThreshold?: number;
   filamentType?: FilamentType;
 
   // Printer-specific fields
@@ -103,6 +106,22 @@ export interface PrinterInstance {
 export interface MaterialUsage {
   materialId: string;
   quantity: number;
+}
+
+// v1.8 inventory ledger. Append-only stock movements; current stock for an
+// asset is SUM(delta) over its events. `delta` is in the asset's native unit
+// (grams for filament, units otherwise): negative = consumed, positive = added.
+// `kind:'job'` events are keyed by `refId = PrintJob.id` with a deterministic
+// id (`${jobId}__${assetId}`) so a re-save replaces them idempotently;
+// `kind:'manual'` events use a fresh id for hand adjustments (e.g. a new spool).
+export interface StockEvent {
+  id: string;
+  assetId: string;
+  delta: number;
+  kind: 'job' | 'manual';
+  refId: string;
+  timestamp: Date;
+  note?: string;
 }
 
 export interface ElectricityConfig {
