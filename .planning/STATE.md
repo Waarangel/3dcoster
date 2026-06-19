@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-25). Milestone roadmap: [milestones/v
 ## Current Position
 
 Milestone: **v1.8 Inventory & Sales Reporting** (branch `feat/v1.8-inventory-reports`, worktree `../3DCoster-v1.8`)
-Phase: **29 — Inventory UI 🔨 IN PROGRESS**
-  - ✅ `StockBadge` component built + tested (6 tests) — `src/components/inventory/StockBadge.tsx` (shows "X g left", amber low / red out-of-stock, ⚠ + words so not colour-alone).
-  - ⏳ Remaining: thread `useStockEvents.stockByAssetId` through AssetLibrary's **virtualized rows** (rowProps → MaterialRow + material MobileCardItem) to show the badge; add **current-stock + low-stock-threshold fields** to the material edit form (+ save: threshold on Asset, stock via `logManualAdjustment`); **LowStockBar** header strip; **first-run** "set your stock" prompt; NewBadge + `features.ts`.
-Prev: **28 ✅ DONE** (deduct-on-save/edit/delete via useJobs tx; `useStockEvents` hook)
-Status: In progress (2.5/5 phases — Phase 29 partial)
+Phase: **29 — Inventory UI 🔨 IN PROGRESS (core done)**
+  - ✅ `StockBadge` (6 tests). ✅ **Stock shows on desktop material rows** — `stockByAssetId` threaded through the virtualized + non-virtualized paths (optional prop; printer path untouched). ✅ **Edit form: "Stock on hand"** (sets ledger via delta `logManualAdjustment`, pre-filled from current) **+ "Low-stock alert at"** (saved on Asset). Commit `1c72ae4`. The see→set→deduct loop works; low/out flag shows.
+  - ⏳ Remaining polish: **mobile card** badge parity (MobileCardItem); **LowStockBar** header strip ("N low"); **first-run** "set your stock" prompt; **NewBadge + `features.ts`** (do at ship prep — gates on release date anyway).
+Prev: **28 ✅ DONE** (deduct via useJobs tx; `useStockEvents` hook)
+Status: In progress (~3/5 phases — Phase 29 core done, polish remaining)
 
 > **GSD revived for v1.8** — management lapsed after v1.3 (Phase 26, 2026-05-28); v1.4–v1.7 shipped ad-hoc.
 > Phase numbering continues at 27. v1.4–v1.7 recorded as shipped-outside-GSD in ROADMAP.md.
