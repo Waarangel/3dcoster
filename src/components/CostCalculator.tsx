@@ -3,6 +3,7 @@ import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, Mater
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
+import { useStockEvents } from '../hooks/useStockEvents';
 import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { convert, type FxRateTable } from '../utils/fxConvert';
@@ -235,6 +236,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   }, []);
 
   const toast = useToast();
+  // Live per-asset stock (grams for filament) — drives the "won't finish this print" hint.
+  const { stockByAssetId } = useStockEvents();
 
   // Persist form state to sessionStorage whenever values change
   useEffect(() => {
@@ -959,8 +962,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
           <div className="space-y-3">
             <label className="block text-xs text-slate-400">Filaments *</label>
 
-            {filamentRows.map((row, index) => (
-              <div key={row.uid} className="flex items-start gap-2 bg-slate-700/30 p-3 rounded-lg">
+            {filamentRows.map((row, index) => {
+              // Stock hint (new jobs only — an edited job's grams are already in the ledger,
+              // so comparing against post-deduction stock would double-count).
+              const stock = row.filamentId ? stockByAssetId.get(row.filamentId) : undefined;
+              const short = !editingJob && stock != null && row.grams > 0 && stock < row.grams;
+              return (
+              <div key={row.uid} className="bg-slate-700/30 p-3 rounded-lg">
+                <div className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <FilamentSelector
                     materials={materials}
@@ -1013,8 +1022,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     )}
                   </div>
                 </div>
+                </div>
+                {short && (
+                  <p className="mt-2 text-xs text-amber-400 flex items-start gap-1.5">
+                    <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                    <span>
+                      {stock != null && stock <= 0
+                        ? `Out of stock — this print needs ${Math.round(row.grams)} g.`
+                        : `Only ${Math.round(stock ?? 0)} g left in stock — ${Math.round(row.grams - (stock ?? 0))} g short for this print.`}
+                    </span>
+                  </p>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Print parameters — flex-wrap so compact inputs pack tightly left-to-right (matches SettingsModal pattern). */}
