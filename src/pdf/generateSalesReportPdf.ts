@@ -42,12 +42,16 @@ function todayLabel(): string {
 
 // --- Reusable report chrome -------------------------------------------------
 
-/** Faint, rotated brand mark behind the content — present but never in the way. */
+/**
+ * Faint, rotated brand mark behind the content — present but never in the way.
+ * Sits low on the page (≈two-thirds down), in the whitespace below the table, so
+ * it reads as an intentional background mark instead of being clipped by content.
+ */
 function drawWatermark(doc: jsPDF, pageW: number, pageH: number): void {
   doc.setFont(FONT_ID, 'bold');
-  doc.setFontSize(80);
+  doc.setFontSize(82);
   doc.setTextColor(237, 241, 247); // ~slate-100, very light
-  doc.text('3DCoster', pageW / 2, pageH / 2 + 60, { align: 'center', angle: 28 });
+  doc.text('3DCoster', pageW / 2, pageH * 0.66, { align: 'center', angle: 24 });
   doc.setTextColor(15, 23, 42);
 }
 
