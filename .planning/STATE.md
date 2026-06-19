@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: v1.8 Inventory & Sales Reporting
 status: In progress
-stopped_at: Phase 28 complete; Phase 29 next
+stopped_at: Phase 29 complete; Phase 30 next
 last_updated: "2026-06-19T00:00:00.000Z"
-last_activity: 2026-06-19 — Phase 28 (deduction wiring) done; 632 tests pass, build green
+last_activity: 2026-06-19 — Phase 29 (inventory UI) done; 639 tests pass, build green
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 5
-  completed_plans: 2
-  percent: 40
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
@@ -26,11 +26,12 @@ See: .planning/PROJECT.md (updated 2026-05-25). Milestone roadmap: [milestones/v
 ## Current Position
 
 Milestone: **v1.8 Inventory & Sales Reporting** (branch `feat/v1.8-inventory-reports`, worktree `../3DCoster-v1.8`)
-Phase: **29 — Inventory UI 🔨 IN PROGRESS (core done)**
-  - ✅ `StockBadge` (6 tests). ✅ **Stock shows on desktop material rows** — `stockByAssetId` threaded through the virtualized + non-virtualized paths (optional prop; printer path untouched). ✅ **Edit form: "Stock on hand"** (sets ledger via delta `logManualAdjustment`, pre-filled from current) **+ "Low-stock alert at"** (saved on Asset). Commit `1c72ae4`. The see→set→deduct loop works; low/out flag shows.
-  - ⏳ Remaining polish: **mobile card** badge parity (MobileCardItem); **LowStockBar** header strip ("N low"); **first-run** "set your stock" prompt; **NewBadge + `features.ts`** (do at ship prep — gates on release date anyway).
-Prev: **28 ✅ DONE** (deduct via useJobs tx; `useStockEvents` hook)
-Status: In progress (~3/5 phases — Phase 29 core done, polish remaining)
+Phase: **29 — Inventory UI ✅ DONE**
+  - `StockBadge` (6 tests) on desktop rows + mobile cards (`stockByAssetId` threaded through virtualized + non-virtualized paths, optional prop so printer path untouched). Edit form: "Stock on hand" (ledger delta via `logManualAdjustment`, pre-filled) + "Low-stock alert at" (on Asset). `LowStockBar` header strip + one-time first-run nudge (localStorage-dismissible). Commits `1c72ae4`, `00bef65`. See→set→deduct→flag loop fully works.
+Next: **Phase 30 — PDF sales report** (pure `computeSalesReport()` + tests → lazy `generateSalesReportPdf()` → `ReportsSection` in Settings → Data tab; Month/Year/Custom range + preview + PDF/CSV).
+Status: In progress (3/5 phases)
+
+> Deferred to Phase 31 ship prep: **NewBadge + `features.ts`** for inventory (the badge gates on release date, so it's added when v1.8 tags). Visual/browser UAT of the inventory UI also pending (demo holds :4173).
 
 > **GSD revived for v1.8** — management lapsed after v1.3 (Phase 26, 2026-05-28); v1.4–v1.7 shipped ad-hoc.
 > Phase numbering continues at 27. v1.4–v1.7 recorded as shipped-outside-GSD in ROADMAP.md.
