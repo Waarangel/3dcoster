@@ -23,7 +23,7 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ---
 
-## [1.8.0] - 2026-06-24
+## [1.8.0] - 2026-06-25
 
 ### Added
 - **Material inventory tracking.** Keep tabs on how much of each filament and supply you have on hand. Set your current stock in the Material Library and it deducts automatically every time you log a job — edit or delete a job and the stock corrects itself. Low-stock and out-of-stock badges warn you at a glance, you can set a low-stock threshold per material, and the Cost Calculator now flags when a print won't finish with the filament you have left ("only 120 g left — 40 g short"). Filament stock is shown in spools, and it's all included in your backups.
