@@ -15,7 +15,7 @@ import {
 //      Date fields. ANY failure rejects the ENTIRE file — no partial
 //      restores, no best-effort row skipping (a half-restored database is
 //      worse than a failed restore).
-//   2. restoreBackup wraps clear()+bulkPut() of all 8 stores in ONE Dexie
+//   2. restoreBackup wraps clear()+bulkPut() of all 9 stores in ONE Dexie
 //      transaction — a crash or error mid-restore rolls back to the
 //      pre-restore state.
 //
@@ -147,7 +147,7 @@ export function validateBackupFile(parsed: unknown): ValidationResult {
 /**
  * Replace-all restore: validates the parsed backup (throwing with the
  * validation message on failure, BEFORE any write), then clears and rewrites
- * all 8 stores inside one atomic transaction. Dexie rolls the transaction
+ * all 9 stores inside one atomic transaction. Dexie rolls the transaction
  * back automatically if anything throws mid-restore.
  *
  * Callers must trigger a full page reload after this resolves — the boot

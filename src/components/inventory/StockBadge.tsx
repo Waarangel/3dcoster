@@ -32,11 +32,18 @@ export const StockBadge = memo(function StockBadge({ stock, threshold, unit }: S
       : 'bg-slate-700/50 text-slate-300 border-slate-600/50';
 
   const label = isOut ? 'Out of stock' : `${formatStock(stock)}${unit ? ` ${unit}` : ''} left`;
+  // Surface the low/out state + threshold to assistive tech (title isn't reachable
+  // by keyboard/AT). Plain in-stock badges fall back to their visible text.
+  const ariaLabel = isOut
+    ? 'Out of stock'
+    : isLow
+      ? `Low stock — ${label}, threshold ${formatStock(threshold!)}${unit ? ` ${unit}` : ''}`
+      : undefined;
 
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium ${tone}`}
-      title={isLow ? `Low stock — at or below ${formatStock(threshold!)}${unit ? ` ${unit}` : ''}` : undefined}
+      aria-label={ariaLabel}
     >
       {(isOut || isLow) && <span aria-hidden="true">⚠</span>}
       {label}

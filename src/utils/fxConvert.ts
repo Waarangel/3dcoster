@@ -84,6 +84,7 @@ export function convert(
   table: FxRateTable | null | undefined,
 ): number | null {
   if (!Number.isFinite(amount)) return null;
+  if (amount === 0) return 0; // zero is zero in any currency — never needs a rate
   if (from === to) return amount;
   if (!table) return null;
 

@@ -543,7 +543,7 @@ export function AssetLibrary({
     const grams = editingId ? stockByAssetId.get(editingId) : undefined;
     // Pre-fill in the asset's display unit (grams ÷ grams-per-spool for filament).
     setStockOnHandInput(asset && grams != null ? String(grams / stockUnit(asset).perUnit) : '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: pre-fill once on open; omitting assets/stockByAssetId stops a live ledger update from clobbering the user's in-progress input
   }, [editingId]);
   // Display unit for the stock fields, derived from the in-progress form values.
   const formStockUnit = stockUnit({ category: formData.category as AssetCategory, unit: formData.unit, unitsPerPackage: formData.unitsPerPackage });

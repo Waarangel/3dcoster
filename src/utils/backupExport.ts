@@ -13,7 +13,7 @@ import {
 // app singleton from db/database.ts.
 // ---------------------------------------------------------------------------
 
-/** Reads all 8 stores and wraps them in the meta envelope. */
+/** Reads all 9 stores and wraps them in the meta envelope. */
 export async function buildBackupFile(database: Dexie): Promise<BackupFile> {
   if (!database.isOpen()) await database.open();
 

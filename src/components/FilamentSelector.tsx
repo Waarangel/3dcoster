@@ -322,7 +322,6 @@ export function FilamentSelector({
         {isOpen && (
           <div
             className="absolute z-50 mt-1 w-full bg-slate-700 rounded-lg shadow-lg border border-slate-600"
-            role="menu"
           >
             <div className="p-2 border-b border-slate-600">
               {/* allow-raw-html: search field needs a direct ref for focus-on-open; matches this component's custom-control pattern */}
@@ -337,6 +336,9 @@ export function FilamentSelector({
                 className="w-full px-2.5 py-1.5 text-sm bg-slate-800 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            {/* role="menu" wraps only the selectable rows — the search input above
+                must not be a child of a menu (invalid ARIA ownership). */}
+            <div role="menu" aria-label="Filaments">
             {searchQuery.trim() ? (
               <div className="max-h-72 overflow-y-auto">
                 {searchResults.length === 0 ? (
@@ -437,6 +439,7 @@ export function FilamentSelector({
             ))}
             </>
             )}
+            </div>
           </div>
         )}
       </div>

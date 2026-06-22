@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { Sale, PrintJob, Currency } from '../types';
 import type { FxRateTable } from '../utils/fxConvert';
 import { formatCurrency } from '../utils/currency';
@@ -40,6 +40,18 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
   const [customStart, setCustomStart] = useState(() => isoDay(new Date(nowParts().year, nowParts().month, 1)));
   const [customEnd, setCustomEnd] = useState(() => isoDay(new Date()));
   const [busy, setBusy] = useState(false);
+
+  // Associate each range control with its visible label for screen readers.
+  const periodId = useId();
+  const monthId = useId();
+  const yearId = useId();
+  const quarterId = useId();
+  const fromId = useId();
+  const toId = useId();
+
+  // Guard a backwards custom range (From after To) — otherwise the report just
+  // shows zero with no explanation.
+  const customRangeInvalid = mode === 'custom' && customEnd < customStart;
 
   const yearOptions = useMemo(() => {
     const cur = nowParts().year;
@@ -117,8 +129,8 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Period</label>
-          <Select selectSize="sm" value={mode} onChange={e => setMode(e.target.value as RangeMode)}>
+          <label htmlFor={periodId} className="block text-xs text-slate-400 mb-1">Period</label>
+          <Select id={periodId} selectSize="sm" value={mode} onChange={e => setMode(e.target.value as RangeMode)}>
             <option value="month">Month</option>
             <option value="quarter">Quarter</option>
             <option value="year">Year</option>
@@ -129,14 +141,14 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
         {mode === 'month' && (
           <>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Month</label>
-              <Select selectSize="sm" value={month} onChange={e => setMonth(Number(e.target.value))}>
+              <label htmlFor={monthId} className="block text-xs text-slate-400 mb-1">Month</label>
+              <Select id={monthId} selectSize="sm" value={month} onChange={e => setMonth(Number(e.target.value))}>
                 {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
               </Select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Year</label>
-              <Select selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
+              <label htmlFor={yearId} className="block text-xs text-slate-400 mb-1">Year</label>
+              <Select id={yearId} selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
                 {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
               </Select>
             </div>
@@ -145,16 +157,16 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
         {mode === 'quarter' && (
           <>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Quarter</label>
-              <Select selectSize="sm" value={quarter} onChange={e => setQuarter(Number(e.target.value))}>
+              <label htmlFor={quarterId} className="block text-xs text-slate-400 mb-1">Quarter</label>
+              <Select id={quarterId} selectSize="sm" value={quarter} onChange={e => setQuarter(Number(e.target.value))}>
                 {[0, 1, 2, 3].map(q => (
                   <option key={q} value={q}>Q{q + 1} ({MONTHS[q * 3].slice(0, 3)}–{MONTHS[q * 3 + 2].slice(0, 3)})</option>
                 ))}
               </Select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Year</label>
-              <Select selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
+              <label htmlFor={yearId} className="block text-xs text-slate-400 mb-1">Year</label>
+              <Select id={yearId} selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
                 {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
               </Select>
             </div>
@@ -162,7 +174,7 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
         )}
         {mode === 'year' && (
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Year</label>
+            <label htmlFor={yearId} className="block text-xs text-slate-400 mb-1">Year</label>
             <Select selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
               {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
@@ -171,12 +183,12 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
         {mode === 'custom' && (
           <>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">From</label>
-              <Input inputSize="sm" type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} />
+              <label htmlFor={fromId} className="block text-xs text-slate-400 mb-1">From</label>
+              <Input id={fromId} inputSize="sm" type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">To</label>
-              <Input inputSize="sm" type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+              <label htmlFor={toId} className="block text-xs text-slate-400 mb-1">To</label>
+              <Input id={toId} inputSize="sm" type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
             </div>
           </>
         )}
@@ -199,10 +211,12 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={handlePdf} disabled={busy || data.saleCount === 0}>Download PDF report</Button>
-        <Button variant="secondary" onClick={handleCsv} disabled={busy || data.saleCount === 0}>Download CSV</Button>
+        <Button onClick={handlePdf} disabled={busy || customRangeInvalid || data.saleCount === 0}>Download PDF report</Button>
+        <Button variant="secondary" onClick={handleCsv} disabled={busy || customRangeInvalid || data.saleCount === 0}>Download CSV</Button>
       </div>
-      {data.saleCount === 0 && <p className="text-xs text-slate-500 mt-2">No sales recorded in this period.</p>}
+      {customRangeInvalid
+        ? <p className="text-xs text-amber-400/80 mt-2">“From” is after “To” — adjust the dates to see this range.</p>
+        : data.saleCount === 0 && <p className="text-xs text-slate-500 mt-2">No sales recorded in this period.</p>}
     </div>
   );
 }

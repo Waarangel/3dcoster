@@ -2,7 +2,7 @@
 // Full backup export — TDD suite written BEFORE src/utils/backupExport.ts.
 //
 // Contract locks:
-//  - buildBackupFile captures ALL 8 Dexie stores plus a meta envelope
+//  - buildBackupFile captures ALL 9 Dexie stores plus a meta envelope
 //    (backupFormatVersion, appSchemaVersion = db.verno, appVersion,
 //    exportedAt ISO timestamp).
 //  - settings rows round-trip as opaque {key, value-string} pairs.
@@ -65,7 +65,7 @@ describe('buildBackupFile', () => {
     db = makeTestDb();
   });
 
-  it('captures every one of the 8 stores as an array, with seeded contents', async () => {
+  it('captures every one of the 9 stores as an array, with seeded contents', async () => {
     await db.table('jobs').put(SEED_JOB);
     await db.table('settings').put(SEED_SETTING);
     await db.table('materials').put({ id: 'mat-1', name: 'PLA', category: 'filament' });

@@ -37,6 +37,12 @@ describe('convert', () => {
     expect(convert(0, 'USD', 'CAD', TABLE)).toBe(0);
   });
 
+  it('preserves zero amounts even without a rate table (zero is zero in any currency)', () => {
+    // Regression: a zero foreign-currency amount (e.g. a no-fee sale) must not
+    // poison the sales report with a null when the FX table hasn't loaded yet.
+    expect(convert(0, 'USD', 'CAD', null)).toBe(0);
+  });
+
   it('returns null when the source currency is missing from the table', () => {
     expect(convert(10, 'ZAR', 'CAD', TABLE)).toBeNull();
   });
