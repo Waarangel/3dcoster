@@ -20,18 +20,6 @@ export interface RoadmapItem {
 
 export const roadmapItems: RoadmapItem[] = [
   {
-    title: 'Material inventory tracking',
-    description:
-      'Track how much filament and supplies you have on hand. Stock deducts automatically as you log jobs, and you get a heads-up before you run low — no more discovering you are out mid-print.',
-    stage: 'in-development',
-  },
-  {
-    title: 'PDF sales report',
-    description:
-      'A clean, printable summary of your sales — totals, revenue by marketplace, fees, and profit for any month or year. Made for tax season and anyone who asks for "something official".',
-    stage: 'in-development',
-  },
-  {
     title: 'Per-marketplace pricing optimization',
     description:
       'Set channel-specific target prices so Etsy, Amazon, and TikTok each hit your margin after their different fees — computed locally, no account needed.',

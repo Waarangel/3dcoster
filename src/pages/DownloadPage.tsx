@@ -93,7 +93,7 @@ export function DownloadPage() {
 
   // Fallback URLs if API fails (update these when releasing). Note the Linux
   // arch suffixes differ: AppImage/.deb use `_amd64`, .rpm uses `-1.x86_64`.
-  const fallbackVersion = '1.7.0';
+  const fallbackVersion = '1.8.0';
   const fallbackUrls = {
     windows: `https://github.com/Waarangel/3dcoster/releases/download/v${fallbackVersion}/3DCoster_${fallbackVersion}_x64-setup.exe`,
     macSilicon: `https://github.com/Waarangel/3dcoster/releases/download/v${fallbackVersion}/3DCoster_${fallbackVersion}_aarch64.dmg`,

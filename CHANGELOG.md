@@ -21,8 +21,18 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+---
+
+## [1.8.0] - 2026-06-24
+
 ### Added
+- **Material inventory tracking.** Keep tabs on how much of each filament and supply you have on hand. Set your current stock in the Material Library and it deducts automatically every time you log a job — edit or delete a job and the stock corrects itself. Low-stock and out-of-stock badges warn you at a glance, you can set a low-stock threshold per material, and the Cost Calculator now flags when a print won't finish with the filament you have left ("only 120 g left — 40 g short"). Filament stock is shown in spools, and it's all included in your backups.
+- **PDF sales report.** A new **Reports** tab turns your sales into a clean, tax-ready document. Pick a month, quarter, year, year-to-date, or custom date range, see a live preview of revenue, fees, and profit (with a breakdown by marketplace), then download it as a designed PDF or a per-sale CSV. Sales in other currencies are converted using daily exchange rates; anything without an available rate shows "—" rather than a guessed figure.
+- **Search in the filament picker.** Type to filter the filament list instead of scrolling through every brand.
 - **Bambu PLA Pure in the filament catalog.** Bambu Lab's new food-safe / toy-safe PLA (launched June 2026) is now a built-in filament with current pricing, so you can cost prints with it straight away — existing libraries get it added automatically.
+
+### Changed
+- **Tidier row actions.** Edit, delete, and similar per-row buttons now share one consistent icon-button style across the app.
 
 ---
 
