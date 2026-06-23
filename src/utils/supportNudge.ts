@@ -2,7 +2,8 @@
  * Support-nudge gating + external-link helper.
  *
  * A calm, occasional prompt that invites a user to support 3DCoster AFTER they
- * hit a real value moment (recording a sale, creating a PDF quote). The gate
+ * hit a real value moment (saving a job, recording a sale, creating a PDF
+ * quote). The gate
  * keeps it from ever nagging: at most once per cooldown window, never twice in
  * one session, and never again once the user has clicked through to support.
  *

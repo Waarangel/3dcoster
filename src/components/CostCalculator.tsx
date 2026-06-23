@@ -4,6 +4,7 @@ import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
 import { Button, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
+import { useSupportNudge } from './SupportNudge';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { convert, type FxRateTable } from '../utils/fxConvert';
 import { calculateCost, calculateTax } from '../utils/costCalc';
@@ -203,6 +204,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const [justSaved, setJustSaved] = useState(false);
 
   const toast = useToast();
+  const showSupportNudge = useSupportNudge();
 
   // Persist form state to sessionStorage whenever values change
   useEffect(() => {
@@ -720,6 +722,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         await onSaveJob(job, printTimeHours);
         setJustSaved(true);
         setTimeout(() => setJustSaved(false), 3000);
+        showSupportNudge();
       } catch {
         toast.error('Could not save the job — please try again.');
       }

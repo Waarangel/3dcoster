@@ -55,8 +55,8 @@ function SupportNudgeContent({ onSupport }: { onSupport: () => void }) {
 
 /**
  * Returns a function that shows the support nudge if the gate allows. Call it
- * at a value moment (sale recorded, quote created); it self-gates, so it is
- * always safe to call.
+ * at a value moment (job saved, sale recorded, quote created); it self-gates,
+ * so it is always safe to call.
  *
  * Reads the toast context directly rather than via useToast() so that, when
  * there is no <ToastProvider> (e.g. a modal rendered in isolation in a unit
