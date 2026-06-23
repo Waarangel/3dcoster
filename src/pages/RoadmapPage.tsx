@@ -191,7 +191,7 @@ export function RoadmapPage() {
       {/* CTA */}
       <section className="py-8 pb-20 px-6">
         <Reveal trigger="inView" className="max-w-4xl mx-auto text-center">
-          <div className="rounded-3xl border border-[rgba(23,150,255,0.25)] bg-[rgba(23,150,255,0.08)] p-10 sm:p-12">
+          <div className="rounded-3xl border border-[var(--hairline)] bg-[var(--surface-2)] p-10 sm:p-12" style={{ boxShadow: '0 24px 70px -40px rgba(0,0,0,0.85)' }}>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-[var(--ink)]">Want something on this board?</h2>
             <p className="mx-auto mt-3 mb-8 text-[var(--ink-soft)] max-w-xl leading-relaxed [text-wrap:balance]">
               The roadmap is shaped by what sellers actually ask for. Tell us what would make 3DCoster
@@ -209,7 +209,7 @@ export function RoadmapPage() {
                 href="https://github.com/Waarangel/3dcoster/issues"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center px-7 py-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--hairline-strong)] text-[var(--ink)] font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(23,150,255,0.4)] active:translate-y-0 active:scale-[0.98]"
+                className="inline-flex items-center px-7 py-3.5 rounded-xl bg-white text-[var(--brand-deep)] font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]"
               >
                 Open an issue on GitHub
               </a>

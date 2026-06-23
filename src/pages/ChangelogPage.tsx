@@ -290,14 +290,14 @@ export function ChangelogPage() {
 
           {/* CTA */}
           <Reveal trigger="inView" className="mt-14">
-            <div className="rounded-2xl border border-[rgba(23,150,255,0.25)] bg-[rgba(23,150,255,0.08)] p-8 text-center">
+            <div className="rounded-2xl border border-[var(--hairline)] bg-[var(--surface-2)] p-8 text-center" style={{ boxShadow: '0 24px 70px -40px rgba(0,0,0,0.85)' }}>
               <h2 className="font-display text-xl font-bold text-[var(--ink)]">Want to see what&apos;s coming next?</h2>
               <p className="mt-2 text-[var(--ink-soft)] mb-6">Follow the public roadmap, or suggest a feature.</p>
               <div className="flex flex-wrap items-center justify-center gap-3">
-                <Link to="/roadmap" className="inline-flex items-center px-5 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--hairline-strong)] text-[var(--ink)] text-sm font-medium transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(23,150,255,0.4)] active:translate-y-0 active:scale-[0.98]">
+                <Link to="/roadmap" className="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-[var(--brand-deep)] text-sm font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]">
                   View the roadmap
                 </Link>
-                <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-5 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--hairline-strong)] text-[var(--ink)] text-sm font-medium transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(23,150,255,0.4)] active:translate-y-0 active:scale-[0.98]">
+                <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-[var(--brand-deep)] text-sm font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]">
                   Feature requests
                 </a>
                 <Link to="/feedback" className="inline-flex items-center px-5 py-2.5 rounded-xl bg-[var(--brand)] text-white text-sm font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:translate-y-0 active:scale-[0.98]">
