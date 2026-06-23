@@ -30,8 +30,8 @@ const LEAD_FEATURE: Feature = {
 };
 
 const CLOSING_FEATURE: Feature = {
-  title: 'Works offline',
-  description: 'The desktop app runs in your workshop with no internet. Your data never leaves your machine.',
+  title: 'Free, no account, yours',
+  description: 'Run it free in your browser, or fully offline on the desktop — no sign-up, and your data never leaves your machine.',
   icon: (
     <path
       strokeLinecap="round"
@@ -153,8 +153,8 @@ export function LandingPage() {
             </Reveal>
 
             <Reveal trigger="mount" delay={0.28}>
-              <p className="mt-5 text-sm text-[var(--ink-faint)]">
-                No account · works in your browser or offline on the desktop
+              <p className="mt-5 text-base font-medium text-[var(--ink-soft)]">
+                The calculator that catches all of it.
               </p>
             </Reveal>
           </div>
@@ -168,7 +168,6 @@ export function LandingPage() {
       {/* App preview */}
       <section className="px-6 pb-10">
         <Reveal trigger="inView" className="max-w-6xl mx-auto">
-          <p className="text-center text-sm text-[var(--ink-faint)] mb-6">The calculator that catches all of it</p>
           <div
             className="rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] p-2 sm:p-3"
             style={{ boxShadow: '0 30px 80px -40px rgba(0,0,0,0.8)' }}
