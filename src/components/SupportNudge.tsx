@@ -78,7 +78,7 @@ export function useSupportNudge(): () => void {
         markSupportNudgeClicked();
         toast.dismiss(id);
       };
-      id = toast.info(<SupportNudgeContent onSupport={handleSupport} />, {
+      id = toast.show('support', <SupportNudgeContent onSupport={handleSupport} />, {
         duration: NUDGE_DURATION_MS,
       });
     }, SHOW_DELAY_MS);

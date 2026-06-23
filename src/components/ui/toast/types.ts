@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type ToastVariant = 'success' | 'error' | 'info';
+export type ToastVariant = 'success' | 'error' | 'info' | 'support';
 
 export interface ToastOptions {
   /** Auto-dismiss delay in ms. 0 disables auto-dismiss. */

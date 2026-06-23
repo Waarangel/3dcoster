@@ -11,12 +11,14 @@ const VARIANT_BORDER: Record<ToastVariant, string> = {
   success: 'border-green-500/40',
   error: 'border-red-500/40',
   info: 'border-blue-500/40',
+  support: 'border-[var(--amber)]/45',
 };
 
 const VARIANT_ICON_COLOR: Record<ToastVariant, string> = {
   success: 'text-green-400',
   error: 'text-red-400',
   info: 'text-blue-400',
+  support: 'text-[var(--amber)]',
 };
 
 // Heroicons-style single-path glyphs, matching the icons the old inline toasts used.
@@ -24,18 +26,26 @@ const VARIANT_ICON_PATH: Record<ToastVariant, string> = {
   success: 'M5 13l4 4L19 7',
   error: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z',
   info: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  // Heart — gratitude, paired with the coffee CTA in the support nudge.
+  support: 'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z',
 };
 
+// The support toast wears the brand "warm note" surface (amber over the deep
+// surface) instead of the neutral slate every other variant uses.
+const SUPPORT_BG = 'color-mix(in srgb, var(--amber) 14%, var(--surface))';
+
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
-  // Errors interrupt assertively; success/info announce politely.
+  // Errors interrupt assertively; success/info/support announce politely.
   const isError = toast.variant === 'error';
+  const isSupport = toast.variant === 'support';
 
   return (
     <div
       data-toast
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
-      className={`pointer-events-auto bg-slate-800 border ${VARIANT_BORDER[toast.variant]} rounded-lg p-3 shadow-lg shadow-black/30 flex items-start justify-between gap-3 max-w-sm animate-in`}
+      className={`pointer-events-auto ${isSupport ? '' : 'bg-slate-800'} border ${VARIANT_BORDER[toast.variant]} rounded-lg p-3 shadow-lg shadow-black/30 flex items-start justify-between gap-3 max-w-sm animate-in`}
+      style={isSupport ? { background: SUPPORT_BG } : undefined}
     >
       <div className="flex items-start gap-3 text-sm text-slate-200">
         <svg
