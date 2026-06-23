@@ -17,6 +17,7 @@ import { Button, Input, Select, Textarea, Modal } from './ui';
 import { NewBadge } from './NewBadge';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency, getCurrencySymbol } from '../utils/currency';
+import { useSupportNudge } from './SupportNudge';
 
 // ---------------------------------------------------------------------------
 // RecordSaleModal — Phase 22 HYG-06 (plan 22-03).
@@ -79,6 +80,7 @@ export function RecordSaleModal({
   // D-06: modal owns its own useCustomers + useSales subscriptions
   const { customers, customersByEmail, bumpLastUsed, addCustomer } = useCustomers();
   const { addSale, updateSale } = useSales(job.id);
+  const showSupportNudge = useSupportNudge();
 
   // ─── Form state (mirror of JobsManager) ────────────────────────────────────
   const [saleQuantity, setSaleQuantity] = useState(1);
@@ -386,6 +388,7 @@ export function RecordSaleModal({
 
     onSaved?.();
     onClose();
+    showSupportNudge();
   } catch (err) {
     console.error('RecordSaleModal save failed:', err);
     setSaveError('Could not save the sale — please try again.');

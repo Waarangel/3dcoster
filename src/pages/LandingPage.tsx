@@ -302,8 +302,8 @@ export function LandingPage() {
             </div>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-[var(--ink)]">Love 3DCoster?</h2>
             <p className="mx-auto mt-3 mb-6 max-w-lg text-[var(--ink-soft)] leading-relaxed">
-              3DCoster is free to use and open source. If it&apos;s helped you price your prints profitably,
-              consider supporting its development.
+              I&apos;m MJ — I build 3DCoster solo. It&apos;s free and open source, and if it&apos;s helped
+              you price your prints profitably, a coffee keeps it that way.
             </p>
             <a
               href="https://buymeacoffee.com/3dcoster"

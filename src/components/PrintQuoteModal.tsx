@@ -8,6 +8,7 @@ import { calculateTax } from '../utils/costCalc';
 import { computeJobShipping } from '../utils/jobShipping';
 import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
 import { formatQuoteNumber } from '../utils/format';
+import { useSupportNudge } from './SupportNudge';
 
 // ---------------------------------------------------------------------------
 // PrintQuoteModal — Phase 16 gap closure (D-16 + D-18).
@@ -53,6 +54,7 @@ export interface PrintQuoteModalProps {
 
 export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onClose, onQuoteCreated, editingQuote }: PrintQuoteModalProps) {
   const { customers, customersByEmail } = useCustomers();
+  const showSupportNudge = useSupportNudge();
   const { createQuote, updateQuote } = useQuotes();
 
   const isEdit = editingQuote !== undefined;
@@ -232,6 +234,7 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
 
       onQuoteCreated?.(quote);
       onClose();
+      showSupportNudge();
     } catch (err) {
       console.error('Quote generation failed:', err);
       setError(err instanceof Error ? err.message : 'Could not generate quote.');
