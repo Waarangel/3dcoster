@@ -264,24 +264,25 @@ export function LandingPage() {
       <section className="py-16 px-6">
         <Reveal trigger="inView" className="max-w-4xl mx-auto">
           <div
-            className="relative overflow-hidden rounded-3xl px-10 py-14 sm:px-14 text-center"
-            style={{ background: 'var(--brand)', boxShadow: '0 0 120px -30px var(--brand-glow)' }}
+            className="relative overflow-hidden rounded-3xl border border-[var(--hairline)] px-10 py-14 sm:px-14 text-center"
+            style={{ background: 'var(--surface-2)', boxShadow: '0 24px 70px -40px rgba(0,0,0,0.85)' }}
           >
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-white">Stop underpricing your work</h2>
-            <p className="mx-auto mt-4 max-w-xl text-white/85 leading-relaxed [text-wrap:pretty]">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-[var(--ink)]">Stop underpricing your work</h2>
+            <p className="mx-auto mt-4 max-w-xl text-[var(--ink-soft)] leading-relaxed [text-wrap:pretty]">
               Join other 3D-printing sellers who&apos;ve stopped leaving money on the table. Free to
               use, no account required.
             </p>
             <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 to="/app"
-                className="inline-flex items-center px-7 py-3.5 rounded-xl bg-white text-[var(--brand-deep)] font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]"
+                className="inline-flex items-center px-7 py-3.5 rounded-xl bg-[var(--brand)] text-white font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:translate-y-0 active:scale-[0.98]"
+                style={{ boxShadow: '0 8px 30px -8px var(--brand-glow)' }}
               >
                 Launch the app
               </Link>
               <Link
                 to="/download"
-                className="inline-flex items-center px-7 py-3.5 rounded-xl border border-white/35 text-white font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/10 active:translate-y-0 active:scale-[0.98]"
+                className="inline-flex items-center px-7 py-3.5 rounded-xl bg-white text-[var(--brand-deep)] font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]"
               >
                 Download for desktop
               </Link>
