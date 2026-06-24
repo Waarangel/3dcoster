@@ -5,8 +5,9 @@ import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { BackupRestoreSection } from './BackupRestoreSection';
-import { Button, Input, SidePanel } from './ui';
+import { Button, Input, SidePanel, FieldWarning } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
+import { electricityRateWarning, fuelPriceWarning } from '../utils/inputSanity';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -214,9 +215,11 @@ export function SettingsModal({
                     type="number"
                     step="0.01"
                     compact
+                    placeholder="0.15"
                     value={electricity.costPerKwh}
                     onChange={e => onElectricityChange({ costPerKwh: parseFloat(e.target.value) || 0 })}
                   />
+                  <FieldWarning message={electricityRateWarning(electricity.costPerKwh, currencySymbol)} />
                 </div>
               </div>
 
@@ -335,9 +338,11 @@ export function SettingsModal({
                       type="number"
                       step="0.01"
                       compact
+                      placeholder="1.50"
                       value={shippingConfig.gasPricePerLiter}
                       onChange={e => onShippingChange({ ...shippingConfig, gasPricePerLiter: parseFloat(e.target.value) || 0 })}
                     />
+                    <FieldWarning message={fuelPriceWarning(shippingConfig.gasPricePerLiter, fuelUnit, currencySymbol)} />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">{fuelUnit === 'gal' ? 'MPG' : 'L/100km'}</label>
