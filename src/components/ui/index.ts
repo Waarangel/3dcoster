@@ -7,6 +7,7 @@ export { Card } from './Card';
 export { EmptyState, shouldShowEmptyState } from './EmptyState';
 export { Skeleton } from './Skeleton';
 export { InfoTooltip } from './InfoTooltip';
+export { FieldWarning } from './FieldWarning';
 export { CollapsibleSection } from './CollapsibleSection';
 export { Modal } from './Modal';
 export { SidePanel } from './SidePanel';

@@ -21,6 +21,9 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Added
+- **A heads-up when a rate looks off by 100×.** Most electricity bills list the price in cents, but the cost-per-kWh setting expects dollars — so it was easy to enter `15` instead of `0.15` and silently inflate every print's electricity cost 100-fold. Settings now shows a gentle warning when your electricity rate or fuel price looks like cents typed as dollars, or when a printer's lifespan looks like years instead of print-hours. The fields also show an example value.
+
 ---
 
 ## [1.8.0] - 2026-06-25

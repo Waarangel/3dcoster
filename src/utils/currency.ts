@@ -108,6 +108,29 @@ export function mpgToLitersPer100Km(mpg: number): number {
   return 235.215 / mpg;
 }
 
+// Fuel price is stored canonically as price-per-litre (gasPricePerLiter); the
+// dropoff cost math is metric-internal. US users enter/read it per US gallon, so
+// the Settings field converts at the display/input seam — exactly like the
+// km↔mi and L/100km↔MPG fields next to it. 1 US liquid gallon = 3.785411784 L.
+export const LITERS_PER_US_GALLON = 3.785411784;
+
+// Canonical seeded fuel price (per litre). Lives here with the fuel-unit
+// helpers so the default and the per-gallon display conversion share one home.
+// A USD user still sitting on this default never entered a per-gallon value, so
+// it's the signal we use to suppress the one-time "re-check your fuel price"
+// notice for untouched configs.
+export const DEFAULT_GAS_PRICE_PER_LITER = 1.5;
+
+// Stored per-litre price → per-(US)-gallon value to display.
+export function pricePerLiterToPerGallon(perLiter: number): number {
+  return perLiter * LITERS_PER_US_GALLON;
+}
+
+// Per-(US)-gallon entry → per-litre value to store.
+export function pricePerGallonToPerLiter(perGallon: number): number {
+  return perGallon / LITERS_PER_US_GALLON;
+}
+
 // Format distance with appropriate unit
 export function formatDistance(distanceKm: number, currency: Currency): string {
   const unit = CURRENCY_CONFIG[currency].distanceUnit;

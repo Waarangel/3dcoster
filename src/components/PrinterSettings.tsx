@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { PrinterConfig, PrinterInstance, PrintJob, Currency } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast } from './ui';
+import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast, FieldWarning } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
+import { printerLifespanWarning } from '../utils/inputSanity';
 import { PrinterIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 
@@ -277,6 +278,7 @@ export function PrinterSettings({
                       onChange={e => setCustomModelLifespan(parseFloat(e.target.value) || 0)}
                       placeholder="5000"
                     />
+                    <FieldWarning message={printerLifespanWarning(customModelLifespan)} />
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
