@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
 import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
+import { DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from '../db/backfill';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
@@ -400,7 +401,7 @@ const DEFAULT_PROFILE: UserProfile = {
 };
 const DEFAULT_SHIPPING: ShippingConfig = {
   maxDeliveryRadiusKm: 25,
-  gasPricePerLiter: 1.50,
+  gasPricePerLiter: DEFAULT_GAS_PRICE_PER_LITER,
   vehicleFuelEfficiency: 10, // L/100km (typical car)
   upsBaseCost: 15,
   fedexBaseCost: 15,

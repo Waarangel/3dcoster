@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
-import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km } from '../utils/currency';
+import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km, pricePerLiterToPerGallon, pricePerGallonToPerLiter, DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { BackupRestoreSection } from './BackupRestoreSection';
 import { Button, Input, SidePanel } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
+
+// localStorage flag so the one-time per-gallon fuel-price re-check notice
+// (see showFuelUnitNotice below) stays dismissed across sessions.
+const FUEL_UNIT_NOTICE_ACK_KEY = 'fuelPriceUnitNotice.ackV1';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -40,6 +44,25 @@ export function SettingsModal({
   const currencySymbol = CURRENCY_CONFIG[userCurrency].symbol;
   const distanceUnit = getDistanceUnit(userCurrency);
   const fuelUnit = getFuelUnit(userCurrency);
+
+  // One-time, non-destructive nudge for USD users whose fuel price predates the
+  // per-gallon display fix. Earlier builds labeled this field "$/gal" but stored
+  // the entry raw as price-per-LITRE, so a US user's pump-price entry was read as
+  // ~3.785× too expensive in dropoff costs. We can't know which past values were
+  // mis-entered (the metric default is itself a valid per-litre price), so we
+  // never rewrite stored data — we only ask USD users with a customized price to
+  // re-check it, once, dismissibly.
+  const [fuelUnitNoticeAck, setFuelUnitNoticeAck] = useState<boolean>(() => {
+    try { return localStorage.getItem(FUEL_UNIT_NOTICE_ACK_KEY) === '1'; } catch { return false; }
+  });
+  const showFuelUnitNotice =
+    fuelUnit === 'gal' &&
+    shippingConfig.gasPricePerLiter !== DEFAULT_GAS_PRICE_PER_LITER &&
+    !fuelUnitNoticeAck;
+  const dismissFuelUnitNotice = () => {
+    setFuelUnitNoticeAck(true);
+    try { localStorage.setItem(FUEL_UNIT_NOTICE_ACK_KEY, '1'); } catch { /* private mode: notice simply reappears next open */ }
+  };
 
   // Default Tax Rate placeholder — shows the address-aware default that
   // would apply if the user leaves Settings empty. Makes the fallback visible
@@ -313,6 +336,24 @@ export function SettingsModal({
           {/* Delivery Tab — local pickup/dropoff + carrier base rates merged */}
           {activeTab === 'delivery' && (
             <div className="space-y-6">
+              {showFuelUnitNotice && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  <p className="flex-1">
+                    We fixed how Fuel Price is entered — it's now read as your price
+                    per <strong>{fuelUnit}</strong>. Please double-check the Fuel Price below is
+                    your real {currencySymbol}/{fuelUnit} (your saved value wasn't changed).
+                  </p>
+                  {/* allow-raw-html: bare ✕ dismiss affordance inside an inline notice — no Button variant maps to a borderless icon-only control */}
+                  <button
+                    type="button"
+                    onClick={dismissFuelUnitNotice}
+                    className="shrink-0 rounded px-1 text-amber-300 hover:text-amber-100"
+                    aria-label="Dismiss fuel price notice"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
               {/* Local Delivery Settings — flex-wrap so chunks tight-pack */}
               <div>
                 <h3 className="text-sm font-medium text-slate-300 mb-3">Local Pickup & Dropoff</h3>
@@ -335,8 +376,11 @@ export function SettingsModal({
                       type="number"
                       step="0.01"
                       compact
-                      value={shippingConfig.gasPricePerLiter}
-                      onChange={e => onShippingChange({ ...shippingConfig, gasPricePerLiter: parseFloat(e.target.value) || 0 })}
+                      value={fuelUnit === 'gal' ? pricePerLiterToPerGallon(shippingConfig.gasPricePerLiter).toFixed(2) : shippingConfig.gasPricePerLiter}
+                      onChange={e => {
+                        const inputVal = parseFloat(e.target.value) || 0;
+                        onShippingChange({ ...shippingConfig, gasPricePerLiter: fuelUnit === 'gal' ? pricePerGallonToPerLiter(inputVal) : inputVal });
+                      }}
                     />
                   </div>
                   <div>
