@@ -21,9 +21,6 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
-### Added
-- **A heads-up when a rate looks off by 100×.** Most electricity bills list the price in cents, but the cost-per-kWh setting expects dollars — so it was easy to enter `15` instead of `0.15` and silently inflate every print's electricity cost 100-fold. Settings now shows a gentle warning when your electricity rate or fuel price looks like cents typed as dollars, or when a printer's lifespan looks like years instead of print-hours. The fields also show an example value.
-
 ---
 
 ## [1.8.0] - 2026-06-25
@@ -33,9 +30,13 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 - **PDF sales report.** A new **Reports** tab turns your sales into a clean, tax-ready document. Pick a month, quarter, year, year-to-date, or custom date range, see a live preview of revenue, fees, and profit (with a breakdown by marketplace), then download it as a designed PDF or a per-sale CSV. Sales in other currencies are converted using daily exchange rates; anything without an available rate shows "—" rather than a guessed figure.
 - **Search in the filament picker.** Type to filter the filament list instead of scrolling through every brand.
 - **Bambu PLA Pure in the filament catalog.** Bambu Lab's new food-safe / toy-safe PLA (launched June 2026) is now a built-in filament with current pricing, so you can cost prints with it straight away — existing libraries get it added automatically.
+- **A heads-up when a rate looks off by 100×.** Most electricity bills list the price in cents, but the cost-per-kWh setting expects dollars — so it was easy to enter `15` instead of `0.15` and silently inflate every print's electricity cost 100-fold. Settings now shows a gentle warning when your electricity rate or fuel price looks like cents typed as dollars, or when a printer's lifespan looks like years instead of print-hours. The fields also show an example value.
 
 ### Changed
 - **Tidier row actions.** Edit, delete, and similar per-row buttons now share one consistent icon-button style across the app.
+
+### Fixed
+- **Delivery fuel price is now correctly per-gallon in US/imperial regions.** The Fuel Price setting is labeled $/gal for the US, but the value was being used as if it were per-litre — overstating local-dropoff fuel costs by roughly 3.8× for anyone who entered a gallon price. The field now converts properly. Your saved value wasn't changed, so if you're in the US and use local dropoff, open Settings → Delivery and double-check your fuel price (a one-time reminder will point you there).
 
 ---
 
