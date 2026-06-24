@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useId, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useId } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
@@ -31,6 +31,7 @@ interface CostCalculatorProps {
   onUpdateJob: (job: PrintJob) => void | Promise<void>;
   editingJob: PrintJob | null;
   onCancelEdit: () => void;
+  onViewJobs: () => void;
 }
 
 // Session storage key for form persistence
@@ -71,7 +72,7 @@ interface FilamentRow {
 // MaterialUsage augmented with a stable view-only key (see nextRowKey).
 type MaterialRow = MaterialUsage & { uid: string };
 
-export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, marketplaceFees, onSaveJob, onUpdateJob, editingJob, onCancelEdit }: CostCalculatorProps) {
+export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, marketplaceFees, onSaveJob, onUpdateJob, editingJob, onCancelEdit, onViewJobs }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
@@ -221,19 +222,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     () => editingJob?.etsyChecks ?? getStoredValue('etsyChecks', {} as Record<string, boolean>)
   );
 
-  // Job saved feedback. The reset timer is held in a ref so it can be cleared on
-  // unmount and coalesced across rapid saves (avoids a setState on an unmounted
-  // component and stacked timers cancelling the "saved" flag early).
-  const [justSaved, setJustSaved] = useState(false);
-  const justSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flagJustSaved = () => {
-    setJustSaved(true);
-    if (justSavedTimer.current) clearTimeout(justSavedTimer.current);
-    justSavedTimer.current = setTimeout(() => setJustSaved(false), 3000);
-  };
-  useEffect(() => () => {
-    if (justSavedTimer.current) clearTimeout(justSavedTimer.current);
-  }, []);
 
   const toast = useToast();
   // Live per-asset stock (grams for filament) — drives the "won't finish this print" hint.
@@ -648,6 +636,47 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     sessionStorage.removeItem(FORM_STORAGE_KEY);
   };
 
+  // After a successful save/update: reset the form for the next job, scroll back
+  // to the top, and surface a toast whose one action jumps to My Jobs (so the
+  // user is never forced off the calculator but can review in a click).
+  const finishAfterSave = (message: string) => {
+    clearForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const id = toast.success(
+      <span className="flex flex-wrap items-center gap-2">
+        <span>{message}</span>
+        <Button
+          variant="ghost"
+          btnSize="sm"
+          className="!px-2 !py-0.5 underline"
+          onClick={() => { onViewJobs(); toast.dismiss(id); }}
+        >
+          View in My Jobs
+        </Button>
+      </span>
+    );
+  };
+
+  // True when the form holds work worth a confirm before a destructive reset.
+  const formHasData = () =>
+    printName.trim() !== '' ||
+    filamentRows.some(r => r.filamentId) ||
+    printTimeHours > 0 ||
+    modelCost > 0 ||
+    sellingPrice > 0 ||
+    materialsUsed.length > 0 ||
+    packagingMaterials.length > 0;
+
+  // Explicit "start a new job" reset. Guards real data behind a confirm so a
+  // stray click can't wipe a half-built job; an empty form clears silently.
+  const handleClearForm = () => {
+    if (formHasData() && !window.confirm('Clear the form and start a new job? Unsaved changes will be lost.')) {
+      return;
+    }
+    clearForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Save job handler (create new or update existing)
   const handleSaveJob = async () => {
     if (!printName.trim()) {
@@ -715,9 +744,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
       try {
         await onUpdateJob(updatedJob);
-        clearForm();
         onCancelEdit();
-        flagJustSaved();
+        finishAfterSave('Job updated.');
       } catch {
         toast.error('Could not save the job — please try again.');
       }
@@ -761,7 +789,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
       try {
         await onSaveJob(job, printTimeHours);
-        flagJustSaved();
+        finishAfterSave('Job saved.');
       } catch {
         toast.error('Could not save the job — please try again.');
       }
@@ -1711,12 +1739,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
       {/* Save Job Button */}
       <div className="flex flex-col md:flex-row md:justify-end gap-4">
-        {justSaved && (
-          <span className="text-green-400 text-sm self-center">
-            {editingJob ? 'Job updated!' : 'Job saved! View it in "My Jobs" tab.'}
-          </span>
-        )}
-        {editingJob && (
+        {editingJob ? (
           <Button
             variant="secondary"
             btnSize="lg"
@@ -1727,6 +1750,15 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             className="w-full md:w-auto"
           >
             Cancel Edit
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            btnSize="lg"
+            onClick={handleClearForm}
+            className="w-full md:w-auto"
+          >
+            Clear
           </Button>
         )}
         {/* Generate PDF removed in Phase 16 gap closure (D-13) — use Print Quote in JobsManager. */}

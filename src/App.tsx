@@ -334,6 +334,7 @@ function App() {
             onUpdateJob={updateJob}
             editingJob={editingJob}
             onCancelEdit={handleCancelEdit}
+            onViewJobs={() => setActiveTab('jobs')}
           />
         )}
 

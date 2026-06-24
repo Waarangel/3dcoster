@@ -31,8 +31,10 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 - **Search in the filament picker.** Type to filter the filament list instead of scrolling through every brand.
 - **Bambu PLA Pure in the filament catalog.** Bambu Lab's new food-safe / toy-safe PLA (launched June 2026) is now a built-in filament with current pricing, so you can cost prints with it straight away — existing libraries get it added automatically.
 - **A heads-up when a rate looks off by 100×.** Most electricity bills list the price in cents, but the cost-per-kWh setting expects dollars — so it was easy to enter `15` instead of `0.15` and silently inflate every print's electricity cost 100-fold. Settings now shows a gentle warning when your electricity rate or fuel price looks like cents typed as dollars, or when a printer's lifespan looks like years instead of print-hours. The fields also show an example value.
+- **One-click "Clear" to start a new job.** A Clear button on the calculator resets the form for your next print — with a quick confirm so you can't wipe a half-built job by accident.
 
 ### Changed
+- **Saving a job now sets you up for the next one.** After you save or update a job, the calculator clears and scrolls back to the top, with a "Saved — View in My Jobs" prompt to jump straight to it if you want — instead of leaving the previous job's numbers sitting in the form.
 - **Tidier row actions.** Edit, delete, and similar per-row buttons now share one consistent icon-button style across the app.
 
 ### Fixed
