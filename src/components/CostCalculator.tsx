@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useId } from 'react';
+import { useState, useEffect, useMemo, useCallback, useId, useRef } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
@@ -98,6 +98,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const targetProfitId = useId();
   const sellingPriceId = useId();
   const taxRateId = useId();
+
+  // FIX-04: ref for the Editing banner — scrolled into view when editingJob
+  // becomes set so the user can see which job they are editing.
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  // FIX-04: Scroll to the Editing banner when editingJob becomes truthy.
+  // Respects prefers-reduced-motion by using 'auto' behavior when the media
+  // query matches (motion reduced), 'smooth' otherwise.
+  useEffect(() => {
+    if (!editingJob || !bannerRef.current) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    bannerRef.current.scrollIntoView({
+      block: 'start',
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
+  }, [editingJob]);
 
   // Convert a stored price from its native currency into the user's currency for
   // display and cost math. Falls back to the raw amount only when no rate table
@@ -828,7 +844,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     <div className="space-y-6">
       {/* Editing Banner */}
       {editingJob && (
-        <div className="bg-blue-600/20 border border-blue-500/50 rounded-xl p-4 flex items-center justify-between">
+        <div ref={bannerRef} className="bg-blue-600/20 border border-blue-500/50 rounded-xl p-4 flex items-center justify-between">
           <div>
             <div className="text-blue-300 font-medium">Editing: {editingJob.name}</div>
             <div className="text-slate-400 text-sm">

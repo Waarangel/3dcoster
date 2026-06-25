@@ -17,6 +17,57 @@ describe('CostCalculator', () => {
 });
 
 // ---------------------------------------------------------------------------
+// FIX-04: Edit-job scroll-to-banner (Phase 34, plan 02)
+//
+// These are source-contract tests — they verify that CostCalculator.tsx
+// contains the implementation contract for the scroll behavior, following the
+// established pattern in this test file (see D-21 tax regression tests below).
+//
+// Why source-contract: CostCalculator depends on Dexie + ~30 props and is
+// not mounted in this test suite. The existing test pattern for this file is
+// source-level analysis (D-21 below), so we follow the same approach.
+// ---------------------------------------------------------------------------
+
+describe('FIX-04 edit-job scroll-to-banner', () => {
+  const COST_CALC_SRC = readFileSync(
+    resolve(__dirname, 'CostCalculator.tsx'),
+    'utf8',
+  );
+
+  // Test 1: banner ref is attached to the editing-banner div and scrollIntoView is called
+  // when editingJob becomes set (the effect fires on editingJob).
+  it('source: scrollIntoView called in effect keyed on editingJob when truthy', () => {
+    // The implementation must contain a scrollIntoView call
+    expect(COST_CALC_SRC).toContain('scrollIntoView');
+    // The effect must be keyed on editingJob (or editingJob?.id)
+    expect(COST_CALC_SRC).toMatch(/useEffect\s*\(/);
+    // The scroll must be guarded on editingJob being truthy
+    expect(COST_CALC_SRC).toMatch(/editingJob.*scrollIntoView|scrollIntoView.*editingJob/s);
+  });
+
+  // Test 2: reduced-motion gating — behavior is non-smooth when matchMedia matches
+  it('source: scrollIntoView behavior gated on matchMedia prefers-reduced-motion', () => {
+    expect(COST_CALC_SRC).toContain('prefers-reduced-motion');
+    expect(COST_CALC_SRC).toContain('matchMedia');
+    // smooth or auto behavior based on media query
+    expect(COST_CALC_SRC).toContain("'smooth'");
+    expect(COST_CALC_SRC).toMatch(/'auto'|'instant'/);
+  });
+
+  // Test 3: null guard — no scroll fires when editingJob is null (effect guards truthy editingJob)
+  it('source: scroll effect is guarded so it does not fire when editingJob is null', () => {
+    // The effect must check ref.current (null guard for unmounted state)
+    expect(COST_CALC_SRC).toContain('bannerRef.current');
+    // The effect body must only call scrollIntoView when editingJob is truthy
+    // (i.e. there's a conditional inside or it's keyed only when truthy)
+    const hasNullGuard = COST_CALC_SRC.includes('if (editingJob') ||
+      COST_CALC_SRC.includes('if (!editingJob') ||
+      COST_CALC_SRC.includes('editingJob &&');
+    expect(hasNullGuard).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-21 tax save site regression (Phase 16-08, gap H)
 // Locks the save-site contract: persisted job.taxRate must be the RESOLVED
 // rate (post-fallback chain), NOT the raw form-state override. Previously
