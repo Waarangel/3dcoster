@@ -87,7 +87,9 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   2. Navigating between routes via footer/nav links lands the user at the top of the destination page; in-page `#hash` anchors still jump to their target (left untouched).
   3. The Asset "Reset all" action opens the app's styled confirm modal showing the item counts about to be deleted, instead of a native `window.confirm()`.
   4. Confirming an edit-job jump scrolls the calculator to the "Editing…" banner so the user can see which job they are editing.
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 34-01-PLAN.md — Web-shell fixes: PWA Reload regression (FIX-01, verify) + ScrollToTop on route nav (FIX-02, cherry-pick)
+- [ ] 34-02-PLAN.md — Calculator fixes: styled Reset-all confirm modal with counts (FIX-03) + scroll-to-Editing-banner on edit-job jump (FIX-04)
 **UI hint**: yes
 
 ### Phase 35: Accessibility Tier 4
@@ -129,7 +131,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 | Phase                                   | Milestone | Plans | Status      | Completed |
 | --------------------------------------- | --------- | ----- | ----------- | --------- |
-| 34. Live papercut fixes                 | v1.9      | 0/?   | Not started | -         |
+| 34. Live papercut fixes                 | v1.9      | 0/2   | Not started | -         |
 | 35. Accessibility Tier 4                | v1.9      | 0/?   | Not started | -         |
 | 36. Performance Tier 5                  | v1.9      | 0/?   | Not started | -         |
 | 37. Code health (STRETCH)               | v1.9      | 0/?   | Not started | -         |
