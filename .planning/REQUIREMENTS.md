@@ -57,20 +57,29 @@
 
 ## Traceability
 
-Populated during roadmap creation (Step 10). Proposed grouping:
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01..FIX-04 | TBD (papercut fixes) | Pending |
-| A11Y-10..A11Y-15 | TBD (accessibility) | Pending |
-| PERF-09..PERF-11 | TBD (performance) | Pending |
-| HYG-11..HYG-12 | TBD (code-health stretch) | Pending |
+| FIX-01 | Phase 34 — Live papercut fixes | Pending |
+| FIX-02 | Phase 34 — Live papercut fixes | Pending |
+| FIX-03 | Phase 34 — Live papercut fixes | Pending |
+| FIX-04 | Phase 34 — Live papercut fixes | Pending |
+| A11Y-10 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-11 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-12 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-13 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-14 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-15 | Phase 35 — Accessibility Tier 4 | Pending |
+| PERF-09 | Phase 36 — Performance Tier 5 | Pending |
+| PERF-10 | Phase 36 — Performance Tier 5 | Pending |
+| PERF-11 | Phase 36 — Performance Tier 5 | Pending |
+| HYG-11 | Phase 37 — Code health (STRETCH) | Pending |
+| HYG-12 | Phase 37 — Code health (STRETCH) | Pending |
 
 **Coverage:**
 - v1.9 requirements: 15 total
-- Mapped to phases: pending roadmap
-- Unmapped: 0 (all assigned to a proposed group)
+- Mapped to phases: 15 / 15 (100%) ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-25*
-*Last updated: 2026-06-25 after v1.9 Hardening milestone definition*
+*Last updated: 2026-06-25 — roadmap created; all 15 requirements mapped to Phases 34–37 (100% coverage)*
