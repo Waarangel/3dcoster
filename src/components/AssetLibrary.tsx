@@ -6,6 +6,7 @@ import { downloadCsv, generateExportCsv } from '../utils/csvHelpers';
 import { buildExportFilename } from '../utils/jobsExport';
 import { CsvImportModal } from './CsvImportModal';
 import { NewBadge } from './NewBadge';
+import { ResetAssetsModal } from './ResetAssetsModal';
 import { StockBadge } from './inventory/StockBadge';
 import { LowStockBar } from './inventory/LowStockBar';
 import { useStockEvents } from '../hooks/useStockEvents';
@@ -526,6 +527,7 @@ export function AssetLibrary({
   const [currentPage, setCurrentPage] = useState(1);
   const [formError, setFormError] = useState<string | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [resetMode, setResetMode] = useState<'printer' | 'material' | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [sortField, setSortField] = useState<string>('name');
@@ -823,20 +825,21 @@ export function AssetLibrary({
     setFormError(null);
   };
 
-  const handleReset = async () => {
+  const handleReset = () => {
     setResetError(null);
+    setResetMode(filterCategory === 'printer' ? 'printer' : 'material');
+  };
+
+  const handleResetConfirm = async () => {
     try {
-      if (filterCategory === 'printer') {
-        if (window.confirm('Reset all printers to defaults? This will replace your custom printers with the default printer list.')) {
-          await onResetPrinters();
-        }
+      if (resetMode === 'printer') {
+        await onResetPrinters();
       } else {
-        if (window.confirm('Reset all materials to defaults? This will replace your current materials with the default list.')) {
-          await onResetMaterials();
-        }
+        await onResetMaterials();
       }
     } catch {
       setResetError('Could not reset — please try again.');
+      throw new Error('Could not reset — please try again.');
     }
   };
 
@@ -1592,6 +1595,18 @@ export function AssetLibrary({
         onClose={() => setShowCsvImport(false)}
         existingAssets={assets}
         onImportAssets={onBulkImportAssets}
+      />
+
+      {/* Reset Assets Modal — FIX-03: replaces window.confirm() */}
+      <ResetAssetsModal
+        mode={resetMode}
+        count={
+          resetMode === 'printer'
+            ? assets.filter(a => a.category === 'printer').length
+            : assets.filter(a => a.category !== 'printer').length
+        }
+        onConfirm={handleResetConfirm}
+        onClose={() => setResetMode(null)}
       />
     </div>
   );
