@@ -917,7 +917,7 @@ user input processing beyond what already exists. ASVS categories V2-V6 do not a
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **SettingsModal marketplace icon buttons (A11Y-12)**
    - What we know: Carriers section (lines 549-556) already correctly uses `EditButton`/`DeleteButton`
