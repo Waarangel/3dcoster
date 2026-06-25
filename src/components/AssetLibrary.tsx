@@ -1597,7 +1597,7 @@ export function AssetLibrary({
         onImportAssets={onBulkImportAssets}
       />
 
-      {/* Reset Assets Modal — FIX-03: replaces window.confirm() */}
+      {/* Reset Assets Modal — FIX-03: replaces the native browser confirm dialog */}
       <ResetAssetsModal
         mode={resetMode}
         count={
