@@ -6,6 +6,24 @@ Note: GSD milestone versions (v1.2 Quote-to-Customer) are decoupled from the **d
 
 ---
 
+## v1.8 Inventory & Sales Reporting
+
+**Shipped:** 2026-06-25 (desktop tag `v1.8.0`)
+**Phases:** 6 GSD phases (27–32) — numbering continued after the post-v1.3 lapse
+**Process:** full 3-reviewer release-diff review (`v1.7.0..HEAD`) — 0 CRITICAL, 3 HIGH cleared; web deployed + desktop tagged same day with explicit user OK
+
+### Delivered
+
+Two free-tier "floor" features plus accumulated fixes:
+
+1. **Material inventory tracking (#20)** — `stockEvents` ledger foundation, deduct-on-job stock with self-correction on edit/delete, `StockBadge` low/out-of-stock indicators, per-material low-stock threshold, calculator "won't finish this print" short-by-N hint, filament stock shown in spools, included in backups.
+2. **PDF sales report (#33)** — dedicated top-level **Reports** tab; month/quarter/year/YTD/custom ranges; live revenue/fees/profit preview with marketplace breakdown; branded PDF + per-sale CSV; FX-converted with "—" for missing rates.
+3. **Smaller fixes** — inline search in the filament picker, Bambu PLA Pure in the catalog, off-by-100× rate warnings (electricity/fuel/lifespan), one-click Clear, save-resets-for-next-job, consistent icon buttons, and the US fuel-price per-gallon conversion fix.
+
+> **Note:** v1.4–v1.7 shipped **ad-hoc outside GSD** (management lapsed after v1.3 Phase 26, 2026-05-28). Desktop tags `v1.4.x`–`v1.7.0`. Not retro-recorded here as formal GSD milestones; see PROJECT.md Context for the summary.
+
+---
+
 ## v1.3 Hardening
 
 **Shipped:** 2026-05-28

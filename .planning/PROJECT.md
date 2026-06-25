@@ -125,9 +125,17 @@ All 53 v1.3 requirements satisfied. Snapshot: [milestones/v1.3-REQUIREMENTS.md](
 - ✓ **A11Y-09, DOC-01, DOC-02, HYG-01, HYG-04, HYG-05, HYG-10, PERF-05, PERF-06, POL-01..POL-04** — Doc-state lag closed (TAGS-01/04 flipped, CUST-01/02 archive note); JobsManager hygiene (`generatingJobIds` slot removed, `onQuoteCreated` made optional, image5 absence comment, `ui-consistency-sweep` audit); CustomerLibrary row alignment; CSV template download; jspdf module augmentation; QuoteRow overflow menu outside-click + Escape; QuoteStatusPill `aria-label` + Declined contrast (Phase 25)
 - ✓ **DOC-03, DOC-04, POL-05** — v1.3 audit cleanup: 8 VALIDATION.md files Nyquist-compliant (Phase 18/20/22/22.1 flipped, Phase 19/23/24/25 backfilled); REQUIREMENTS.md DATA-07/PERF-08 sync; CustomerCsvImportModal layout parity with asset modal — template block above upload zone with `👥 Customer template` label (Phase 26)
 
-### Active — v1.4 (TBD)
+### Active — v1.9 Hardening
 
-No active milestone scope. Run `/gsd:new-milestone` to start v1.4.
+**Goal:** Ship live papercut fixes + a scoped a11y/perf hardening slice to clean the runway for the v2.0 milestone. No new user-facing features — the sequel to v1.3 Hardening, driven by `docs/CALCULATOR_APP_AUDIT.md` (Tiers 3–6).
+
+**Target scope (phases 34+):**
+- **Live papercut fixes** — PWA web "Reload" update button (built on `fix/pwa-reload-uncontrolled`), ScrollToTop nav (cherry-pick `4da205f`), destructive "Reset all" → styled confirm modal (audit 3.2), edit-job scroll-to-banner (3.6)
+- **Accessibility (Tier 4)** — Settings inner-tab arrow-key nav + focus-to-panel (4.1), form-error `role=alert` + `aria-invalid`/`aria-describedby` (4.2), icon-only button labels (4.3), FilamentSelector menu accessible name (4.4), tag-remove chip target size (4.5), misc AA cleanups (4.6)
+- **Performance (Tier 5)** — lift per-row `useQuotes()` subscription (5.1), `materialsById` map for `getFilamentName` (5.2), pricing `useEffect` double-render (5.3)
+- **(Stretch) Code health** — 3 index-mutation immutability fixes + audit 6.5 minor consistency, only if timeboxed
+
+**Explicitly OUT (not hardening / belongs elsewhere):** Tier 2 brand cohesion → redesign/v2.0; Tier 3.1 guided onboarding → v2.0 headline feature; large Tier 6 God-component splits (6.1–6.4) → refactor risk in a release.
 
 ### Out of Scope (carried forward)
 
@@ -149,6 +157,8 @@ No active milestone scope. Run `/gsd:new-milestone` to start v1.4.
 - v1.1 (Polish & Foundation) shipped 2026-05-20 across Phases 7–11
 - v1.2 (Quote-to-Customer) shipped 2026-05-25 across Phases 12–17 (7 phases, 45 plans, 6 days). Mid-milestone insertions: Phase 15.1 (Customer Library) and Phase 17 (PDF-04 closure)
 - **v1.3 (Hardening) shipped 2026-05-28** across Phases 18–26 (10 phases, 43 plans, 4 days). Mid-milestone insertions: Phase 22.1 (Break-even formula reconciliation surfaced during Phase 22 UAT) and Phase 26 (v1.3 audit cleanup before tag). Final main bundle 56.5 KB gzipped (down from v1.2's 61.5 KB)
+- **v1.4–v1.7 shipped ad-hoc (GSD management lapsed after v1.3)** — desktop release tags `v1.4.x`–`v1.7.0`; notable: CSV export + public roadmap (v1.5), backup/restore + jobs totals bar + 3dcoster.com + CSP (v1.6), Linux desktop builds + 12 printers/add-custom-printer + calculator correctness fixes + i18n grouping (v1.7.0, 2026-06-19)
+- **v1.8 (Inventory & Sales Reporting) shipped 2026-06-25** — GSD revived; Phases 27–32. Material inventory tracking (#20: stockEvents ledger, deduct-on-job, low-stock badges/hints) + PDF sales report (#33: dedicated Reports tab, month/quarter/year/YTD/custom, branded PDF + CSV) + filament-picker search + Bambu PLA Pure + off-by-100× rate warnings + fuel-price per-gallon fix. Tagged `v1.8.0`; full 3-reviewer release-diff review (0 CRITICAL)
 - Current codebase: 13,221 src LOC added during v1.3 (54 src files changed); Dexie schema at v9 (v1.3 added v9 currency reconcile); 466 Vitest tests passing across 31 test files
 - v1.4 phase numbering continues — next phase is **Phase 27**
 - Roadmap: [ROADMAP.md](ROADMAP.md) (collapsed milestone-grouped index) + [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md) (latest full delivery map)
@@ -216,4 +226,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-28 after v1.3 Hardening milestone shipped. All 10 phases (18, 19, 20, 21, 22, 22.1, 23, 24, 25, 26) complete with audit verdict `passed` (53/53 reqs, 12/12 integration WIRED, 3/3 E2E flows). v1.3 archive: [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md). Next: `/gsd:new-milestone` to scope v1.4.*
+*Last updated: 2026-06-25 — v1.8 (Inventory & Sales Reporting) shipped + tagged `v1.8.0`; starting v1.9 Hardening (sequel to v1.3 Hardening, driven by `docs/CALCULATOR_APP_AUDIT.md`). Note: PROJECT.md doc-reconciliation for v1.4–v1.7 was deferred during the post-v1.3 GSD lapse — Context section above captures the shipped summary; full per-requirement backfill not done. Next: `/gsd:plan-phase 34`.*

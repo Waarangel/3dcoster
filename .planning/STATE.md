@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: v1.8 Inventory & Sales Reporting
-status: In progress
-stopped_at: Phase 32 ship prep — review + fixes + version/CHANGELOG committed; UAT + tag remaining
-last_updated: "2026-06-22T00:00:00.000Z"
-last_activity: 2026-06-22 — mandatory release-diff review run (3 HIGH cleared + MEDIUMs), versions bumped to 1.8.0, CHANGELOG [1.8.0] written, roadmap.ts shipped items removed; build green
+milestone: v1.9
+milestone_name: Hardening
+status: planning
+last_updated: "2026-06-25T19:35:22.886Z"
+last_activity: 2026-06-25
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 6
-  completed_plans: 5
-  percent: 92
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,20 +24,10 @@ See: .planning/PROJECT.md (updated 2026-05-25). Milestone roadmap: [milestones/v
 
 ## Current Position
 
-Milestone: **v1.8 Inventory & Sales Reporting** (branch `feat/v1.8-inventory-reports`, worktree `../3DCoster-v1.8`)
-Phase: **32 — ship prep (in progress, ~92%)**
-  - ✅ Mandatory release-diff review (`v1.7.0..HEAD`) run via 3 parallel reviewers — 0 CRITICAL, 3 HIGH cleared (job-save isolation; FilamentSelector `role=menu` ARIA; Reports label `htmlFor`) + MEDIUMs (zero-amount FX, StockBadge aria, custom-range guard, dep-suppress comment, stale store-count comments). Commit `4631c77`.
-  - ✅ `features.ts` + NewBadge (both features, done earlier). Removed both from `src/roadmap.ts` In Development. CHANGELOG `[1.8.0]` written. 4 version files bumped 1.7.0 → 1.8.0. Commit `5efe5b1`. Build green (tests + tsc + bundle/PDF gates).
-  - **Note:** Reports lives in a **dedicated top-level Reports tab** (not Settings → Data) — earlier STATE note was superseded; user approved dedicated tab + spools.
-Next: **full UAT** (dev server on :4173), then **tag v1.8.0** on/after 2026-06-24 with explicit user OK (NOT done autonomously).
-Status: In progress (5/6 phases; ship prep ~92% — UAT + tag remain)
-
-> Pending for Phase 31 / before tag: **NewBadge + `features.ts`** (inventory + reports), **roadmap.ts** removal, **full UAT** (user wants a full UAT at the end — demo holds :4173), mandatory **release-diff review**, version bump.
-
-> **GSD revived for v1.8** — management lapsed after v1.3 (Phase 26, 2026-05-28); v1.4–v1.7 shipped ad-hoc.
-> Phase numbering continues at 27. v1.4–v1.7 recorded as shipped-outside-GSD in ROADMAP.md.
-
-Last activity: 2026-05-28 — Milestone v1.3 completed and archived
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-25 — Milestone v1.9 started
 
 ## Quick Tasks Completed
 
