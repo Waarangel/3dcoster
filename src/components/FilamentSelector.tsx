@@ -67,7 +67,9 @@ export function FilamentSelector({
   // to the user's currency at display time (useFxRates), so there is no reason
   // to hide a filament priced in another currency — the old currency-equality
   // filter is exactly what stranded USD-seeded rows from non-USD users.
-  const filaments = materials.filter(m => m.category === 'filament');
+  // Memoized so the `brands` / by-brand memos below (keyed on `filaments`) don't
+  // bust on every render (e.g. each keystroke in the search box).
+  const filaments = useMemo(() => materials.filter(m => m.category === 'filament'), [materials]);
   const selectedFilament = materials.find(m => m.id === selectedFilamentId);
 
   // Get unique brand groups. Brand-less filaments are bucketed under a synthetic
@@ -114,6 +116,11 @@ export function FilamentSelector({
     setFocusedBrand(null);
     setSearchQuery('');
     triggerRef.current?.focus();
+  }, []);
+
+  // Clear any pending hover-close timer on unmount (avoids a setState after unmount).
+  useEffect(() => () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
 
   // Close dropdown when clicking outside

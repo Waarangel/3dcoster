@@ -34,10 +34,12 @@ function endOfToday(): Date {
 export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: ReportsSectionProps) {
   const toast = useToast();
   const [mode, setMode] = useState<RangeMode>('month');
-  const [year, setYear] = useState(() => nowParts().year);
-  const [month, setMonth] = useState(() => nowParts().month);
-  const [quarter, setQuarter] = useState(() => Math.floor(nowParts().month / 3));
-  const [customStart, setCustomStart] = useState(() => isoDay(new Date(nowParts().year, nowParts().month, 1)));
+  // One clock read at mount so year/month/quarter can't straddle a second boundary.
+  const [initialNow] = useState(() => nowParts());
+  const [year, setYear] = useState(initialNow.year);
+  const [month, setMonth] = useState(initialNow.month);
+  const [quarter, setQuarter] = useState(() => Math.floor(initialNow.month / 3));
+  const [customStart, setCustomStart] = useState(() => isoDay(new Date(initialNow.year, initialNow.month, 1)));
   const [customEnd, setCustomEnd] = useState(() => isoDay(new Date()));
   const [busy, setBusy] = useState(false);
 
@@ -175,7 +177,7 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
         {mode === 'year' && (
           <div>
             <label htmlFor={yearId} className="block text-xs text-slate-400 mb-1">Year</label>
-            <Select selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
+            <Select id={yearId} selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
               {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>
