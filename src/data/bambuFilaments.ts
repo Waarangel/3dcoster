@@ -435,7 +435,7 @@ export const bambuFilaments: Omit<Asset, 'id'>[] = [
     name: 'Bambu PET-CF',
     category: 'filament',
     brand: 'Bambu Lab',
-    filamentType: 'PETG-CF',
+    filamentType: 'PET-CF',
     unit: 'g',
     unitsPerPackage: 1000,
     packageCost: 44.99,

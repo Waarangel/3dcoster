@@ -11,7 +11,7 @@ const VALID_CURRENCIES: Currency[] = [
 
 const VALID_FILAMENT_TYPES: FilamentType[] = [
   'PLA', 'PLA Matte', 'PLA Silk', 'PLA Tough', 'PLA-CF', 'PLA Translucent',
-  'PETG', 'PETG HF', 'PETG-CF', 'PETG Translucent',
+  'PETG', 'PETG HF', 'PETG-CF', 'PETG Translucent', 'PET-CF',
   'ABS', 'ASA',
   'TPU', 'TPU 95A', 'TPU 85A',
   'PA6-CF', 'PPA-CF',

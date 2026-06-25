@@ -657,22 +657,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     );
   };
 
-  // True when the form holds work worth a confirm before a destructive reset.
-  const formHasData = () =>
-    printName.trim() !== '' ||
-    filamentRows.some(r => r.filamentId) ||
-    printTimeHours > 0 ||
-    modelCost > 0 ||
-    sellingPrice > 0 ||
-    materialsUsed.length > 0 ||
-    packagingMaterials.length > 0;
-
-  // Explicit "start a new job" reset. Guards real data behind a confirm so a
-  // stray click can't wipe a half-built job; an empty form clears silently.
+  // Explicit "start a new job" reset — clears immediately (no confirm) and
+  // scrolls to the top. A saved job is safe in My Jobs; an unsaved one is cheap
+  // to re-enter, so a confirm dialog isn't worth the friction.
   const handleClearForm = () => {
-    if (formHasData() && !window.confirm('Clear the form and start a new job? Unsaved changes will be lost.')) {
-      return;
-    }
     clearForm();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
