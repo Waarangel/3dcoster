@@ -822,7 +822,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setTargetProfit(parseFloat(newProfit.toFixed(2)));
       setProfitMarginPercent(parseFloat(newMargin.toFixed(1)));
     }
-  }, [trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice]);
+    // PERF-11: deps trimmed to [trueCost, lastEdited]. profitMarginPercent/targetProfit/sellingPrice
+    // are READ via closure at trueCost/lastEdited-change time; including them re-fires the effect
+    // with values it itself set -> double render per keystroke. React 18 batches the keystroke's
+    // setState before the effect commits, so the closure is fresh (trueCost is a derived const
+    // with no async setter — no stale-read race). The editingJob rebase (seeds lastEdited='price')
+    // is preserved: lastEdited changing still triggers re-derivation against current trueCost.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trueCost, lastEdited]);
 
   // Add material to job
   const addMaterialUsage = () => {
