@@ -310,7 +310,52 @@ export const settingsKeys = {
   shipping: 'shipping',
   marketplaceFees: 'marketplaceFees',
   fxRateTable: 'fxRateTable',
+  seedState: 'seedState',
 } as const;
+
+/**
+ * Persisted one-time seeding / migration flags (v1.9 DATA-02). Lives in the
+ * settings store so it survives reloads, UNLIKE the module-scope `*Ran` flags
+ * which only suppress re-runs within a single page load.
+ *
+ * Why this matters: the per-category re-seeds in useAssets() (printerCount===0,
+ * packagingCount===0, Bambu catalog probes) previously ran on EVERY load where a
+ * category happened to be empty — so a user who intentionally deleted every
+ * default printer (or every default packaging item) had them RESURRECT on the
+ * next reload ("I deleted it and it came back"). Gating those re-seeds behind a
+ * persisted flag means they run exactly once (first run / migration) and a later
+ * empty category is respected as a deliberate user state.
+ *
+ * Each boolean is independent so a flag added in a future release can run its
+ * one-time top-up without re-triggering the older ones.
+ */
+export interface SeedState {
+  /** The very first full library seed (defaults) completed at least once. */
+  didInitialSeed?: boolean;
+  /** Legacy per-category migrations (printers / packaging / Bambu catalog) applied. */
+  didCategoryMigrations?: boolean;
+  /** 2026-06-15 printer-catalog wattage-correction migration applied. */
+  didPrinterCatalogMigration?: boolean;
+  /** v1.8 Bambu PLA Pure catalog top-up applied. */
+  didBambuPlaPureTopup?: boolean;
+  /** Sale→Customer library backfill (D-32) completed — persisted so two tabs can't duplicate. */
+  didSaleCustomerBackfill?: boolean;
+}
+
+function isSeedState(x: unknown): x is SeedState {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+/** Read the persisted seed-state flags, or an empty object if none stored yet. */
+export async function getSeedState(): Promise<SeedState> {
+  return getSetting<SeedState>(settingsKeys.seedState, {}, isSeedState);
+}
+
+/** Merge-patch the persisted seed-state flags (read-modify-write). */
+export async function setSeedState(patch: Partial<SeedState>): Promise<void> {
+  const current = await getSeedState();
+  await setSetting<SeedState>(settingsKeys.seedState, { ...current, ...patch });
+}
 
 /** Structural validator for the cached FX rate table. Requires the USD base, a
  *  rates object, and a date string. Rates themselves are validated lazily at

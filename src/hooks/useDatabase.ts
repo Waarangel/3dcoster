@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
+import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees, getSeedState, setSeedState } from '../db/database';
+import type { SeedState } from '../db/database';
 import type { Asset, AssetCategory, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 import { DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
@@ -51,15 +52,36 @@ let customerEmailLowercaseRan = false;
 // pass writes nothing (and the flag short-circuits before any Dexie read anyway).
 let assetCurrencyReconcileRan = false;
 
-// Process-lifetime flag for the 2026-06-15 printer-catalog migration (corrects
-// PSU-rating wattages + adds 12 new models). Same one-per-page-load pattern as
-// the reconciles above, so it doesn't re-run (or re-add a deleted default) on
-// every App remount when navigating between /app and the marketing routes.
-let printerCatalogReconcileRan = false;
-// One-shot flag so the Bambu PLA Pure catalog top-up (added 2026-06-19) runs at
-// most once per process. Existing users already have the Bambu catalog, so the
-// first-seed probe ('bambu-pla-sparkle') skips for them — this adds the newer row.
-let bambuPlaPureReconcileRan = false;
+// Process-lifetime flag for the asset-library seed/migration effect. The
+// AUTHORITATIVE one-time gate is the PERSISTED `seedState` settings row (v1.9
+// DATA-02) — this module flag only suppresses redundant re-runs WITHIN a single
+// page load (React StrictMode double-invoke, /app ↔ marketing route remounts).
+let assetSeedEffectRan = false;
+
+/**
+ * Per-row catalog top-up that NEVER overwrites a user's edits to an existing
+ * default row (v1.9 DATA-02). For each catalog asset, only `add` the row if it
+ * is ABSENT from the DB. Existing rows — including default ids the user has
+ * edited (e.g. a custom wattage on a default printer) — are left untouched.
+ *
+ * This replaces the old `bulkPut(wholeCatalog)` top-ups, which silently clobbered
+ * user edits to any default row on every migration pass.
+ *
+ * Returns the number of rows actually added (0 = nothing missing).
+ */
+async function addMissingCatalogRows(catalog: Asset[]): Promise<number> {
+  let added = 0;
+  await db.transaction('rw', db.materials, async () => {
+    for (const asset of catalog) {
+      const existing = await db.materials.get(asset.id);
+      if (!existing) {
+        await db.materials.add(asset);
+        added++;
+      }
+    }
+  });
+  return added;
+}
 
 // Hook for all assets (materials + printers) with CRUD operations
 export function useAssets() {
@@ -67,8 +89,16 @@ export function useAssets() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize with defaults if empty (includes both materials and printers)
+  // Initialize with defaults / run one-time migrations.
+  //
+  // v1.9 DATA-02 (DECISION: deletions & edits STICK). The re-seeds and catalog
+  // top-ups below are gated behind PERSISTED `seedState` flags so they run ONCE
+  // (first install / migration) and never resurrect a default the user
+  // intentionally deleted on a later reload. Catalog top-ups probe PER-ROW and
+  // only ADD missing rows, so a user's edit to a default row is never clobbered
+  // by a bulkPut of the whole catalog.
   useEffect(() => {
+    if (assetSeedEffectRan) { setIsLoading(false); return; }
     let cancelled = false;
 
     async function init() {
@@ -76,76 +106,83 @@ export function useAssets() {
         const count = await db.materials.count();
         if (cancelled) return;
 
+        const seed = await getSeedState();
+        if (cancelled) return;
+        const patch: Partial<SeedState> = {};
+
         if (count === 0) {
-          // Add both default materials and printer assets
+          // Brand-new (or fully-cleared) DB → full first seed. This is the only
+          // unconditional seed; an empty library on a FIRST run is "no data yet,"
+          // whereas an empty CATEGORY on a later run is a deliberate user state.
           const allDefaults: Asset[] = [...defaultMaterials, ...defaultPrinterAssets];
-          await db.materials.bulkPut(allDefaults); // Use bulkPut instead of bulkAdd to handle duplicates
+          await db.materials.bulkPut(allDefaults);
+          // A fresh full seed already includes every catalog row, so mark all the
+          // migration flags done — they have nothing left to add.
+          patch.didInitialSeed = true;
+          patch.didCategoryMigrations = true;
+          patch.didPrinterCatalogMigration = true;
+          patch.didBambuPlaPureTopup = true;
         } else {
-          // HYG-12.2: reads A (printerCount) + B (packagingCount) are independent —
-          // batch them in one Promise.all with a single post-batch cancelled check.
-          // Writes stay sequential and are cancel-checked individually below.
-          const [printerCount, packagingCount] = await Promise.all([
-            db.materials.where('category').equals('printer').count(),
-            db.materials.where('category').equals('packaging').count(),
-          ]);
-          if (cancelled) return;
+          // Existing library. Run each legacy migration AT MOST ONCE, gated by a
+          // persisted flag. Once a flag is set, a later empty category is left
+          // empty (the user deleted those defaults on purpose — DATA-02).
 
-          if (printerCount === 0) {
-            await db.materials.bulkPut(defaultPrinterAssets); // Use bulkPut to handle duplicates
-          }
-
-          // Check if we need to add packaging assets (migration for existing users)
-          if (packagingCount === 0) {
-            const packagingDefaults = defaultMaterials.filter(m => m.category === 'packaging');
-            await db.materials.bulkPut(packagingDefaults); // Use bulkPut to handle duplicates
-          }
-
-          // Migration: Add Bambu filament catalog for existing users who don't have it yet
-          // Check for a known Bambu catalog entry that wouldn't exist from old hand-maintained defaults
-          const hasBambuCatalog = await db.materials.get('bambu-pla-sparkle');
-          if (cancelled) return;
-
-          if (!hasBambuCatalog) {
-            // Add all Bambu catalog entries, using bulkPut to update any existing entries
-            await db.materials.bulkPut(bambuFilamentAssets);
-          }
-
-          // Migration (2026-06-15): re-apply the printer catalog to existing
-          // users to (a) correct 4 mis-entered PSU-rating wattages + bump X1C/
-          // X1E + rename MK4→MK4S, and (b) add 12 new models. Detect by the
-          // corrected wattage VALUE (not just a new key) so it fires for ANY
-          // user still carrying the old 350W PSU rating on the Ender-3 V3, even
-          // if they somehow already have the new models. bulkPut updates each
-          // default-id row IN PLACE (ids unchanged → printer instances keep
-          // resolving) and adds the new ones. User custom models (ids prefixed
-          // 'custom-') are NOT in defaultPrinterAssets, so they are never touched.
-          if (!printerCatalogReconcileRan) {
-            const ender3v3 = await db.materials.get('creality-ender3-v3');
+          // Legacy per-category migrations (printers + packaging + Bambu catalog).
+          if (!seed.didCategoryMigrations) {
+            const [printerCount, packagingCount] = await Promise.all([
+              db.materials.where('category').equals('printer').count(),
+              db.materials.where('category').equals('packaging').count(),
+            ]);
             if (cancelled) return;
 
-            if (!ender3v3 || ender3v3.wattage === 350) {
-              await db.materials.bulkPut(defaultPrinterAssets);
+            if (printerCount === 0) {
+              await addMissingCatalogRows(defaultPrinterAssets);
             }
-            // Mark only after the (possible) write resolves, so a thrown error
-            // leaves it false and the next mount retries.
-            printerCatalogReconcileRan = true;
+            if (packagingCount === 0) {
+              await addMissingCatalogRows(defaultMaterials.filter(m => m.category === 'packaging'));
+            }
+            // Add the Bambu filament catalog for existing users who don't have it.
+            const hasBambuCatalog = await db.materials.get('bambu-pla-sparkle');
+            if (cancelled) return;
+            if (!hasBambuCatalog) {
+              await addMissingCatalogRows(bambuFilamentAssets);
+            }
+            patch.didCategoryMigrations = true;
           }
 
-          // v1.8: top up the Bambu catalog with PLA Pure for users who already
-          // have the catalog (the first-seed probe above only fires for users
-          // WITHOUT it). Probe the new id; if absent, bulkPut the catalog —
-          // idempotent: it updates existing default rows in place (ids unchanged,
-          // so filament selections keep resolving) and adds the new one. Custom
-          // user filaments aren't in bambuFilamentAssets, so they're untouched.
-          if (!bambuPlaPureReconcileRan) {
+          // Migration (2026-06-15): correct mis-entered PSU-rating wattages,
+          // bump X1C/X1E, rename MK4→MK4S, add 12 new models. Per-row top-up so
+          // a user's edit to an existing default printer is preserved; only the
+          // genuinely-missing new models are added. (We no longer bulkPut the
+          // whole catalog, which would have overwritten edited wattages/prices —
+          // the original clobbering bug this fix closes. Existing default rows
+          // therefore keep their stored wattage even if it's the legacy value;
+          // the new models are what users actually noticed missing.)
+          if (!seed.didPrinterCatalogMigration) {
+            await addMissingCatalogRows(defaultPrinterAssets);
+            if (cancelled) return;
+            patch.didPrinterCatalogMigration = true;
+          }
+
+          // v1.8: top up the Bambu catalog with PLA Pure (per-row add only).
+          if (!seed.didBambuPlaPureTopup) {
             const hasPlaPure = await db.materials.get('bambu-pla-pure');
             if (cancelled) return;
             if (!hasPlaPure) {
-              await db.materials.bulkPut(bambuFilamentAssets);
+              await addMissingCatalogRows(bambuFilamentAssets);
             }
-            bambuPlaPureReconcileRan = true;
+            patch.didBambuPlaPureTopup = true;
           }
         }
+
+        // Persist the flags we set this run. WR-01: only AFTER the writes above
+        // resolve, so a thrown error leaves the flags unset and the next mount
+        // retries. assetSeedEffectRan is the in-page guard; seedState is durable.
+        if (cancelled) return;
+        if (Object.keys(patch).length > 0) {
+          await setSeedState(patch);
+        }
+        assetSeedEffectRan = true;
       } catch (error) {
         console.error('Error initializing assets:', error);
         if (!cancelled) setError('Could not load your materials library — check available storage.');
