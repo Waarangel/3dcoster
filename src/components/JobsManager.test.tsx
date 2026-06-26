@@ -132,46 +132,52 @@ function buttonByText(text: string): HTMLButtonElement | undefined {
 describe('OrdersQuoteRows — visibility & filtering (D-23, D-24, D-26)', () => {
   it('renders nothing when the job has no quotes', async () => {
     quotesFixture = [];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').toBe('');
   });
 
   it("filters out 'converted' quotes (D-26 — represented by their Sale row, not a separate row)", async () => {
-    quotesFixture = [makeQuote({ status: 'converted', quoteNumber: 99, convertedAt: new Date(), convertedToSaleId: 's-1' })];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'converted', quoteNumber: 99, convertedAt: new Date(), convertedToSaleId: 's-1' });
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').toBe('');
   });
 
   it("filters out legacy 'draft' rows (G6 migration-only)", async () => {
-    quotesFixture = [makeQuote({ status: 'draft', quoteNumber: 88 })];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'draft', quoteNumber: 88 });
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').toBe('');
   });
 
   it('renders Pending pill for status=sent', async () => {
-    quotesFixture = [makeQuote({ status: 'sent', quoteNumber: 1 })];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'sent', quoteNumber: 1 });
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').toContain('Pending');
   });
 
   it("renders Pending pill for legacy status=accepted (D-24 — 'accepted' is no longer a distinct UI state)", async () => {
-    quotesFixture = [makeQuote({ status: 'accepted', quoteNumber: 2 })];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'accepted', quoteNumber: 2 });
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').toContain('Pending');
   });
 
   it('renders Declined pill for status=declined', async () => {
-    quotesFixture = [makeQuote({ status: 'declined', quoteNumber: 3 })];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'declined', quoteNumber: 3 });
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').toContain('Declined');
   });
 });
 
 describe('OrdersQuoteRows — Pending row actions (D-25, D-29)', () => {
   it("Mark Accepted button is GONE (D-25 — removed entirely)", async () => {
-    quotesFixture = [makeQuote({ status: 'sent' })];
+    const q = makeQuote({ status: 'sent' });
+    quotesFixture = [q];
     await act(async () => {
-      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+      root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
     });
     expect(buttonByText('Mark Accepted')).toBeUndefined();
   });
@@ -181,7 +187,7 @@ describe('OrdersQuoteRows — Pending row actions (D-25, D-29)', () => {
     quotesFixture = [quote];
     const onStartConversion = vi.fn();
     await act(async () => {
-      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={onStartConversion} />);
+      root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[quote]} updateQuote={updateQuoteSpy} onStartConversion={onStartConversion} />);
     });
     const btn = buttonByText('Convert to Sale');
     expect(btn).toBeDefined();
@@ -192,8 +198,9 @@ describe('OrdersQuoteRows — Pending row actions (D-25, D-29)', () => {
   });
 
   it("Convert to Sale stays DISABLED when onStartConversion is not provided", async () => {
-    quotesFixture = [makeQuote({ status: 'sent' })];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'sent' });
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     const btn = buttonByText('Convert to Sale');
     expect(btn).toBeDefined();
     expect(btn!.disabled).toBe(true);
@@ -205,7 +212,7 @@ describe('OrdersQuoteRows — Pending row actions (D-25, D-29)', () => {
     const onEditQuote = vi.fn();
     const onDeclineQuote = vi.fn();
     await act(async () => {
-      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={onEditQuote} onDeclineQuote={onDeclineQuote} />);
+      root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[quote]} updateQuote={updateQuoteSpy} onStartConversion={vi.fn()} onEditQuote={onEditQuote} onDeclineQuote={onDeclineQuote} />);
     });
     const moreBtn = Array.from(container!.querySelectorAll('button')).find(
       (b) => (b.getAttribute('aria-label') ?? '') === 'More actions',
@@ -233,14 +240,16 @@ describe('OrdersQuoteRows — Pending row actions (D-25, D-29)', () => {
 
 describe('OrdersQuoteRows — Declined row (D-28, D-29)', () => {
   it('Declined row shows Reason sub-line when declineReason is set', async () => {
-    quotesFixture = [makeQuote({ status: 'declined', declineReason: 'Too expensive' })];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'declined', declineReason: 'Too expensive' });
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').toContain('Reason: Too expensive');
   });
 
   it('Declined row WITHOUT declineReason omits the Reason sub-line', async () => {
-    quotesFixture = [makeQuote({ status: 'declined' })];  // no declineReason
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    const q = makeQuote({ status: 'declined' });  // no declineReason
+    quotesFixture = [q];
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />); });
     expect(container!.textContent ?? '').not.toContain('Reason:');
   });
 
@@ -251,7 +260,7 @@ describe('OrdersQuoteRows — Declined row (D-28, D-29)', () => {
       declineReason: 'No budget',
     });
     quotesFixture = [declined];
-    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" />); });
+    await act(async () => { root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[declined]} updateQuote={updateQuoteSpy} />); });
     const btn = buttonByText('Reopen');
     expect(btn).toBeDefined();
     await act(async () => { btn!.click(); });
@@ -372,6 +381,8 @@ describe('JobCard edit-in-place (Gap E)', () => {
           info={makeBreakEvenInfo()}
           recentSales={undefined}
           getFilamentName={() => 'PLA'}
+          getQuotesForJob={() => []}
+          updateQuote={updateQuoteSpy}
           onToggleSelect={noop}
           onOpenSaleForm={noop}
           onEdit={noop}
@@ -564,9 +575,10 @@ describe('POL-04 — QuoteRow overflow menu closes on outside-click + Escape', (
   }
 
   it('Test 1: outside mousedown closes the overflow menu when open', async () => {
-    quotesFixture = [makeQuote({ status: 'sent' })];
+    const q = makeQuote({ status: 'sent' });
+    quotesFixture = [q];
     await act(async () => {
-      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+      root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
     });
     const moreBtn = getMoreActionsBtn();
     expect(moreBtn).toBeDefined();
@@ -583,9 +595,10 @@ describe('POL-04 — QuoteRow overflow menu closes on outside-click + Escape', (
   });
 
   it('Test 2: Escape keydown closes the overflow menu when open', async () => {
-    quotesFixture = [makeQuote({ status: 'sent' })];
+    const q = makeQuote({ status: 'sent' });
+    quotesFixture = [q];
     await act(async () => {
-      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+      root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
     });
     const moreBtn = getMoreActionsBtn();
     expect(moreBtn).toBeDefined();
@@ -602,9 +615,10 @@ describe('POL-04 — QuoteRow overflow menu closes on outside-click + Escape', (
   });
 
   it('Test 3: listeners are removed on unmount (cleanup guard)', async () => {
-    quotesFixture = [makeQuote({ status: 'sent' })];
+    const q = makeQuote({ status: 'sent' });
+    quotesFixture = [q];
     await act(async () => {
-      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+      root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
     });
     const moreBtn = getMoreActionsBtn();
     await act(async () => { moreBtn!.click(); });
@@ -623,9 +637,10 @@ describe('POL-04 — QuoteRow overflow menu closes on outside-click + Escape', (
   });
 
   it('Test 4: outside mousedown has no effect when menu is closed (no listeners registered)', async () => {
-    quotesFixture = [makeQuote({ status: 'sent' })];
+    const q = makeQuote({ status: 'sent' });
+    quotesFixture = [q];
     await act(async () => {
-      root!.render(<OrdersQuoteRows jobId="job-1" onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
+      root!.render(<OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} onStartConversion={vi.fn()} onEditQuote={vi.fn()} onDeclineQuote={vi.fn()} />);
     });
     // Menu starts closed — outside click should do nothing (listeners not registered)
     expect(getOverflowMenu()).toBeNull();
@@ -676,6 +691,8 @@ describe('JobCard Model source render-time URL guard (Phase 21 SEC-02)', () => {
           info={makeBreakEvenInfo()}
           recentSales={undefined}
           getFilamentName={() => 'PLA'}
+          getQuotesForJob={() => []}
+          updateQuote={updateQuoteSpy}
           onToggleSelect={noop}
           onOpenSaleForm={noop}
           onEdit={noop}
@@ -1178,6 +1195,8 @@ describe('A11Y-14 — tag chip ✕ button hit target + focus ring', () => {
           info={makeBreakEvenInfo()}
           recentSales={undefined}
           getFilamentName={() => 'PLA'}
+          getQuotesForJob={() => []}
+          updateQuote={updateQuoteSpy}
           onToggleSelect={noop}
           onOpenSaleForm={noop}
           onEdit={noop}
@@ -1301,6 +1320,8 @@ describe('A11Y-15 — break-even bar progressbar ARIA', () => {
           info={info}
           recentSales={undefined}
           getFilamentName={() => 'PLA'}
+          getQuotesForJob={() => []}
+          updateQuote={updateQuoteSpy}
           onToggleSelect={noop}
           onOpenSaleForm={noop}
           onEdit={noop}
@@ -1435,10 +1456,19 @@ describe('PERF-09 — OrdersQuoteRows driven by quotesForJob prop', () => {
     expect(payload.declineReason).toBeUndefined();
   });
 
-  it('source-contract: useQuotes() appears exactly once in JobsManager.tsx', () => {
+  it('source-contract: useQuotes() is called exactly once (non-comment lines) in JobsManager.tsx', () => {
     const src = readFileSync(resolve(__dirname, 'JobsManager.tsx'), 'utf8');
-    const matches = src.match(/useQuotes\(\)/g) ?? [];
-    expect(matches.length).toBe(1);
+    // Count only non-comment lines that contain a useQuotes() invocation.
+    // Excludes: line-comments (//), block-comment lines (*), JSDoc lines (/**, */),
+    // so the count reflects actual hook calls only.
+    const callLines = src
+      .split('\n')
+      .filter(line => {
+        const trimmed = line.trimStart();
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/**') || trimmed.startsWith('*/')) return false;
+        return /useQuotes\(\)/.test(line);
+      });
+    expect(callLines.length).toBe(1);
   });
 });
 

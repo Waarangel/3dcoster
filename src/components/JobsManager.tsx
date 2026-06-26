@@ -118,6 +118,10 @@ type JobCardProps = {
   onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
+  /** PERF-09: returns the lifted quotes slice for this job (replaces per-row useQuotes() call). */
+  getQuotesForJob: (jobId: string) => Quote[];
+  /** PERF-09: updateQuote from the single parent useQuotes() call, threaded down for the Reopen action. */
+  updateQuote: (quote: Quote) => Promise<void>;
   /** Phase 16 plan 16-12: when provided, enables the Convert to Sale button on Pending Quotes in the Orders section. */
   onStartConversion?: (quote: Quote) => void;
   /** Phase 16 ext2 D-27: opens PrintQuoteModal in edit mode for the given Pending Quote. */
@@ -160,9 +164,11 @@ type JobCardProps = {
 // their Sale row only (D-26). Legacy 'accepted' rows (pre-extension data)
 // render as Pending (D-24).
 //
-// Each subcomponent calls useQuotes itself; dexie-react-hooks dedupes the
-// liveQuery emitter so the per-expanded-card cost is negligible. This keeps
-// JobCard's prop chain shallow.
+// Quotes are lifted to the single useQuotes() call in JobsManager (line ~984)
+// and passed down as a quotesForJob prop. dexie-react-hooks does NOT deduplicate
+// liveQuery subscriptions across component instances — each call is an independent
+// live db.quotes.toArray() subscription. With many visible rows that compounds
+// quickly, so the parent holds the single subscription and threads slices down.
 // ---------------------------------------------------------------------------
 
 const QUOTE_PILL_STYLES = {
@@ -328,17 +334,19 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
  */
 export function OrdersQuoteRows({
   jobId,
+  quotesForJob,
+  updateQuote,
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
 }: {
   jobId: string;
+  quotesForJob: Quote[];
+  updateQuote: (quote: Quote) => Promise<void>;
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
 }) {
-  const { quotesByJobId, updateQuote } = useQuotes();
-  const quotesForJob = quotesByJobId.get(jobId) ?? [];
   // Filter out 'converted' (D-26) and 'draft' (G6 legacy) rows — only Pending + Declined render here.
   const visible = quotesForJob.filter(q => quoteStatusToPill(q.status) !== null);
   if (visible.length === 0) return null;
@@ -380,6 +388,8 @@ export function OrdersQuoteRows({
  */
 function OrdersSection({
   jobId,
+  quotesForJob,
+  updateQuote,
   recentSales,
   onStartConversion,
   onEditQuote,
@@ -387,14 +397,14 @@ function OrdersSection({
   children,
 }: {
   jobId: string;
+  quotesForJob: Quote[];
+  updateQuote: (quote: Quote) => Promise<void>;
   recentSales?: Sale[];
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
   children?: React.ReactNode;  // Sale rows render block from JobCard
 }) {
-  const { quotesByJobId } = useQuotes();
-  const quotesForJob = quotesByJobId.get(jobId) ?? [];
   const visibleQuotes = quotesForJob.filter(q => quoteStatusToPill(q.status) !== null);
   const hasQuotes = visibleQuotes.length > 0;
   const hasSales = (recentSales ?? []).length > 0;
@@ -405,6 +415,8 @@ function OrdersSection({
       <h4 className="text-sm font-medium text-slate-300 mb-2">Orders</h4>
       <OrdersQuoteRows
         jobId={jobId}
+        quotesForJob={quotesForJob}
+        updateQuote={updateQuote}
         onStartConversion={onStartConversion}
         onEditQuote={onEditQuote}
         onDeclineQuote={onDeclineQuote}
@@ -426,6 +438,8 @@ export const JobCard = memo(function JobCard({
   recentSales,
   userCurrency,
   getFilamentName,
+  getQuotesForJob,
+  updateQuote,
   onToggleSelect,
   onOpenSaleForm,
   onEdit,
@@ -765,6 +779,8 @@ export const JobCard = memo(function JobCard({
               subtext (SaleFromQuoteSubtext per D-30). */}
           <OrdersSection
             jobId={job.id}
+            quotesForJob={getQuotesForJob(job.id)}
+            updateQuote={updateQuote}
             recentSales={recentSales}
             onStartConversion={onStartConversion}
             onEditQuote={onEditQuote}
@@ -802,6 +818,10 @@ type JobRowProps = {
   selectedSales: Sale[];
   userCurrency: Currency;
   getFilamentName: (id: string) => string;
+  /** PERF-09: stable accessor returning the quote slice for a given jobId. */
+  getQuotesForJob: (jobId: string) => Quote[];
+  /** PERF-09: updateQuote from the single parent useQuotes() call. */
+  updateQuote: (quote: Quote) => Promise<void>;
   getBreakEvenInfo: (job: PrintJob) => BreakEvenInfo;
   onToggleSelect: (id: string) => void;
   onOpenSaleForm: (job: PrintJob) => void;
@@ -833,6 +853,8 @@ const JobRow = ({
   selectedSales,
   userCurrency,
   getFilamentName,
+  getQuotesForJob,
+  updateQuote,
   getBreakEvenInfo,
   onToggleSelect,
   onOpenSaleForm,
@@ -864,6 +886,8 @@ const JobRow = ({
       recentSales={isSelected ? selectedSales : undefined}
       userCurrency={userCurrency}
       getFilamentName={getFilamentName}
+      getQuotesForJob={getQuotesForJob}
+      updateQuote={updateQuote}
       onToggleSelect={onToggleSelect}
       onOpenSaleForm={onOpenSaleForm}
       onEdit={onEdit}
@@ -980,8 +1004,19 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
   // opens in "conversion" mode pre-populated from this Quote's snapshot; on save
   // the Sale write + Quote 'converted' patch run in one Dexie transaction.
   const [convertingFromQuote, setConvertingFromQuote] = useState<Quote | null>(null);
-  // useQuotes is also consumed by the Decline modal's onConfirm handler — see below.
-  const { updateQuote: updateQuoteFromHook } = useQuotes();
+  // PERF-09: single useQuotes() call for the entire component tree. quotesByJobId
+  // feeds getQuotesForJob (below); updateQuoteFromHook feeds the Decline modal
+  // and the Reopen action via the prop chain.
+  const { quotesByJobId, updateQuote: updateQuoteFromHook } = useQuotes();
+
+  // PERF-09: stable per-job slice accessor. useCallback([quotesByJobId]) keeps
+  // identity stable when the Map ref hasn't changed, so rowProps (and JobCard
+  // memo) aren't invalidated unnecessarily. Pitfall 4: without useCallback this
+  // would be a new function reference every render and JobCard.memo would be bypassed.
+  const getQuotesForJob = useCallback(
+    (jobId: string) => quotesByJobId.get(jobId) ?? [],
+    [quotesByJobId],
+  );
   // showSaleForm + editingSale + convertingFromQuote remain CONTROLLED here
   // so JobsManager owns the open/close lifecycle and the mode selection.
   // The form state itself (quantity, price, customer fields, etc.) lives
@@ -1296,6 +1331,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     selectedSales: sales,
     userCurrency,
     getFilamentName,
+    // PERF-09: stable per-job slice accessor + updateQuote for Reopen action.
+    // Pitfall 2: getQuotesForJob must be in this dep array so rows refresh when
+    // quotes change (stable when quotesByJobId Map ref is unchanged).
+    getQuotesForJob,
+    updateQuote: updateQuoteFromHook,
     // PERF-01 (D-19, Pitfall 6): preserve JobRowProps shape with an arrow
     // wrapper so JobCard's prop interface stays unchanged.
     getBreakEvenInfo: (job: PrintJob) => breakEvenMap.get(job.id)!,
@@ -1318,7 +1358,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     onCancelAddTag: handleCancelAddTag,
     onSubmitAddTag: handleSubmitAddTag,
     onRemoveTag: handleRemoveTag,
-  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
+  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, getQuotesForJob, updateQuoteFromHook, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
