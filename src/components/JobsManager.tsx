@@ -535,12 +535,12 @@ export const JobCard = memo(function JobCard({
             {(job.tags ?? []).map(tag => (
               <span key={tag} className="relative group/chip inline-flex items-center text-xs px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-400">
                 <span>{tag}</span>
-                {/* allow-raw-html: chip ✕ button — tiny (w-3.5 h-3.5) icon affordance; Button primitive would dwarf the chip */}
+                {/* allow-raw-html: chip ✕ button — 24×24 hit target (WCAG 2.5.8 AA); Button primitive min-h-[44px] would dwarf the chip */}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); void onRemoveTag(job, tag); }}
                   aria-label={`Remove tag ${tag}`}
-                  className="ml-1 -mr-0.5 inline-flex items-center justify-center w-3.5 h-3.5 rounded-sm hover:bg-slate-500/60 hover:text-slate-100 transition-opacity opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 text-[10px] leading-none"
+                  className="ml-1 -mr-1 inline-flex items-center justify-center min-w-[24px] min-h-[24px] rounded-sm hover:bg-slate-500/60 hover:text-slate-100 transition-opacity opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-blue-400 text-[10px] leading-none"
                 >
                   ✕
                 </button>
@@ -706,6 +706,11 @@ export const JobCard = memo(function JobCard({
                   </div>
                   <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
                     <div
+                      role="progressbar"
+                      aria-valuenow={job.copiesSold}
+                      aria-valuemin={0}
+                      aria-valuemax={info.breakEvenCopies}
+                      aria-valuetext={`${job.copiesSold} of ${info.breakEvenCopies} copies sold${info.isBreakEven ? ' — break-even reached' : ''}`}
                       className={`h-full transition-all ${info.isBreakEven ? 'bg-green-500' : 'bg-blue-500'}`}
                       style={{
                         width: `${Math.min(100, (job.copiesSold / info.breakEvenCopies) * 100)}%`,
