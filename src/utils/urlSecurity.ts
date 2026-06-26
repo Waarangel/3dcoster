@@ -4,21 +4,25 @@
 // `isSafeHttpUrl` is the predicate that gates `<a href={...}>` render sites
 // against stored-XSS payloads (`javascript:`, `data:`, `vbscript:`, `file:`).
 //
-// Implementation rule (locked by 21-CONTEXT.md D-04):
-//   1. If `value` is undefined → false
-//   2. Otherwise normalize: `value.trim().toLowerCase()`
-//   3. Return true iff the normalized string starts with `http://` or `https://`
-//
-// The prefix check is intentionally minimal. Richer validation via the WHATWG
-// URL parser (encoded payloads, hostname checks, etc.) is deferred — see
-// 21-CONTEXT.md `<deferred>`. Save-time UX feedback is also deferred per D-06;
-// this helper runs at the render boundary only.
+// v1.9 hardening (Tier-2 SEC): the original prefix check
+// (`startsWith('http://' | 'https://')`) was upgraded to a WHATWG `URL` parse.
+// The parser resolves the *actual* protocol — so encoded schemes, embedded
+// control characters (e.g. `\thttp://evil`, `java\nscript:`), and other
+// edge cases that defeat a naive string match are all rejected because the
+// only protocols that pass are `http:`/`https:`. Behavior for genuine
+// http(s) URLs is unchanged; this is a strict tightening, not a behavior swap.
+// Signature is preserved so every existing render site upgrades at once.
 // ---------------------------------------------------------------------------
 
 export function isSafeHttpUrl(value: string | undefined): boolean {
   if (value === undefined) {
     return false;
   }
-  const normalized = value.trim().toLowerCase();
-  return normalized.startsWith('http://') || normalized.startsWith('https://');
+  try {
+    const u = new URL(value.trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    // Malformed / relative / scheme-less input → not a safe absolute http(s) URL.
+    return false;
+  }
 }

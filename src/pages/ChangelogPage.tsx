@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { isSafeHttpUrl } from '../utils/urlSecurity';
 // Source of truth: CHANGELOG.md at repo root, loaded as a string at build time
 // via Vite's `?raw` query. Replaces the previous GitHub Releases API fetch so
 // the marketing /changelog page stays in lockstep with what we actually ship
@@ -135,8 +136,10 @@ function renderInlineMarkdown(text: string): (string | React.ReactElement)[] {
     } else if (match[5]) {
       // [text](url) — only emit an anchor when the url is http/https to prevent
       // javascript:, data:, or other unsafe scheme injection from CHANGELOG.md.
+      // Single source of truth: the shared WHATWG-parser-backed isSafeHttpUrl
+      // guard (was an inlined prefix check that missed encoded-scheme payloads).
       const url = match[7];
-      const isSafe = url.startsWith('http://') || url.startsWith('https://');
+      const isSafe = isSafeHttpUrl(url);
       parts.push(isSafe
         ? <a key={match.index} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">{match[6]}</a>
         : <span key={match.index}>{match[6]}</span>

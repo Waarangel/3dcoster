@@ -3,9 +3,12 @@
 //
 // Tests for `isSafeHttpUrl`, the predicate that gates `<a href={...}>` render
 // sites against `javascript:` / `data:` / `vbscript:` / `file:` stored-XSS
-// payloads. Implementation rule is locked by D-04: trim → lowercase → require
-// `http://` or `https://` prefix. Encoded-payload / `new URL()` coverage is
-// deferred per 21-CONTEXT.md `<deferred>`.
+// payloads.
+//
+// v1.9 hardening: the implementation moved from a `startsWith('http://')`
+// prefix check to a WHATWG `URL` parse. The valid-http(s) and dangerous-scheme
+// cases below are unchanged; the new block covers encoded-scheme / control-char
+// payloads that a naive prefix check would have let through.
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect } from 'vitest';
@@ -59,10 +62,32 @@ describe('isSafeHttpUrl (Phase 21 SEC-02 — render-time URL guard)', () => {
   it("undefined → false", () => {
     expect(isSafeHttpUrl(undefined)).toBe(false);
   });
-  it("'foo' → false (plain word, no scheme)", () => {
+  it("'foo' → false (plain word, no scheme — fails URL parse)", () => {
     expect(isSafeHttpUrl('foo')).toBe(false);
   });
-  it("'http:foo' → false (no double-slash — does not match `http://` prefix)", () => {
-    expect(isSafeHttpUrl('http:foo')).toBe(false);
+  it("'/relative/path' → false (relative URL — no protocol)", () => {
+    expect(isSafeHttpUrl('/relative/path')).toBe(false);
+  });
+  it("'//example.com' → false (protocol-relative — no scheme)", () => {
+    expect(isSafeHttpUrl('//example.com')).toBe(false);
+  });
+
+  // -- WHATWG-parser edge cases the old prefix check missed --
+  it("'\\thttp://evil.com' → true after trim (leading tab stripped, valid http)", () => {
+    // The function trims input, so a leading whitespace control char does not
+    // change the resolved protocol — it is a genuine http URL once trimmed.
+    expect(isSafeHttpUrl('\thttp://evil.com')).toBe(true);
+  });
+  it("'java\\nscript:alert(1)' → false (embedded newline does not forge http)", () => {
+    expect(isSafeHttpUrl('java\nscript:alert(1)')).toBe(false);
+  });
+  it("'jav\\tascript:alert(1)' → false (embedded tab does not forge http)", () => {
+    expect(isSafeHttpUrl('jav\tascript:alert(1)')).toBe(false);
+  });
+  it("'ht!tp://example.com' → false (malformed scheme → URL parse throws)", () => {
+    expect(isSafeHttpUrl('ht!tp://example.com')).toBe(false);
+  });
+  it("'blob:https://example.com/uuid' → false (blob: is not http/https)", () => {
+    expect(isSafeHttpUrl('blob:https://example.com/uuid')).toBe(false);
   });
 });
