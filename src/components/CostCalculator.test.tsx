@@ -75,37 +75,28 @@ describe('FIX-04 edit-job scroll-to-banner', () => {
 // and PERF-11 rationale. Component cannot be mounted directly (Dexie + ~30 props).
 // ---------------------------------------------------------------------------
 
-describe('PERF-11 pricing useEffect dep array trim', () => {
+// PERF-11 was REVERTED in the v1.9 release review: trimming the pricing effect's deps to
+// [trueCost, lastEdited] silently desynced profit/margin when a user re-edited the SAME field
+// (lastEdited unchanged + trueCost independent of pricing -> effect never re-fires). These
+// tests lock the correct, behavior-preserving dep array and guard against re-introducing the trim.
+describe('Pricing useEffect deps (PERF-11 revert — interlinked fields must re-derive on same-field re-edit)', () => {
   const COST_CALC_SRC = readFileSync(
     resolve(__dirname, 'CostCalculator.tsx'),
     'utf8',
   );
 
-  it('source: pricing useEffect dep array is exactly [trueCost, lastEdited]', () => {
-    // The trimmed dep array must be present
-    expect(COST_CALC_SRC).toContain('}, [trueCost, lastEdited]);');
-  });
-
-  it('source: removed deps (profitMarginPercent, targetProfit, sellingPrice) do not appear in the dep array closing line', () => {
-    // The old fat dep array must no longer exist as a dep array (the dep-array line itself)
-    expect(COST_CALC_SRC).not.toContain('[trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice]');
-    // The closing dep-array line must not contain the removed state values
-    // (we check the exact closing line form, not comments which legitimately mention them)
+  it('source: pricing effect dep array includes the three interlinked pricing fields', () => {
     const depLine = COST_CALC_SRC
       .split('\n')
-      .find(line => line.includes('}, [trueCost, lastEdited])'));
+      .find(line => line.includes('}, [trueCost, lastEdited'));
     expect(depLine).toBeDefined();
-    expect(depLine).not.toContain('profitMarginPercent');
-    expect(depLine).not.toContain('targetProfit');
-    expect(depLine).not.toContain('sellingPrice');
+    expect(depLine).toContain('profitMarginPercent');
+    expect(depLine).toContain('targetProfit');
+    expect(depLine).toContain('sellingPrice');
   });
 
-  it('source: eslint-disable-next-line react-hooks/exhaustive-deps comment is present immediately before the dep array', () => {
-    expect(COST_CALC_SRC).toContain('// eslint-disable-next-line react-hooks/exhaustive-deps');
-  });
-
-  it('source: PERF-11 rationale is present in a comment near the dep array', () => {
-    expect(COST_CALC_SRC).toContain('PERF-11');
+  it('source: the trimmed [trueCost, lastEdited] dep array is NOT present (regression guard)', () => {
+    expect(COST_CALC_SRC).not.toContain('}, [trueCost, lastEdited]);');
   });
 
   it('source: effect body guard (trueCost <= 0) is still present', () => {

@@ -822,14 +822,14 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       setTargetProfit(parseFloat(newProfit.toFixed(2)));
       setProfitMarginPercent(parseFloat(newMargin.toFixed(1)));
     }
-    // PERF-11: deps trimmed to [trueCost, lastEdited]. profitMarginPercent/targetProfit/sellingPrice
-    // are READ via closure at trueCost/lastEdited-change time; including them re-fires the effect
-    // with values it itself set -> double render per keystroke. React 18 batches the keystroke's
-    // setState before the effect commits, so the closure is fresh (trueCost is a derived const
-    // with no async setter — no stale-read race). The editingJob rebase (seeds lastEdited='price')
-    // is preserved: lastEdited changing still triggers re-derivation against current trueCost.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trueCost, lastEdited]);
+    // The interlinked pricing values MUST stay in the deps. Re-editing the SAME field
+    // (e.g. typing into Selling Price twice) leaves `lastEdited` unchanged, and `trueCost`
+    // is a derived const that does not depend on pricing — so without these deps the effect
+    // would not re-fire and the other two fields (profit/margin) would silently go stale
+    // relative to the value the user just typed. (A PERF-11 dep-trim to `[trueCost, lastEdited]`
+    // was reverted in the v1.9 release review — the "double render" it removed is the benign,
+    // self-terminating second pass; any real micro-opt belongs in the v2.0 CostCalculator split.)
+  }, [trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice]);
 
   // Add material to job
   const addMaterialUsage = () => {
