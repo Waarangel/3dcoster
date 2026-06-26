@@ -31,8 +31,8 @@
 
 ### Code health — stretch (HYG)
 
-- [ ] **HYG-11**: The 3 remaining index-mutation immutability violations are converted to immutable updates. *(Audit Tier 6 "Already solid" note.)*
-- [ ] **HYG-12**: Minor consistency cleanups — `updatePackagingMaterial` via `map`; batched `useAssets` init reads (`Promise.all`); `as UserProfile` / `as Currency` casts tightened to validated narrowing. *(Audit 6.5.)*
+- [x] **HYG-11**: The 3 remaining index-mutation immutability violations are converted to immutable updates. *(Audit Tier 6 "Already solid" note.)* — closed in 37-01 (all 3 converted to functional updaters; 0 `updated[index] =` remain).
+- [ ] **HYG-12**: Minor consistency cleanups — `updatePackagingMaterial` via `map` *(HYG-12.1 closed in 37-01)*; batched `useAssets` init reads (`Promise.all`); `as UserProfile` / `as Currency` casts tightened to validated narrowing. *(Audit 6.5.)* — HYG-12.2 + HYG-12.3 pending (37-02).
 
 ## Deferred (future milestone)
 

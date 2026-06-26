@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
-status: completed
-stopped_at: Completed 36-02-PLAN.md — PERF-11 pricing useEffect dep trim; 744 tests green + tsc -b clean + lint clean
-last_updated: "2026-06-26T12:57:49.163Z"
-last_activity: 2026-06-26 -- Phase 36 marked complete
+status: executing
+stopped_at: Completed 37-01-PLAN.md — HYG-11 + HYG-12.1 immutability refactor; 750 tests green + tsc -b clean
+last_updated: "2026-06-26T13:19:30Z"
+last_activity: 2026-06-26 -- Phase 37 Plan 01 complete (HYG-11 + HYG-12.1)
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
-  percent: 75
+  total_plans: 11
+  completed_plans: 10
+  percent: 82
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 34–37). Source of requirements: `docs/CALCULATOR_APP_AUDIT.md` (Tiers 3–6).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 36 — performance-tier-5
+**Current focus:** Phase 37 — code-health-stretch
 
 ## Current Position
 
-Phase: 36 — COMPLETE
-Plan: 2 of 2 — DONE
-Status: Phase 36 complete
-Last activity: 2026-06-26 -- Phase 36 marked complete
+Phase: 37 (code-health-stretch) — EXECUTING
+Plan: 2 of 2
+Status: Executing Phase 37
+Last activity: 2026-06-26 -- Phase 37 Plan 01 complete (HYG-11 + HYG-12.1)
 
 ## v1.9 Phase Order Reference
 
@@ -93,10 +93,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-26T09:00:00.000Z
-Stopped at: Completed 36-02-PLAN.md — PERF-11 pricing useEffect dep trim; 744 tests green + tsc -b clean + lint clean
+Last session: 2026-06-26T13:19:30Z
+Stopped at: Completed 37-01-PLAN.md — HYG-11 + HYG-12.1 immutability refactor; 750 tests green + tsc -b clean
 Resume file: None
 
 ## Operator Next Steps
 
-- Phase 36 complete (PERF-09 + PERF-10 + PERF-11 all closed). Next: execute Phase 37 (HYG-11/12 STRETCH) or close v1.9 milestone if Phase 37 is dropped.
+- Phase 37 Plan 01 complete (HYG-11 + HYG-12.1 closed). Next: execute Phase 37 Plan 02 (HYG-12.2 Promise.all batching + HYG-12.3 cast narrowing), or close v1.9 milestone.

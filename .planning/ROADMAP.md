@@ -131,7 +131,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   1. The 3 remaining index-mutation immutability violations are converted to immutable updates (new objects/arrays, no in-place index assignment).
   2. Minor consistency cleanups land: `updatePackagingMaterial` rewritten via `map`; `useAssets` init reads batched with `Promise.all`; `as UserProfile` / `as Currency` casts replaced with validated narrowing (matching the v9 migration pattern).
 **Plans**: 2 plans
-- [ ] 37-01-PLAN.md — CostCalculator.tsx: functional-updater updateMaterialUsage + new updatePackagingMaterial helper (HYG-11 all 3 + HYG-12.1)
+- [x] 37-01-PLAN.md — CostCalculator.tsx: functional-updater updateMaterialUsage + new updatePackagingMaterial helper (HYG-11 all 3 + HYG-12.1)
 - [ ] 37-02-PLAN.md — useDatabase.ts + database.ts: batch useAssets init reads A+B via Promise.all (HYG-12.2) + narrow C1/C3 as-UserProfile casts to validated narrowing (HYG-12.3)
 
 ---
@@ -143,7 +143,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 34. Live papercut fixes                 | v1.9      | 2/2 | Complete   | 2026-06-25 |
 | 35. Accessibility Tier 4                | v1.9      | 5/5 | Complete   | 2026-06-26 |
 | 36. Performance Tier 5                  | v1.9      | 2/2 | Complete   | 2026-06-26 |
-| 37. Code health (STRETCH)               | v1.9      | 0/2   | Not started | -         |
+| 37. Code health (STRETCH)               | v1.9      | 1/2   | Executing   | -         |
 
 <details>
 <summary>✅ v1.3 Hardening progress (Phases 18–26) — all complete</summary>
