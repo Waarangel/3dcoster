@@ -1036,12 +1036,30 @@ export function useCustomers() {
     let cancelled = false;
     (async () => {
       try {
-        const allSales = await db.sales.toArray();
+        // v1.9 DATA-04: this backfill mints new UUID customers, and the email
+        // index is non-unique — so two tabs racing this on the same load could
+        // both insert the same customer (in-memory dedup against `customers`
+        // doesn't see the other tab's not-yet-committed write). Guard with a
+        // PERSISTED done-flag AND re-derive the insert set INSIDE the
+        // transaction against a fresh read, so the second tab to commit dedupes
+        // against the first tab's rows instead of duplicating them.
+        const seed = await getSeedState();
         if (cancelled) return;
-        const toInsert = backfillCustomersFromSales(allSales, customers);
-        if (toInsert.length > 0) {
-          await db.customers.bulkAdd(toInsert);
-        }
+        if (seed.didSaleCustomerBackfill) return;  // another load already did it
+
+        await db.transaction('rw', db.sales, db.customers, db.settings, async () => {
+          // Re-check the flag inside the tx — a concurrent tab may have set it
+          // between our read above and acquiring this transaction.
+          const fresh = await getSeedState();
+          if (fresh.didSaleCustomerBackfill) return;
+          const allSales = await db.sales.toArray();
+          const currentCustomers = await db.customers.toArray();
+          const toInsert = backfillCustomersFromSales(allSales, currentCustomers);
+          if (toInsert.length > 0) {
+            await db.customers.bulkAdd(toInsert);
+          }
+          await setSeedState({ didSaleCustomerBackfill: true });
+        });
       } catch (err) {
         // Backfill failures must NOT break the app — the picker still works
         // against whatever's already in db.customers. Log so it surfaces in
