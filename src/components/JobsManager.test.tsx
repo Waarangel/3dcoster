@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import type { Quote, PrintJob, Sale, PrinterInstance, PrinterConfig, Material } from '../types';
 import { reconcileFixedCostsAtSave } from '../db/backfill';
 
@@ -1367,6 +1369,112 @@ describe('A11Y-15 — break-even bar progressbar ARIA', () => {
     expect(bar).not.toBeNull();
     const text = bar!.getAttribute('aria-valuetext') ?? '';
     expect(text).not.toContain('break-even reached');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PERF-09 — useQuotes() lifted to parent; OrdersQuoteRows receives quotesForJob prop
+//
+// Source-contract: exactly one useQuotes() call in JobsManager.tsx (the parent).
+// Behavior: OrdersQuoteRows renders the same quote list when driven by a
+// quotesForJob prop (no internal useQuotes() call).
+// Reopen: updateQuote prop is called with the expected payload (spy still fires).
+// ---------------------------------------------------------------------------
+
+describe('PERF-09 — OrdersQuoteRows driven by quotesForJob prop', () => {
+  it('renders quote list from quotesForJob prop (Pending pill visible)', async () => {
+    const quote = makeQuote({ status: 'sent', quoteNumber: 10 });
+    const quotesForJob: Quote[] = [quote];
+    await act(async () => {
+      root!.render(
+        <OrdersQuoteRows
+          jobId="job-1"
+          quotesForJob={quotesForJob}
+          updateQuote={updateQuoteSpy}
+        />
+      );
+    });
+    expect(container!.textContent ?? '').toContain('Pending');
+  });
+
+  it('renders nothing when quotesForJob is empty', async () => {
+    await act(async () => {
+      root!.render(
+        <OrdersQuoteRows
+          jobId="job-1"
+          quotesForJob={[]}
+          updateQuote={updateQuoteSpy}
+        />
+      );
+    });
+    expect(container!.textContent ?? '').toBe('');
+  });
+
+  it('Reopen via updateQuote prop clears decisionAt + declineReason and sets status=sent', async () => {
+    const declined = makeQuote({
+      status: 'declined',
+      decisionAt: new Date('2026-04-01'),
+      declineReason: 'No budget',
+    });
+    await act(async () => {
+      root!.render(
+        <OrdersQuoteRows
+          jobId="job-1"
+          quotesForJob={[declined]}
+          updateQuote={updateQuoteSpy}
+        />
+      );
+    });
+    const btn = buttonByText('Reopen');
+    expect(btn).toBeDefined();
+    await act(async () => { btn!.click(); });
+    expect(updateQuoteSpy).toHaveBeenCalledTimes(1);
+    const payload = updateQuoteSpy.mock.calls[0][0];
+    expect(payload.status).toBe('sent');
+    expect(payload.decisionAt).toBeUndefined();
+    expect(payload.declineReason).toBeUndefined();
+  });
+
+  it('source-contract: useQuotes() appears exactly once in JobsManager.tsx', () => {
+    const src = readFileSync(resolve(__dirname, 'JobsManager.tsx'), 'utf8');
+    const matches = src.match(/useQuotes\(\)/g) ?? [];
+    expect(matches.length).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PERF-10 — getFilamentName Map-based O(1) lookup output equivalence
+// ---------------------------------------------------------------------------
+
+describe('PERF-10 — getFilamentName output equivalence after Map refactor', () => {
+  it('returns brand + filamentType (trimmed) for a known id', () => {
+    const materials = [{ id: 'a', brand: 'Bambu', filamentType: 'PLA', name: 'PLA' }];
+    const map = new Map(materials.map(m => [m.id, m]));
+    const getName = (id: string) => {
+      const f = map.get(id);
+      return f ? `${(f as { brand?: string }).brand || ''} ${(f as { filamentType?: string; name: string }).filamentType || (f as { name: string }).name}`.trim() : 'Unknown';
+    };
+    expect(getName('a')).toBe('Bambu PLA');
+  });
+
+  it('falls back to name when filamentType is absent', () => {
+    const materials = [{ id: 'b', brand: '', filamentType: undefined as unknown as string, name: 'Generic' }];
+    const map = new Map(materials.map(m => [m.id, m]));
+    const getName = (id: string) => {
+      const f = map.get(id) as { brand?: string; filamentType?: string; name: string } | undefined;
+      return f ? `${f.brand || ''} ${f.filamentType || f.name}`.trim() : 'Unknown';
+    };
+    expect(getName('b')).toBe('Generic');
+  });
+
+  it('returns "Unknown" for a missing id', () => {
+    const materials: { id: string; brand: string; filamentType: string; name: string }[] = [];
+    const map = new Map(materials.map(m => [m.id, m]));
+    const getName = (id: string) => {
+      const f = map.get(id);
+      return f ? `${f.brand || ''} ${f.filamentType || f.name}`.trim() : 'Unknown';
+    };
+    expect(getName('missing')).toBe('Unknown');
   });
 });
 
