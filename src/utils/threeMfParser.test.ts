@@ -129,6 +129,26 @@ describe('parseThreeMf', () => {
     expect(result.filamentsByType[0].type).toBe('PLA');
   });
 
+  // --- v1.9 hardening: decompressed-size / file-size guards ---
+  it('Test 7: rejects a slice_info.config whose decompressed size exceeds the cap', async () => {
+    // Build a slice config larger than the 8 MB cap. Highly compressible
+    // padding keeps the on-disk ZIP small while the uncompressed entry is huge —
+    // exactly the zip-bomb shape the guard exists to stop.
+    const padding = ' '.repeat(9 * 1024 * 1024); // 9 MB > 8 MB cap
+    const oversizedXml = `<config><!-- ${padding} --><plate><metadata key="index" value="1"/></plate></config>`;
+    const file = await makeSlicedZip(oversizedXml);
+
+    await expect(parseThreeMf(file)).rejects.toThrow(/slice config is too large/i);
+  });
+
+  it('Test 8: parses normally when the slice config is well under the cap', async () => {
+    // Regression guard: the size check must not reject legitimate small configs.
+    const file = await makeSlicedZip(MULTI_PLATE_XML);
+    const result = await parseThreeMf(file);
+    expect(result.isSliced).toBe(true);
+    expect(result.plates).toHaveLength(2);
+  });
+
   // --- used_m fallback ---
   it('Test 6: calculates grams via getMaterialDensity fallback when used_g is absent', async () => {
     const file = await makeSlicedZip(USED_M_ONLY_XML);

@@ -75,6 +75,19 @@ const BAMBU_TRAY_MAP: Record<string, FilamentType> = {
   'GFS99': 'PVA',    // Generic PVA
 };
 
+// --- v1.9 hardening (Tier-2 SEC): decompression / file-size guards ---
+//
+// A .3mf is a user-supplied ZIP. Two abuse vectors are bounded here:
+//   1. A pathologically large overall file (DoS via huge upload).
+//   2. A zip-bomb slice_info.config entry — tiny compressed, enormous when
+//      decompressed via `.async('text')`, which would buffer the whole thing
+//      into memory before we ever look at it.
+// Real sliced 3MFs are typically a few MB on disk, and slice_info.config is a
+// few KB of XML. These caps sit well above any legitimate file while refusing
+// to inflate adversarial input. (Mirrors MAX_BACKUP_BYTES in backupSchema.ts.)
+const MAX_THREE_MF_BYTES = 200 * 1024 * 1024; // 200 MB overall archive cap
+const MAX_SLICE_CONFIG_BYTES = 8 * 1024 * 1024; // 8 MB decompressed slice config cap
+
 export interface ThreeMfPlate {
   index: number;
   printTimeSeconds: number;
@@ -118,6 +131,13 @@ function metresToGrams(metres: number, filamentType: string): number {
  * (i.e., slice_info.config is absent).
  */
 export async function parseThreeMf(file: File): Promise<ThreeMfParseResult> {
+  // Overall archive-size guard (DoS / huge-upload bound) before we touch the ZIP.
+  if (file.size > MAX_THREE_MF_BYTES) {
+    const sizeMb = (file.size / 1024 / 1024).toFixed(0);
+    const capMb = (MAX_THREE_MF_BYTES / 1024 / 1024).toFixed(0);
+    throw new Error(`3MF file is too large (${sizeMb} MB). Maximum is ${capMb} MB.`);
+  }
+
   const { default: JSZip } = await import('jszip');
   const zip = await JSZip.loadAsync(file);
   const sliceInfoFile = zip.file('Metadata/slice_info.config');
@@ -130,6 +150,22 @@ export async function parseThreeMf(file: File): Promise<ThreeMfParseResult> {
       plateCount: 0,
       isSliced: false,
     };
+  }
+
+  // Zip-bomb guard: refuse to inflate the slice config if its declared
+  // uncompressed size exceeds the cap, BEFORE buffering it via .async('text').
+  // JSZip exposes the central-directory uncompressed size on the entry's
+  // internal `_data`; read it defensively (absent → skip, the cap is a bound
+  // not a hard requirement for parsing).
+  const uncompressedSize = (
+    sliceInfoFile as unknown as { _data?: { uncompressedSize?: number } }
+  )._data?.uncompressedSize;
+  if (typeof uncompressedSize === 'number' && uncompressedSize > MAX_SLICE_CONFIG_BYTES) {
+    const sizeMb = (uncompressedSize / 1024 / 1024).toFixed(1);
+    const capMb = (MAX_SLICE_CONFIG_BYTES / 1024 / 1024).toFixed(0);
+    throw new Error(
+      `3MF slice config is too large (${sizeMb} MB decompressed). Maximum is ${capMb} MB.`
+    );
   }
 
   const xmlText = await sliceInfoFile.async('text');
