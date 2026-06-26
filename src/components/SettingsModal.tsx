@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km, pricePerLiterToPerGallon, pricePerGallonToPerLiter, DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { resolveTaxRate } from '../utils/taxResolution';
@@ -184,6 +184,36 @@ export function SettingsModal({
     { id: 'data' as const, label: 'Data' },
   ];
 
+  // A11Y-10 (WCAG 2.4.3, Critical): WAI-ARIA APG Tabs keyboard contract.
+  // Roving tabindex + automatic activation — Left/Right wrap, Home/End jump.
+  // On switch we move focus to the newly active tab button AND to the panel
+  // (panelRef has tabIndex={-1}) so AT lands in the tabpanel content. The panel
+  // is inside the SidePanel dialog card, so programmatic focus stays in the trap.
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleTablistKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIdx = tabs.findIndex(t => t.id === activeTab);
+    let nextIdx: number | null = null;
+
+    if (e.key === 'ArrowRight') {
+      nextIdx = (currentIdx + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft') {
+      nextIdx = (currentIdx - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      nextIdx = tabs.length - 1;
+    }
+
+    if (nextIdx !== null) {
+      e.preventDefault();
+      const nextTab = tabs[nextIdx];
+      setActiveTab(nextTab.id);
+      document.getElementById(`settings-tab-${nextTab.id}`)?.focus();
+      panelRef.current?.focus();
+    }
+  };
+
   const settingsTitle = (
     <span className="flex items-center gap-2">
       <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -197,13 +227,14 @@ export function SettingsModal({
   return (
     <SidePanel isOpen={isOpen} onClose={onClose} title={settingsTitle} size="lg">
       {/* Tabs */}
-        <div className="flex border-b border-slate-700" role="tablist" aria-label="Settings sections">
+        <div className="flex border-b border-slate-700" role="tablist" aria-label="Settings sections" onKeyDown={handleTablistKeyDown}>
           {tabs.map(tab => (
             // allow-raw-html: tab buttons use dynamic active/inactive class with border-b-2 indicator that no Button variant maps to (Pitfall 4)
             <button
               key={tab.id}
               role="tab"
               id={`settings-tab-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               aria-selected={activeTab === tab.id}
               aria-controls="settings-panel"
               onClick={() => setActiveTab(tab.id)}
@@ -224,7 +255,7 @@ export function SettingsModal({
         </div>
 
         {/* Content */}
-        <div className="p-4" role="tabpanel" id="settings-panel" aria-labelledby={`settings-tab-${activeTab}`}>
+        <div ref={panelRef} tabIndex={-1} className="p-4" role="tabpanel" id="settings-panel" aria-labelledby={`settings-tab-${activeTab}`}>
           {/* Costs & Rates Tab — all global cost inputs that feed job math */}
           {activeTab === 'costs' && (
             <div className="space-y-6">
