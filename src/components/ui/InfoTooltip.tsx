@@ -21,10 +21,11 @@ export function InfoTooltip({ text, className = '' }: InfoTooltipProps) {
       {/* allow-raw-html: button is a small icon trigger, not a form action; Button primitive's min-h-[44px] would dwarf the label */}
       <button
         type="button"
-        aria-label={text}
+        aria-label="More information"
         aria-describedby={open ? tooltipId : undefined}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
+        onKeyDown={(e) => { if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false); } }}
         onClick={(e) => {
           e.stopPropagation();
           setOpen(o => !o);
