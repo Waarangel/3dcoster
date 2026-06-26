@@ -867,8 +867,13 @@ export function AssetLibrary({
 
   const handleResetConfirm = async () => {
     if (resetScope === null) return;
+    // Resetting a custom category CLEARS it (no defaults to restore), so it disappears
+    // as a tab. Capture that before the await, then jump back to All afterwards so the
+    // user isn't stranded on an empty, now-removed category.
+    const clearedCustomCategory = resetScope !== 'all' && isCustomCategory(resetScope);
     try {
       await onResetScope(resetScope);
+      if (clearedCustomCategory) handleFilterChange('all');
     } catch {
       // Surface the failure to ResetAssetsModal, which keeps itself open and shows
       // the error inline (the single owner of reset-error display).
