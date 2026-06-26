@@ -881,6 +881,13 @@ export function AssetLibrary({
     ? describeReset(resetScope)
     : { title: '', body: '', confirmLabel: '' };
 
+  // The add/update button tracks the CURRENT TAB (filter), not the form's dropdown:
+  // "Add Asset" on All, "Add Filament"/"Add Tester" on a category tab. Creating a brand
+  // new category is the one exception ("Add Category"), handled at the button below.
+  const addNoun = filterCategory === 'all'
+    ? 'Asset'
+    : getCategoryLabel(filterCategory).replace(/s$/, '');
+
   // Export-what-you-see: the active category filter and search scope the
   // export, mirroring the Reset button's filter-scoped behavior in the same
   // toolbar. Unfiltered "all" exports the full library including printers
@@ -1407,10 +1414,10 @@ export function AssetLibrary({
           <div className="flex gap-2 pt-2">
             <Button type="submit">
               {editingId
-                ? `Update ${getCategoryLabel(formData.category ?? 'consumable').replace(/s$/, '')}`
+                ? `Update ${addNoun}`
                 : showCustomCategory
                   ? 'Add Category'
-                  : `Add ${getCategoryLabel(formData.category ?? 'consumable').replace(/s$/, '')}`}
+                  : `Add ${addNoun}`}
             </Button>
             <Button
               type="button"
