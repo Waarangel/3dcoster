@@ -963,9 +963,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 id={modelCostId}
                 type="number"
                 step="0.01"
+                min="0"
                 compact
                 value={modelCost || ''}
-                onChange={e => setModelCost(parseFloat(e.target.value) || 0)}
+                onChange={e => setModelCost(Math.max(parseFloat(e.target.value) || 0, 0))}
                 placeholder="0"
               />
               {/* Per-unit toggle slot — reserved at all times so the row never shifts.
@@ -1034,8 +1035,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                     <Input
                       id={`${gramsBaseId}-${index}`}
                       type="number"
+                      min="0"
                       value={row.grams || ''}
-                      onChange={e => updateFilamentRow(index, { grams: parseFloat(e.target.value) || 0 })}
+                      onChange={e => updateFilamentRow(index, { grams: Math.max(parseFloat(e.target.value) || 0, 0) })}
                       placeholder="g"
                       className="w-24"
                     />
@@ -1093,9 +1095,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 id={printTimeId}
                 type="number"
                 step="0.1"
+                min="0"
                 compact
                 value={printTimeHours || ''}
-                onChange={e => setPrintTimeHours(parseFloat(e.target.value) || 0)}
+                onChange={e => setPrintTimeHours(Math.max(parseFloat(e.target.value) || 0, 0))}
                 placeholder="0"
               />
             </div>
@@ -1122,9 +1125,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               <Input
                 id={prepTimeId}
                 type="number"
+                min="0"
                 compact
                 value={prepTimeMinutes || ''}
-                onChange={e => setPrepTimeMinutes(parseInt(e.target.value) || 0)}
+                onChange={e => setPrepTimeMinutes(Math.max(parseInt(e.target.value) || 0, 0))}
                 placeholder="0"
               />
             </div>
@@ -1137,9 +1141,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
               <Input
                 id={postProcessingId}
                 type="number"
+                min="0"
                 compact
                 value={postProcessingMinutes || ''}
-                onChange={e => setPostProcessingMinutes(parseInt(e.target.value) || 0)}
+                onChange={e => setPostProcessingMinutes(Math.max(parseInt(e.target.value) || 0, 0))}
                 placeholder="0"
               />
             </div>
