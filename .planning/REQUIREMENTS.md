@@ -9,10 +9,10 @@
 
 ### Live papercut fixes (FIX)
 
-- [ ] **FIX-01**: The web "A new version is available · Reload" banner reliably reloads onto the new version, including on uncontrolled pages (fresh first load or hard refresh). *(Built on `fix/pwa-reload-uncontrolled`.)*
-- [ ] **FIX-02**: Navigating between routes (e.g. footer links) lands at the top of the next page instead of keeping the previous scroll offset. *(ScrollToTop — cherry-pick `4da205f` from the redesign branch; `#hash` anchors left alone.)*
-- [ ] **FIX-03**: The destructive Asset "Reset all" action uses the app's styled confirm modal (showing item counts) instead of `window.confirm()`. *(Audit 3.2.)*
-- [ ] **FIX-04**: Confirming an edit-job jump scrolls the calculator to the "Editing…" banner. *(Audit 3.6.)*
+- [x] **FIX-01**: The web "A new version is available · Reload" banner reliably reloads onto the new version, including on uncontrolled pages (fresh first load or hard refresh). *(Built on `fix/pwa-reload-uncontrolled`.)* — closed in 34-01 (verified PASSED).
+- [x] **FIX-02**: Navigating between routes (e.g. footer links) lands at the top of the next page instead of keeping the previous scroll offset. *(ScrollToTop — cherry-pick `4da205f` from the redesign branch; `#hash` anchors left alone.)* — closed in 34-01 (verified PASSED).
+- [x] **FIX-03**: The destructive Asset "Reset all" action uses the app's styled confirm modal (showing item counts) instead of `window.confirm()`. *(Audit 3.2.)* — closed in 34-02 (verified PASSED).
+- [x] **FIX-04**: Confirming an edit-job jump scrolls the calculator to the "Editing…" banner. *(Audit 3.6.)* — closed in 34-02 (verified PASSED).
 
 ### Accessibility — Tier 4 (A11Y)
 
@@ -59,10 +59,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 34 — Live papercut fixes | Pending |
-| FIX-02 | Phase 34 — Live papercut fixes | Pending |
-| FIX-03 | Phase 34 — Live papercut fixes | Pending |
-| FIX-04 | Phase 34 — Live papercut fixes | Pending |
+| FIX-01 | Phase 34 — Live papercut fixes | Complete (34-01) |
+| FIX-02 | Phase 34 — Live papercut fixes | Complete (34-01) |
+| FIX-03 | Phase 34 — Live papercut fixes | Complete (34-02) |
+| FIX-04 | Phase 34 — Live papercut fixes | Complete (34-02) |
 | A11Y-10 | Phase 35 — Accessibility Tier 4 | Complete (35-01) |
 | A11Y-11 | Phase 35 — Accessibility Tier 4 | Complete |
 | A11Y-12 | Phase 35 — Accessibility Tier 4 | Complete |
