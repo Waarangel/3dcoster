@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
-status: completed
-stopped_at: Completed 35-05-PLAN.md — A11Y-15 App tabpanel tabIndex + back-to-site label + InfoTooltip concise aria-label + Escape dismiss; 12 new tests + full suite (731) green
-last_updated: "2026-06-26T11:38:28.872Z"
-last_activity: 2026-06-26 -- Phase 35 marked complete
+status: executing
+stopped_at: Completed 36-01-PLAN.md — PERF-09 lifted useQuotes() to parent + PERF-10 materialsById Map; 738 tests green + tsc -b clean
+last_updated: "2026-06-26T12:46:34.580Z"
+last_activity: 2026-06-26
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 9
+  completed_plans: 8
   percent: 50
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 34–37). Source of requirements: `docs/CALCULATOR_APP_AUDIT.md` (Tiers 3–6).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 35 — accessibility-tier-4
+**Current focus:** Phase 36 — performance-tier-5
 
 ## Current Position
 
-Phase: 35 — COMPLETE
-Plan: 5 of 5 (35-01, 35-02, 35-03, 35-04, 35-05 complete)
-Status: Phase 35 complete
-Last activity: 2026-06-26 -- Phase 35 marked complete
+Phase: 36 (performance-tier-5) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-06-26
 
 ## v1.9 Phase Order Reference
 
@@ -77,6 +77,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [35-03 2026-06-26]: FilamentSelector trigger uses aria-labelledby (not htmlFor) to preserve the existing Button ref pattern. Brand submenu uses static aria-label={brand} (not aria-labelledby) per RESEARCH Pitfall 5 — trigger text is dynamic so labelledby on the menu would produce dynamic name changes while open. No live region or aria-activedescendant needed — existing .focus() calls on arrow-key nav already announce items.
 - [35-04 2026-06-26]: A11Y-14 chip hit target uses min-w/min-h 24px (not AAA 44px) per LOCKED context decision — glyph stays text-[10px], bounding box enlarged without visual change at rest. A11Y-15 break-even bar aria-valuetext template: "{N} of {M} copies sold[ — break-even reached]".
 - [35-05 2026-06-26]: InfoTooltip button label changed from verbose {text} prop to canonical "More information"; Escape handler calls e.stopPropagation() to prevent parent modal from intercepting. App.tsx full-render impractical in jsdom (Dexie DB hooks); used minimal replica subtrees in App.a11y.test.tsx per plan guidance.
+- [36-01 2026-06-26]: jobId kept in OrdersQuoteRows type signature (renamed _jobId) for API stability after PERF-09 removed internal quotesByJobId.get(jobId) usage. Source-contract test filters comment/JSDoc lines before counting useQuotes() calls (naive regex matches documentation references too).
 
 ### Pending Todos
 
@@ -91,10 +92,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-26T12:31:00.000Z
-Stopped at: Completed 35-05-PLAN.md — A11Y-15 App tabpanel tabIndex + back-to-site label + InfoTooltip concise aria-label + Escape dismiss; 12 new tests + full suite (731) green
+Last session: 2026-06-26T08:36:00.000Z
+Stopped at: Completed 36-01-PLAN.md — PERF-09 lifted useQuotes() to parent + PERF-10 materialsById Map; 738 tests green + tsc -b clean
 Resume file: None
 
 ## Operator Next Steps
 
-- Phase 35 complete (all 5 plans, A11Y-10..15 closed). Next: `/gsd:plan-phase 36` for Performance Tier 5 (PERF-09..11).
+- Phase 36 Plan 1 complete (PERF-09 + PERF-10 closed). Next: execute 36-02 for PERF-11 (CostCalculator pricing useEffect dep trimming).

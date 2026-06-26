@@ -119,7 +119,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   2. `getFilamentName` resolves filament names via a `materialsById` Map built once, not an `O(N×M)` `Array.find` per filament per render.
   3. The pricing `useEffect` no longer triggers a double render per keystroke — it is moved to an event-handler pattern (or its dep array is trimmed so the values it sets are not in its deps).
 **Plans**: 2 plans
-- [ ] 36-01-PLAN.md — JobsManager: lift per-row useQuotes() to parent (PERF-09) + materialsById Map for getFilamentName (PERF-10)
+- [x] 36-01-PLAN.md — JobsManager: lift per-row useQuotes() to parent (PERF-09) + materialsById Map for getFilamentName (PERF-10)
 - [ ] 36-02-PLAN.md — CostCalculator: trim pricing useEffect deps to [trueCost, lastEdited] to kill the double-render (PERF-11)
 **UI hint**: yes
 
@@ -140,7 +140,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | --------------------------------------- | --------- | ----- | ----------- | --------- |
 | 34. Live papercut fixes                 | v1.9      | 2/2 | Complete   | 2026-06-25 |
 | 35. Accessibility Tier 4                | v1.9      | 5/5 | Complete   | 2026-06-26 |
-| 36. Performance Tier 5                  | v1.9      | 0/2   | Not started | -         |
+| 36. Performance Tier 5                  | v1.9      | 1/2 | In Progress|  |
 | 37. Code health (STRETCH)               | v1.9      | 0/?   | Not started | -         |
 
 <details>

@@ -25,8 +25,8 @@
 
 ### Performance — Tier 5 (PERF)
 
-- [ ] **PERF-09**: `useQuotes()` is lifted out of per-row components to the `JobsManager` parent (passed as a `quotesForJob` prop), eliminating one live Dexie subscription per visible job row. *(Audit 5.1.)*
-- [ ] **PERF-10**: `getFilamentName` resolves via a `materialsById` Map instead of `O(N×M)` `Array.find` per render. *(Audit 5.2.)*
+- [x] **PERF-09**: `useQuotes()` is lifted out of per-row components to the `JobsManager` parent (passed as a `quotesForJob` prop), eliminating one live Dexie subscription per visible job row. *(Audit 5.1.)*
+- [x] **PERF-10**: `getFilamentName` resolves via a `materialsById` Map instead of `O(N×M)` `Array.find` per render. *(Audit 5.2.)*
 - [ ] **PERF-11**: The pricing `useEffect` no longer double-renders per keystroke — moved to an event-handler pattern or trimmed deps. *(Audit 5.3.)*
 
 ### Code health — stretch (HYG)
@@ -69,8 +69,8 @@
 | A11Y-13 | Phase 35 — Accessibility Tier 4 | Complete (35-03) |
 | A11Y-14 | Phase 35 — Accessibility Tier 4 | Complete |
 | A11Y-15 | Phase 35 — Accessibility Tier 4 | Complete |
-| PERF-09 | Phase 36 — Performance Tier 5 | Pending |
-| PERF-10 | Phase 36 — Performance Tier 5 | Pending |
+| PERF-09 | Phase 36 — Performance Tier 5 | Complete |
+| PERF-10 | Phase 36 — Performance Tier 5 | Complete |
 | PERF-11 | Phase 36 — Performance Tier 5 | Pending |
 | HYG-11 | Phase 37 — Code health (STRETCH) | Pending |
 | HYG-12 | Phase 37 — Code health (STRETCH) | Pending |
