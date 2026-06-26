@@ -32,7 +32,7 @@
 ### Code health — stretch (HYG)
 
 - [x] **HYG-11**: The 3 remaining index-mutation immutability violations are converted to immutable updates. *(Audit Tier 6 "Already solid" note.)* — closed in 37-01 (all 3 converted to functional updaters; 0 `updated[index] =` remain).
-- [ ] **HYG-12**: Minor consistency cleanups — `updatePackagingMaterial` via `map` *(HYG-12.1 closed in 37-01)*; batched `useAssets` init reads (`Promise.all`); `as UserProfile` / `as Currency` casts tightened to validated narrowing. *(Audit 6.5.)* — HYG-12.2 + HYG-12.3 pending (37-02).
+- [x] **HYG-12**: Minor consistency cleanups — `updatePackagingMaterial` via `map` *(HYG-12.1 closed in 37-01)*; batched `useAssets` init reads (`Promise.all`); `as UserProfile` / `as Currency` casts tightened to validated narrowing. *(Audit 6.5.)* — HYG-12.2 + HYG-12.3 closed in 37-02.
 
 ## Deferred (future milestone)
 
@@ -72,8 +72,8 @@
 | PERF-09 | Phase 36 — Performance Tier 5 | Complete |
 | PERF-10 | Phase 36 — Performance Tier 5 | Complete |
 | PERF-11 | Phase 36 — Performance Tier 5 | Complete (36-02) |
-| HYG-11 | Phase 37 — Code health (STRETCH) | Pending |
-| HYG-12 | Phase 37 — Code health (STRETCH) | Pending |
+| HYG-11 | Phase 37 — Code health (STRETCH) | Complete (37-01) |
+| HYG-12 | Phase 37 — Code health (STRETCH) | Complete (37-02) |
 
 **Coverage:**
 - v1.9 requirements: 15 total

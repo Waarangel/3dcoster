@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
-status: executing
-stopped_at: Completed 37-01-PLAN.md — HYG-11 + HYG-12.1 immutability refactor; 750 tests green + tsc -b clean
-last_updated: "2026-06-26T13:19:30Z"
-last_activity: 2026-06-26 -- Phase 37 Plan 01 complete (HYG-11 + HYG-12.1)
+status: complete
+stopped_at: Completed 37-02-PLAN.md — HYG-12.2 Promise.all batch + HYG-12.3 C1+C3 cast narrowing; 760 tests green + tsc -b clean
+last_updated: "2026-06-26T09:25:00Z"
+last_activity: 2026-06-26 -- Phase 37 Plan 02 complete (HYG-12.2 + HYG-12.3); Phase 37 COMPLETE; v1.9 milestone COMPLETE
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
-  completed_plans: 10
-  percent: 82
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 37 (code-health-stretch) — EXECUTING
-Plan: 2 of 2
-Status: Executing Phase 37
-Last activity: 2026-06-26 -- Phase 37 Plan 01 complete (HYG-11 + HYG-12.1)
+Plan: 2 of 2 (COMPLETE)
+Status: Phase 37 Complete — v1.9 milestone complete
+Last activity: 2026-06-26 -- Phase 37 Plan 02 complete (HYG-12.2 + HYG-12.3); all 4 phases done
 
 ## v1.9 Phase Order Reference
 
@@ -93,10 +93,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-26T13:19:30Z
-Stopped at: Completed 37-01-PLAN.md — HYG-11 + HYG-12.1 immutability refactor; 750 tests green + tsc -b clean
+Last session: 2026-06-26T09:25:00Z
+Stopped at: Completed 37-02-PLAN.md — HYG-12.2 + HYG-12.3; Phase 37 + v1.9 milestone complete. 760 tests green + tsc -b clean.
 Resume file: None
 
 ## Operator Next Steps
 
-- Phase 37 Plan 01 complete (HYG-11 + HYG-12.1 closed). Next: execute Phase 37 Plan 02 (HYG-12.2 Promise.all batching + HYG-12.3 cast narrowing), or close v1.9 milestone.
+- v1.9 Hardening milestone COMPLETE. All 4 phases (34–37), 11 plans done. Next: run `/gsd:verify-work` for v1.9 milestone closure, then prepare the v1.9 release (CHANGELOG entry, version bump, desktop tag).

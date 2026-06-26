@@ -26,7 +26,7 @@
 - [x] **Phase 34: Live papercut fixes** — PWA Reload reliability, ScrollToTop nav, styled "Reset all" confirm, edit-job scroll-to-banner
 - [x] **Phase 35: Accessibility Tier 4** — Settings arrow-key tabs, form-error ARIA association, icon-button labels, FilamentSelector name, tag-chip target size, AA cleanups
 - [x] **Phase 36: Performance Tier 5** — lift per-row `useQuotes()`, `materialsById` Map, pricing `useEffect` double-render fix
-- [ ] **Phase 37: Code health (STRETCH)** — index-mutation immutability fixes + minor consistency cleanups (droppable if timeboxed)
+- [x] **Phase 37: Code health (STRETCH)** — index-mutation immutability fixes + minor consistency cleanups (droppable if timeboxed)
 
 <details>
 <summary>✅ v1.3 Hardening (Phases 18–26) — SHIPPED 2026-05-28</summary>
@@ -132,7 +132,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   2. Minor consistency cleanups land: `updatePackagingMaterial` rewritten via `map`; `useAssets` init reads batched with `Promise.all`; `as UserProfile` / `as Currency` casts replaced with validated narrowing (matching the v9 migration pattern).
 **Plans**: 2 plans
 - [x] 37-01-PLAN.md — CostCalculator.tsx: functional-updater updateMaterialUsage + new updatePackagingMaterial helper (HYG-11 all 3 + HYG-12.1)
-- [ ] 37-02-PLAN.md — useDatabase.ts + database.ts: batch useAssets init reads A+B via Promise.all (HYG-12.2) + narrow C1/C3 as-UserProfile casts to validated narrowing (HYG-12.3)
+- [x] 37-02-PLAN.md — useDatabase.ts + database.ts: batch useAssets init reads A+B via Promise.all (HYG-12.2) + narrow C1/C3 as-UserProfile casts to validated narrowing (HYG-12.3)
 
 ---
 
@@ -143,7 +143,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 34. Live papercut fixes                 | v1.9      | 2/2 | Complete   | 2026-06-25 |
 | 35. Accessibility Tier 4                | v1.9      | 5/5 | Complete   | 2026-06-26 |
 | 36. Performance Tier 5                  | v1.9      | 2/2 | Complete   | 2026-06-26 |
-| 37. Code health (STRETCH)               | v1.9      | 1/2   | Executing   | -         |
+| 37. Code health (STRETCH)               | v1.9      | 2/2   | Complete    | 2026-06-26 |
 
 <details>
 <summary>✅ v1.3 Hardening progress (Phases 18–26) — all complete</summary>
