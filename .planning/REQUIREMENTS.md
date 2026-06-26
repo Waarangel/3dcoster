@@ -17,11 +17,11 @@
 ### Accessibility — Tier 4 (A11Y)
 
 - [x] **A11Y-10**: Settings inner tabs support Left/Right arrow-key navigation, and focus moves to the panel on tab switch. *(Audit 4.1, WCAG 2.4.3.)* — closed in 35-01 (roving tabindex + Home/End + focus-to-panel).
-- [ ] **A11Y-11**: Form errors are programmatically associated — error containers use `role="alert"`; failing inputs set `aria-invalid` and `aria-describedby`. *(Audit 4.2, WCAG 3.3.1 / 1.3.1.)*
-- [ ] **A11Y-12**: Icon-only edit/delete buttons (Settings carriers/marketplaces, Asset rows) have descriptive `aria-label`s. *(Audit 4.3, WCAG 4.1.2.)*
+- [x] **A11Y-11**: Form errors are programmatically associated — error containers use `role="alert"`; failing inputs set `aria-invalid` and `aria-describedby`. *(Audit 4.2, WCAG 3.3.1 / 1.3.1.)*
+- [x] **A11Y-12**: Icon-only edit/delete buttons (Settings carriers/marketplaces, Asset rows) have descriptive `aria-label`s. *(Audit 4.3, WCAG 4.1.2.)*
 - [ ] **A11Y-13**: The FilamentSelector menu has an accessible name and its submenu announces correctly (live region / `aria-activedescendant`). *(Audit 4.4, WCAG 4.1.2.)*
 - [ ] **A11Y-14**: Tag-remove chip buttons meet the minimum target size and are discoverable on touch (not 14px / opacity-0 at rest). *(Audit 4.5, WCAG 2.5.5 / 2.5.8.)*
-- [ ] **A11Y-15**: Remaining AA cleanups — main `tabpanel` `tabIndex={-1}` for post-switch focus; break-even bar `role="progressbar"` with values; `InfoTooltip` Escape-dismiss + concise label; mobile "Back to site" link label; category filter `role="group"` label; SortIndicator / per-unit label patterns. *(Audit 4.6.)*
+- [x] **A11Y-15**: Remaining AA cleanups — main `tabpanel` `tabIndex={-1}` for post-switch focus; break-even bar `role="progressbar"` with values; `InfoTooltip` Escape-dismiss + concise label; mobile "Back to site" link label; category filter `role="group"` label; SortIndicator / per-unit label patterns. *(Audit 4.6.)*
 
 ### Performance — Tier 5 (PERF)
 
@@ -64,11 +64,11 @@
 | FIX-03 | Phase 34 — Live papercut fixes | Pending |
 | FIX-04 | Phase 34 — Live papercut fixes | Pending |
 | A11Y-10 | Phase 35 — Accessibility Tier 4 | Complete (35-01) |
-| A11Y-11 | Phase 35 — Accessibility Tier 4 | Pending |
-| A11Y-12 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-11 | Phase 35 — Accessibility Tier 4 | Complete |
+| A11Y-12 | Phase 35 — Accessibility Tier 4 | Complete |
 | A11Y-13 | Phase 35 — Accessibility Tier 4 | Pending |
 | A11Y-14 | Phase 35 — Accessibility Tier 4 | Pending |
-| A11Y-15 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-15 | Phase 35 — Accessibility Tier 4 | Complete |
 | PERF-09 | Phase 36 — Performance Tier 5 | Pending |
 | PERF-10 | Phase 36 — Performance Tier 5 | Pending |
 | PERF-11 | Phase 36 — Performance Tier 5 | Pending |
