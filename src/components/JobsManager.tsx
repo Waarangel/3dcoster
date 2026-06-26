@@ -333,13 +333,14 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
  * + react-window scaffolding.
  */
 export function OrdersQuoteRows({
-  jobId,
+  jobId: _jobId,
   quotesForJob,
   updateQuote,
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
 }: {
+  /** Kept for API compatibility — the quotes slice is now passed via quotesForJob. */
   jobId: string;
   quotesForJob: Quote[];
   updateQuote: (quote: Quote) => Promise<void>;
@@ -1563,6 +1564,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
                       recentSales={isSelected ? sales : undefined}
                       userCurrency={userCurrency}
                       getFilamentName={getFilamentName}
+                      getQuotesForJob={getQuotesForJob}
+                      updateQuote={updateQuoteFromHook}
                       onToggleSelect={handleToggleSelect}
                       onOpenSaleForm={handleOpenSaleForm}
                       onEdit={onEditJob}
