@@ -969,7 +969,10 @@ export function AssetLibrary({
                   onClick={handleReset}
                   className="flex-1 sm:flex-none"
                 >
-                  Reset {filterCategory === 'all' ? 'All' : getCategoryLabel(filterCategory)}
+                  {/* Reset is a binary op: restore the default printer list, or the default
+                      material list. It preserves custom categories, so it never resets a
+                      specific custom category — label it by the operation, not the filter. */}
+                  Reset {filterCategory === 'printer' ? 'Printers' : 'Materials'}
                 </Button>
               )}
               <Button
@@ -1368,7 +1371,7 @@ export function AssetLibrary({
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="submit">
-              {editingId ? 'Update' : 'Add'} {isPrinterForm ? 'Printer' : 'Material'}
+              {editingId ? 'Update' : 'Add'} {getCategoryLabel(formData.category ?? 'consumable').replace(/s$/, '')}
             </Button>
             <Button
               type="button"
@@ -1609,11 +1612,6 @@ export function AssetLibrary({
       {/* Reset Assets Modal — FIX-03: replaces the native browser confirm dialog */}
       <ResetAssetsModal
         mode={resetMode}
-        count={
-          resetMode === 'printer'
-            ? assets.filter(a => a.category === 'printer').length
-            : assets.filter(a => a.category !== 'printer').length
-        }
         onConfirm={handleResetConfirm}
         onClose={() => setResetMode(null)}
       />

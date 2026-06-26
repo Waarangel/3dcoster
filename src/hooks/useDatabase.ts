@@ -6,6 +6,7 @@ import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterC
 import { DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from '../db/backfill';
 import { applyJobStockEvents, removeJobStockEvents } from '../db/stockEventsWriter';
+import { isPreservedOnMaterialReset } from '../utils/assetCategories';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -228,12 +229,15 @@ export function useAssets() {
   }, []);
 
   const resetMaterialsOnly = useCallback(async () => {
-    // Only reset non-printer assets. Fresh seeds ship in USD and are converted
-    // to the user's currency at display time (useFxRates), so no re-pricing step
-    // is needed here — the dropdown shows them regardless of native currency.
-    const printerAssets = await db.materials.where('category').equals('printer').toArray();
+    // Restore the built-in material categories to the latest defaults, but PRESERVE
+    // printers AND any user-created custom-category assets (mirrors resetPrintersOnly,
+    // which keeps custom printers). Without this guard, resetting from a custom category
+    // silently deleted every custom-category asset — a data-loss bug. Fresh seeds ship in
+    // USD and convert to the user's currency at display time (useFxRates), so no re-pricing.
+    const existing = await db.materials.toArray();
+    const preserved = existing.filter(a => isPreservedOnMaterialReset(a.category));
     await db.materials.clear();
-    await db.materials.bulkAdd([...defaultMaterials, ...printerAssets]);
+    await db.materials.bulkAdd([...defaultMaterials, ...preserved]);
   }, []);
 
   const resetPrintersOnly = useCallback(async () => {

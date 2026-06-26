@@ -9,8 +9,9 @@ import { Button, Modal } from './ui';
 // built on the shared <Modal> primitive.
 //
 // Usage: render persistently; pass mode='printer' | 'material' (open) or
-// mode=null (closed). The count prop reflects the number of items about to
-// be replaced so the user sees the blast radius before confirming.
+// mode=null (closed). Reset restores the default printer/material library and
+// PRESERVES the user's custom printers and custom categories, so the copy
+// describes the restore rather than a count of items "deleted".
 //
 // Per threat model T-34-03: confirm is reachable ONLY via the danger button's
 // onClick — no auto-confirm on mount, no default/Enter-through that destroys data.
@@ -19,15 +20,13 @@ import { Button, Modal } from './ui';
 export interface ResetAssetsModalProps {
   /** 'printer' | 'material' = open in that mode; null = closed. */
   mode: 'printer' | 'material' | null;
-  /** Number of items (printers or materials) about to be replaced. */
-  count: number;
   /** Called only when the user explicitly clicks the danger confirm button. */
   onConfirm: () => Promise<void> | void;
   /** Called when the user clicks Cancel or presses Escape / backdrop. */
   onClose: () => void;
 }
 
-export function ResetAssetsModal({ mode, count, onConfirm, onClose }: ResetAssetsModalProps) {
+export function ResetAssetsModal({ mode, onConfirm, onClose }: ResetAssetsModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,14 +36,11 @@ export function ResetAssetsModal({ mode, count, onConfirm, onClose }: ResetAsset
 
   const title = isPrinter ? 'Reset printers' : 'Reset materials';
 
-  // Printer reset restores the default printer list but PRESERVES custom printers, so a
-  // count of "custom printers" would be inaccurate — describe the action instead. Material
-  // reset replaces every material, so its count is exact.
-  const materialWord = count === 1 ? '1 material' : `${count} materials`;
-
+  // Both modes restore a default library and preserve the user's custom items
+  // (custom printers / custom categories), so the copy describes the restore.
   const body = isPrinter
     ? `This will restore the default printer list. Your custom printers are kept. This action cannot be undone.`
-    : `This will replace your ${materialWord} with the default list. This action cannot be undone.`;
+    : `This will restore the default material list. Your custom categories are kept. This action cannot be undone.`;
 
   const confirmLabel = isPrinter ? 'Reset printers' : 'Reset materials';
 

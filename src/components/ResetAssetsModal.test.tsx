@@ -35,43 +35,39 @@ function buttonByText(text: string): HTMLButtonElement | undefined {
 }
 
 describe('ResetAssetsModal', () => {
-  // Test 1: 'printer' mode with N printers shows correct copy
-  it('renders dialog with printer count when mode is printer', async () => {
+  // Test 1: 'printer' mode describes a restore that preserves custom printers
+  it('renders dialog with restore copy when mode is printer', async () => {
     await act(async () => {
       root!.render(
         <ResetAssetsModal
           mode="printer"
-          count={5}
           onConfirm={vi.fn()}
           onClose={vi.fn()}
         />
       );
     });
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
-    const body = document.body.textContent ?? '';
-    // Printer reset preserves custom printers, so the copy describes the action and
-    // promises custom printers are kept (no misleading "N custom printers" count).
-    expect(body.toLowerCase()).toContain('printer');
-    expect(body.toLowerCase()).toContain('default printer list');
-    expect(body.toLowerCase()).toContain('custom printers are kept');
+    const body = (document.body.textContent ?? '').toLowerCase();
+    expect(body).toContain('default printer list');
+    expect(body).toContain('custom printers are kept');
   });
 
-  // Test 2: 'material' mode with M materials shows correct copy
-  it('renders dialog with material count when mode is material', async () => {
+  // Test 2: 'material' mode describes a restore that preserves custom categories
+  // (the v1.9 data-loss fix — reset must NOT promise to delete the user's custom items)
+  it('renders dialog with restore copy when mode is material', async () => {
     await act(async () => {
       root!.render(
         <ResetAssetsModal
           mode="material"
-          count={12}
           onConfirm={vi.fn()}
           onClose={vi.fn()}
         />
       );
     });
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
-    const body = document.body.textContent ?? '';
-    expect(body).toContain('12');
-    expect(body.toLowerCase()).toContain('material');
+    const body = (document.body.textContent ?? '').toLowerCase();
+    expect(body).toContain('default material list');
+    expect(body).toContain('custom categories are kept');
   });
 
   // Test 3: Confirm calls onConfirm once; Cancel calls onClose without calling onConfirm
@@ -83,7 +79,6 @@ describe('ResetAssetsModal', () => {
       root!.render(
         <ResetAssetsModal
           mode="printer"
-          count={3}
           onConfirm={onConfirm}
           onClose={onClose}
         />
@@ -103,7 +98,6 @@ describe('ResetAssetsModal', () => {
       root!.render(
         <ResetAssetsModal
           mode="material"
-          count={7}
           onConfirm={onConfirm2}
           onClose={onClose2}
         />
@@ -123,7 +117,6 @@ describe('ResetAssetsModal', () => {
       root!.render(
         <ResetAssetsModal
           mode="printer"
-          count={2}
           onConfirm={onConfirm}
           onClose={vi.fn()}
         />
@@ -141,7 +134,6 @@ describe('ResetAssetsModal', () => {
       root!.render(
         <ResetAssetsModal
           mode={null}
-          count={0}
           onConfirm={vi.fn()}
           onClose={vi.fn()}
         />
