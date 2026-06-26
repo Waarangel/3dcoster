@@ -1,6 +1,6 @@
 [package]
 name = "print-cost-calculator"
-version = "1.8.0"
+version = "1.9.0"
 description = "3D Print Cost Calculator"
 authors = ["you"]
 edition = "2021"

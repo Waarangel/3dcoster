@@ -23,6 +23,32 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ---
 
+## [1.9.0] - 2026-06-26
+
+A reliability, accuracy, and accessibility hardening release — no new features, just a calmer, more trustworthy app.
+
+### Fixed
+- **Resetting the Asset Library no longer wipes your custom data.** "Reset" is now scoped to what you're viewing — *Reset Filaments* restores only the default filaments, *Reset All* restores the default materials but **keeps your custom categories**, and resetting a custom category clears just that one. Previously, resetting while viewing a custom category could delete all of your materials.
+- **Deleted defaults stay deleted.** Removing a built-in material or printer no longer brings it back on the next reload, and your edits to a default printer are preserved.
+- **Marketplace fees now use your currency.** Fixed fees (like Etsy's listing and payment fees) are converted to your display currency instead of being added as raw US dollars — so sellers outside the US no longer see a fee that's off by ~150×.
+- **Quoted margin is now net of marketplace fees,** matching the sales report and the break-even tracker, so the profit you're quoted is the profit you keep.
+- **More accurate inventory.** Deleting an asset cleans up its stock history (no more phantom stock), and a job's stock deduction is saved reliably alongside the job.
+- Prices never show "$NaN" or "∞" — missing data shows "—", and negative quantities are no longer accepted.
+- Navigation now lands at the top of the destination page, and editing a job scrolls straight to the "Editing…" banner.
+- The web "A new version is available · Reload" prompt now reloads reliably, even after a hard refresh.
+
+### Changed
+- **A big accessibility pass.** Arrow-key navigation on the main tabs, proper labels on every form field and icon button, screen-reader announcements for errors and status banners, a styled confirmation dialog for deletes (replacing the browser pop-up), a pause control on the image carousel, and clearer focus indicators throughout.
+- The destructive "Reset" actions now use a styled confirmation that tells you exactly what will be replaced or removed.
+
+### Performance
+- The Jobs and Asset Library screens stay smooth and responsive even with large libraries.
+
+### Security
+- Hardened 3D-model file imports and link handling, and resolved all known dependency security advisories.
+
+---
+
 ## [1.8.0] - 2026-06-25
 
 ### Added
