@@ -7,6 +7,7 @@ import { useStockEvents } from '../hooks/useStockEvents';
 import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { convert, type FxRateTable } from '../utils/fxConvert';
+import { computeMarketplaceFee } from '../utils/marketplaceFee';
 import { calculateCost, calculateTax } from '../utils/costCalc';
 import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
 import { etsyChecklist, policySummaryAsOf, policyLink } from '../data/etsyToS';
@@ -436,46 +437,17 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     return options;
   }, [userCurrency]);
 
-  // Calculate marketplace fees based on selling price. Rates come from the live
-  // Settings → Marketplaces config (defaults match each platform's published
-  // fees); percent fields are stored as whole numbers (e.g. 10 = 10%).
-  const marketplaceFee = useMemo(() => {
-    if (sellingPrice <= 0) return 0;
-
-    switch (marketplace) {
-      case 'none':
-      case 'facebook_local':
-      case 'kijiji':
-        return 0;
-
-      case 'facebook_shipped': {
-        // selling fee (with a floor) + payment processing
-        const fbSellingFee = Math.max(marketplaceFees.facebookMinFee, sellingPrice * (marketplaceFees.facebookShippedPercent / 100));
-        const fbProcessingFee = sellingPrice * (marketplaceFees.facebookProcessingPercent / 100);
-        return fbSellingFee + fbProcessingFee;
-      }
-
-      case 'etsy': {
-        // transaction + payment % + fixed payment fee + listing fee
-        const etsyTransactionFee = sellingPrice * (marketplaceFees.etsyTransactionPercent / 100);
-        const etsyPaymentFee = sellingPrice * (marketplaceFees.etsyPaymentPercent / 100) + marketplaceFees.etsyPaymentFixed;
-        return etsyTransactionFee + etsyPaymentFee + marketplaceFees.etsyListingFee;
-      }
-
-      case 'etsy_offsite_ad': {
-        // Same as Etsy + offsite ad fee
-        const etsyBase = sellingPrice * (marketplaceFees.etsyTransactionPercent / 100)
-          + sellingPrice * (marketplaceFees.etsyPaymentPercent / 100)
-          + marketplaceFees.etsyPaymentFixed
-          + marketplaceFees.etsyListingFee;
-        const offsiteAdFee = sellingPrice * (marketplaceFees.etsyOffsiteAdPercent / 100);
-        return etsyBase + offsiteAdFee;
-      }
-
-      default:
-        return 0;
-    }
-  }, [marketplace, sellingPrice, marketplaceFees]);
+  // Marketplace fee decomposition (pctFees + fixedFees + total), all in the
+  // user's currency. The fixed-dollar fee constants are stored in USD in the
+  // Settings → Marketplaces config and FX-converted here (cost HIGH fix) — a
+  // non-USD seller was previously charged the raw USD number (e.g. ¥0.45
+  // instead of ~¥70). Percentage fees are currency-agnostic. The pct/fixed
+  // split also feeds the net-margin closed-form in the pricing interlink below.
+  const marketplaceFeeParts = useMemo(
+    () => computeMarketplaceFee({ sellingPrice, marketplace, fees: marketplaceFees, userCurrency, fxTable }),
+    [sellingPrice, marketplace, marketplaceFees, userCurrency, fxTable],
+  );
+  const marketplaceFee = marketplaceFeeParts.total;
 
   // Get available shipping methods based on currency
   const availableShippingMethods = useMemo(() => {
