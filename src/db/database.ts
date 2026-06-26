@@ -130,7 +130,13 @@ db.version(8).stores({
   let currency = 'USD';
   if (settingsRow) {
     try {
-      currency = (JSON.parse(settingsRow.value) as UserProfile).currency;
+      // HYG-12.3 C1: narrow to Partial<UserProfile> + typeof check (mirrors v9 pattern
+      // at lines 179-181) so a corrupt/partial row cannot flow undefined into currency.
+      const parsedV8 = JSON.parse(settingsRow.value) as Partial<UserProfile>;
+      if (typeof parsedV8.currency === 'string' && parsedV8.currency.length > 0) {
+        currency = parsedV8.currency;
+      }
+      // else fall through to the 'USD' default set above
     } catch (err) {
       console.error('[v8 migration] skipped — settings unreadable:', err);
       // Corrupt settings → fall through to 'USD'. The v9 reconcile (added below)

@@ -9,6 +9,8 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { db, getSetting, handleVersionchange, isPrinterConfig, isElectricityConfig, isLaborConfig, isUserProfile, isShippingConfig, isMarketplaceFees } from './database';
 import type { PrinterConfig } from '../types';
 
@@ -324,5 +326,35 @@ describe('isMarketplaceFees (DATA-06)', () => {
       amazonHandmadePercent: 15,
       // customMarketplaces missing — callers that .map over it would crash
     })).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HYG-12.3 C1 — v8 migration currency narrowing (Phase 37 Plan 02)
+//
+// Source-contract: assert that the v8 upgrade callback uses Partial<UserProfile>
+// + typeof check (matching the v9 validated-narrowing pattern at database.ts:179-181)
+// rather than an unvalidated `as UserProfile` cast.
+// ---------------------------------------------------------------------------
+
+describe('HYG-12.3 C1 v8 migration currency narrowing (source-contract)', () => {
+  const SRC = readFileSync(resolve(__dirname, 'database.ts'), 'utf8');
+
+  it('v8 migration uses Partial<UserProfile> (not raw as UserProfile) for currency read', () => {
+    expect(SRC).toContain('as Partial<UserProfile>');
+  });
+
+  it('v8 migration guards currency assignment with typeof string check', () => {
+    expect(SRC).toContain("typeof parsedV8.currency === 'string'");
+    expect(SRC).toContain('parsedV8.currency.length > 0');
+  });
+
+  it('v8 migration has no remaining unvalidated `as UserProfile` cast at the currency site', () => {
+    expect(SRC).not.toContain('as UserProfile).currency');
+  });
+
+  it('v8 migration preserves the USD default and the try/catch error log', () => {
+    expect(SRC).toContain("let currency = 'USD'");
+    expect(SRC).toContain("'[v8 migration] skipped — settings unreadable:'");
   });
 });
