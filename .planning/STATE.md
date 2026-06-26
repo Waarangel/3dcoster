@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
 status: executing
-stopped_at: Completed 35-04-PLAN.md — A11Y-14 chip hit target 24x24 (min-w/min-h) + focus ring; A11Y-15 break-even progressbar ARIA; 14 new tests + full suite (721) green
-last_updated: "2026-06-26T09:57:31.795Z"
+stopped_at: Completed 35-05-PLAN.md — A11Y-15 App tabpanel tabIndex + back-to-site label + InfoTooltip concise aria-label + Escape dismiss; 12 new tests + full suite (731) green
+last_updated: "2026-06-26T12:31:00.000Z"
 last_activity: 2026-06-26
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 7
-  completed_plans: 6
-  percent: 25
+  completed_phases: 2
+  total_plans: 13
+  completed_plans: 8
+  percent: 50
 ---
 
 # Project State
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 35 (accessibility-tier-4) — EXECUTING
-Plan: 5 of 5 (35-01, 35-02, 35-03, 35-04 complete)
-Status: Ready to execute
+Phase: 35 (accessibility-tier-4) — COMPLETE (all 5 plans done; A11Y-10..15 closed)
+Plan: 5 of 5 (35-01, 35-02, 35-03, 35-04, 35-05 complete)
+Status: Phase 35 complete — ready for Phase 36 (Performance Tier 5)
 Last activity: 2026-06-26
 
 ## v1.9 Phase Order Reference
@@ -76,6 +76,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [35-01 2026-06-26]: Settings tabs use roving tabindex (not aria-activedescendant) — native `<button>` tabs make tabIndex toggling the idiomatic APG fit; automatic activation (arrow selects + moves focus) since the panel renders synchronously. A11Y-12 needed no source change for the Settings marketplace section (already used labelled EditButton/DeleteButton) — closed with a confirming test; the Asset-row portion of A11Y-12 remains for plan 35-02, so A11Y-12 stays Pending in REQUIREMENTS traceability until then.
 - [35-03 2026-06-26]: FilamentSelector trigger uses aria-labelledby (not htmlFor) to preserve the existing Button ref pattern. Brand submenu uses static aria-label={brand} (not aria-labelledby) per RESEARCH Pitfall 5 — trigger text is dynamic so labelledby on the menu would produce dynamic name changes while open. No live region or aria-activedescendant needed — existing .focus() calls on arrow-key nav already announce items.
 - [35-04 2026-06-26]: A11Y-14 chip hit target uses min-w/min-h 24px (not AAA 44px) per LOCKED context decision — glyph stays text-[10px], bounding box enlarged without visual change at rest. A11Y-15 break-even bar aria-valuetext template: "{N} of {M} copies sold[ — break-even reached]".
+- [35-05 2026-06-26]: InfoTooltip button label changed from verbose {text} prop to canonical "More information"; Escape handler calls e.stopPropagation() to prevent parent modal from intercepting. App.tsx full-render impractical in jsdom (Dexie DB hooks); used minimal replica subtrees in App.a11y.test.tsx per plan guidance.
 
 ### Pending Todos
 
@@ -90,10 +91,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-26T09:57:31.790Z
-Stopped at: Completed 35-03-PLAN.md — FilamentSelector trigger label association (id + aria-labelledby) + brand submenu aria-label (A11Y-13); 4/4 new tests + full suite (707) green
+Last session: 2026-06-26T12:31:00.000Z
+Stopped at: Completed 35-05-PLAN.md — A11Y-15 App tabpanel tabIndex + back-to-site label + InfoTooltip concise aria-label + Escape dismiss; 12 new tests + full suite (731) green
 Resume file: None
 
 ## Operator Next Steps
 
-- Review the v1.9 roadmap, then run `/gsd:plan-phase 34` to plan the live papercut fixes.
+- Phase 35 complete (all 5 plans, A11Y-10..15 closed). Next: `/gsd:plan-phase 36` for Performance Tier 5 (PERF-09..11).
