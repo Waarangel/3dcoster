@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -154,6 +156,17 @@ describe('SettingsModal — A11Y-10: tablist arrow-key navigation', () => {
     expect(updatedTabs[1].getAttribute('aria-selected')).toBe('true');
     expect(updatedTabs[1].getAttribute('tabIndex') ?? updatedTabs[1].tabIndex.toString()).toBe('0');
     expect(updatedTabs[0].getAttribute('tabIndex') ?? updatedTabs[0].tabIndex.toString()).toBe('-1');
+  });
+
+  // Source-contract regression guard for the v1.9-review fix: the arrow handler must move
+  // focus to the newly-selected TAB and must NOT focus the tabpanel. (A prior build called
+  // panelRef.current?.focus() on every arrow press, jumping focus out of the tablist so a
+  // second arrow press did nothing.) Focus-across-re-render can't be asserted reliably in the
+  // raw createRoot+act harness, so this is verified at the source level like the other contracts.
+  it('source: arrow handler focuses the selected tab and does NOT focus the panel', () => {
+    const SRC = readFileSync(resolve(__dirname, 'SettingsModal.tsx'), 'utf8');
+    expect(SRC).toContain('document.getElementById(`settings-tab-${nextTab.id}`)?.focus()');
+    expect(SRC).not.toContain('panelRef.current?.focus()');
   });
 
   it('ArrowRight wraps from the last tab back to the first', async () => {

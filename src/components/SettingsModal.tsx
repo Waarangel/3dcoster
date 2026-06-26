@@ -186,9 +186,10 @@ export function SettingsModal({
 
   // A11Y-10 (WCAG 2.4.3, Critical): WAI-ARIA APG Tabs keyboard contract.
   // Roving tabindex + automatic activation — Left/Right wrap, Home/End jump.
-  // On switch we move focus to the newly active tab button AND to the panel
-  // (panelRef has tabIndex={-1}) so AT lands in the tabpanel content. The panel
-  // is inside the SidePanel dialog card, so programmatic focus stays in the trap.
+  // Arrow keys move focus between TABS (focus stays on the tablist) so the user can
+  // keep arrowing; the tabpanel (panelRef, tabIndex={-1}) is reached by pressing Tab.
+  // (Auto-focusing the panel on every arrow press was reverted in the v1.9 review —
+  // it jumped focus out of the tablist so a second arrow press did nothing.)
   const panelRef = useRef<HTMLDivElement>(null);
 
   const handleTablistKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -209,8 +210,9 @@ export function SettingsModal({
       e.preventDefault();
       const nextTab = tabs[nextIdx];
       setActiveTab(nextTab.id);
+      // Keep focus on the newly-selected tab so the next arrow press continues the
+      // roving-tabindex navigation. The panel (tabIndex={-1}) is reached via Tab.
       document.getElementById(`settings-tab-${nextTab.id}`)?.focus();
-      panelRef.current?.focus();
     }
   };
 
