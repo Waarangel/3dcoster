@@ -8,6 +8,13 @@
     "shell:default",
     "window-state:default",
     "dialog:allow-save",
-    { "identifier": "fs:allow-write-file", "allow": [{ "path": "$HOME/**/*" }] }
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$DESKTOP/**" }
+      ]
+    }
   ]
 }
