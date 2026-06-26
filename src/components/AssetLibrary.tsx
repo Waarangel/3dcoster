@@ -592,14 +592,21 @@ export function AssetLibrary({
     return Array.from(categorySet);
   }, [assets]);
 
-  const filteredAssets = filterCategory === 'all'
-    ? assets
-    : assets.filter(a => a.category === filterCategory);
+  // Memoized so the downstream searchedAssets/sortedAssets memos only recompute
+  // when assets or the category filter actually change — inline .filter() calls
+  // here produced a fresh array identity every render, defeating those memos.
+  const filteredAssets = useMemo(() => (
+    filterCategory === 'all'
+      ? assets
+      : assets.filter(a => a.category === filterCategory)
+  ), [assets, filterCategory]);
 
   // For display, separate printers and materials when showing "all"
-  const displayAssets = filterCategory === 'all'
-    ? filteredAssets.filter(a => a.category !== 'printer')  // Materials only for "all" view
-    : filteredAssets;
+  const displayAssets = useMemo(() => (
+    filterCategory === 'all'
+      ? filteredAssets.filter(a => a.category !== 'printer')  // Materials only for "all" view
+      : filteredAssets
+  ), [filteredAssets, filterCategory]);
 
   // Search filtering
   const searchedAssets = useMemo(() => {
