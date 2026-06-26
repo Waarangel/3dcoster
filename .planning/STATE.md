@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
-status: executing
+status: completed
 stopped_at: Completed 35-05-PLAN.md — A11Y-15 App tabpanel tabIndex + back-to-site label + InfoTooltip concise aria-label + Escape dismiss; 12 new tests + full suite (731) green
-last_updated: "2026-06-26T12:31:00.000Z"
-last_activity: 2026-06-26
+last_updated: "2026-06-26T11:38:28.872Z"
+last_activity: 2026-06-26 -- Phase 35 marked complete
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 13
-  completed_plans: 8
+  total_plans: 7
+  completed_plans: 7
   percent: 50
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 35 (accessibility-tier-4) — COMPLETE (all 5 plans done; A11Y-10..15 closed)
+Phase: 35 — COMPLETE
 Plan: 5 of 5 (35-01, 35-02, 35-03, 35-04, 35-05 complete)
-Status: Phase 35 complete — ready for Phase 36 (Performance Tier 5)
-Last activity: 2026-06-26
+Status: Phase 35 complete
+Last activity: 2026-06-26 -- Phase 35 marked complete
 
 ## v1.9 Phase Order Reference
 
