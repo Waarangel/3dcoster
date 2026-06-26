@@ -4,14 +4,11 @@ import { act } from 'react';
 import { ResetAssetsModal } from './ResetAssetsModal';
 
 // ---------------------------------------------------------------------------
-// ResetAssetsModal — FIX-03 (Phase 34, plan 02)
+// ResetAssetsModal — FIX-03 (Phase 34, plan 02); presenter API since v1.9.
 //
-// Styled confirm modal replacing the window.confirm() on the destructive
-// "Reset all" action in AssetLibrary. Built on the shared Modal primitive.
-//
-// Open via mode='printer' | mode='material'; closed via mode=null.
-// Shows the count of items about to be replaced so the user sees the blast
-// radius before confirming.
+// Styled confirm modal replacing window.confirm() on the destructive "Reset"
+// action in AssetLibrary. The caller owns the scope-aware copy and passes
+// isOpen / title / body / confirmLabel; this component renders + guards the call.
 // ---------------------------------------------------------------------------
 
 let container: HTMLDivElement | null = null;
@@ -35,56 +32,61 @@ function buttonByText(text: string): HTMLButtonElement | undefined {
 }
 
 describe('ResetAssetsModal', () => {
-  // Test 1: 'printer' mode describes a restore that preserves custom printers
-  it('renders dialog with restore copy when mode is printer', async () => {
+  // Test 1: open renders the caller-provided title + body
+  it('renders the provided title and body when open', async () => {
     await act(async () => {
       root!.render(
         <ResetAssetsModal
-          mode="printer"
+          isOpen
+          title="Reset Filaments"
+          body="This will restore the default filament list. This action cannot be undone."
+          confirmLabel="Reset Filaments"
           onConfirm={vi.fn()}
           onClose={vi.fn()}
         />
       );
     });
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
-    const body = (document.body.textContent ?? '').toLowerCase();
-    expect(body).toContain('default printer list');
-    expect(body).toContain('custom printers are kept');
+    const body = document.body.textContent ?? '';
+    expect(body).toContain('Reset Filaments');
+    expect(body.toLowerCase()).toContain('restore the default filament list');
   });
 
-  // Test 2: 'material' mode describes a restore that preserves custom categories
-  // (the v1.9 data-loss fix — reset must NOT promise to delete the user's custom items)
-  it('renders dialog with restore copy when mode is material', async () => {
+  // Test 2: a custom-category clear shows the destructive copy verbatim
+  it('renders a custom-category clear confirmation', async () => {
     await act(async () => {
       root!.render(
         <ResetAssetsModal
-          mode="material"
+          isOpen
+          title="Reset Tester"
+          body="This will remove all Tester assets. This action cannot be undone."
+          confirmLabel="Reset Tester"
           onConfirm={vi.fn()}
           onClose={vi.fn()}
         />
       );
     });
-    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     const body = (document.body.textContent ?? '').toLowerCase();
-    expect(body).toContain('default material list');
-    expect(body).toContain('custom categories are kept');
+    expect(body).toContain('remove all tester assets');
   });
 
-  // Test 3: Confirm calls onConfirm once; Cancel calls onClose without calling onConfirm
-  it('clicking confirm calls onConfirm exactly once; clicking cancel calls onClose and not onConfirm', async () => {
-    // -- confirm path --
-    const onConfirm = vi.fn().mockResolvedValue(undefined);
+  // Test 3: confirm calls onConfirm once; cancel calls onClose, not onConfirm
+  it('confirm calls onConfirm; cancel calls onClose only', async () => {
+    const onConfirm = vi.fn();
     const onClose = vi.fn();
     await act(async () => {
       root!.render(
         <ResetAssetsModal
-          mode="printer"
+          isOpen
+          title="Reset Printers"
+          body="This will restore the default printer list. Your custom printers are kept. This action cannot be undone."
+          confirmLabel="Reset Printers"
           onConfirm={onConfirm}
           onClose={onClose}
         />
       );
     });
-    const confirmBtn = buttonByText('Reset printers');
+    const confirmBtn = buttonByText('Reset Printers');
     expect(confirmBtn).toBeDefined();
     await act(async () => { confirmBtn!.click(); });
     expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -97,7 +99,10 @@ describe('ResetAssetsModal', () => {
     await act(async () => {
       root!.render(
         <ResetAssetsModal
-          mode="material"
+          isOpen
+          title="Reset All"
+          body="This will restore all default materials. Your custom categories are kept. This action cannot be undone."
+          confirmLabel="Reset All"
           onConfirm={onConfirm2}
           onClose={onClose2}
         />
@@ -110,30 +115,34 @@ describe('ResetAssetsModal', () => {
     expect(onConfirm2).not.toHaveBeenCalled();
   });
 
-  // Test 4: Rendering open modal does NOT auto-call onConfirm (no auto/Enter-through destroy)
+  // Test 4: rendering open modal does NOT auto-call onConfirm (no auto/Enter-through destroy)
   it('rendering the open modal does not auto-call onConfirm', async () => {
     const onConfirm = vi.fn();
     await act(async () => {
       root!.render(
         <ResetAssetsModal
-          mode="printer"
+          isOpen
+          title="Reset Printers"
+          body="..."
+          confirmLabel="Reset Printers"
           onConfirm={onConfirm}
           onClose={vi.fn()}
         />
       );
     });
-    // Verify modal is open
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
-    // onConfirm must NOT have been called on mount or render
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  // Closed state: mode=null → no dialog
-  it('renders nothing when mode is null', async () => {
+  // Test 5: closed state (isOpen=false) renders no dialog
+  it('renders nothing when isOpen is false', async () => {
     await act(async () => {
       root!.render(
         <ResetAssetsModal
-          mode={null}
+          isOpen={false}
+          title=""
+          body=""
+          confirmLabel=""
           onConfirm={vi.fn()}
           onClose={vi.fn()}
         />

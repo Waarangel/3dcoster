@@ -8,41 +8,34 @@ import { Button, Modal } from './ui';
 // replacing the prior window.confirm() with a deliberate, counts-showing modal
 // built on the shared <Modal> primitive.
 //
-// Usage: render persistently; pass mode='printer' | 'material' (open) or
-// mode=null (closed). Reset restores the default printer/material library and
-// PRESERVES the user's custom printers and custom categories, so the copy
-// describes the restore rather than a count of items "deleted".
+// Presenter for the destructive "Reset" action in AssetLibrary. The caller owns
+// the scope-aware copy (title / body / confirmLabel) because what a reset DOES
+// depends on the selected category — restore a built-in category's defaults,
+// restore everything, or clear a custom category. This component only renders the
+// confirmation and guards the destructive call.
 //
 // Per threat model T-34-03: confirm is reachable ONLY via the danger button's
 // onClick — no auto-confirm on mount, no default/Enter-through that destroys data.
 // ---------------------------------------------------------------------------
 
 export interface ResetAssetsModalProps {
-  /** 'printer' | 'material' = open in that mode; null = closed. */
-  mode: 'printer' | 'material' | null;
+  /** Whether the confirm dialog is open. */
+  isOpen: boolean;
+  /** Modal heading, e.g. "Reset Filaments" / "Reset Tester" / "Reset All". */
+  title: string;
+  /** Full confirmation sentence describing exactly what reset will do. */
+  body: string;
+  /** Danger-button label (matches the title). */
+  confirmLabel: string;
   /** Called only when the user explicitly clicks the danger confirm button. */
   onConfirm: () => Promise<void> | void;
   /** Called when the user clicks Cancel or presses Escape / backdrop. */
   onClose: () => void;
 }
 
-export function ResetAssetsModal({ mode, onConfirm, onClose }: ResetAssetsModalProps) {
+export function ResetAssetsModal({ isOpen, title, body, confirmLabel, onConfirm, onClose }: ResetAssetsModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const isOpen = mode !== null;
-
-  const isPrinter = mode === 'printer';
-
-  const title = isPrinter ? 'Reset printers' : 'Reset materials';
-
-  // Both modes restore a default library and preserve the user's custom items
-  // (custom printers / custom categories), so the copy describes the restore.
-  const body = isPrinter
-    ? `This will restore the default printer list. Your custom printers are kept. This action cannot be undone.`
-    : `This will restore the default material list. Your custom categories are kept. This action cannot be undone.`;
-
-  const confirmLabel = isPrinter ? 'Reset printers' : 'Reset materials';
 
   const handleConfirm = async () => {
     setError(null);

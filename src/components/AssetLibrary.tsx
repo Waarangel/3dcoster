@@ -7,6 +7,7 @@ import { buildExportFilename } from '../utils/jobsExport';
 import { CsvImportModal } from './CsvImportModal';
 import { NewBadge } from './NewBadge';
 import { ResetAssetsModal } from './ResetAssetsModal';
+import { isCustomCategory } from '../utils/assetCategories';
 import { StockBadge } from './inventory/StockBadge';
 import { LowStockBar } from './inventory/LowStockBar';
 import { useStockEvents } from '../hooks/useStockEvents';
@@ -21,8 +22,7 @@ interface AssetLibraryProps {
   onUpdateAsset: (asset: Asset) => void;
   onDeleteAsset: (id: string) => void;
   onBulkImportAssets: (assets: Asset[]) => Promise<void>;
-  onResetMaterials: () => void;
-  onResetPrinters: () => void;
+  onResetScope: (scope: AssetCategory | 'all') => void | Promise<void>;
   itemsPerPage: number;
   onItemsPerPageChange: (value: number) => void;
   userCurrency: Currency;
@@ -140,6 +140,42 @@ function getCategoryColor(category: AssetCategory): string {
     return builtInCategoryColors[category as BuiltInCategory];
   }
   return customCategoryColor;
+}
+
+// Scope-aware copy for the Reset confirmation. What "reset" does depends on the
+// selected category, so the label/body say exactly that:
+//   'all'     → restore every default material (custom categories kept)
+//   'printer' → restore default printers (custom printers kept)
+//   built-in  → restore ONLY that category's defaults
+//   custom    → no defaults exist, so reset clears the category
+function describeReset(scope: AssetCategory | 'all'): { title: string; body: string; confirmLabel: string } {
+  if (scope === 'all') {
+    return {
+      title: 'Reset All',
+      confirmLabel: 'Reset All',
+      body: 'This will restore all default materials. Your custom categories are kept. This action cannot be undone.',
+    };
+  }
+  if (scope === 'printer') {
+    return {
+      title: 'Reset Printers',
+      confirmLabel: 'Reset Printers',
+      body: 'This will restore the default printer list. Your custom printers are kept. This action cannot be undone.',
+    };
+  }
+  const label = getCategoryLabel(scope);
+  if (isCustomCategory(scope)) {
+    return {
+      title: `Reset ${label}`,
+      confirmLabel: `Reset ${label}`,
+      body: `This will remove all ${label} assets. This action cannot be undone.`,
+    };
+  }
+  return {
+    title: `Reset ${label}`,
+    confirmLabel: `Reset ${label}`,
+    body: `This will restore the default ${label.toLowerCase()} list. This action cannot be undone.`,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -484,8 +520,7 @@ export function AssetLibrary({
   onUpdateAsset,
   onDeleteAsset,
   onBulkImportAssets,
-  onResetMaterials,
-  onResetPrinters,
+  onResetScope,
   itemsPerPage,
   onItemsPerPageChange,
   userCurrency,
@@ -527,7 +562,7 @@ export function AssetLibrary({
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [formError, setFormError] = useState<string | null>(null);
-  const [resetMode, setResetMode] = useState<'printer' | 'material' | null>(null);
+  const [resetScope, setResetScope] = useState<AssetCategory | 'all' | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [sortField, setSortField] = useState<string>('name');
@@ -826,22 +861,25 @@ export function AssetLibrary({
   };
 
   const handleReset = () => {
-    setResetMode(filterCategory === 'printer' ? 'printer' : 'material');
+    // Scope the reset to whatever the user is currently viewing.
+    setResetScope(filterCategory);
   };
 
   const handleResetConfirm = async () => {
+    if (resetScope === null) return;
     try {
-      if (resetMode === 'printer') {
-        await onResetPrinters();
-      } else {
-        await onResetMaterials();
-      }
+      await onResetScope(resetScope);
     } catch {
       // Surface the failure to ResetAssetsModal, which keeps itself open and shows
       // the error inline (the single owner of reset-error display).
       throw new Error('Could not reset — please try again.');
     }
   };
+
+  // Scope-aware confirm copy (title/body/confirmLabel). Empty when closed.
+  const resetDescriptor = resetScope !== null
+    ? describeReset(resetScope)
+    : { title: '', body: '', confirmLabel: '' };
 
   // Export-what-you-see: the active category filter and search scope the
   // export, mirroring the Reset button's filter-scoped behavior in the same
@@ -969,10 +1007,7 @@ export function AssetLibrary({
                   onClick={handleReset}
                   className="flex-1 sm:flex-none"
                 >
-                  {/* Reset is a binary op: restore the default printer list, or the default
-                      material list. It preserves custom categories, so it never resets a
-                      specific custom category — label it by the operation, not the filter. */}
-                  Reset {filterCategory === 'printer' ? 'Printers' : 'Materials'}
+                  Reset {filterCategory === 'all' ? 'All' : getCategoryLabel(filterCategory)}
                 </Button>
               )}
               <Button
@@ -1371,7 +1406,11 @@ export function AssetLibrary({
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="submit">
-              {editingId ? 'Update' : 'Add'} {getCategoryLabel(formData.category ?? 'consumable').replace(/s$/, '')}
+              {editingId
+                ? `Update ${getCategoryLabel(formData.category ?? 'consumable').replace(/s$/, '')}`
+                : showCustomCategory
+                  ? 'Add Category'
+                  : `Add ${getCategoryLabel(formData.category ?? 'consumable').replace(/s$/, '')}`}
             </Button>
             <Button
               type="button"
@@ -1611,9 +1650,12 @@ export function AssetLibrary({
 
       {/* Reset Assets Modal — FIX-03: replaces the native browser confirm dialog */}
       <ResetAssetsModal
-        mode={resetMode}
+        isOpen={resetScope !== null}
+        title={resetDescriptor.title}
+        body={resetDescriptor.body}
+        confirmLabel={resetDescriptor.confirmLabel}
         onConfirm={handleResetConfirm}
-        onClose={() => setResetMode(null)}
+        onClose={() => setResetScope(null)}
       />
     </div>
   );

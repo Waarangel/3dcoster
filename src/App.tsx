@@ -55,8 +55,7 @@ function App() {
     updateAsset,
     deleteAsset,
     bulkImportAssets,
-    resetMaterialsOnly,
-    resetPrintersOnly,
+    resetAssetScope,
   } = useAssets();
 
   // Filter materials (non-printer assets) for components that need them.
@@ -364,8 +363,7 @@ function App() {
             onUpdateAsset={updateAsset}
             onDeleteAsset={deleteAsset}
             onBulkImportAssets={bulkImportAssets}
-            onResetMaterials={resetMaterialsOnly}
-            onResetPrinters={resetPrintersOnly}
+            onResetScope={resetAssetScope}
             itemsPerPage={userProfile.assetLibraryItemsPerPage ?? 10}
             onItemsPerPageChange={(value) => updateUserProfile({ ...userProfile, assetLibraryItemsPerPage: value })}
             userCurrency={userProfile.currency}

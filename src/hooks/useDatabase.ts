@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getPrinter, setPrinter, getElectricity, setElectricity, getLabor, setLabor, getUserProfile, setUserProfile, getShippingConfig, setShippingConfig, getMarketplaceFees, setMarketplaceFees } from '../db/database';
-import type { Asset, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
+import type { Asset, AssetCategory, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 import { DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from '../db/backfill';
 import { applyJobStockEvents, removeJobStockEvents } from '../db/stockEventsWriter';
-import { isPreservedOnMaterialReset } from '../utils/assetCategories';
+import { isPreservedOnMaterialReset, isCustomCategory } from '../utils/assetCategories';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -254,6 +254,23 @@ export function useAssets() {
     await db.materials.bulkPut(importAssets); // upsert — handles both new + overwrite
   }, []);
 
+  // Reset scoped to the asset library's current filter:
+  //   'all'      → restore the full default material library (keep printers + custom categories)
+  //   'printer'  → restore default printers (keep custom printers)
+  //   built-in   → restore ONLY that category's defaults
+  //   custom     → no defaults exist, so "reset" clears the category (delete its assets)
+  // Built-in/custom restore is scoped so a per-category Reset does exactly what its label says.
+  const resetAssetScope = useCallback(async (scope: AssetCategory | 'all') => {
+    if (scope === 'all') { await resetMaterialsOnly(); return; }
+    if (scope === 'printer') { await resetPrintersOnly(); return; }
+    if (isCustomCategory(scope)) {
+      await db.materials.where('category').equals(scope).delete();
+      return;
+    }
+    await db.materials.where('category').equals(scope).delete();
+    await db.materials.bulkAdd(defaultMaterials.filter(m => m.category === scope));
+  }, [resetMaterialsOnly, resetPrintersOnly]);
+
   return {
     assets: assets ?? [],
     isLoading,
@@ -265,6 +282,7 @@ export function useAssets() {
     resetToDefaults,
     resetMaterialsOnly,
     resetPrintersOnly,
+    resetAssetScope,
   };
 }
 
