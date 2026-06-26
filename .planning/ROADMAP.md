@@ -23,8 +23,8 @@
 
 ### 🔨 v1.9 Hardening (Phases 34–37) — IN PLANNING
 
-- [ ] **Phase 34: Live papercut fixes** — PWA Reload reliability, ScrollToTop nav, styled "Reset all" confirm, edit-job scroll-to-banner
-- [ ] **Phase 35: Accessibility Tier 4** — Settings arrow-key tabs, form-error ARIA association, icon-button labels, FilamentSelector name, tag-chip target size, AA cleanups
+- [x] **Phase 34: Live papercut fixes** — PWA Reload reliability, ScrollToTop nav, styled "Reset all" confirm, edit-job scroll-to-banner
+- [x] **Phase 35: Accessibility Tier 4** — Settings arrow-key tabs, form-error ARIA association, icon-button labels, FilamentSelector name, tag-chip target size, AA cleanups
 - [ ] **Phase 36: Performance Tier 5** — lift per-row `useQuotes()`, `materialsById` Map, pricing `useEffect` double-render fix
 - [ ] **Phase 37: Code health (STRETCH)** — index-mutation immutability fixes + minor consistency cleanups (droppable if timeboxed)
 
