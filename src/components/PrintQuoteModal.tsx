@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useId, useMemo, useState, useCallback } from 'react';
 import type { PrintJob, UserProfile, Quote, Customer, ShippingConfig } from '../types';
 import { useQuotes, useCustomers } from '../hooks/useDatabase';
 import { useCustomerPicker, PICKER_VISIBLE_LIMIT } from '../hooks/useCustomerPicker';
@@ -79,6 +79,12 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ─── Stable ids for label/input pairing (A11Y C-02) ───────────────────────
+  const quoteCustomerNameId = useId();
+  const quoteCustomerEmailId = useId();
+  const quoteCustomerCompanyId = useId();
+  const quoteCustomerAddressId = useId();
 
   // ─── Picker integration (plan 22-03 / HYG-08) ────────────────────────────
   // handlePickCustomer fills the 4 quote-customer form fields AND captures
@@ -330,8 +336,9 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
           {/* 4 customer fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Name</label>
+              <label htmlFor={quoteCustomerNameId} className="block text-xs text-slate-400 mb-1">Name</label>
               <Input
+                id={quoteCustomerNameId}
                 type="text"
                 value={quoteCustomerName}
                 onChange={(e) => setQuoteCustomerName(e.target.value)}
@@ -339,8 +346,9 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Email</label>
+              <label htmlFor={quoteCustomerEmailId} className="block text-xs text-slate-400 mb-1">Email</label>
               <Input
+                id={quoteCustomerEmailId}
                 type="email"
                 value={quoteCustomerEmail}
                 onChange={(e) => setQuoteCustomerEmail(e.target.value)}
@@ -348,8 +356,9 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Company</label>
+              <label htmlFor={quoteCustomerCompanyId} className="block text-xs text-slate-400 mb-1">Company</label>
               <Input
+                id={quoteCustomerCompanyId}
                 type="text"
                 value={quoteCustomerCompany}
                 onChange={(e) => setQuoteCustomerCompany(e.target.value)}
@@ -357,8 +366,9 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Address</label>
+              <label htmlFor={quoteCustomerAddressId} className="block text-xs text-slate-400 mb-1">Address</label>
               <Textarea
+                id={quoteCustomerAddressId}
                 rows={2}
                 value={quoteCustomerAddress}
                 onChange={(e) => setQuoteCustomerAddress(e.target.value)}
@@ -421,7 +431,7 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
 
           {/* Error block */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-sm text-red-400">
+            <div role="alert" className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-sm text-red-400">
               {error}
             </div>
           )}
