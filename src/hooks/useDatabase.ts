@@ -5,7 +5,7 @@ import type { Asset, AssetCategory, PrinterConfig, PrinterInstance, ElectricityC
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 import { DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from '../db/backfill';
-import { applyJobStockEvents, removeJobStockEvents } from '../db/stockEventsWriter';
+import { upsertJobStockEvents, removeJobStockEvents } from '../db/stockEventsWriter';
 import { isPreservedOnMaterialReset, isCustomCategory } from '../utils/assetCategories';
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
@@ -804,29 +804,30 @@ export function useJobs() {
   }, [jobs === undefined]);
 
   const addJob = useCallback(async (job: PrintJob) => {
-    // Save the job first, then deduct stock as a separate write. Inventory is
-    // additive — a stock-deduction failure must NEVER roll back the job the user
-    // just saved (decision #4 / V1.8_PLAN: two-write tolerance, never block save).
-    // Deductions are keyed by job id, so the next save self-heals any miss.
-    await db.jobs.add(job);
-    try {
-      await applyJobStockEvents(db, job, new Date());
-    } catch (err) {
-      console.error('stock deduction failed (job saved):', err);
-    }
+    // v1.9 DATA-03: write the job AND its stock deduction in ONE rw transaction
+    // so they commit or roll back together. The prior code wrote the job, then
+    // deducted stock in a SEPARATE transaction — a crash/close between the two
+    // awaits left inventory overstated with no boot-reconcile to self-heal.
+    // upsertJobStockEvents resolves the tx-bound stockEvents table, so the
+    // deduction is atomic with the job write. Deductions are keyed by job id, so
+    // a later edit replaces this set rather than stacking.
+    const now = new Date();
+    await db.transaction('rw', db.jobs, db.stockEvents, async () => {
+      await db.jobs.add(job);
+      await upsertJobStockEvents(db, job, now);
+    });
   }, []);
 
   const updateJob = useCallback(async (job: PrintJob) => {
+    // v1.9 DATA-03: job write + stock re-derivation in ONE rw transaction (see
+    // addJob). Re-deriving is keyed by job id, so an edit REPLACES the prior
+    // deduction rather than stacking.
     const updated = { ...job, updatedAt: new Date() };
-    await db.jobs.put(updated);
-    // Re-derive this job's stock events from its current saved state — keyed by
-    // job id, so an edit replaces the prior deduction rather than stacking.
-    // Isolated from the job write for the same reason as addJob.
-    try {
-      await applyJobStockEvents(db, updated, new Date());
-    } catch (err) {
-      console.error('stock deduction failed (job saved):', err);
-    }
+    const now = new Date();
+    await db.transaction('rw', db.jobs, db.stockEvents, async () => {
+      await db.jobs.put(updated);
+      await upsertJobStockEvents(db, updated, now);
+    });
   }, []);
 
   const deleteJob = useCallback(async (id: string) => {

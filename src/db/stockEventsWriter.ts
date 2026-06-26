@@ -8,6 +8,14 @@
 // All writers take the Dexie instance and resolve the stockEvents table via
 // db.table(...). Inside an active db.transaction(...) Dexie returns the
 // transaction-bound table, so upsert/remove run atomically with the job write.
+//
+// ATOMICITY CONTRACT (v1.9 DATA-03): atomicity with the job write only holds
+// when the CALLER opens a single rw transaction over both `jobs` and
+// `stockEvents` and calls `upsertJobStockEvents` inside it (the useJobs
+// add/update path does exactly this). The standalone `applyJobStockEvents`
+// below opens its OWN transaction over `stockEvents` only — it is for
+// callers/tests that are NOT already inside a job-write transaction, and it is
+// therefore NOT atomic with any external job write.
 // ---------------------------------------------------------------------------
 import Dexie from 'dexie';
 import type { StockEvent } from '../types';
