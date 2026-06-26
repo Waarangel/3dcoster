@@ -15,6 +15,17 @@ export interface Announcement {
 // to announcement.json on main propagate within jsDelivr's cache window
 // (up to ~12h); force instantly by hitting
 // https://purge.jsdelivr.net/gh/Waarangel/3dcoster@main/announcement.json
+//
+// SECURITY TRADEOFF (v1.9 hardening, audit M-2 — intentionally NOT pinned):
+// This URL points at the *mutable* `@main` ref rather than an immutable commit
+// SHA. Pinning to a SHA would require a redeploy to publish each notice, which
+// breaks the deliberate "edit announcement.json on main, no redeploy" workflow.
+// The integrity risk this accepts is bounded: the payload is validated by
+// parseAnnouncement() (strict shape check), its message/ctaLabel are rendered
+// as escaped React text (never dangerouslySetInnerHTML), and its `url` must
+// pass isSafeHttpUrl(). So even a compromised repo/CDN can at worst surface a
+// phishing CTA to an http(s) destination — no script execution, no XSS. That
+// residual risk is accepted in exchange for the zero-deploy publishing flow.
 export const ANNOUNCEMENT_URL =
   'https://cdn.jsdelivr.net/gh/Waarangel/3dcoster@main/announcement.json';
 
