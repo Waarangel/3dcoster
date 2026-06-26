@@ -233,14 +233,33 @@ describe('CustomerLibrary — CL-01 sort lock (Test 3)', () => {
 });
 
 describe('CustomerLibrary — delete confirmation flow (Test 4)', () => {
-  it('clicking Delete → confirm → calls onDeleteCustomer with the customer id', async () => {
+  // A11Y C-03: window.confirm was replaced with the shared <ConfirmModal>.
+  // The destructive onDeleteCustomer now fires only when the user clicks the
+  // danger "Delete" button INSIDE the modal — never on row-button click alone,
+  // and never on mount (no auto-confirm).
+
+  // Locate the danger confirm button rendered by ConfirmModal's footer. It is
+  // the `variant="danger"` Button with visible text "Delete". (The row trigger
+  // is an icon-only button with aria-label "Delete {name}", so filter those out.)
+  function findConfirmButton(): HTMLButtonElement | null {
+    const buttons = Array.from(document.body.querySelectorAll<HTMLButtonElement>('button'));
+    return (
+      buttons.find(
+        b => (b.textContent ?? '').trim() === 'Delete' && !b.getAttribute('aria-label'),
+      ) ?? null
+    );
+  }
+
+  function findCancelButton(): HTMLButtonElement | null {
+    const buttons = Array.from(document.body.querySelectorAll<HTMLButtonElement>('button'));
+    return buttons.find(b => (b.textContent ?? '').trim() === 'Cancel') ?? null;
+  }
+
+  it('clicking Delete row → confirm in modal → calls onDeleteCustomer with the customer id', async () => {
     const customer = makeCustomer({ id: 'c-del', name: 'Delete Me', email: 'del@example.com' });
     await renderLibrary({ customers: [customer] });
 
-    // Stub window.confirm to auto-confirm
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-    // Find and click the Delete button. CustomerRowItem now renders an
+    // Find and click the row Delete button. CustomerRowItem renders an
     // icon-only DeleteButton labelled `aria-label="Delete {name}"`.
     const deleteBtn = document.body.querySelector(
       `button[aria-label="Delete ${customer.name}"]`
@@ -249,25 +268,29 @@ describe('CustomerLibrary — delete confirmation flow (Test 4)', () => {
 
     await act(async () => {
       deleteBtn!.click();
-      // Allow async db.sales.filter().count() to resolve
+      // Allow async db.sales.filter().count() to resolve before the modal opens
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    // window.confirm should have been called
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    // Modal is open but the destructive callback has NOT fired yet.
+    expect(onDeleteCustomerSpy).not.toHaveBeenCalled();
+
+    const confirmBtn = findConfirmButton();
+    expect(confirmBtn).not.toBeNull();
+
+    await act(async () => {
+      confirmBtn!.click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     // onDeleteCustomer should be called with the customer's id
     expect(onDeleteCustomerSpy).toHaveBeenCalledTimes(1);
     expect(onDeleteCustomerSpy.mock.calls[0][0]).toBe('c-del');
-
-    confirmSpy.mockRestore();
   });
 
-  it('dismissing the confirmation does NOT call onDeleteCustomer', async () => {
+  it('dismissing the confirmation (Cancel) does NOT call onDeleteCustomer', async () => {
     const customer = makeCustomer({ id: 'c-keep', name: 'Keep Me' });
     await renderLibrary({ customers: [customer] });
-
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     const deleteBtn = document.body.querySelector(
       `button[aria-label="Delete ${customer.name}"]`
@@ -279,10 +302,15 @@ describe('CustomerLibrary — delete confirmation flow (Test 4)', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
-    expect(onDeleteCustomerSpy).not.toHaveBeenCalled();
+    const cancelBtn = findCancelButton();
+    expect(cancelBtn).not.toBeNull();
 
-    confirmSpy.mockRestore();
+    await act(async () => {
+      cancelBtn!.click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(onDeleteCustomerSpy).not.toHaveBeenCalled();
   });
 });
 

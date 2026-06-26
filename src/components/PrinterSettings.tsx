@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { PrinterConfig, PrinterInstance, PrintJob, Currency } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast, FieldWarning } from './ui';
+import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast, FieldWarning, ConfirmModal } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { printerLifespanWarning } from '../utils/inputSanity';
 import { PrinterIcon } from './ui/icons';
@@ -81,6 +81,9 @@ export function PrinterSettings({
   const [newInstanceRecoveryMonths, setNewInstanceRecoveryMonths] = useState(12);
   const [newInstanceMonthlyHours, setNewInstanceMonthlyHours] = useState(40);
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null);
+  // A11Y C-03: pending destructive delete — replaces window.confirm with the
+  // shared ConfirmModal. Holds the instance id awaiting explicit confirmation.
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Custom printer-model form (lets users add a model not in the default catalog)
   const [addingCustomModel, setAddingCustomModel] = useState(false);
@@ -90,6 +93,21 @@ export function PrinterSettings({
   const [customModelLifespan, setCustomModelLifespan] = useState<number>(5000);
 
   const toast = useToast();
+
+  // ─── Stable ids for label/input pairing (A11Y H-03) ───────────────────────
+  // Add-form fields (single instance of the form).
+  const addNicknameId = useId();
+  const addStartHoursId = useId();
+  const addCustomNameId = useId();
+  const addCustomWattageId = useId();
+  const addCustomPriceId = useId();
+  const addCustomLifespanId = useId();
+  const addPurchasePriceId = useId();
+  const addRecoveryMonthsId = useId();
+  const addMonthlyHoursId = useId();
+  // Inline-edit form renders once per instance row — derive per-row ids from a
+  // single stable base + the instance id so each label/input pair is unique.
+  const editIdBase = useId();
 
   const canSaveCustomModel =
     customModelName.trim() !== '' && customModelWattage > 0 && customModelPrice > 0 && customModelLifespan > 0;
@@ -163,8 +181,12 @@ export function PrinterSettings({
   };
 
   const handleDeleteInstance = (id: string) => {
-    if (window.confirm('Delete this printer instance? Print history will be preserved in jobs.')) {
-      onDeleteInstance(id);
+    setPendingDeleteId(id);
+  };
+
+  const confirmDeleteInstance = () => {
+    if (pendingDeleteId) {
+      onDeleteInstance(pendingDeleteId);
     }
   };
 
@@ -192,8 +214,9 @@ export function PrinterSettings({
             <h3 className="text-sm font-medium text-white mb-3">Add New Printer</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nickname *</label>
+                <label htmlFor={addNicknameId} className="block text-xs text-slate-400 mb-1">Nickname *</label>
                 <Input
+                  id={addNicknameId}
                   type="text"
                   value={newInstanceNickname}
                   onChange={e => setNewInstanceNickname(e.target.value)}
@@ -217,8 +240,9 @@ export function PrinterSettings({
                 </Select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Starting Hours</label>
+                <label htmlFor={addStartHoursId} className="block text-xs text-slate-400 mb-1">Starting Hours</label>
                 <Input
+                  id={addStartHoursId}
                   type="number"
                   compact
                   value={newInstanceHours}
@@ -235,8 +259,9 @@ export function PrinterSettings({
                 <p className="text-xs text-slate-400 mb-3">Add a printer that isn't in the list. It'll be saved and selectable for any printer you add.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Model Name *</label>
+                    <label htmlFor={addCustomNameId} className="block text-xs text-slate-400 mb-1">Model Name *</label>
                     <Input
+                      id={addCustomNameId}
                       type="text"
                       value={customModelName}
                       onChange={e => setCustomModelName(e.target.value)}
@@ -244,11 +269,12 @@ export function PrinterSettings({
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <label htmlFor={addCustomWattageId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                       <span>Avg Wattage (W) *</span>
                       <InfoTooltip text="Average power draw while printing — NOT the PSU/peak rating. Most FDM printers average ~100–180W in steady state (the heat-up spike is brief)." />
                     </label>
                     <Input
+                      id={addCustomWattageId}
                       type="number"
                       compact
                       value={customModelWattage || ''}
@@ -257,8 +283,9 @@ export function PrinterSettings({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Price / MSRP ($) *</label>
+                    <label htmlFor={addCustomPriceId} className="block text-xs text-slate-400 mb-1">Price / MSRP ($) *</label>
                     <Input
+                      id={addCustomPriceId}
                       type="number"
                       compact
                       value={customModelPrice || ''}
@@ -267,11 +294,12 @@ export function PrinterSettings({
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <label htmlFor={addCustomLifespanId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                       <span>Expected Lifespan (hrs) *</span>
                       <InfoTooltip text="Estimated print-hours of useful service life, used to spread the machine cost over jobs. ~4000–10000h is typical." />
                     </label>
                     <Input
+                      id={addCustomLifespanId}
                       type="number"
                       compact
                       value={customModelLifespan || ''}
@@ -297,11 +325,12 @@ export function PrinterSettings({
               <h4 className="text-xs font-medium text-slate-300 mb-3">Cost Recovery (Break-Even)</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <label htmlFor={addPurchasePriceId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                     <span>Purchase Price ($)</span>
                     <InfoTooltip text="What you paid (may differ from MSRP)" />
                   </label>
                   <Input
+                    id={addPurchasePriceId}
                     type="number"
                     compact
                     value={newInstancePurchasePrice ?? selectedPrinterConfig?.purchasePrice ?? ''}
@@ -310,11 +339,12 @@ export function PrinterSettings({
                   />
                 </div>
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <label htmlFor={addRecoveryMonthsId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                     <span>Recovery Period</span>
                     <InfoTooltip text="Target months to recover your investment via printed-job sales" />
                   </label>
                   <Select
+                    id={addRecoveryMonthsId}
                     value={newInstanceRecoveryMonths}
                     onChange={e => setNewInstanceRecoveryMonths(parseInt(e.target.value))}
                   >
@@ -327,11 +357,12 @@ export function PrinterSettings({
                   </Select>
                 </div>
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <label htmlFor={addMonthlyHoursId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                     <span>Monthly Print Hours</span>
                     <InfoTooltip text="Expected hours/month — used to estimate cost recovery" />
                   </label>
                   <Input
+                    id={addMonthlyHoursId}
                     type="number"
                     compact
                     value={newInstanceMonthlyHours}
@@ -423,16 +454,18 @@ export function PrinterSettings({
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-xs text-slate-400 mb-1">Nickname</label>
+                          <label htmlFor={`${editIdBase}-nickname-${instance.id}`} className="block text-xs text-slate-400 mb-1">Nickname</label>
                           <Input
+                            id={`${editIdBase}-nickname-${instance.id}`}
                             type="text"
                             value={instance.nickname}
                             onChange={e => onUpdateInstance({ ...instance, nickname: e.target.value })}
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-slate-400 mb-1">Print Hours</label>
+                          <label htmlFor={`${editIdBase}-printhours-${instance.id}`} className="block text-xs text-slate-400 mb-1">Print Hours</label>
                           <Input
+                            id={`${editIdBase}-printhours-${instance.id}`}
                             type="number"
                             compact
                             value={instance.printHours}
@@ -440,8 +473,9 @@ export function PrinterSettings({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
+                          <label htmlFor={`${editIdBase}-price-${instance.id}`} className="block text-xs text-slate-400 mb-1">Purchase Price ($)</label>
                           <Input
+                            id={`${editIdBase}-price-${instance.id}`}
                             type="number"
                             compact
                             value={instance.actualPurchasePrice ?? config?.purchasePrice ?? ''}
@@ -451,8 +485,9 @@ export function PrinterSettings({
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-xs text-slate-400 mb-1">Recovery Period</label>
+                          <label htmlFor={`${editIdBase}-recovery-${instance.id}`} className="block text-xs text-slate-400 mb-1">Recovery Period</label>
                           <Select
+                            id={`${editIdBase}-recovery-${instance.id}`}
                             value={instance.recoveryMonths ?? 12}
                             onChange={e => onUpdateInstance({ ...instance, recoveryMonths: parseInt(e.target.value) })}
                           >
@@ -465,8 +500,9 @@ export function PrinterSettings({
                           </Select>
                         </div>
                         <div>
-                          <label className="block text-xs text-slate-400 mb-1">Monthly Print Hours</label>
+                          <label htmlFor={`${editIdBase}-monthly-${instance.id}`} className="block text-xs text-slate-400 mb-1">Monthly Print Hours</label>
                           <Input
+                            id={`${editIdBase}-monthly-${instance.id}`}
                             type="number"
                             compact
                             value={instance.estimatedMonthlyPrintHours ?? 40}
@@ -531,6 +567,16 @@ export function PrinterSettings({
           </div>
         )}
       </div>
+
+      {/* Destructive delete confirm (A11Y C-03 — replaces window.confirm) */}
+      <ConfirmModal
+        isOpen={pendingDeleteId !== null}
+        title="Delete printer"
+        body="Delete this printer instance? Print history will be preserved in jobs."
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteInstance}
+        onClose={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

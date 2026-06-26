@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import type { CSSProperties, SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { Customer } from '../types';
-import { Button, EditButton, DeleteButton, Input, EmptyState, Skeleton } from './ui';
+import { Button, EditButton, DeleteButton, Input, EmptyState, Skeleton, ConfirmModal } from './ui';
 import { SearchIcon } from './ui/icons';
 import { CustomerEditModal } from './CustomerEditModal';
 import { CustomerCsvImportModal } from './CustomerCsvImportModal';
@@ -111,6 +111,10 @@ export function CustomerLibrary({
   // button so TypeScript's `noUnusedLocals` is satisfied AND the visual state
   // (button "depressed" while modal is open) is already wired for Plan 03.
   const [showCsvImport, setShowCsvImport] = useState(false);
+  // A11Y C-03: pending destructive delete — replaces window.confirm with the
+  // shared ConfirmModal. The buyer + scope-aware message are computed at click
+  // time (async sales count) and held here until the user confirms/cancels.
+  const [pendingDelete, setPendingDelete] = useState<{ customer: Customer; message: string } | null>(null);
 
   // Sort: lastUsedAt desc with undefined (never-used) FIRST; tiebreaker name asc.
   // (UI-SPEC §2 — never-used floats so brand-new records don't disappear below regulars.)
@@ -188,10 +192,13 @@ export function CustomerLibrary({
     const message = n === 0
       ? `Delete ${display}? They have no past sales linked.`
       : `Delete ${display}? They appear in ${n} past sales — those sales will keep the buyer details on record (this only removes them from your library).`;
-    if (window.confirm(message)) {
-      await onDeleteCustomer(customer.id);
-    }
-  }, [onDeleteCustomer]);
+    setPendingDelete({ customer, message });
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    await onDeleteCustomer(pendingDelete.customer.id);
+  }, [pendingDelete, onDeleteCustomer]);
 
   // Memoized listRowProps so <List> doesn't see a new object per render.
   const listRowProps = useMemo<CustomerRowPropsForList>(
@@ -240,6 +247,7 @@ export function CustomerLibrary({
             variant="ghost"
             btnSize="sm"
             onClick={() => setSearchQuery('')}
+            aria-label="Clear search"
             className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-lg leading-none"
           >
             {'×'}
@@ -296,6 +304,16 @@ export function CustomerLibrary({
         existingCustomers={customers}
         onImportCustomers={onBulkImportCustomers}
         onClose={() => setShowCsvImport(false)}
+      />
+
+      {/* Destructive delete confirm (A11Y C-03 — replaces window.confirm) */}
+      <ConfirmModal
+        isOpen={pendingDelete !== null}
+        title="Delete customer"
+        body={pendingDelete?.message ?? ''}
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onClose={() => setPendingDelete(null)}
       />
     </div>
   );
