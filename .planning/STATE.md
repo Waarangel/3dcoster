@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
-status: complete
-stopped_at: Completed 37-02-PLAN.md — HYG-12.2 Promise.all batch + HYG-12.3 C1+C3 cast narrowing; 760 tests green + tsc -b clean
-last_updated: "2026-06-26T09:25:00Z"
-last_activity: 2026-06-26 -- Phase 37 Plan 02 complete (HYG-12.2 + HYG-12.3); Phase 37 COMPLETE; v1.9 milestone COMPLETE
+status: completed
+stopped_at: Completed 37-02-PLAN.md — HYG-12.2 + HYG-12.3; Phase 37 + v1.9 milestone complete. 760 tests green + tsc -b clean.
+last_updated: "2026-06-26T13:48:21.389Z"
+last_activity: 2026-06-26 -- Phase 37 marked complete
 progress:
   total_phases: 4
   completed_phases: 4
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 37 (code-health-stretch) — EXECUTING
+Phase: 37 — COMPLETE
 Plan: 2 of 2 (COMPLETE)
-Status: Phase 37 Complete — v1.9 milestone complete
-Last activity: 2026-06-26 -- Phase 37 Plan 02 complete (HYG-12.2 + HYG-12.3); all 4 phases done
+Status: Phase 37 complete
+Last activity: 2026-06-26 -- Phase 37 marked complete
 
 ## v1.9 Phase Order Reference
 
