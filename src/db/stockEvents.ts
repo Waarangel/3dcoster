@@ -48,6 +48,14 @@ export function buildJobStockEvents(
     consumed.set(f.filamentId, (consumed.get(f.filamentId) ?? 0) + f.grams);
   }
 
+  // UNIT BASIS (v1.9 DATA-05 — verified, no normalization needed): a non-filament
+  // material consumes `MaterialUsage.quantity`, which is denominated in the asset's
+  // OWN unit — the same unit `costPerUnit` is priced in (cost = quantity × costPerUnit,
+  // CostCalculator.tsx) and the same unit the Asset Library "stock on hand" field sets
+  // for non-filament (stockUnit().perUnit === 1 there, so the entered value stores 1:1).
+  // Filament is the only special case: it is bought/set in spools but consumed in grams
+  // (perUnit = unitsPerPackage on the set side; grams here). Both sides therefore agree —
+  // grams for filament, native units otherwise — so deduction and set-level never drift.
   const addUsage = (list: MaterialUsage[] | undefined) => {
     for (const m of list ?? []) {
       if (!m.materialId || !(m.quantity > 0)) continue;
