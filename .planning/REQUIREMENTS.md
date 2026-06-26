@@ -27,7 +27,7 @@
 
 - [x] **PERF-09**: `useQuotes()` is lifted out of per-row components to the `JobsManager` parent (passed as a `quotesForJob` prop), eliminating one live Dexie subscription per visible job row. *(Audit 5.1.)*
 - [x] **PERF-10**: `getFilamentName` resolves via a `materialsById` Map instead of `O(N×M)` `Array.find` per render. *(Audit 5.2.)*
-- [x] **PERF-11**: The pricing `useEffect` no longer double-renders per keystroke — moved to an event-handler pattern or trimmed deps. *(Audit 5.3.)* — closed in 36-02 (dep array trimmed to [trueCost, lastEdited]; eslint-disable with PERF-11 rationale).
+- [~] **PERF-11**: The pricing `useEffect` no longer double-renders per keystroke — moved to an event-handler pattern or trimmed deps. *(Audit 5.3.)* — **DEFERRED to v2.0.** Implemented in 36-02 (dep trim) but **reverted in the v1.9 release review**: the trim desynced profit/margin on consecutive same-field edits (a real pricing regression). The double-render it removed is benign (self-terminating second pass); the correct fix (derive-in-handler) belongs with the v2.0 CostCalculator God-component split (audit 6.1), not a hardening release.
 
 ### Code health — stretch (HYG)
 
@@ -71,7 +71,7 @@
 | A11Y-15 | Phase 35 — Accessibility Tier 4 | Complete |
 | PERF-09 | Phase 36 — Performance Tier 5 | Complete |
 | PERF-10 | Phase 36 — Performance Tier 5 | Complete |
-| PERF-11 | Phase 36 — Performance Tier 5 | Complete (36-02) |
+| PERF-11 | Phase 36 — Performance Tier 5 | Deferred to v2.0 (36-02 reverted in review) |
 | HYG-11 | Phase 37 — Code health (STRETCH) | Complete (37-01) |
 | HYG-12 | Phase 37 — Code health (STRETCH) | Complete (37-02) |
 
