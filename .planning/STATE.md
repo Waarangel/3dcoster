@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
-status: executing
-stopped_at: Completed 36-02-PLAN.md — PERF-11 pricing useEffect dep trim to [trueCost, lastEdited]; 744 tests green + tsc -b clean + lint clean
-last_updated: "2026-06-26T09:00:00.000Z"
-last_activity: 2026-06-26
+status: completed
+stopped_at: Completed 36-02-PLAN.md — PERF-11 pricing useEffect dep trim; 744 tests green + tsc -b clean + lint clean
+last_updated: "2026-06-26T12:57:49.163Z"
+last_activity: 2026-06-26 -- Phase 36 marked complete
 progress:
   total_phases: 4
   completed_phases: 3
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 36 (performance-tier-5) — COMPLETE
+Phase: 36 — COMPLETE
 Plan: 2 of 2 — DONE
-Status: Phase complete; ready for Phase 37 (STRETCH) or milestone close
-Last activity: 2026-06-26
+Status: Phase 36 complete
+Last activity: 2026-06-26 -- Phase 36 marked complete
 
 ## v1.9 Phase Order Reference
 
