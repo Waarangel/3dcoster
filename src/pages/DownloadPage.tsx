@@ -119,7 +119,7 @@ export function DownloadPage() {
       <Header />
 
       {/* Download Content */}
-      <section className="pt-32 pb-20 px-6">
+      <main className="pt-32 pb-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-white mb-4">Download 3DCoster</h1>
@@ -330,7 +330,7 @@ export function DownloadPage() {
             </div>
           </div>
         </div>
-      </section>
+      </main>
 
       <Footer />
     </div>

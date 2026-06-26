@@ -7,6 +7,7 @@ export function FeaturesPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <Header />
 
+      <main>
       {/* Hero */}
       <section className="pt-32 pb-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
@@ -452,6 +453,7 @@ export function FeaturesPage() {
           </div>
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>

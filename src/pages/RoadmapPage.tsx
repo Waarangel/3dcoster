@@ -50,6 +50,7 @@ export function RoadmapPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <Header />
 
+      <main>
       {/* Hero */}
       <section className="pt-32 pb-12 px-6">
         <div className="max-w-4xl mx-auto text-center">
@@ -131,6 +132,7 @@ export function RoadmapPage() {
           </div>
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>

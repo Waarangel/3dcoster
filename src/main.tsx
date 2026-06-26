@@ -23,7 +23,11 @@ const ChangelogPage = lazyWithRetry(() => import('./pages/ChangelogPage.tsx').th
 // Page loading fallback
 function PageLoading() {
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+    <div
+      role="status"
+      aria-label="Loading page"
+      className="min-h-screen bg-slate-900 text-white flex items-center justify-center"
+    >
       <div className="text-slate-400">Loading...</div>
     </div>
   )

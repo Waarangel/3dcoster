@@ -38,11 +38,11 @@ export function FeedbackPage() {
       <Header />
 
       {/* Content */}
-      <section className="pt-32 pb-20 px-6">
+      <main className="pt-32 pb-20 px-6">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
             <div className="w-16 h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </div>
@@ -61,12 +61,13 @@ export function FeedbackPage() {
               </div>
               <h2 className="text-xl font-semibold text-white mb-2">Thanks for your feedback!</h2>
               <p className="text-slate-400 mb-6">We'll review it and get back to you if needed.</p>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setStatus('idle')}
-                className="text-blue-400 hover:text-blue-300 transition-colors"
+                className="text-blue-400 hover:text-blue-300"
               >
                 Send another message
-              </button>
+              </Button>
             </Card>
           ) : (
             <Card padding="lg">
@@ -136,7 +137,7 @@ export function FeedbackPage() {
             </Card>
           )}
         </div>
-      </section>
+      </main>
 
       <Footer />
     </div>
