@@ -85,7 +85,11 @@ export function UpdateBanner() {
   if (!updateInfo || dismissed) return null;
 
   return (
-    <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-center gap-4 text-sm">
+    <div
+      role="status"
+      aria-live="polite"
+      className="bg-blue-600 text-white px-4 py-2 flex items-center justify-center gap-4 text-sm"
+    >
       <span>
         A new version ({updateInfo.version}) is available!
       </span>
@@ -104,7 +108,7 @@ export function UpdateBanner() {
         className="text-white/80 hover:text-white"
         aria-label="Dismiss"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </Button>

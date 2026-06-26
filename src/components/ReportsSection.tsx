@@ -196,8 +196,12 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable }: Report
         )}
       </div>
 
-      {/* Live preview */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900/40 p-4 mb-4">
+      {/* Live preview — M-06: announce recomputed totals when the range changes */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="rounded-lg border border-slate-700 bg-slate-900/40 p-4 mb-4"
+      >
         <div className="text-xs text-slate-500 mb-2">{range.label}</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 text-sm">
           <Stat label="Sales" value={`${data.saleCount} (${data.itemCount} items)`} />

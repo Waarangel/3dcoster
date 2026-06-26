@@ -29,6 +29,14 @@ const TRANSITION_MS = 500;
 export function ImageCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  // H-05 (WCAG 2.2.2): a user-controllable pause. Defaults to playing, but if
+  // the user prefers reduced motion we start paused and never auto-advance.
+  const [prefersReducedMotion] = useState(() =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  const [isPaused, setIsPaused] = useState(prefersReducedMotion);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const goNext = useCallback(() => {
@@ -40,7 +48,9 @@ export function ImageCarousel() {
   }, []);
 
   useEffect(() => {
-    if (isHovered) {
+    // Suspend auto-advance while hovered, explicitly paused, or when the user
+    // prefers reduced motion (WCAG 2.2.2 — moving content must be pausable).
+    if (isHovered || isPaused || prefersReducedMotion) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -53,7 +63,11 @@ export function ImageCarousel() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isHovered, goNext]);
+  }, [isHovered, isPaused, prefersReducedMotion, goNext]);
+
+  // The auto-advance can't run under reduced-motion, so don't offer a Play
+  // button that would do nothing — the toggle only appears when motion is OK.
+  const showPauseToggle = !prefersReducedMotion;
 
   return (
     <div
@@ -101,7 +115,7 @@ export function ImageCarousel() {
         className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full backdrop-blur-sm border border-slate-700/50 opacity-0 group-hover:opacity-100 bg-slate-900/70 hover:bg-slate-900/90 text-white"
         aria-label="Previous screenshot"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </Button>
@@ -114,27 +128,48 @@ export function ImageCarousel() {
         className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full backdrop-blur-sm border border-slate-700/50 opacity-0 group-hover:opacity-100 bg-slate-900/70 hover:bg-slate-900/90 text-white"
         aria-label="Next screenshot"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </Button>
 
-      {/* Dot indicators */}
-      <div className="flex items-center justify-center gap-2 mt-4">
-        {images.map((_, index) => (
-          // allow-raw-html: dot indicator — dynamic width (w-6/w-2.5) + no children, no Button variant covers it
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-              index === currentIndex
-                ? 'bg-blue-400 w-6'
-                : 'bg-slate-600 hover:bg-slate-500 w-2.5'
-            }`}
-            aria-label={`Go to screenshot ${index + 1}`}
-            aria-current={index === currentIndex ? 'true' : undefined}
-          />
-        ))}
+      {/* Dot indicators + pause/play toggle (H-05) */}
+      <div className="flex items-center justify-center gap-3 mt-4">
+        <div className="flex items-center gap-2">
+          {images.map((_, index) => (
+            // allow-raw-html: dot indicator — dynamic width (w-6/w-2.5) + no children, no Button variant covers it
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                index === currentIndex
+                  ? 'bg-blue-400 w-6'
+                  : 'bg-slate-600 hover:bg-slate-500 w-2.5'
+              }`}
+              aria-label={`Go to screenshot ${index + 1}`}
+              aria-current={index === currentIndex ? true : undefined}
+            />
+          ))}
+        </div>
+        {showPauseToggle && (
+          <Button
+            variant="ghost"
+            btnSize="sm"
+            onClick={() => setIsPaused((p) => !p)}
+            aria-label={isPaused ? 'Play screenshot slideshow' : 'Pause screenshot slideshow'}
+            className="w-7 h-7 rounded-full text-slate-400 hover:text-white"
+          >
+            {isPaused ? (
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+              </svg>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );

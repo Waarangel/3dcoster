@@ -69,6 +69,7 @@ export function Header() {
           className="md:hidden w-11 h-11 rounded-lg"
           aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-nav-menu"
         >
           {mobileMenuOpen ? (
             /* X close icon */
@@ -79,6 +80,7 @@ export function Header() {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
+              aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -91,6 +93,7 @@ export function Header() {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
+              aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -101,6 +104,7 @@ export function Header() {
       {/* Mobile menu dropdown */}
       <div
         ref={menuRef}
+        id="mobile-nav-menu"
         className={`md:hidden overflow-hidden transition-all duration-200 ease-in-out ${
           mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
         }`}

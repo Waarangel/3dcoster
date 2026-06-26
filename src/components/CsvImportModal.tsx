@@ -275,12 +275,21 @@ function UploadStep({
         </div>
       )}
 
-      {/* Drop zone */}
+      {/* Drop zone — M-03: keyboard-operable (role=button + Enter/Space) */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Upload a CSV file: drop a file here or press Enter to browse"
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
         className={`
           cursor-pointer border-2 border-dashed rounded-lg p-8 text-center transition-colors
           ${isDragOver
@@ -289,7 +298,7 @@ function UploadStep({
           }
         `}
       >
-        <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
         <p className="text-sm font-medium">Drop .csv file here or click to browse</p>
@@ -487,6 +496,7 @@ function RowItem({ row, isSelected, onToggle }: { row: ParsedRow; isSelected: bo
         checked={isSelected}
         onChange={onToggle}
         disabled={hasErrors}
+        aria-label={`Import row ${row.rowNumber}: ${row.data.name || '(unnamed)'}`}
         className="mt-0.5 accent-blue-500 disabled:opacity-30"
       />
 
