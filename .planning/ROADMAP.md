@@ -106,7 +106,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 - [x] 35-01-PLAN.md — SettingsModal: roving-tabindex arrow-key tab nav + panel focus (A11Y-10, WCAG Critical) + marketplace icon-button labels (A11Y-12)
 - [x] 35-02-PLAN.md — AssetLibrary: form-error ARIA association (A11Y-11, WCAG Critical) + asset-row icon labels (A11Y-12) + category role=group + SortIndicator aria-hidden (A11Y-15)
 - [x] 35-03-PLAN.md — FilamentSelector: trigger label association + brand-submenu aria-label (A11Y-13)
-- [ ] 35-04-PLAN.md — JobsManager: 24×24 tag-chip hit target + focus ring (A11Y-14) + break-even role=progressbar (A11Y-15)
+- [x] 35-04-PLAN.md — JobsManager: 24×24 tag-chip hit target + focus ring (A11Y-14) + break-even role=progressbar (A11Y-15)
 - [ ] 35-05-PLAN.md — App.tsx + InfoTooltip: main tabpanel tabIndex + back-to-site link label + InfoTooltip concise label/Escape (A11Y-15)
 **UI hint**: yes
 
@@ -137,7 +137,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | Phase                                   | Milestone | Plans | Status      | Completed |
 | --------------------------------------- | --------- | ----- | ----------- | --------- |
 | 34. Live papercut fixes                 | v1.9      | 2/2 | Complete   | 2026-06-25 |
-| 35. Accessibility Tier 4                | v1.9      | 3/5 | In Progress|  |
+| 35. Accessibility Tier 4                | v1.9      | 4/5 | In Progress|  |
 | 36. Performance Tier 5                  | v1.9      | 0/?   | Not started | -         |
 | 37. Code health (STRETCH)               | v1.9      | 0/?   | Not started | -         |
 
