@@ -16,7 +16,7 @@
 
 ### Accessibility — Tier 4 (A11Y)
 
-- [ ] **A11Y-10**: Settings inner tabs support Left/Right arrow-key navigation, and focus moves to the panel on tab switch. *(Audit 4.1, WCAG 2.4.3.)*
+- [x] **A11Y-10**: Settings inner tabs support Left/Right arrow-key navigation, and focus moves to the panel on tab switch. *(Audit 4.1, WCAG 2.4.3.)* — closed in 35-01 (roving tabindex + Home/End + focus-to-panel).
 - [ ] **A11Y-11**: Form errors are programmatically associated — error containers use `role="alert"`; failing inputs set `aria-invalid` and `aria-describedby`. *(Audit 4.2, WCAG 3.3.1 / 1.3.1.)*
 - [ ] **A11Y-12**: Icon-only edit/delete buttons (Settings carriers/marketplaces, Asset rows) have descriptive `aria-label`s. *(Audit 4.3, WCAG 4.1.2.)*
 - [ ] **A11Y-13**: The FilamentSelector menu has an accessible name and its submenu announces correctly (live region / `aria-activedescendant`). *(Audit 4.4, WCAG 4.1.2.)*
@@ -63,7 +63,7 @@
 | FIX-02 | Phase 34 — Live papercut fixes | Pending |
 | FIX-03 | Phase 34 — Live papercut fixes | Pending |
 | FIX-04 | Phase 34 — Live papercut fixes | Pending |
-| A11Y-10 | Phase 35 — Accessibility Tier 4 | Pending |
+| A11Y-10 | Phase 35 — Accessibility Tier 4 | Complete (35-01) |
 | A11Y-11 | Phase 35 — Accessibility Tier 4 | Pending |
 | A11Y-12 | Phase 35 — Accessibility Tier 4 | Pending |
 | A11Y-13 | Phase 35 — Accessibility Tier 4 | Pending |

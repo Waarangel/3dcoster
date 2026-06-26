@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
 status: executing
-stopped_at: ROADMAP.md + REQUIREMENTS.md traceability + STATE.md written for Phases 34–37
-last_updated: "2026-06-25T23:23:35.768Z"
-last_activity: 2026-06-25 -- Phase 35 planning complete
+stopped_at: Completed 35-01-PLAN.md (Settings tabs keyboard nav A11Y-10 + marketplace icon labels A11Y-12)
+last_updated: "2026-06-26T01:08:00.000Z"
+last_activity: 2026-06-26 -- Completed Phase 35 plan 01 (A11Y-10 closed; A11Y-12 Settings portion verified)
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 2
-  percent: 25
+  completed_plans: 3
+  percent: 30
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 34–37). Source of requirements: `docs/CALCULATOR_APP_AUDIT.md` (Tiers 3–6).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 34 — live-papercut-fixes
+**Current focus:** Phase 35 — accessibility-tier-4
 
 ## Current Position
 
-Phase: 34 — COMPLETE
-Plan: 1 of 2
-Status: Ready to execute
-Last activity: 2026-06-25 -- Phase 35 planning complete
+Phase: 35 (accessibility-tier-4) — EXECUTING
+Plan: 2 of 5 (35-01 complete)
+Status: Executing Phase 35
+Last activity: 2026-06-26 -- Completed 35-01 (A11Y-10 Settings tab keyboard nav, 1 of 2 WCAG-Critical items closed)
 
 ## v1.9 Phase Order Reference
 
@@ -45,7 +45,7 @@ Last activity: 2026-06-25 -- Phase 35 planning complete
 
 **Velocity:**
 
-- Total plans completed (lifetime): 69
+- Total plans completed (lifetime): 70
 - Average duration: —
 - Total execution time: —
 
@@ -73,12 +73,13 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [v1.9 Roadmap 2026-06-25]: 4-phase coarse structure mirroring requirement categories. Phase 34 first because it is web-mostly + partly pre-built (fast win, low coupling to the audit-driven phases). Phases 35/36 sequenced after 34 since they brush the same Settings/Asset/JobsManager surfaces.
 - [v1.9 Roadmap 2026-06-25]: Phase 37 (HYG-11/12) marked STRETCH/optional in its goal — droppable without affecting milestone success if the milestone runs long.
 - [v1.9 Roadmap 2026-06-25]: Tier 2 brand cohesion (redesign branch), Tier 3.1 guided onboarding (v2.0 headline), and Tier 6.1–6.4 God-component splits (refactor risk) explicitly OUT of v1.9.
+- [35-01 2026-06-26]: Settings tabs use roving tabindex (not aria-activedescendant) — native `<button>` tabs make tabIndex toggling the idiomatic APG fit; automatic activation (arrow selects + moves focus) since the panel renders synchronously. A11Y-12 needed no source change for the Settings marketplace section (already used labelled EditButton/DeleteButton) — closed with a confirming test; the Asset-row portion of A11Y-12 remains for plan 35-02, so A11Y-12 stays Pending in REQUIREMENTS traceability until then.
 
 ### Pending Todos
 
 - FIX-01 is built on `fix/pwa-reload-uncontrolled` — Phase 34 plan should reconcile/merge that branch's work rather than rebuild.
 - FIX-02 is a cherry-pick of `4da205f` from the redesign branch (`test/design-skills-experiment`) — verify it picks cleanly and leaves `#hash` anchors alone.
-- A11Y-10 + A11Y-11 are WCAG **Critical** — prioritize within Phase 35.
+- A11Y-10 + A11Y-11 are WCAG **Critical** — prioritize within Phase 35. (A11Y-10 ✅ closed in 35-01; A11Y-11 remains, scheduled in 35-02.)
 - v1.9 is hardening-only: no `src/features.ts` entries / NEW badges (per project memory: badges only for user-perceivable new features; papercut fixes and a11y/perf are not new features).
 
 ### Blockers/Concerns
@@ -87,9 +88,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-25 — v1.9 roadmap created
-Stopped at: ROADMAP.md + REQUIREMENTS.md traceability + STATE.md written for Phases 34–37
-Resume file: .planning/ROADMAP.md
+Last session: 2026-06-26 — Phase 35 execution (plan 01)
+Stopped at: Completed 35-01-PLAN.md — Settings tab keyboard nav (A11Y-10, WCAG Critical) + marketplace icon-button label verification (A11Y-12 Settings portion); 13/13 new tests + full suite (691) green
+Resume file: .planning/phases/35-accessibility-tier-4/35-02-PLAN.md
 
 ## Operator Next Steps
 
