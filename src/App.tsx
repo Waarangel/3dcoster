@@ -373,6 +373,7 @@ function App() {
             isLoading={jobsLoading}
             materials={materials}
             shippingConfig={shippingConfig}
+            marketplaceFees={marketplaceFees}
             userCurrency={userProfile.currency}
             userProfile={userProfile}
             fxTable={fxTable}

@@ -6,10 +6,13 @@ import type {
   Sale,
   Quote,
   MarketplaceType,
+  MarketplaceFees,
   ShippingMethodType,
   Customer,
   RuntimeQuoteStatus,
 } from '../types';
+import { computeMarketplaceFee } from '../utils/marketplaceFee';
+import type { FxRateTable } from '../utils/fxConvert';
 import { useSales, useCustomers } from '../hooks/useDatabase';
 import { useCustomerPicker, PICKER_VISIBLE_LIMIT } from '../hooks/useCustomerPicker';
 import { db } from '../db/database';
@@ -41,24 +44,14 @@ import { formatCurrency, getCurrencySymbol } from '../utils/currency';
 // always picks the right initial state.
 // ---------------------------------------------------------------------------
 
-// PERF-03 (plan 22-05 will hoist further; for now move verbatim from
-// JobsManager.tsx:1051-1060 to module scope). Pure function — no React
-// closures, no side effects.
-function calculateMarketplaceFee(price: number, marketplace: MarketplaceType): number {
-  switch (marketplace) {
-    case 'facebook_shipped':
-      return Math.max(0.80, price * 0.10) + price * 0.029;
-    case 'etsy':
-      return price * 0.065 + price * 0.03 + 0.45;
-    default:
-      return 0;
-  }
-}
-
 export interface RecordSaleModalProps {
   job: PrintJob;
   userCurrency: Currency;
   shippingConfig: ShippingConfig;
+  /** User's configurable marketplace-fee rates (same source the calculator uses). */
+  marketplaceFees: MarketplaceFees;
+  /** FX table so the fixed-dollar fee constants convert into the user's currency. */
+  fxTable: FxRateTable | null;
   editingSale: Sale | null;
   convertingFromQuote: Quote | null;
   isOpen: boolean;
@@ -70,6 +63,8 @@ export function RecordSaleModal({
   job,
   userCurrency,
   shippingConfig,
+  marketplaceFees,
+  fxTable,
   editingSale,
   convertingFromQuote,
   isOpen,
@@ -227,9 +222,13 @@ export function RecordSaleModal({
   // the handler) uses `unitPrice = salePrice || job.sellingPrice` as its
   // first arg — DIFFERENT semantics from the JSX summary which displays
   // the in-progress entry verbatim. The handler's local stays untouched.
+  // Fee is per-transaction: percentage on the order total + the fixed fee once.
+  // Passing the order total (qty × price) to computeMarketplaceFee yields exactly
+  // that, and FX-converts the fixed-dollar fees + honors the user's fee config —
+  // unlike the old hardcoded helper this replaced (audit MEDIUM, v1.9.1).
   const marketplaceFee = useMemo(
-    () => calculateMarketplaceFee(saleQuantity * salePrice, saleMarketplace),
-    [saleQuantity, salePrice, saleMarketplace],
+    () => computeMarketplaceFee({ sellingPrice: saleQuantity * salePrice, marketplace: saleMarketplace, fees: marketplaceFees, userCurrency, fxTable }).total,
+    [saleQuantity, salePrice, saleMarketplace, marketplaceFees, userCurrency, fxTable],
   );
 
   // ─── handleRecordSale (ported verbatim from JobsManager.tsx:1272-1420) ───
@@ -239,7 +238,7 @@ export function RecordSaleModal({
 
     try {
     const unitPrice = salePrice || job.sellingPrice;
-    const marketplaceFee = calculateMarketplaceFee(unitPrice * saleQuantity, saleMarketplace);
+    const marketplaceFee = computeMarketplaceFee({ sellingPrice: unitPrice * saleQuantity, marketplace: saleMarketplace, fees: marketplaceFees, userCurrency, fxTable }).total;
 
     // Per-sale customer payload (Phase 14 revised — D-21).
     // Only persist `customer` if at least one field was filled in; saves nothing if the

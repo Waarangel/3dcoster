@@ -1,7 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import type { Customer, PrintJob, ShippingConfig, Sale, Quote } from '../types';
+import type { Customer, PrintJob, ShippingConfig, Sale, Quote, MarketplaceFees } from '../types';
+
+// Default marketplace-fee config (matches defaultMarketplaceFees) — inlined rather than
+// imported because '../hooks/useDatabase' is mocked in this suite.
+const TEST_FEES: MarketplaceFees = {
+  facebookShippedPercent: 10, facebookMinFee: 0.80, facebookProcessingPercent: 2.9,
+  etsyTransactionPercent: 6.5, etsyPaymentPercent: 3, etsyPaymentFixed: 0.25, etsyListingFee: 0.20, etsyOffsiteAdPercent: 15,
+  kijijiFeaturedFee: 0, ebayFinalValuePercent: 12.9, ebayFixedFee: 0.30, amazonHandmadePercent: 15,
+  customMarketplaces: [],
+};
 
 // ---------------------------------------------------------------------------
 // RecordSaleModal — Phase 22 plan 22-03 (HYG-06).
@@ -208,6 +217,8 @@ async function renderModal(opts: RenderOpts = {}) {
     job: opts.job ?? makeJob(),
     userCurrency: 'USD' as const,
     shippingConfig: makeShippingConfig(),
+    marketplaceFees: TEST_FEES,
+    fxTable: null,
     editingSale: opts.editingSale ?? null,
     convertingFromQuote: opts.convertingFromQuote ?? null,
     isOpen: true,
@@ -483,6 +494,8 @@ describe('WR-02 — hydration dep array stability (Phase 22.1 D-09)', () => {
       job,
       userCurrency: 'USD' as const,
       shippingConfig: makeShippingConfig(),
+      marketplaceFees: TEST_FEES,
+      fxTable: null,
       editingSale,
       convertingFromQuote: null,
       isOpen: true,

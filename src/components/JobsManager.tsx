@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus } from '../types';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus, MarketplaceFees } from '../types';
 import { useSales, useAllSales, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
 import { Button, EditButton, DeleteButton, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
@@ -28,6 +28,8 @@ interface JobsManagerProps {
   isLoading: boolean;
   materials: Material[];
   shippingConfig: ShippingConfig;
+  /** User's configurable marketplace-fee rates — threaded to RecordSaleModal so the recorded fee uses the same FX-aware helper as the calculator. */
+  marketplaceFees: MarketplaceFees;
   userCurrency: Currency;
   userProfile: UserProfile;
   /** Cached USD-based FX table for display-time conversion of the summary totals (null until first fetch). */
@@ -1023,7 +1025,7 @@ function TagIcon(props: SVGProps<SVGSVGElement>) {
 // onto the inline add-tag field without duplicating the literal string.
 export const ADD_TAG_PLACEHOLDER = 'trending, popular, out of date';
 
-export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCurrency, userProfile, fxTable, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+export function JobsManager({ jobs, isLoading, materials, shippingConfig, marketplaceFees, userCurrency, userProfile, fxTable, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const toast = useToast();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   // Print Quote modal state (plan 16-10 + D-27). Either:
@@ -1640,6 +1642,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
           job={selectedJob}
           userCurrency={userCurrency}
           shippingConfig={shippingConfig}
+          marketplaceFees={marketplaceFees}
+          fxTable={fxTable}
           editingSale={editingSale}
           convertingFromQuote={convertingFromQuote}
           isOpen={showSaleForm}
