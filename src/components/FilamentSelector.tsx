@@ -123,8 +123,11 @@ export function FilamentSelector({
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside. Only the *open* selector needs to
+  // listen — gating on isOpen means a list of up to 16 closed rows no longer
+  // each register a document-level mousedown listener.
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -134,7 +137,7 @@ export function FilamentSelector({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   // Focus the search box on open so the user can type immediately. (The query is
   // reset by the trigger/closeMenu so each open starts fresh — done in handlers,
