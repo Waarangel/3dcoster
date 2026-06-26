@@ -1137,6 +1137,239 @@ describe('computeJobsAggregates — display-time currency conversion', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// A11Y-14 — Tag chip ✕ button: 24×24 hit target + focus ring
+//
+// WCAG 2.5.8 AA: the bounding box of the remove button must be ≥ 24×24px.
+// Implemented via Tailwind min-w-[24px] min-h-[24px] on the raw button element.
+// Focus ring: focus-visible:ring-1 focus-visible:ring-blue-400.
+// Reveal on focus: focus-visible:opacity-100 (chip stays subtle at rest — LOCKED).
+// Keyboard-operable at all times (no tabIndex=-1).
+// ---------------------------------------------------------------------------
+
+describe('A11Y-14 — tag chip ✕ button hit target + focus ring', () => {
+  let a11yContainer: HTMLDivElement;
+  let a11yRoot: Root;
+
+  beforeEach(() => {
+    a11yContainer = document.createElement('div');
+    document.body.appendChild(a11yContainer);
+    a11yRoot = createRoot(a11yContainer);
+    dbJobsPutSpy.mockClear();
+  });
+
+  afterEach(() => {
+    act(() => { a11yRoot.unmount(); });
+    a11yContainer.remove();
+  });
+
+  function renderChipJob() {
+    const noop = () => undefined;
+    const noopAsync = async () => undefined;
+    const job = makeMinimalJob({ tags: ['test-tag'] });
+    act(() => {
+      a11yRoot.render(
+        <JobCard
+          job={job}
+          userCurrency="USD"
+          isSelected={false}
+          info={makeBreakEvenInfo()}
+          recentSales={undefined}
+          getFilamentName={() => 'PLA'}
+          onToggleSelect={noop}
+          onOpenSaleForm={noop}
+          onEdit={noop}
+          onDelete={noop}
+          onGeneratePdf={noop}
+          onEditSale={noop}
+          onDeleteSale={noop}
+          onStartConversion={undefined}
+          onEditQuote={undefined}
+          onDeclineQuote={undefined}
+          isEditingTitle={false}
+          onStartEditTitle={noop}
+          onCancelEditTitle={noop}
+          onSaveTitle={noopAsync}
+          isAddingTag={false}
+          onStartAddTag={noop}
+          onCancelAddTag={noop}
+          onSubmitAddTag={noopAsync}
+          onRemoveTag={noopAsync}
+        />,
+      );
+    });
+    return a11yContainer.querySelector<HTMLButtonElement>('button[aria-label="Remove tag test-tag"]');
+  }
+
+  it('has min-w-[24px] class for 24px minimum width (WCAG 2.5.8 AA bounding box)', () => {
+    const btn = renderChipJob();
+    expect(btn).not.toBeNull();
+    expect(btn!.className).toContain('min-w-[24px]');
+  });
+
+  it('has min-h-[24px] class for 24px minimum height (WCAG 2.5.8 AA bounding box)', () => {
+    const btn = renderChipJob();
+    expect(btn).not.toBeNull();
+    expect(btn!.className).toContain('min-h-[24px]');
+  });
+
+  it('does NOT have the old w-3.5 h-3.5 fixed size classes', () => {
+    const btn = renderChipJob();
+    expect(btn).not.toBeNull();
+    expect(btn!.className).not.toContain('w-3.5');
+    expect(btn!.className).not.toContain('h-3.5');
+  });
+
+  it('has focus-visible:opacity-100 to reveal the button on keyboard focus (LOCKED reveal-on-focus)', () => {
+    const btn = renderChipJob();
+    expect(btn).not.toBeNull();
+    expect(btn!.className).toContain('focus-visible:opacity-100');
+  });
+
+  it('has focus-visible:ring-1 for a visible keyboard focus ring', () => {
+    const btn = renderChipJob();
+    expect(btn).not.toBeNull();
+    expect(btn!.className).toContain('focus-visible:ring-1');
+  });
+
+  it('does NOT have tabIndex="-1" — button stays keyboard-reachable at all times', () => {
+    const btn = renderChipJob();
+    expect(btn).not.toBeNull();
+    expect(btn!.getAttribute('tabindex')).not.toBe('-1');
+  });
+
+  it('retains aria-label starting with "Remove tag " for AT identification', () => {
+    const btn = renderChipJob();
+    expect(btn).not.toBeNull();
+    expect(btn!.getAttribute('aria-label')).toMatch(/^Remove tag /);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A11Y-15 (break-even bar portion) — role="progressbar" + value attributes
+//
+// WCAG 4.1.2: the inner break-even bar div must expose role="progressbar"
+// with aria-valuenow, aria-valuemin=0, aria-valuemax, and a human-readable
+// aria-valuetext ("N of M copies sold [— break-even reached]").
+// Only applies when breakEvenCopies is non-null (renders inside the non-null
+// branch of the conditional in JobCard).
+// ---------------------------------------------------------------------------
+
+describe('A11Y-15 — break-even bar progressbar ARIA', () => {
+  let beContainer: HTMLDivElement;
+  let beRoot: Root;
+
+  beforeEach(() => {
+    beContainer = document.createElement('div');
+    document.body.appendChild(beContainer);
+    beRoot = createRoot(beContainer);
+    dbJobsPutSpy.mockClear();
+  });
+
+  afterEach(() => {
+    act(() => { beRoot.unmount(); });
+    beContainer.remove();
+  });
+
+  function renderWithBreakEven(opts: {
+    copiesSold: number;
+    breakEvenCopies: number;
+    isBreakEven: boolean;
+    modelCost?: number;
+  }) {
+    const noop = () => undefined;
+    const noopAsync = async () => undefined;
+    const job = makeMinimalJob({
+      copiesSold: opts.copiesSold,
+      modelCost: opts.modelCost ?? 50,
+    });
+    const info = {
+      revenueEarned: 0,
+      profitPerUnit: 9,
+      breakEvenCopies: opts.breakEvenCopies,
+      remainingToBreakEven: Math.max(0, opts.breakEvenCopies - opts.copiesSold),
+      isBreakEven: opts.isBreakEven,
+    };
+    act(() => {
+      beRoot.render(
+        <JobCard
+          job={job}
+          userCurrency="USD"
+          isSelected={true}
+          info={info}
+          recentSales={undefined}
+          getFilamentName={() => 'PLA'}
+          onToggleSelect={noop}
+          onOpenSaleForm={noop}
+          onEdit={noop}
+          onDelete={noop}
+          onGeneratePdf={noop}
+          onEditSale={noop}
+          onDeleteSale={noop}
+          onStartConversion={undefined}
+          onEditQuote={undefined}
+          onDeclineQuote={undefined}
+          isEditingTitle={false}
+          onStartEditTitle={noop}
+          onCancelEditTitle={noop}
+          onSaveTitle={noopAsync}
+          isAddingTag={false}
+          onStartAddTag={noop}
+          onCancelAddTag={noop}
+          onSubmitAddTag={noopAsync}
+          onRemoveTag={noopAsync}
+        />,
+      );
+    });
+    return beContainer.querySelector('[role="progressbar"]');
+  }
+
+  it('renders a progressbar element inside the break-even bar when breakEvenCopies is non-null', () => {
+    const bar = renderWithBreakEven({ copiesSold: 3, breakEvenCopies: 10, isBreakEven: false });
+    expect(bar).not.toBeNull();
+  });
+
+  it('sets aria-valuenow to the number of copies sold', () => {
+    const bar = renderWithBreakEven({ copiesSold: 3, breakEvenCopies: 10, isBreakEven: false });
+    expect(bar).not.toBeNull();
+    expect(bar!.getAttribute('aria-valuenow')).toBe('3');
+  });
+
+  it('sets aria-valuemin to "0"', () => {
+    const bar = renderWithBreakEven({ copiesSold: 3, breakEvenCopies: 10, isBreakEven: false });
+    expect(bar).not.toBeNull();
+    expect(bar!.getAttribute('aria-valuemin')).toBe('0');
+  });
+
+  it('sets aria-valuemax to the break-even copies count', () => {
+    const bar = renderWithBreakEven({ copiesSold: 3, breakEvenCopies: 10, isBreakEven: false });
+    expect(bar).not.toBeNull();
+    expect(bar!.getAttribute('aria-valuemax')).toBe('10');
+  });
+
+  it('aria-valuetext mentions copies sold and break-even target', () => {
+    const bar = renderWithBreakEven({ copiesSold: 3, breakEvenCopies: 10, isBreakEven: false });
+    expect(bar).not.toBeNull();
+    const text = bar!.getAttribute('aria-valuetext') ?? '';
+    expect(text).toContain('3');
+    expect(text).toContain('10');
+  });
+
+  it('aria-valuetext mentions "break-even reached" when isBreakEven is true', () => {
+    const bar = renderWithBreakEven({ copiesSold: 10, breakEvenCopies: 10, isBreakEven: true });
+    expect(bar).not.toBeNull();
+    const text = bar!.getAttribute('aria-valuetext') ?? '';
+    expect(text).toContain('break-even reached');
+  });
+
+  it('aria-valuetext does NOT mention "break-even reached" when isBreakEven is false', () => {
+    const bar = renderWithBreakEven({ copiesSold: 3, breakEvenCopies: 10, isBreakEven: false });
+    expect(bar).not.toBeNull();
+    const text = bar!.getAttribute('aria-valuetext') ?? '';
+    expect(text).not.toContain('break-even reached');
+  });
+});
+
 describe('formatFilament / formatHours', () => {
   it('shows grams below 1000 and kg at/above 1000', () => {
     expect(formatFilament(0)).toBe('0 g');
