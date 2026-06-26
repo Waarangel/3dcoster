@@ -26,6 +26,14 @@ export function useStockEvents() {
   // correction. Manual events use a fresh id as their own refId so the
   // job-keyed delete-by-refId never touches them.
   const logManualAdjustment = useCallback(async (assetId: string, delta: number, note?: string) => {
+    // v1.9 DATA-06: reject a non-finite delta (NaN/±Infinity from a bad
+    // parseFloat upstream). Writing one would poison deriveStockByAsset's SUM,
+    // turning the asset's whole derived stock into NaN with no way to recover
+    // short of editing IndexedDB. A no-op is the safe failure here.
+    if (!Number.isFinite(delta)) {
+      console.error(`[logManualAdjustment] ignored non-finite delta for asset ${assetId}:`, delta);
+      return;
+    }
     const id = newManualId();
     await db.stockEvents.add({ id, assetId, delta, kind: 'manual', refId: id, timestamp: new Date(), note });
   }, []);

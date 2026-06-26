@@ -397,13 +397,23 @@ export function usePrinterInstances() {
 
   // Add print hours to an instance (called when a job is completed)
   const addPrintHours = useCallback(async (instanceId: string, hours: number) => {
-    const instance = await db.printerInstances.get(instanceId);
-    if (instance) {
-      await db.printerInstances.put({
-        ...instance,
-        printHours: instance.printHours + hours,
-      });
+    // v1.9 DATA-06: guard non-finite hours (a bad parse upstream would corrupt
+    // printHours into NaN, which then poisons depreciation math). And make the
+    // read-modify-write atomic — without the transaction, two concurrent
+    // completions could both read the same printHours and one increment is lost.
+    if (!Number.isFinite(hours)) {
+      console.error(`[addPrintHours] ignored non-finite hours for instance ${instanceId}:`, hours);
+      return;
     }
+    await db.transaction('rw', db.printerInstances, async () => {
+      const instance = await db.printerInstances.get(instanceId);
+      if (instance) {
+        await db.printerInstances.put({
+          ...instance,
+          printHours: instance.printHours + hours,
+        });
+      }
+    });
   }, []);
 
   return {
