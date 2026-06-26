@@ -474,7 +474,7 @@ const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurren
 
 const SortIndicator = ({ field, sortField, sortDirection }: { field: string; sortField: string; sortDirection: 'asc' | 'desc' }) => {
   if (sortField !== field) return null;
-  return <span className="ml-1 text-[0.6em] align-middle">{sortDirection === 'asc' ? '▲' : '▼'}</span>;
+  return <span className="ml-1 text-[0.6em] align-middle" aria-hidden="true">{sortDirection === 'asc' ? '▲' : '▼'}</span>;
 };
 
 export function AssetLibrary({
@@ -512,6 +512,7 @@ export function AssetLibrary({
   const tagsId = useId();
   const stockOnHandId = useId();
   const lowStockThresholdId = useId();
+  const formErrorId = useId();
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -1025,33 +1026,35 @@ export function AssetLibrary({
         <>
       {/* Filter tabs + Search */}
       <div className="flex gap-2 mb-4 flex-wrap items-center">
-        {/* allow-raw-html */}
-        <button
-          onClick={() => handleFilterChange('all')}
-          aria-pressed={filterCategory === 'all'}
-          className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors ${
-            filterCategory === 'all'
-              ? 'bg-slate-600 text-white'
-              : 'bg-slate-700 text-slate-400 hover:text-white'
-          }`}
-        >
-          All
-        </button>
-        {allCategories.map(cat => (
-          /* allow-raw-html */
+        <div role="group" aria-label="Filter by category" className="flex gap-2 flex-wrap">
+          {/* allow-raw-html */}
           <button
-            key={cat}
-            onClick={() => handleFilterChange(cat)}
-            aria-pressed={filterCategory === cat}
-            className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
-              filterCategory === cat
+            onClick={() => handleFilterChange('all')}
+            aria-pressed={filterCategory === 'all'}
+            className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors ${
+              filterCategory === 'all'
                 ? 'bg-slate-600 text-white'
                 : 'bg-slate-700 text-slate-400 hover:text-white'
             }`}
           >
-            {getCategoryLabel(cat)}
+            All
           </button>
-        ))}
+          {allCategories.map(cat => (
+            /* allow-raw-html */
+            <button
+              key={cat}
+              onClick={() => handleFilterChange(cat)}
+              aria-pressed={filterCategory === cat}
+              className={`px-4 py-1 min-h-[40px] text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
+                filterCategory === cat
+                  ? 'bg-slate-600 text-white'
+                  : 'bg-slate-700 text-slate-400 hover:text-white'
+              }`}
+            >
+              {getCategoryLabel(cat)}
+            </button>
+          ))}
+        </div>
         <div className="relative ml-auto w-full sm:w-56">
           <svg aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1082,7 +1085,11 @@ export function AssetLibrary({
       {isAdding && (
         <form onSubmit={handleSubmit} className="bg-slate-700/50 rounded-lg p-4 mb-4 space-y-3">
           {formError && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-sm text-red-400">
+            <div
+              id={formErrorId}
+              role="alert"
+              className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-sm text-red-400"
+            >
               {formError}
             </div>
           )}
@@ -1096,6 +1103,8 @@ export function AssetLibrary({
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 placeholder={isPrinterForm ? "e.g., Creality Ender 3 V3" : "Asset name"}
                 required
+                aria-invalid={formError ? 'true' : undefined}
+                aria-describedby={formError ? formErrorId : undefined}
               />
             </div>
             <div>
@@ -1232,6 +1241,8 @@ export function AssetLibrary({
                     onChange={e => setFormData({ ...formData, unit: e.target.value })}
                     placeholder="g"
                     required
+                    aria-invalid={formError ? 'true' : undefined}
+                    aria-describedby={formError ? formErrorId : undefined}
                   />
                 </div>
                 <div>
@@ -1245,6 +1256,8 @@ export function AssetLibrary({
                     onChange={e => setFormData({ ...formData, packageCost: parseFloat(e.target.value) })}
                     placeholder="20.00"
                     required
+                    aria-invalid={formError ? 'true' : undefined}
+                    aria-describedby={formError ? formErrorId : undefined}
                   />
                 </div>
                 <div>
