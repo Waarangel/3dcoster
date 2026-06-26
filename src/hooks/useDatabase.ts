@@ -1216,9 +1216,12 @@ export function useQuotes() {
           nextNum = typeof parsedProfile.nextQuoteNumber === 'number'
             ? parsedProfile.nextQuoteNumber
             : 1;
-        } catch {
+        } catch (err) {
           // Corrupt settings — fall through to nextNum = 1. The setUserProfile
           // write at the end of this transaction will re-stamp the row clean.
+          // Log (matching the migration handlers) so a surprise quote-number reset
+          // is diagnosable rather than silent.
+          console.error('[createQuote] settings unreadable — starting quote numbers at 1:', err);
         }
       }
 

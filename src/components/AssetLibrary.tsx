@@ -527,7 +527,6 @@ export function AssetLibrary({
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [formError, setFormError] = useState<string | null>(null);
-  const [resetError, setResetError] = useState<string | null>(null);
   const [resetMode, setResetMode] = useState<'printer' | 'material' | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -827,7 +826,6 @@ export function AssetLibrary({
   };
 
   const handleReset = () => {
-    setResetError(null);
     setResetMode(filterCategory === 'printer' ? 'printer' : 'material');
   };
 
@@ -839,7 +837,8 @@ export function AssetLibrary({
         await onResetMaterials();
       }
     } catch {
-      setResetError('Could not reset — please try again.');
+      // Surface the failure to ResetAssetsModal, which keeps itself open and shows
+      // the error inline (the single owner of reset-error display).
       throw new Error('Could not reset — please try again.');
     }
   };
@@ -986,9 +985,6 @@ export function AssetLibrary({
       </div>
       {exportError && (
         <div role="alert" className="text-sm text-red-400 mb-3">{exportError}</div>
-      )}
-      {resetError && (
-        <div role="alert" className="text-sm text-red-400 mb-3">{resetError}</div>
       )}
 
       {isLoading ? (

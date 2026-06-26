@@ -49,8 +49,11 @@ describe('ResetAssetsModal', () => {
     });
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     const body = document.body.textContent ?? '';
-    expect(body).toContain('5');
+    // Printer reset preserves custom printers, so the copy describes the action and
+    // promises custom printers are kept (no misleading "N custom printers" count).
     expect(body.toLowerCase()).toContain('printer');
+    expect(body.toLowerCase()).toContain('default printer list');
+    expect(body.toLowerCase()).toContain('custom printers are kept');
   });
 
   // Test 2: 'material' mode with M materials shows correct copy

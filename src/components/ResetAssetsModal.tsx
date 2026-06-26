@@ -37,13 +37,14 @@ export function ResetAssetsModal({ mode, count, onConfirm, onClose }: ResetAsset
 
   const title = isPrinter ? 'Reset printers' : 'Reset materials';
 
-  const countWord = count === 1
-    ? (isPrinter ? '1 custom printer' : '1 material')
-    : (isPrinter ? `${count} custom printers` : `${count} materials`);
+  // Printer reset restores the default printer list but PRESERVES custom printers, so a
+  // count of "custom printers" would be inaccurate — describe the action instead. Material
+  // reset replaces every material, so its count is exact.
+  const materialWord = count === 1 ? '1 material' : `${count} materials`;
 
   const body = isPrinter
-    ? `This will replace your ${countWord} with the default printer list. This action cannot be undone.`
-    : `This will replace your ${countWord} with the default list. This action cannot be undone.`;
+    ? `This will restore the default printer list. Your custom printers are kept. This action cannot be undone.`
+    : `This will replace your ${materialWord} with the default list. This action cannot be undone.`;
 
   const confirmLabel = isPrinter ? 'Reset printers' : 'Reset materials';
 
