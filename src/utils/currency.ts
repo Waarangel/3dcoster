@@ -54,6 +54,9 @@ export const CURRENCY_CONFIG: Record<Currency, {
 //   formatCurrency(100, 'JPY')       → "¥100"        (0 decimal places)
 //   formatCurrency(-15.5, 'USD')     → "-$15.50"     (sign before symbol)
 export function formatCurrency(amount: number, currency: Currency, locale: string = 'en-US'): string {
+  // Non-finite guard: NaN/Infinity must never render as "$NaN" / "$∞" in a
+  // price. Surface a no-data dash instead (project rule: no arbitrary numbers).
+  if (!Number.isFinite(amount)) return '—';
   const config = CURRENCY_CONFIG[currency];
   if (!config) return `$${amount.toFixed(2)}`; // Fallback for unknown currency
   // Sign before symbol: "-$15.50", never "$-15.50". A value that rounds to

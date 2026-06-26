@@ -39,6 +39,14 @@ describe('formatCurrency', () => {
     expect(formatCurrency(0, 'USD')).toBe('$0.00');
     expect(formatCurrency(-0, 'USD')).toBe('$0.00');
   });
+
+  it('renders a no-data dash for non-finite amounts (never "$NaN" / "$∞")', () => {
+    expect(formatCurrency(NaN, 'USD')).toBe('—');
+    expect(formatCurrency(Infinity, 'EUR')).toBe('—');
+    expect(formatCurrency(-Infinity, 'JPY')).toBe('—');
+    // Division-by-zero style derivations (e.g. profitPerUnit on a 0 price) must dash.
+    expect(formatCurrency(1 / 0, 'GBP')).toBe('—');
+  });
 });
 
 describe('fuel price unit conversion (per-litre canonical storage ↔ per-gallon US display)', () => {
