@@ -1292,10 +1292,20 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, userCu
     }
   };
 
+  // PERF-10: Build a materialsById Map once per materials-prop change (O(1) lookup).
+  // Previously getFilamentName used materials.find(...) — O(N) per call, O(jobs×filaments×materials)
+  // total per render. The Map is rebuilt only when the materials prop identity changes
+  // (a Dexie write to the assets table), keeping getFilamentName's useCallback identity
+  // stable across renders where materials haven't changed.
+  const materialsById = useMemo(
+    () => new Map(materials.map(m => [m.id, m])),
+    [materials],
+  );
+
   const getFilamentName = useCallback((filamentId: string) => {
-    const filament = materials.find(m => m.id === filamentId);
+    const filament = materialsById.get(filamentId);
     return filament ? `${filament.brand || ''} ${filament.filamentType || filament.name}`.trim() : 'Unknown';
-  }, [materials]);
+  }, [materialsById]);
 
   // Dynamic row-height cache for virtualized rendering. The `key` arg
   // invalidates the cache whenever selection changes, so the previously-
