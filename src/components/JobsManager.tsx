@@ -231,6 +231,7 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
   const total = quote.lineItemsSnapshot.sellingPrice + quote.lineItemsSnapshot.shippingCost + quote.lineItemsSnapshot.taxAmount;
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement>(null);
+  const overflowTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!overflowOpen) return;
@@ -240,7 +241,10 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
       }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOverflowOpen(false);
+      // WAI-ARIA menu-button pattern: Escape closes AND returns focus to the
+      // trigger so a keyboard user keeps their place in the row (mouse-outside
+      // close intentionally lets focus follow the pointer).
+      if (e.key === 'Escape') { setOverflowOpen(false); overflowTriggerRef.current?.focus(); }
     };
     document.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('keydown', handleKeyDown);
@@ -315,6 +319,7 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
             </Button>
             {/* allow-raw-html: overflow toggle is a small icon button, not a CTA — Button primitive would dwarf the row */}
             <button
+              ref={overflowTriggerRef}
               type="button"
               onClick={(e) => { e.stopPropagation(); setOverflowOpen(o => !o); }}
               aria-label="More actions"

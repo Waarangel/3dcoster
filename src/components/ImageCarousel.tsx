@@ -31,13 +31,24 @@ export function ImageCarousel() {
   const [isHovered, setIsHovered] = useState(false);
   // H-05 (WCAG 2.2.2): a user-controllable pause. Defaults to playing, but if
   // the user prefers reduced motion we start paused and never auto-advance.
-  const [prefersReducedMotion] = useState(() =>
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   const [isPaused, setIsPaused] = useState(prefersReducedMotion);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Stay in sync if the user toggles the OS reduced-motion setting mid-session;
+  // the auto-advance effect below then suspends/resumes accordingly (its deps
+  // include prefersReducedMotion), and the Pause toggle shows/hides to match.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   const goNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
