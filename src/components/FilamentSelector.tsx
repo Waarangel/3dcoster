@@ -294,7 +294,7 @@ export function FilamentSelector({
     <div className="space-y-3">
       {/* Main dropdown trigger */}
       <div ref={containerRef} className="relative">
-        <label className="block text-xs text-slate-400 mb-1">Filament</label>
+        <label id="filament-trigger-label" className="block text-xs text-slate-400 mb-1">Filament</label>
         <Button
           ref={triggerRef}
           type="button"
@@ -307,6 +307,7 @@ export function FilamentSelector({
             setSearchQuery('');
           }}
           onKeyDown={handleTriggerKeyDown}
+          aria-labelledby="filament-trigger-label"
           aria-haspopup="menu"
           aria-expanded={isOpen}
           className="!justify-between text-left"
@@ -408,6 +409,7 @@ export function FilamentSelector({
                     className="absolute left-full top-0 ml-1 w-56 bg-slate-700 rounded-lg shadow-xl border border-slate-600 max-h-72 overflow-y-auto"
                     style={{ zIndex: 60 }}
                     role="menu"
+                    aria-label={brand}
                     onMouseEnter={handleSubMenuMouseEnter}
                     onMouseLeave={handleSubMenuMouseLeave}
                   >
