@@ -583,24 +583,20 @@ v9 upgrade logic. C1 applies the same fix to the older v8 path.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **HYG-12.2: batch scope**
-   - What we know: 5 sequential reads in the `else` branch, 2 independent pairs (A+B, then C+D+E).
-   - What's unclear: Whether batching D (`ender3v3`) and E (`hasPlaPure`) together is worth
-     the complexity of the `!flagRan ? db.get(...) : Promise.resolve(null)` short-circuit pattern.
-   - Recommendation: batch A+B unconditionally (clean and simple); batch C+D+E only if the planner
-     agrees the complexity is acceptable. If not, leave C, D, E sequential and only ship the A+B
-     batch (still satisfies the audit spirit).
+1. **HYG-12.2: batch scope** — **RESOLVED (planning, 37-02): batch A+B only.** Reads A (`printerCount`)
+   + B (`packagingCount`) are batched into one `Promise.all` with a single post-batch `cancelled`
+   check. Reads C/D/E (migration probes) are left sequential — the `!flagRan ? db.get(...) :
+   Promise.resolve(null)` short-circuit needed to batch them is MEDIUM-risk complexity that exceeds
+   the value for a droppable STRETCH phase. A+B-only still satisfies the audit ("batched `useAssets`
+   init reads (`Promise.all`)").
 
-2. **HYG-12.3: C7/C8/C9 in backfill.ts**
-   - What we know: three `as Currency` casts where `currency` is a `string` parameter validated by
-     callers.
-   - What's unclear: whether changing the function signatures (`string → Currency`) is in scope for
-     Phase 37 (it would tighten the API at the cost of touching more files + test fixtures).
-   - Recommendation: leave function signatures as `string` for Phase 37; add JSDoc comments
-     documenting the caller-validation contract. Full signature tightening deferred to v2.0
-     refactor.
+2. **HYG-12.3: C7/C8/C9 in backfill.ts** — **RESOLVED (planning, 37-02): leave unchanged.** Only the
+   2 real unsafe casts are tightened (C1 `src/db/database.ts` v8 migration + C3 `useDatabase.ts:1211`
+   createQuote). Function-signature tightening (`string → Currency`) in backfill.ts is explicitly
+   OUT of scope for Phase 37 (touches more files + fixtures) and deferred to the v2.0 refactor; the
+   other 7 casts are build-safe/pattern-correct and get annotation comments only.
 
 ---
 
