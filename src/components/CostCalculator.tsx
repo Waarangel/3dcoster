@@ -838,9 +838,15 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   };
 
   const updateMaterialUsage = (index: number, field: keyof MaterialUsage, value: string | number) => {
-    const updated = [...materialsUsed];
-    updated[index] = { ...updated[index], [field]: value };
-    setMaterialsUsed(updated);
+    setMaterialsUsed(prev =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const updatePackagingMaterial = (index: number, field: keyof MaterialUsage, value: string | number) => {
+    setPackagingMaterials(prev =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
   };
 
   const removeMaterialUsage = (index: number) => {
@@ -1299,11 +1305,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                   <div key={usage.uid} className="flex items-center gap-3 bg-slate-700/50 p-2 rounded-lg">
                     <Select
                       value={usage.materialId}
-                      onChange={e => {
-                        const updated = [...packagingMaterials];
-                        updated[index] = { ...updated[index], materialId: e.target.value };
-                        setPackagingMaterials(updated);
-                      }}
+                      onChange={e => updatePackagingMaterial(index, 'materialId', e.target.value)}
                       className="flex-1"
                     >
                       {consumables.map(m => (
@@ -1315,11 +1317,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                         type="number"
                         step="0.1"
                         value={usage.quantity}
-                        onChange={e => {
-                          const updated = [...packagingMaterials];
-                          updated[index] = { ...updated[index], quantity: parseFloat(e.target.value) || 0 };
-                          setPackagingMaterials(updated);
-                        }}
+                        onChange={e => updatePackagingMaterial(index, 'quantity', parseFloat(e.target.value) || 0)}
                         inputSize="sm"
                         className="w-16 text-right"
                       />

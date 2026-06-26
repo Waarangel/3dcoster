@@ -120,6 +120,51 @@ describe('PERF-11 pricing useEffect dep array trim', () => {
 });
 
 // ---------------------------------------------------------------------------
+// HYG-11 / HYG-12.1 — Immutable update handlers (Phase 37, plan 01)
+//
+// Source-contract tests verifying that all three snapshot-setState anti-patterns
+// (CostCalculator.tsx:842, :1304, :1320) have been converted to functional
+// updaters, and that the new updatePackagingMaterial helper is declared and
+// consumed by both packaging onChange handlers.
+//
+// Same source-scan approach as FIX-04 and PERF-11 above.
+// ---------------------------------------------------------------------------
+
+describe('HYG-11 / HYG-12.1 immutable update handlers', () => {
+  const COST_CALC_SRC = readFileSync(
+    resolve(__dirname, 'CostCalculator.tsx'),
+    'utf8',
+  );
+
+  it('source: updateMaterialUsage uses functional updater setMaterialsUsed(prev => prev.map(', () => {
+    expect(COST_CALC_SRC).toContain('setMaterialsUsed(prev =>');
+    expect(COST_CALC_SRC).toContain('prev.map(');
+  });
+
+  it('source: updateMaterialUsage no longer builds a snapshot array or index-assigns', () => {
+    expect(COST_CALC_SRC).not.toContain('const updated = [...materialsUsed]');
+  });
+
+  it('source: updatePackagingMaterial helper is declared and uses setPackagingMaterials(prev => prev.map(', () => {
+    expect(COST_CALC_SRC).toContain('updatePackagingMaterial');
+    expect(COST_CALC_SRC).toContain('setPackagingMaterials(prev =>');
+  });
+
+  it('source: packaging materialId handler delegates to updatePackagingMaterial with materialId field', () => {
+    expect(COST_CALC_SRC).toContain("updatePackagingMaterial(index, 'materialId', e.target.value)");
+  });
+
+  it('source: packaging quantity handler delegates to updatePackagingMaterial with quantity field', () => {
+    expect(COST_CALC_SRC).toContain("updatePackagingMaterial(index, 'quantity', parseFloat(e.target.value) || 0)");
+  });
+
+  it('source: updated[index] = appears zero times in the whole file (no residual index-mutation)', () => {
+    const matches = COST_CALC_SRC.match(/updated\[index\]\s*=/g) ?? [];
+    expect(matches.length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-21 tax save site regression (Phase 16-08, gap H)
 // Locks the save-site contract: persisted job.taxRate must be the RESOLVED
 // rate (post-fallback chain), NOT the raw form-state override. Previously
