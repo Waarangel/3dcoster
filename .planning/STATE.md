@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
 status: executing
-stopped_at: Completed 35-01-PLAN.md — Settings tab keyboard nav (A11Y-10, WCAG Critical) + marketplace icon-button label verification (A11Y-12 Settings portion); 13/13 new tests + full suite (691) green
-last_updated: "2026-06-26T01:05:47.678Z"
+stopped_at: Completed 35-03-PLAN.md — FilamentSelector trigger label association (id + aria-labelledby) + brand submenu aria-label (A11Y-13); 4/4 new tests + full suite (707) green
+last_updated: "2026-06-26T09:50:00.000Z"
 last_activity: 2026-06-26
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
-  percent: 25
+  completed_plans: 5
+  percent: 31
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 35 (accessibility-tier-4) — EXECUTING
-Plan: 3 of 5 (35-01 complete)
+Plan: 4 of 5 (35-01, 35-02, 35-03 complete)
 Status: Ready to execute
 Last activity: 2026-06-26
 
@@ -74,6 +74,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [v1.9 Roadmap 2026-06-25]: Phase 37 (HYG-11/12) marked STRETCH/optional in its goal — droppable without affecting milestone success if the milestone runs long.
 - [v1.9 Roadmap 2026-06-25]: Tier 2 brand cohesion (redesign branch), Tier 3.1 guided onboarding (v2.0 headline), and Tier 6.1–6.4 God-component splits (refactor risk) explicitly OUT of v1.9.
 - [35-01 2026-06-26]: Settings tabs use roving tabindex (not aria-activedescendant) — native `<button>` tabs make tabIndex toggling the idiomatic APG fit; automatic activation (arrow selects + moves focus) since the panel renders synchronously. A11Y-12 needed no source change for the Settings marketplace section (already used labelled EditButton/DeleteButton) — closed with a confirming test; the Asset-row portion of A11Y-12 remains for plan 35-02, so A11Y-12 stays Pending in REQUIREMENTS traceability until then.
+- [35-03 2026-06-26]: FilamentSelector trigger uses aria-labelledby (not htmlFor) to preserve the existing Button ref pattern. Brand submenu uses static aria-label={brand} (not aria-labelledby) per RESEARCH Pitfall 5 — trigger text is dynamic so labelledby on the menu would produce dynamic name changes while open. No live region or aria-activedescendant needed — existing .focus() calls on arrow-key nav already announce items.
 
 ### Pending Todos
 
@@ -88,8 +89,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-26T01:05:47.673Z
-Stopped at: Completed 35-01-PLAN.md — Settings tab keyboard nav (A11Y-10, WCAG Critical) + marketplace icon-button label verification (A11Y-12 Settings portion); 13/13 new tests + full suite (691) green
+Last session: 2026-06-26T09:50:00.000Z
+Stopped at: Completed 35-03-PLAN.md — FilamentSelector trigger label association (id + aria-labelledby) + brand submenu aria-label (A11Y-13); 4/4 new tests + full suite (707) green
 Resume file: None
 
 ## Operator Next Steps
