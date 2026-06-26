@@ -1037,40 +1037,9 @@ export function AssetLibrary({
         <div role="alert" className="text-sm text-red-400 mb-3">{exportError}</div>
       )}
 
-      {isLoading ? (
-        <AssetListSkeleton />
-      ) : shouldShowEmptyState(displayAssets, isLoading) ? (
-        // WR-02: gate on displayAssets (current view) rather than raw assets.
-        // A printer-only library on the 'All' tab now correctly shows the
-        // empty-state hero instead of the populated chrome with an empty table.
-        // Empty-state copy + CTA route by the active filterCategory so a user
-        // sitting on the 'Printers' tab with zero printers is invited to add
-        // a printer rather than a material.
-        filterCategory === 'printer' ? (
-          <EmptyState
-            icon={<PackageIcon className="w-12 h-12" />}
-            title="No printers in your library yet"
-            description="Add your first printer to start tracking electricity, depreciation, and per-job machine cost. You can also import from CSV if you already have a list."
-            cta={{ label: 'Add Printer', onClick: startAddingForEmptyState }}
-          />
-        ) : filterCategory === 'all' ? (
-          <EmptyState
-            icon={<PackageIcon className="w-12 h-12" />}
-            title="No materials in your library yet"
-            description="Add your first filament to start tracking material costs across jobs. You can also import from CSV if you already have a list."
-            cta={{ label: 'Add Material', onClick: startAddingForEmptyState }}
-          />
-        ) : (
-          <EmptyState
-            icon={<PackageIcon className="w-12 h-12" />}
-            title={`No ${getCategoryLabel(filterCategory).toLowerCase()} in your library yet`}
-            description={`Add your first ${getCategoryLabel(filterCategory).toLowerCase().replace(/s$/, '')} to start tracking costs across jobs. You can also import from CSV if you already have a list.`}
-            cta={{ label: `Add ${getCategoryLabel(filterCategory).replace(/s$/, '')}`, onClick: startAddingForEmptyState }}
-          />
-        )
-      ) : (
-        <>
-      {/* Filter tabs + Search */}
+      {/* Filter tabs + Search — always rendered (even on an empty or mid-add view) so
+          category navigation is never lost when the current view has no assets. */}
+      {!isLoading && (
       <div className="flex gap-2 mb-4 flex-wrap items-center">
         <div role="group" aria-label="Filter by category" className="flex gap-2 flex-wrap">
           {/* allow-raw-html */}
@@ -1126,6 +1095,7 @@ export function AssetLibrary({
           )}
         </div>
       </div>
+      )}
 
       {/* Add/Edit Form */}
       {isAdding && (
@@ -1434,6 +1404,38 @@ export function AssetLibrary({
           </div>
         </form>
       )}
+
+      {isLoading ? (
+        <AssetListSkeleton />
+      ) : shouldShowEmptyState(displayAssets, isLoading) && !isAdding ? (
+        // WR-02: gate on displayAssets (current view) rather than raw assets. With the
+        // filter bar lifted out above, the category tabs stay visible on the empty state
+        // so the user can always navigate away. The !isAdding guard lets the add form
+        // (rendered above) take over when a category is empty and the user is adding.
+        filterCategory === 'printer' ? (
+          <EmptyState
+            icon={<PackageIcon className="w-12 h-12" />}
+            title="No printers in your library yet"
+            description="Add your first printer to start tracking electricity, depreciation, and per-job machine cost. You can also import from CSV if you already have a list."
+            cta={{ label: 'Add Printer', onClick: startAddingForEmptyState }}
+          />
+        ) : filterCategory === 'all' ? (
+          <EmptyState
+            icon={<PackageIcon className="w-12 h-12" />}
+            title="No materials in your library yet"
+            description="Add your first filament to start tracking material costs across jobs. You can also import from CSV if you already have a list."
+            cta={{ label: 'Add Material', onClick: startAddingForEmptyState }}
+          />
+        ) : (
+          <EmptyState
+            icon={<PackageIcon className="w-12 h-12" />}
+            title={`No ${getCategoryLabel(filterCategory).toLowerCase()} in your library yet`}
+            description={`Add your first ${getCategoryLabel(filterCategory).toLowerCase().replace(/s$/, '')} to start tracking costs across jobs. You can also import from CSV if you already have a list.`}
+            cta={{ label: `Add ${getCategoryLabel(filterCategory).replace(/s$/, '')}`, onClick: startAddingForEmptyState }}
+          />
+        )
+      ) : (
+        <>
 
       {/* Mobile Sort */}
       <div className="md:hidden flex items-center gap-2 mb-3">
