@@ -202,7 +202,6 @@ function QuoteStatusPill({ kind }: { kind: QuotePillKind }) {
   const { label, classes } = QUOTE_PILL_STYLES[kind];
   return (
     <span
-      aria-label={`Status: ${label}`}
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}
     >
       {label}
@@ -243,6 +242,37 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [overflowOpen]);
+
+  // H-01: when the overflow menu opens, move focus to the first menuitem so the
+  // arrow-key navigation has a starting point (WAI-ARIA menu pattern).
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const first = overflowRef.current?.querySelector<HTMLElement>('[role="menuitem"]');
+    first?.focus();
+  }, [overflowOpen]);
+
+  // H-01 (WAI-ARIA menu pattern): ArrowDown/Up/Home/End move roving focus between
+  // the menuitem buttons inside the open overflow menu.
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+    const items = Array.from(
+      e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    );
+    if (items.length === 0) return;
+    e.preventDefault();
+    const currentIdx = items.indexOf(document.activeElement as HTMLElement);
+    let nextIdx: number;
+    if (e.key === 'Home') {
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      nextIdx = items.length - 1;
+    } else if (e.key === 'ArrowDown') {
+      nextIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % items.length;
+    } else {
+      nextIdx = currentIdx < 0 ? items.length - 1 : (currentIdx - 1 + items.length) % items.length;
+    }
+    items[nextIdx]?.focus();
+  };
 
   return (
     <li
@@ -290,6 +320,7 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
             {overflowOpen && (
               <div
                 role="menu"
+                onKeyDown={handleMenuKeyDown}
                 className="absolute right-0 top-full mt-1 z-10 min-w-[160px] bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1"
               >
                 {/* allow-raw-html: native menuitem styling per WAI-ARIA menu pattern */}

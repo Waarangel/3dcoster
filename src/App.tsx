@@ -177,6 +177,33 @@ function App() {
     { id: 'settings', label: 'Printers', shortLabel: 'Printers' },
   ];
 
+  // A11Y C-01 (WCAG 2.4.3): WAI-ARIA APG Tabs keyboard contract — same proven
+  // pattern as SettingsModal.handleTablistKeyDown. Roving tabindex + automatic
+  // activation: Left/Right wrap, Home/End jump. Arrow keys move focus BETWEEN
+  // tabs (focus stays on the tablist) so the user can keep arrowing; the
+  // tabpanel (tabIndex={-1}) is reached by pressing Tab.
+  const handleTablistKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIdx = tabs.findIndex(t => t.id === activeTab);
+    let nextIdx: number | null = null;
+
+    if (e.key === 'ArrowRight') {
+      nextIdx = (currentIdx + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft') {
+      nextIdx = (currentIdx - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      nextIdx = tabs.length - 1;
+    }
+
+    if (nextIdx !== null) {
+      e.preventDefault();
+      const nextTab = tabs[nextIdx];
+      setActiveTab(nextTab.id);
+      document.getElementById(`tab-${nextTab.id}`)?.focus();
+    }
+  };
+
   return (
     <ToastProvider>
     <div className="min-h-screen bg-slate-900 text-white">
@@ -274,12 +301,13 @@ function App() {
       {/* Tabs */}
       <div className="bg-slate-800/50 border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex gap-1 flex-nowrap" role="tablist" aria-label="Main navigation">
+          <div className="flex gap-1 flex-nowrap" role="tablist" aria-label="Main navigation" onKeyDown={handleTablistKeyDown}>
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 role="tab"
                 id={`tab-${tab.id}`}
+                tabIndex={activeTab === tab.id ? 0 : -1}
                 aria-selected={activeTab === tab.id}
                 aria-controls="app-tabpanel"
                 onClick={() => setActiveTab(tab.id)}
