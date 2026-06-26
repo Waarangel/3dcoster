@@ -219,7 +219,16 @@ export function useAssets() {
   }, []);
 
   const deleteAsset = useCallback(async (id: string) => {
-    await db.materials.delete(id);
+    // Cascade: deleting an asset must also drop its stock-event rows (keyed on
+    // assetId, already indexed). Without this, deleting a material orphaned its
+    // ledger entries — they bloated backups and could RESURRECT phantom stock
+    // if the same id was ever reused (e.g. reset-to-defaults re-adds a default
+    // id). Wrapped in one rw transaction so the material delete and the ledger
+    // cleanup commit (or roll back) together.
+    await db.transaction('rw', db.materials, db.stockEvents, async () => {
+      await db.materials.delete(id);
+      await db.stockEvents.where('assetId').equals(id).delete();
+    });
   }, []);
 
   const resetToDefaults = useCallback(async () => {
