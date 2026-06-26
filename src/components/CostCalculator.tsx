@@ -8,6 +8,7 @@ import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, u
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
 import { convert, type FxRateTable } from '../utils/fxConvert';
 import { computeMarketplaceFee } from '../utils/marketplaceFee';
+import { priceFromMargin, priceFromProfit, marginFromPrice } from '../utils/pricingInterlink';
 import { calculateCost, calculateTax } from '../utils/costCalc';
 import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
 import { etsyChecklist, policySummaryAsOf, policyLink } from '../data/etsyToS';
@@ -449,6 +450,16 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   );
   const marketplaceFee = marketplaceFeeParts.total;
 
+  // Net-margin fee shape (pct + fixed, user currency) for the pricing interlink's
+  // closed-form solve. Held in a ref the effect can read WITHOUT adding it to the
+  // locked dep array (PERF-11 revert constraint): the dep array stays exactly
+  // [trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice], so a
+  // marketplace-platform change (not a dep) is propagated through this ref. The
+  // re-derivation effect is also chained to fire when `marketplace` changes (see
+  // the lastEdited re-fire effect below) so the price stays net-correct.
+  const feeShapeRef = useRef({ pctFees: marketplaceFeeParts.pctFees, fixedFees: marketplaceFeeParts.fixedFees });
+  feeShapeRef.current = { pctFees: marketplaceFeeParts.pctFees, fixedFees: marketplaceFeeParts.fixedFees };
+
   // Get available shipping methods based on currency
   const availableShippingMethods = useMemo(() => {
     const methods: { value: ShippingMethodType; label: string }[] = [];
@@ -542,10 +553,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     };
   }, [costs.printerDepreciation, costs.nozzleWear, modelCost, modelCostPerUnit]);
 
-  // Calculate break-even info
+  // Calculate break-even info. profitPerUnit is NET of the marketplace fee
+  // (v1.9 cost-MEDIUM decision) so the widget's break-even matches the net
+  // framing and the sales-report treatment (fee comes off revenue). With no
+  // marketplace selected marketplaceFee = 0 and this reduces to the prior math.
   const breakEvenInfo = useMemo(() => {
-    const costPerUnit = trueCost;  // Per-unit consumable cost only
-    const profitPerUnit = sellingPrice - costPerUnit;
+    const costPerUnit = trueCost;  // Per-unit consumable cost only (fee-free — persisted as-is)
+    const profitPerUnit = sellingPrice - costPerUnit - marketplaceFee;
 
     // Copies needed to break even on ALL fixed costs (model + depreciation + nozzle)
     const breakEvenCopies = profitPerUnit > 0
@@ -561,7 +575,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       breakEvenCopies,
       totalInvestmentToBreakEven,
     };
-  }, [trueCost, sellingPrice, fixedCosts]);
+  }, [trueCost, sellingPrice, fixedCosts, marketplaceFee]);
 
   // Phase 13: tax-rate provenance chain (override → settings → province → region → eu-average → manual).
   // Reads `taxRateOverride` local state so in-progress edits flow through `resolveTaxRate`.
@@ -772,27 +786,30 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     }
   };
 
-  // Update interlinked pricing fields based on true cost (including shipping)
+  // Update interlinked pricing fields based on true cost (including shipping).
+  //
+  // The derivations are now NET of marketplace fees (v1.9 cost-MEDIUM decision):
+  // `targetProfit`/`profitMarginPercent` are the NET profit/margin the seller
+  // keeps after the platform fee. The fee shape (pct + fixed, user currency) is
+  // read from feeShapeRef so the LOCKED dep array below stays untouched. With no
+  // marketplace selected the fee shape is {0,0} and every formula reduces EXACTLY
+  // to the prior gross math — the no-marketplace path is byte-identical.
   useEffect(() => {
     if (trueCost <= 0) return;
+    const fee = feeShapeRef.current;
 
     if (lastEdited === 'margin') {
-      // Guard: clamp margin below 100% to prevent division by zero
-      const clampedMargin = Math.min(profitMarginPercent, 99.9);
-      const newPrice = trueCost / (1 - clampedMargin / 100);
-      const newProfit = newPrice - trueCost;
-      setSellingPrice(parseFloat(newPrice.toFixed(2)));
-      setTargetProfit(parseFloat(newProfit.toFixed(2)));
+      const { price, netProfit } = priceFromMargin(trueCost, profitMarginPercent, fee);
+      setSellingPrice(parseFloat(price.toFixed(2)));
+      setTargetProfit(parseFloat(netProfit.toFixed(2)));
     } else if (lastEdited === 'profit') {
-      const newPrice = trueCost + targetProfit;
-      const newMargin = ((newPrice - trueCost) / newPrice) * 100;
-      setSellingPrice(parseFloat(newPrice.toFixed(2)));
-      setProfitMarginPercent(parseFloat(newMargin.toFixed(1)));
+      const { price, marginPercent } = priceFromProfit(trueCost, targetProfit, fee);
+      setSellingPrice(parseFloat(price.toFixed(2)));
+      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
     } else if (lastEdited === 'price') {
-      const newProfit = sellingPrice - trueCost;
-      const newMargin = sellingPrice > 0 ? ((sellingPrice - trueCost) / sellingPrice) * 100 : 0;
-      setTargetProfit(parseFloat(newProfit.toFixed(2)));
-      setProfitMarginPercent(parseFloat(newMargin.toFixed(1)));
+      const { netProfit, marginPercent } = marginFromPrice(trueCost, sellingPrice, fee);
+      setTargetProfit(parseFloat(netProfit.toFixed(2)));
+      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
     }
     // The interlinked pricing values MUST stay in the deps. Re-editing the SAME field
     // (e.g. typing into Selling Price twice) leaves `lastEdited` unchanged, and `trueCost`
@@ -801,7 +818,38 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     // relative to the value the user just typed. (A PERF-11 dep-trim to `[trueCost, lastEdited]`
     // was reverted in the v1.9 release review — the "double render" it removed is the benign,
     // self-terminating second pass; any real micro-opt belongs in the v2.0 CostCalculator split.)
+    // The marketplace fee shape is read via feeShapeRef (not a dep) to keep this array locked;
+    // a separate effect below re-fires this derivation when the platform changes.
   }, [trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice]);
+
+  // Marketplace-platform sync: when the selected platform changes the fee shape
+  // (pct/fixed) shifts, so the interlinked price/profit/margin must re-derive even
+  // though the user didn't touch a pricing field. We re-run the SAME derivation
+  // the locked effect uses, off the current `lastEdited` branch. Keyed on the fee
+  // SHAPE (pct + fixed), not the platform string, so identical-fee platforms don't
+  // churn. trueCost is intentionally excluded — the locked effect already owns
+  // trueCost-driven updates; this effect owns fee-driven ones.
+  useEffect(() => {
+    if (trueCost <= 0) return;
+    const fee = feeShapeRef.current;
+    if (lastEdited === 'margin') {
+      const { price, netProfit } = priceFromMargin(trueCost, profitMarginPercent, fee);
+      setSellingPrice(parseFloat(price.toFixed(2)));
+      setTargetProfit(parseFloat(netProfit.toFixed(2)));
+    } else if (lastEdited === 'profit') {
+      const { price, marginPercent } = priceFromProfit(trueCost, targetProfit, fee);
+      setSellingPrice(parseFloat(price.toFixed(2)));
+      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
+    } else if (lastEdited === 'price') {
+      const { netProfit, marginPercent } = marginFromPrice(trueCost, sellingPrice, fee);
+      setTargetProfit(parseFloat(netProfit.toFixed(2)));
+      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
+    }
+    // Only the fee shape should drive this effect; the pricing values + trueCost are
+    // owned by the locked effect above. Reading them here without depping is safe
+    // because any change to them already re-runs the locked effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marketplaceFeeParts.pctFees, marketplaceFeeParts.fixedFees]);
 
   // Add material to job
   const addMaterialUsage = () => {
@@ -1479,19 +1527,22 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 </div>
               )}
               <div>
-                <div className={`text-2xl font-bold ${(targetProfit - marketplaceFee) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {currencySymbol}{(targetProfit - marketplaceFee).toFixed(2)}
+                {/* targetProfit / profitMarginPercent are now NET of the platform
+                    fee (interlink derives them net), so render them directly —
+                    re-subtracting the fee here would double-count it. */}
+                <div className={`text-2xl font-bold ${targetProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {currencySymbol}{targetProfit.toFixed(2)}
                 </div>
                 <div className="text-xs text-slate-400">Net Profit</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-400">
-                  {sellingPrice > 0 ? (((sellingPrice - trueCost - marketplaceFee) / sellingPrice) * 100).toFixed(1) : '0'}%
+                  {profitMarginPercent.toFixed(1)}%
                 </div>
                 <div className="text-xs text-slate-400">Net Margin</div>
               </div>
             </div>
-            {marketplaceFee > 0 && (targetProfit - marketplaceFee) < targetProfit && (
+            {marketplaceFee > 0 && (
               <p className="text-xs text-orange-400 text-center mt-3">
                 Marketplace fees reduce your profit by {currencySymbol}{marketplaceFee.toFixed(2)} ({((marketplaceFee / sellingPrice) * 100).toFixed(1)}% of sale)
               </p>
