@@ -25,7 +25,7 @@
 
 - [x] **Phase 34: Live papercut fixes** — PWA Reload reliability, ScrollToTop nav, styled "Reset all" confirm, edit-job scroll-to-banner
 - [x] **Phase 35: Accessibility Tier 4** — Settings arrow-key tabs, form-error ARIA association, icon-button labels, FilamentSelector name, tag-chip target size, AA cleanups
-- [ ] **Phase 36: Performance Tier 5** — lift per-row `useQuotes()`, `materialsById` Map, pricing `useEffect` double-render fix
+- [x] **Phase 36: Performance Tier 5** — lift per-row `useQuotes()`, `materialsById` Map, pricing `useEffect` double-render fix
 - [ ] **Phase 37: Code health (STRETCH)** — index-mutation immutability fixes + minor consistency cleanups (droppable if timeboxed)
 
 <details>
@@ -120,7 +120,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   3. The pricing `useEffect` no longer triggers a double render per keystroke — it is moved to an event-handler pattern (or its dep array is trimmed so the values it sets are not in its deps).
 **Plans**: 2 plans
 - [x] 36-01-PLAN.md — JobsManager: lift per-row useQuotes() to parent (PERF-09) + materialsById Map for getFilamentName (PERF-10)
-- [ ] 36-02-PLAN.md — CostCalculator: trim pricing useEffect deps to [trueCost, lastEdited] to kill the double-render (PERF-11)
+- [x] 36-02-PLAN.md — CostCalculator: trim pricing useEffect deps to [trueCost, lastEdited] to kill the double-render (PERF-11)
 **UI hint**: yes
 
 ### Phase 37: Code health (STRETCH)
@@ -140,7 +140,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | --------------------------------------- | --------- | ----- | ----------- | --------- |
 | 34. Live papercut fixes                 | v1.9      | 2/2 | Complete   | 2026-06-25 |
 | 35. Accessibility Tier 4                | v1.9      | 5/5 | Complete   | 2026-06-26 |
-| 36. Performance Tier 5                  | v1.9      | 1/2 | In Progress|  |
+| 36. Performance Tier 5                  | v1.9      | 2/2 | Complete   | 2026-06-26 |
 | 37. Code health (STRETCH)               | v1.9      | 0/?   | Not started | -         |
 
 <details>

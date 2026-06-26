@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
 status: executing
-stopped_at: Completed 36-01-PLAN.md — PERF-09 lifted useQuotes() to parent + PERF-10 materialsById Map; 738 tests green + tsc -b clean
-last_updated: "2026-06-26T12:46:34.580Z"
+stopped_at: Completed 36-02-PLAN.md — PERF-11 pricing useEffect dep trim to [trueCost, lastEdited]; 744 tests green + tsc -b clean + lint clean
+last_updated: "2026-06-26T09:00:00.000Z"
 last_activity: 2026-06-26
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
-  percent: 50
+  completed_plans: 9
+  percent: 75
 ---
 
 # Project State
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 36 (performance-tier-5) — EXECUTING
-Plan: 2 of 2
-Status: Ready to execute
+Phase: 36 (performance-tier-5) — COMPLETE
+Plan: 2 of 2 — DONE
+Status: Phase complete; ready for Phase 37 (STRETCH) or milestone close
 Last activity: 2026-06-26
 
 ## v1.9 Phase Order Reference
@@ -78,6 +78,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [35-04 2026-06-26]: A11Y-14 chip hit target uses min-w/min-h 24px (not AAA 44px) per LOCKED context decision — glyph stays text-[10px], bounding box enlarged without visual change at rest. A11Y-15 break-even bar aria-valuetext template: "{N} of {M} copies sold[ — break-even reached]".
 - [35-05 2026-06-26]: InfoTooltip button label changed from verbose {text} prop to canonical "More information"; Escape handler calls e.stopPropagation() to prevent parent modal from intercepting. App.tsx full-render impractical in jsdom (Dexie DB hooks); used minimal replica subtrees in App.a11y.test.tsx per plan guidance.
 - [36-01 2026-06-26]: jobId kept in OrdersQuoteRows type signature (renamed _jobId) for API stability after PERF-09 removed internal quotesByJobId.get(jobId) usage. Source-contract test filters comment/JSDoc lines before counting useQuotes() calls (naive regex matches documentation references too).
+- [36-02 2026-06-26]: Pricing useEffect dep array trimmed to [trueCost, lastEdited] (Option A, dep trimming). Test for "removed deps not on dep-array line" uses line-by-line scanning, not a broad regex — the PERF-11 rationale comment itself mentions the removed dep names on a single line, causing a false-match in the naive approach.
 
 ### Pending Todos
 
@@ -92,10 +93,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-26T08:36:00.000Z
-Stopped at: Completed 36-01-PLAN.md — PERF-09 lifted useQuotes() to parent + PERF-10 materialsById Map; 738 tests green + tsc -b clean
+Last session: 2026-06-26T09:00:00.000Z
+Stopped at: Completed 36-02-PLAN.md — PERF-11 pricing useEffect dep trim; 744 tests green + tsc -b clean + lint clean
 Resume file: None
 
 ## Operator Next Steps
 
-- Phase 36 Plan 1 complete (PERF-09 + PERF-10 closed). Next: execute 36-02 for PERF-11 (CostCalculator pricing useEffect dep trimming).
+- Phase 36 complete (PERF-09 + PERF-10 + PERF-11 all closed). Next: execute Phase 37 (HYG-11/12 STRETCH) or close v1.9 milestone if Phase 37 is dropped.
