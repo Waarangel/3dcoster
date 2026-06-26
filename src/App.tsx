@@ -201,12 +201,13 @@ function App() {
             {!isStandalone && (
               <Link
                 to="/"
+                aria-label="Back to site"
                 className="flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200 transition-colors text-sm min-w-[44px] min-h-[44px]"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span className="hidden sm:inline">Back to site</span>
+                <span className="hidden sm:inline" aria-hidden="true">Back to site</span>
               </Link>
             )}
             <button
@@ -316,6 +317,7 @@ function App() {
         role="tabpanel"
         id="app-tabpanel"
         aria-labelledby={`tab-${activeTab}`}
+        tabIndex={-1}
       >
         {activeTab === 'calculator' && (
           <CostCalculator
