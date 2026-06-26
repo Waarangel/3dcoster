@@ -59,10 +59,15 @@ export function computeBreakEvenInfo(
 ): BreakEvenInfo {
   const jobSales = salesByJob.get(job.id) ?? [];
   const actualRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue, 0);
+  // Net of recorded marketplace fees for the PROFIT/break-even math, so the saved-job
+  // pill matches the now-net Calculator widget and the sales-report aggregates
+  // (canonical convention: fee off revenue, costPerUnit fee-free). `revenueEarned`
+  // below stays GROSS — it's what the customer paid, not profit.
+  const actualNetRevenue = jobSales.reduce((sum, s) => sum + s.totalRevenue - (s.marketplaceFee ?? 0), 0);
 
   const theoreticalProfitPerUnit = job.sellingPrice - job.costPerUnit;
   const actualProfitPerUnit = job.copiesSold > 0
-    ? (actualRevenue - job.costPerUnit * job.copiesSold) / job.copiesSold
+    ? (actualNetRevenue - job.costPerUnit * job.copiesSold) / job.copiesSold
     : theoreticalProfitPerUnit;
 
   const effectiveProfitPerUnit = job.copiesSold > 0 ? actualProfitPerUnit : theoreticalProfitPerUnit;

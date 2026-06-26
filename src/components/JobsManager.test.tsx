@@ -939,6 +939,19 @@ describe('PERF-08 — break-even formula round-trip (Phase 22.1)', () => {
     const info = computeBreakEvenInfo(job, new Map<string, Sale[]>());
     expect(info.breakEvenCopies).toBe(0);
   });
+
+  it('actual profit nets recorded marketplace fees (matches aggregates + the net Calculator); revenueEarned stays gross', () => {
+    // v1.9 audit cost-fix: the saved-job pill's actual profit/break-even must be
+    // net of recorded marketplace fees, mirroring computeJobsAggregates and the
+    // now-net Calculator widget (fee off revenue, costPerUnit fee-free).
+    const job = makeJob({ id: 'job-be-1', costPerUnit: 10, copiesSold: 1, modelCost: 0, fixedCostsAtSave: { depreciation: 0, nozzleWear: 0 } });
+    const sale = makeSale({ jobId: 'job-be-1', totalRevenue: 50, marketplaceFee: 8 });
+    const info = computeBreakEvenInfo(job, salesMap(sale));
+    // Net profit/unit = (50 - 8 fee - 10 cost) / 1 = 32, NOT the gross 40.
+    expect(info.profitPerUnit).toBeCloseTo(32, 10);
+    // revenueEarned is GROSS — what the customer paid, not profit.
+    expect(info.revenueEarned).toBeCloseTo(50, 10);
+  });
 });
 
 // ---------------------------------------------------------------------------
