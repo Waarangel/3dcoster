@@ -80,8 +80,13 @@ export function useAssets() {
           const allDefaults: Asset[] = [...defaultMaterials, ...defaultPrinterAssets];
           await db.materials.bulkPut(allDefaults); // Use bulkPut instead of bulkAdd to handle duplicates
         } else {
-          // Check if we need to add printer assets (migration for existing users)
-          const printerCount = await db.materials.where('category').equals('printer').count();
+          // HYG-12.2: reads A (printerCount) + B (packagingCount) are independent —
+          // batch them in one Promise.all with a single post-batch cancelled check.
+          // Writes stay sequential and are cancel-checked individually below.
+          const [printerCount, packagingCount] = await Promise.all([
+            db.materials.where('category').equals('printer').count(),
+            db.materials.where('category').equals('packaging').count(),
+          ]);
           if (cancelled) return;
 
           if (printerCount === 0) {
@@ -89,9 +94,6 @@ export function useAssets() {
           }
 
           // Check if we need to add packaging assets (migration for existing users)
-          const packagingCount = await db.materials.where('category').equals('packaging').count();
-          if (cancelled) return;
-
           if (packagingCount === 0) {
             const packagingDefaults = defaultMaterials.filter(m => m.category === 'packaging');
             await db.materials.bulkPut(packagingDefaults); // Use bulkPut to handle duplicates
@@ -1208,7 +1210,12 @@ export function useQuotes() {
       let nextNum = 1;
       if (settingsRow) {
         try {
-          nextNum = (JSON.parse(settingsRow.value) as UserProfile).nextQuoteNumber ?? 1;
+          // HYG-12.3 C3: narrow to Partial<UserProfile> + typeof check (mirrors v9 pattern)
+          // so a corrupt/partial row cannot flow undefined into nextNum.
+          const parsedProfile = JSON.parse(settingsRow.value) as Partial<UserProfile>;
+          nextNum = typeof parsedProfile.nextQuoteNumber === 'number'
+            ? parsedProfile.nextQuoteNumber
+            : 1;
         } catch {
           // Corrupt settings — fall through to nextNum = 1. The setUserProfile
           // write at the end of this transaction will re-stamp the row clean.

@@ -7,6 +7,8 @@
 // across db.sales + db.jobs.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { db } from '../db/database';
 import type { PrintJob, Sale, UserProfile, Quote } from '../types';
 
@@ -352,5 +354,50 @@ describe('createQuote tx-scoped read (DATA-02)', () => {
       value: JSON.stringify({ currency: 'USD', laborHourlyRate: 25 }),  // no nextQuoteNumber field
     });
     expect(numNoField).toBe(1);  // ?? 1 fallback
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HYG-12.2 / HYG-12.3 source-contract assertions (Phase 37 Plan 02)
+//
+// Source-contract: assert structural invariants in useDatabase.ts directly
+// (no runtime harness exercises the useAssets init path in this suite).
+// ---------------------------------------------------------------------------
+
+describe('HYG-12.2 / HYG-12.3 batching + narrowing (source-contract)', () => {
+  const SRC = readFileSync(resolve(__dirname, 'useDatabase.ts'), 'utf8');
+
+  // HYG-12.2: A+B reads are batched via Promise.all
+  it('useAssets init batches printer + packaging counts via Promise.all', () => {
+    expect(SRC).toContain('Promise.all([');
+    expect(SRC).toContain(".equals('printer').count()");
+    expect(SRC).toContain(".equals('packaging').count()");
+  });
+
+  it('useAssets init has a single post-batch cancelled check (reads A+B no longer have individual guards)', () => {
+    // The old sequential form had a standalone packagingCount assignment after a cancelled check.
+    // After batching, no such standalone line should exist.
+    expect(SRC).not.toMatch(/const packagingCount = await db\.materials/);
+  });
+
+  it('the bulkPut writes remain sequential after the batched reads (not moved into Promise.all)', () => {
+    // Both conditional writes must still be present independently
+    expect(SRC).toContain('if (printerCount === 0)');
+    expect(SRC).toContain('if (packagingCount === 0)');
+  });
+
+  it('error handling in useAssets init catch block is unchanged', () => {
+    expect(SRC).toContain("'Error initializing assets:'");
+    expect(SRC).toContain("'Could not load your materials library — check available storage.'");
+  });
+
+  // HYG-12.3 C3: createQuote no longer uses unvalidated `as UserProfile` cast
+  it('createQuote uses Partial<UserProfile> narrowing (not raw as UserProfile cast) for nextQuoteNumber', () => {
+    expect(SRC).toContain('as Partial<UserProfile>');
+    expect(SRC).toContain("typeof parsedProfile.nextQuoteNumber === 'number'");
+  });
+
+  it('createQuote has no remaining unvalidated `as UserProfile` cast at the nextQuoteNumber read site', () => {
+    expect(SRC).not.toContain('as UserProfile).nextQuoteNumber');
   });
 });
