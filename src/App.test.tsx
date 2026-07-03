@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import { MemoryRouter, createMemoryRouter, RouterProvider, type Router } from 'react-router-dom';
+import { MemoryRouter, createMemoryRouter, RouterProvider } from 'react-router-dom';
 
 // ---------------------------------------------------------------------------
 // Phase 38 Plan 02 — App-level tab-in-URL routing tests (FOUND-03).
@@ -225,7 +225,7 @@ function renderAppAt(initialEntries: string[]): void {
 // createMemoryRouter + RouterProvider exposes a `Router` instance whose
 // `.navigate(-1)` drives the same in-memory history stack the app renders
 // against, giving a deterministic (non-timing-based) way to simulate Back.
-function renderAppWithMemoryRouter(initialEntries: string[]): Router {
+function renderAppWithMemoryRouter(initialEntries: string[]): ReturnType<typeof createMemoryRouter> {
   const router = createMemoryRouter(
     [{ path: '/app', element: <App /> }],
     { initialEntries },

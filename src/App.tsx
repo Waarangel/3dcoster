@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers, useAllSales } from './hooks/useDatabase';
 import { useFxRates } from './hooks/useFxRates';
 import type { PrintJob } from './types';
@@ -21,6 +21,12 @@ import { isMaintenanceDismissed, markMaintenanceDismissed, MAINTENANCE_INTERVAL 
 
 type Tab = 'calculator' | 'jobs' | 'materials' | 'customers' | 'reports' | 'settings';
 
+// FOUND-03: single source of truth for which ?tab= values are valid. Any
+// value read from the URL must pass this whitelist (T-38-03) before it is
+// ever used to select a tab — untrusted URL input (typed, bookmarked, or
+// pasted) crosses a trust boundary here.
+const VALID_TABS: Tab[] = ['calculator', 'jobs', 'materials', 'customers', 'reports', 'settings'];
+
 // Detect if running in standalone mode (PWA installed or Tauri desktop app)
 function useIsStandalone(): boolean {
   // For Tauri builds, this is determined at build time
@@ -39,7 +45,36 @@ function useIsStandalone(): boolean {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('calculator');
+  // FOUND-03 (D-05..D-08): tab state lives in the URL, not useState. Bare
+  // /app (no ?tab=) or an unrecognized value both resolve to 'calculator'
+  // (D-06); an unrecognized value additionally gets stripped from the URL by
+  // the effect below (D-07). navigateToTab is the shared setter — push for
+  // normal tab switches (D-05, Back retraces tabs), replace for the D-07
+  // invalid-param cleanup and the A3 edit-nav case (see handleEditJob).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab');
+  const activeTab: Tab = (rawTab && VALID_TABS.includes(rawTab as Tab)) ? (rawTab as Tab) : 'calculator';
+
+  const navigateToTab = useCallback((tab: Tab, options?: { replace?: boolean }) => {
+    setSearchParams(tab === 'calculator' ? {} : { tab }, { replace: options?.replace ?? false });
+  }, [setSearchParams]);
+
+  // push-semantics setter — preserves the exact `(tab: Tab) => void` signature
+  // every existing call site (tab bar onClick, keyboard nav, onViewJobs,
+  // onSwitchTab) already expects, so those sites are unchanged.
+  const setActiveTab = useCallback((tab: Tab) => navigateToTab(tab), [navigateToTab]);
+
+  // D-07 (T-38-03 mitigation, T-38-05 mitigation): an unrecognized ?tab=
+  // value is replaced out of the URL exactly once. Keyed on [rawTab,
+  // setSearchParams] — after the replace, rawTab becomes null and this
+  // effect no-ops, so there is no render loop (O(6) whitelist check, no
+  // regex on the param — no ReDoS surface).
+  useEffect(() => {
+    if (rawTab && !VALID_TABS.includes(rawTab as Tab)) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [rawTab, setSearchParams]);
+
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingJob, setEditingJob] = useState<PrintJob | null>(null);
@@ -153,9 +188,15 @@ function App() {
   };
 
   // Handle editing a job - switch to calculator and load job data
+  //
+  // A3 (RESEARCH.md Assumption A3): this navigation uses REPLACE, not push.
+  // Editing a job isn't a "real" navigation a user would expect to Back out
+  // of — pressing Back after clicking Edit should return to wherever the
+  // user was before Jobs->Edit, not re-surface the mid-edit Jobs state. Push
+  // (setActiveTab) stays reserved for the tab-bar/keyboard call sites.
   const handleEditJob = (job: PrintJob) => {
     setEditingJob(job);
-    setActiveTab('calculator');
+    navigateToTab('calculator', { replace: true });
   };
 
   const handleCancelEdit = () => {
