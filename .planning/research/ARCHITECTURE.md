@@ -1,517 +1,679 @@
-# Architecture Patterns — v1.2 Quote-to-Customer Integration
+# Architecture Research
 
-**Domain:** Adding 7 features to an existing local-first React/Dexie SPA
-**Researched:** 2026-05-20
-**Source confidence:** HIGH — all conclusions drawn directly from source files read in full
+**Domain:** Local-first desktop/PWA cost calculator — v2.0 integration analysis
+**Researched:** 2026-07-03
+**Confidence:** HIGH — all findings grounded in direct codebase reading (CostCalculator.tsx 1814 LOC, useDatabase.ts 1384 LOC, database.ts v11, App.tsx, types.ts, costCalc.ts)
 
 ---
 
-## 1. Dexie Schema: v5 → v6
+## Existing Architecture (Confirmed from Source)
 
-### Current state (v5)
+### System Layers
 
-```typescript
-// src/db/database.ts — current
-db.version(5).stores({
-  materials:       'id, category, brand, filamentType, currency',
-  printers:        'id, name',          // orphan, carried forward
-  printerInstances:'id, printerConfigId, nickname',
-  jobs:            'id, name, createdAt, printerInstanceId',
-  sales:           'id, jobId, soldAt',
-  settings:        'key',
-})
+```
+┌─────────────────────────────────────────────────────────────┐
+│  React Router Shell  (main.tsx → LandingPage / /app)        │
+├─────────────────────────────────────────────────────────────┤
+│  App.tsx  — tab state (useState<Tab>), all Dexie hooks,     │
+│             prop-drilling 15+ props into every tab panel    │
+├──────────┬──────────┬───────────┬────────────┬─────────────┤
+│  Cost    │  Jobs    │  Asset    │ Customers  │  Reports    │
+│  Calc    │  Mgr     │  Library  │  Library   │  Section    │
+│ 1814 LOC │ 1474 LOC │  (~800)   │  (~400)    │  (~600)     │
+├──────────┴──────────┴───────────┴────────────┴─────────────┤
+│  useDatabase.ts (1384 LOC) — all Dexie hooks in one file    │
+│  useAssets · useJobs · usePrinterInstances · useCustomers   │
+│  useQuotes · useAllSales · useUserProfile · useAllSettings  │
+├─────────────────────────────────────────────────────────────┤
+│  Dexie v11 (IndexedDB)  — 9 stores                         │
+│  materials · printerInstances · jobs · sales · settings    │
+│  customers · quotes · stockEvents · printers (legacy)      │
+├─────────────────────────────────────────────────────────────┤
+│  Vercel (web)  /  Tauri 2 (desktop)  /  PWA service worker  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-`PrintJob` in `src/types.ts` does NOT yet have `tags`, `customer`, `taxRate`, or `taxAmount`.
+### God-Components (Confirmed Sizes)
 
-### Schema delta — v6
+| File | LOC | Core problem |
+|------|-----|-------------|
+| `src/components/CostCalculator.tsx` | 1814 | ~25 useState calls, sessionStorage persistence, pricing interlink useEffects, cost derivation useMemos, save flow, break-even, tax, Etsy checklist, filament rows, materials rows, shipping, marketplace — all in one component |
+| `src/hooks/useDatabase.ts` | 1384 | All Dexie hooks co-located; 6 process-lifetime `*Ran` flags for one-time reconciles; seed/migration logic interleaved with CRUD |
+| `src/components/JobsManager.tsx` | ~1474 | Already decomposed once in v1.3 (extracted RecordSaleModal, SaleRow, useCustomerPicker, useAllSales) but still large |
 
-The new fields are all optional on `PrintJob`. Dexie only indexes fields you declare in the store string; optional fields that are not indexed need no schema change — they simply appear or don't on the stored object. The only new indexed field we need is `tags` (for `.where('tags').anyOf(...)` queries if we ever want DB-level tag filtering, but see note below).
+### Key Architectural Facts That Constrain v2.0 Design
 
-**Decision: do NOT add `tags` as a Dexie index.** Filter at the React layer (after `useLiveQuery`) because:
-- The virtualized list already materialises all jobs into memory for react-window.
-- Tag filtering is a pure JS `.filter()` over that in-memory array — no DB round trip needed.
-- Dexie multi-value index syntax (`*tags`) is not supported in Dexie v4's `stores()` string; it requires the `MultiEntry` workaround and adds migration complexity for no measurable gain at current data volumes.
+1. **Tab state is not in the URL.** `App.tsx` owns `activeTab` as `useState<Tab>`. Browser Back exits `/app` entirely to the marketing site. React Router is present in `main.tsx` but unused for intra-app navigation.
 
-**What v6 actually needs:** A new `db.version(6)` call to upgrade `customer` and `taxRate` fields is only required if we want to *index* them. We do not. Therefore v6 is a **data-only migration** with no store-string change — just an `upgrade()` that fills missing fields on existing jobs.
+2. **App.tsx is the single subscriber.** All 12 Dexie hooks run at the App level. Every tab panel receives its data via prop drilling (15+ props into CostCalculator alone). Adding an Insight tab means adding more hooks to App.tsx unless we change the pattern.
+
+3. **`costCalc.ts` is already a clean pure function.** `calculateCost(CalcInput): CostBreakdown` is fully extracted, no React, no Dexie. The `failureRate` field on `CalcInput` is a flat percentage — the seam for the empirical engine already exists.
+
+4. **Display-time FX conversion is the established pattern.** All prices stored in native currency; `useFxRates` + `convert(amount, from, to, fxTable)` converts at render time. This must not be broken by v2.0 additions.
+
+5. **`pricingInterlink.ts` is correct.** The closed-form solvers (`priceFromMargin`, `priceFromProfit`, `marginFromPrice`) are in their own file and unit-tested. The PERF-11 dep-trim regression that was reverted in v1.9 review is a CostCalculator internal problem — the fix belongs in the split, not in pricingInterlink.
+
+6. **Reconcile-legacy-data rule is active.** Every new derived field on an existing stored entity either defaults safely to `undefined` with read-side fallback, or ships with a one-time reconcile helper following the established `*Ran` + WR-01 pattern (flag set only after writes complete).
+
+7. **Dexie schema is at v11.** `src/db/database.ts` defines versions 1 through 11. Any new store requires `db.version(12)`.
+
+8. **No backend exists anywhere.** Vercel deploys are static front-end. Zero server-side code today.
+
+9. **`SeedState` is the established migration flag pattern.** Persisted in `db.settings` as JSON; module-scope flag for within-session dedup. New catalog migrations follow this pattern.
+
+---
+
+## Integration Architecture for v2.0 Features
+
+### 1. CostCalculator God-Component Split
+
+Reading all 1814 lines confirms these concrete extraction boundaries:
+
+**Lines 1–250:** Props interface, session storage helpers, row key utilities, useState declarations (~25 fields)
+
+**Lines 250–350:** Edit-job population effect, printer auto-select effect
+
+**Lines 350–600:** Derived value memos (materials conversion, cost calculation, shipping, packaging, marketplace fees, feeShapeRef, break-even, tax)
+
+**Lines 600–870:** Pricing interlink useEffects (two effects: trueCost-driven and fee-shape-driven)
+
+**Lines 870–1780:** JSX — six visually distinct sections (Job Details, Filaments, Cost Parameters, Shipping, Marketplace/Pricing, Etsy)
+
+**Lines 1780–1814:** Save button + cancel
+
+**Proposed extraction:**
+
+```
+CostCalculator.tsx  (1814 LOC)
+│
+├── useCostForm.ts  (NEW hook — ~150 LOC)
+│   Owns: all ~25 useState declarations + sessionStorage persistence effect
+│   Returns: typed state object + setters + clearForm()
+│   No derived math — purely form state
+│
+├── useCostDerivedValues.ts  (NEW hook — ~200 LOC) — THE PERF-11 FIX HOME
+│   Inputs: form values from useCostForm + materials + electricity + fxTable
+│   Owns all useMemos:
+│     convertToProfile, materialsInProfile, filamentRowsForCalc
+│     costs (via calculateCost), trueCost, fixedCosts
+│     shippingCost, packagingCost, totalShippingCost
+│     marketplaceFeeParts, marketplaceFee, feeShapeRef
+│     breakEvenInfo, taxSource, tax, inheritedTaxRate
+│   Owns both pricing interlink useEffects
+│   Returns: stable derived-values object
+│   WHY PERF-11 FIX WORKS HERE: The effect dep array
+│   [trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice]
+│   is correct in a scoped hook where those are the only reactive values.
+│   The "consecutive same-field edit" desync that caused the revert was a
+│   consequence of the 1814-LOC component re-rendering for unrelated reasons.
+│
+├── CostFormSection.tsx  (NEW ~200 LOC)
+│   Renders: Print Name, Printer select, Model URL/cost, G-code import
+│   Props: form state + setters from useCostForm
+│
+├── CostParametersSection.tsx  (NEW ~200 LOC)
+│   Renders: Print time, failure rate, prep/post time, materials rows
+│   v2.0 addition: empirical failure rate hint row
+│
+├── ShippingSection.tsx  (NEW ~150 LOC)
+│   Renders: shipping method, distance, carrier cost, packaging rows
+│
+├── PricingSection.tsx  (NEW ~250 LOC)
+│   Renders: marketplace picker, interlinked price/margin/profit fields, tax row
+│
+├── CostSummaryPanel.tsx  (NEW ~150 LOC)
+│   Renders: cost breakdown table, break-even widget, Etsy section, save button
+│
+└── CostCalculator.tsx  (BECOMES ~150 LOC orchestrator)
+    Imports: useCostForm, useCostDerivedValues
+    Owns: editingJob population effect, bannerRef, handleSaveJob
+    Renders: editing banner + section components via composition
+```
+
+**Build dependency within the split:** useCostForm extracts first (no dependencies). useCostDerivedValues second (depends on form state shape). Section components after both hooks (depend on both). The orchestrator last.
+
+**No Dexie changes required.** Pure component/hook refactor. `FORM_STORAGE_KEY` in sessionStorage stays unchanged. Existing Vitest contracts on `costCalc.ts` are unaffected.
+
+---
+
+### 2. Failure-Cost Engine
+
+**New Dexie store: `failureEvents` — requires `db.version(12)`**
 
 ```typescript
-// src/db/database.ts — v6 addition
-db.version(6).stores({
-  materials:       'id, category, brand, filamentType, currency',
-  printers:        'id, name',
-  printerInstances:'id, printerConfigId, nickname',
-  jobs:            'id, name, createdAt, printerInstanceId',  // store string unchanged
-  sales:           'id, jobId, soldAt',
-  settings:        'key',
-}).upgrade(tx => {
-  return tx.table('jobs').toCollection().modify(job => {
-    if (!Array.isArray(job.tags))     job.tags     = [];
-    if (job.customer === undefined)   job.customer  = undefined;  // explicit undefined is a no-op; skip
-    if (job.taxRate === undefined)    job.taxRate   = undefined;  // per-job override absent = inherit
-    if (job.taxAmount === undefined)  job.taxAmount = undefined;
-  });
+// types.ts addition
+export interface FailureEvent {
+  id: string;
+  printerInstanceId: string;
+  materialId: string;        // dominant filament used
+  failedAt: Date;
+  printTimeHours: number;    // hours into the print when it failed
+  reason?: string;           // 'stringing' | 'adhesion' | 'mechanical' | 'other' | free text
+  costEstimate?: number;     // optional manual wasted-material cost
+}
+```
+
+```typescript
+// database.ts addition
+db.version(12).stores({
+  // all existing stores unchanged...
+  failureEvents: 'id, printerInstanceId, materialId, failedAt',
 });
+// No upgrade() needed — new empty store
 ```
 
-In practice the upgrade body is a no-op for `customer`/`taxRate`/`taxAmount` (IndexedDB stores `undefined` fields as absent, which is what we want). The only meaningful write is `job.tags = []` for existing records that have no tags array — this makes the `Array.isArray(job.tags)` guard safe everywhere.
+**Integration into cost pipeline — the hint layer, not a replacement:**
 
-### Type delta in `src/types.ts`
-
-```typescript
-// New interface — add to src/types.ts
-export interface JobCustomer {
-  name?:    string;
-  email?:   string;
-  address?: string;   // free-text; not the UserProfile.address struct
-}
-
-// Additions to PrintJob interface
-export interface PrintJob {
-  // ... existing fields unchanged ...
-
-  // v1.2 additions
-  tags?:      string[];       // User-defined labels; [] for untagged jobs
-  customer?:  JobCustomer;    // Optional customer details for this job
-  taxRate?:   number;         // Per-job override (%). undefined = inherit from Settings/region
-  taxAmount?: number;         // Computed and stored at save time for PDF snapshot accuracy
-}
-```
-
-### `UserProfile` additions (tax Settings layer)
-
-```typescript
-// Addition to UserProfile in src/types.ts
-export interface UserProfile {
-  // ... existing fields ...
-  defaultTaxRate?: number;    // User-set override (%). undefined = region lookup
-}
-```
-
-### Tax rate resolution order (three-layer model)
+The existing `PrintJob.failureRate` field is a user-entered flat percentage. The empirical engine adds a suggestion, it does NOT overwrite the user's value:
 
 ```
-1. job.taxRate        — per-job override (most specific)
-2. profile.defaultTaxRate — Settings → Pricing (user override)
-3. TAX_RATES[profile.address?.country ?? '']  — region lookup (src/data/taxRates.ts, new static JSON)
-4. 0                  — fallback: US/no-tax default
+useFailureRate(printerInstanceId, materialId) [NEW hook]
+  reads: failureEvents where printerInstanceId + materialId match
+  reads: jobs where printerInstanceId + filaments[].filamentId match
+  derives: empiricalRate = failureCount / (savedJobCount + failureCount)
+  returns: { empiricalRate: number | null, sampleSize: number }
+
+CostParametersSection renders:
+  Failure Rate input (user entry, unchanged)
+  + hint when sampleSize >= 3:
+    "Your X1C prints PLA at 3.2% empirically ({sampleSize} prints) — apply?"
+    [Apply] button sets failureRate in form state
 ```
 
-Region lookup is a new `src/data/taxRates.ts` file: a `Record<string, number>` keyed by ISO 3166-1 alpha-2 country code (e.g., `{ CA: 5, GB: 20, DE: 19, AU: 10, ... }`). ~30 entries covers the 90% case. This is **static** — no API, no DB table needed.
+**costCalc.ts is unchanged.** `calculateCost(CalcInput)` already accepts `failureRate: number`. The empirical engine feeds the input; the pure function is untouched.
 
-### Downgrade safety (old client opens v6 DB)
-
-IndexedDB schema version numbers are monotonically increasing. An old client (running code compiled against v5) opening a v6 database will trigger Dexie's version conflict path and **throw a `VersionError`**, blocking the DB open. This is standard Dexie behaviour and cannot be avoided.
-
-**Mitigation:** This only affects users who install v1.2, then somehow revert to an older build. In practice:
-- Web users always load the latest deployed version (Vercel auto-deploys on push to main). Version rollback for a web user would require them to manually serve an old bundle, which is not a supported scenario.
-- Desktop users who downgrade a Tauri build would need to uninstall and reinstall an older `.dmg`/`.exe`. The UpdateBanner already directs users to download the latest version. A downgrade path is not advertised.
-
-**No downgrade guard code is warranted** — the standard Dexie `VersionError` on open is the correct behaviour (prevents data corruption from an older schema writing over v6 records).
+**Reconcile rule:** `PrintJob.failureRate` is an input field (user-entered), not a derived snapshot. No backfill needed. Existing jobs keep their manually-entered rate. If v2.0 ever adds `empiricalFailureRateAtSave` as a snapshot field, that would require a reconcile helper with `null` backfill — defer that decision to the implementation phase.
 
 ---
 
-## 2. Cost Math Integration
+### 3. Insight Layer (Hourly Wage, ROI, What-If)
 
-### Where tax fits
+**Pattern: one new tab, thin orchestrator, small focused hooks deriving from existing stores.**
 
-Tax is applied **after the fully-resolved selling price** — it is not part of the cost model but part of the quote. The existing `calculateCost()` produces `sellingPrice` (the pre-tax price the seller intends to receive). Tax is then applied as a display/quote layer on top.
-
-The order is:
+Do not create a God-component. The lesson from CostCalculator is that co-locating all state in one file creates the problem we are now spending a phase to fix.
 
 ```
-filamentCost + electricityCost + depreciation + nozzleWear + ...
-  → subtotal (per-unit costs)
-  → failureAdjusted (× failure multiplier)
-  → sellingPrice (user-set or profit-margin-derived)
-  → taxAmount = sellingPrice × (taxRate / 100)        ← NEW, not in calculateCost
-  → totalWithTax = sellingPrice + taxAmount            ← display only
+App.tsx: add 'insights' to Tab union type, add tab button
+  ↓
+InsightsPanel.tsx  (~150 LOC orchestrator)
+  ├── WageInsight.tsx
+  │   hook: useWageInsight()
+  │     reads: jobs (prepTimeMinutes + postProcessingMinutes per job)
+  │     reads: sales (sellingPrice per sale, matched to jobs for quantity)
+  │     derives: totalLaborHours, totalNetRevenue, effectiveHourlyWage
+  │     compares against: userProfile.laborHourlyRate
+  │
+  ├── ProductRanking.tsx
+  │   hook: useProductRanking()
+  │     reads: jobs + sales
+  │     derives: copiesSold × sellingPrice per job → revenue rank
+  │     filter: last N days from URL param (?insights_range=90d)
+  │
+  ├── PrinterROI.tsx
+  │   hook: usePrinterROI(instanceId)
+  │     reads: printerInstances, jobs (filtered by printerInstanceId), sales
+  │     derives: totalRevenueAttributed, depreciationPaid, paybackProgress
+  │
+  └── WhatIfSimulator.tsx
+      Local state only (no Dexie) — inputs: trueCost from context or URL param
+      Allows user to slide margin/price, shows break-even sensitivity
+      No new stores; no Dexie subscription
 ```
 
-Tax does **not** enter `calculateCost()`. It is a **display/snapshot concern**, not a cost-calculation concern. Reasons:
+**Data flow:** All insight hooks use `useLiveQuery` on existing stores. No new stores for read-only analytics. Pure derivation functions go in `src/utils/insights.ts` (testable, no React).
 
-1. Tax is jurisdiction-imposed on the buyer; it does not change the seller's underlying cost or required margin.
-2. Sellers may or may not collect tax (tax-inclusive pricing is common outside the US). Adding it to the cost math would conflate two separate concerns.
-3. `CostBreakdown` is a snapshot of costs; tax is a function of where/when you sell, not of the print.
-
-**CalcInput / CalcResult delta: zero.** Neither `CalcInput` nor `CostBreakdown` gains new fields.
-
-**New pure helper in `src/utils/costCalc.ts`:**
-
-```typescript
-export function calculateTax(sellingPrice: number, taxRatePercent: number): number {
-  if (taxRatePercent <= 0) return 0;
-  return sellingPrice * (taxRatePercent / 100);
-}
-```
-
-This helper is used:
-- In `CostCalculator.tsx` for the live "Tax" row in the pricing section (display only, not saved into `CostBreakdown`)
-- At job save time to compute `job.taxAmount` (snapshot for PDF accuracy)
-- In `JobsManager.tsx` for display on job cards (optional)
-- In the PDF renderer (definitive)
-
-The `it.todo('tax/VAT applies after subtotal — activates in v1.2')` test in `costCalc.test.ts` should be filled in testing `calculateTax`, not `calculateCost`.
-
-**Tax-inclusive vs tax-exclusive flag:** Not needed for v1.2. All display is tax-exclusive (price + tax shown separately). A `taxInclusive?: boolean` field on `PrintJob` can be deferred to v1.3 if demand surfaces.
+**Insight hooks do NOT go in App.tsx.** They live inside `InsightsPanel.tsx` and call their hooks directly. App.tsx adds one more panel render to its `activeTab` switch — nothing else.
 
 ---
 
-## 3. PDF Rendering Component
+### 4. Backend Seam (Hosted Quote Pages, Pro Tier)
 
-### Architecture decision: page route, not modal or iframe
+**Core invariant: the free floor is offline/no-account forever.**
 
-Use a dedicated page route `/app/quote/:jobId` (or `/quote/:jobId` for the web). This is the correct pattern because:
-
-- A real `.pdf` file download is the goal, not an in-page preview. Modals constrain layout and make full-bleed PDF styling harder.
-- Hidden iframes are a workaround pattern that fights the browser's PDF rendering pipeline.
-- A page route is lazy-loaded via `React.lazy()` at the exact same point as the marketing pages — no architectural novelty, same pattern already in `src/main.tsx`.
-- The "preview" UX is the page itself: the user sees the quote in a styled page component, then clicks "Download PDF" to trigger the client-side library.
-
-### Component and chunk strategy
+The cleanest boundary is: **share-link publish is the only write path into the backend.**
 
 ```
-src/components/QuoteRenderer.tsx      ← the page component (layout, data loading)
-src/utils/pdfExport.ts                ← PDF library calls; dynamically imported from QuoteRenderer
+Free floor (IndexedDB, unchanged):
+  Quote.status = 'sent'  → PDF download (today, unchanged)
+
+Pro hosted (new backend, additive):
+  Quote.status = 'published'  [NEW RuntimeQuoteStatus value]
+    → POST Quote.lineItemsSnapshot to backend
+    → backend returns short URL
+    → Quote.publishedUrl saved locally (new optional field on Quote, no version bump)
+    → Quote.publishedAt saved locally (new optional field on Quote, no version bump)
 ```
 
-`QuoteRenderer` is lazy-loaded at the route level:
+**Why `lineItemsSnapshot` is the right payload:** It already carries a full by-value snapshot (jobTitle, sellingPrice, shippingCost, resolvedTaxRate, taxAmount, currency, notes, terms). No FK dependencies. The backend can serve a static read-only page from this JSON blob without any understanding of the local schema.
+
+**New optional fields on `Quote` interface (no Dexie version bump needed — optional fields on a JSON entity in IndexedDB are transparent):**
 
 ```typescript
-// src/main.tsx addition
-const QuoteRenderer = lazy(() => import('./components/QuoteRenderer.tsx').then(m => ({ default: m.QuoteRenderer })))
-
-// Routes addition
-<Route path="/quote/:jobId" element={<QuoteRenderer />} />
+// Add to Quote interface in types.ts
+publishedUrl?: string;   // returned by backend after successful POST
+publishedAt?: Date;      // timestamp of publish action
 ```
 
-The PDF library itself (`jspdf` or `pdf-lib`) is **not** bundled with `QuoteRenderer` directly. Instead, `pdfExport.ts` does a dynamic import when the user clicks "Download PDF":
-
-```typescript
-// src/utils/pdfExport.ts
-export async function downloadQuotePdf(job: PrintJob, profile: UserProfile): Promise<void> {
-  const { jsPDF } = await import('jspdf');  // deferred; only downloaded on click
-  // ... build PDF ...
-}
-```
-
-This gives two levels of lazy loading:
-1. `QuoteRenderer` chunk is only downloaded when the user navigates to `/quote/:jobId` (via the "Preview Quote" button in `JobsManager`)
-2. The PDF library chunk is only downloaded when the user clicks "Download PDF" within `QuoteRenderer`
-
-Users who never generate a PDF pay zero bundle cost.
-
-### Vite chunk naming
-
-The `manualChunks` function in `vite.config.ts` returns `undefined` for non-`node_modules` ids, which means Rollup creates the lazy chunk from `React.lazy()` automatically. No change to `manualChunks` is needed; both `QuoteRenderer` and the PDF library will become separate dynamic chunks automatically.
-
-### Preview UX flow
+**Auth model — thinnest viable:**
 
 ```
-JobsManager → "Preview Quote" button on job row
-  → navigate to /quote/:job.id (or open in new tab — TBD per UX preference)
-  → QuoteRenderer loads, reads job from db.jobs.get(jobId)
-  → Renders styled quote (brand name, items, totals, tax, customer)
-  → "Download PDF" button → calls downloadQuotePdf() → jspdf builds .pdf → browser download
-  → "Made with 3DCoster" footer (free tier, hardcoded)
+Phase 1 (launch): Magic-link email only
+  POST /auth/magic-link { email } → one-time token → httpOnly session cookie
+  No password storage, no OAuth complexity
+  Backend: Vercel Edge Functions + Supabase Auth (built-in magic link)
+  Database: Supabase Postgres — one table: hosted_quotes(id, token, snapshot_json, expires_at)
+
+Phase 2 (growth): Add Google OAuth as an alternative
+  Never add before magic link is proven working in production
 ```
 
-### Tauri desktop: PDF save
+**Local → hosted data mapping:**
 
-`window.open(blobUrl)` / `link.click()` triggers the system download dialog in Tauri's WebView — no Tauri plugin needed. The Tauri `plugin-shell` already installed handles `open()` calls. Standard browser download API works without any Tauri-specific code.
+```
+PrintJob (IndexedDB)            → does NOT sync to backend (local only)
+Quote.lineItemsSnapshot         → POST to hosted_quotes on explicit publish action
+Customer (IndexedDB)            → does NOT sync to backend
+UserProfile (IndexedDB)         → Pro account metadata only (name, billing, email)
+                                   stored server-side, never synced back down
+```
 
-If a native "Save As" dialog is ever preferred, `@tauri-apps/plugin-fs` + `@tauri-apps/plugin-dialog` can be added. That is a v2.0 enhancement, not v1.2.
+One-way push. Local Dexie is the source of truth. No pull, no merge in v2.0.
+
+**GDPR gate:** The moment any user data leaves the device (publish action), the Pro tier enters GDPR scope. The consent banner (section 6 below) must be deployed before the backend goes live.
 
 ---
 
-## 4. Tag Filter + Search Architecture
+### 5. Tab-in-URL Routing
 
-### Filter state location: `useState` in `JobsManager`
+**Current state confirmed from App.tsx:** `activeTab` is `useState<Tab>`. React Router `BrowserRouter` wraps the whole app in `main.tsx` but no `useSearchParams` is used. Pressing browser Back at any tab exits `/app` to the marketing site.
 
-URL querystring state (`?tags=x,y&q=foo`) is the right call for shareable/bookmarkable searches — but `JobsManager` is an in-app tab, not a standalone page. There is no URL to share. The feature requirement is "filter chips + free-text search". `useState` inside `JobsManager` is the correct, consistent-with-the-existing-architecture answer.
-
-```typescript
-// Inside JobsManager.tsx
-const [selectedTags, setSelectedTags] = useState<string[]>([]);
-const [searchQuery,  setSearchQuery]  = useState('');
-```
-
-These are ephemeral — cleared on tab switch (which is the existing behavior for all `JobsManager` state). No persistence needed.
-
-### Search algorithm: lowercase substring — no fuse.js
-
-Fuse.js is ~24 KB gzipped. Fuzzy search on job titles is not a stated requirement and adds bundle weight. The requirement is "free-text search across title/customer/tags". Lowercase substring search is:
+**Minimal-change fix: replace `useState<Tab>` with `useSearchParams`**
 
 ```typescript
-function jobMatchesSearch(job: PrintJob, query: string): boolean {
-  if (!query.trim()) return true;
-  const q = query.toLowerCase();
-  return (
-    job.name.toLowerCase().includes(q) ||
-    (job.customer?.name?.toLowerCase().includes(q) ?? false) ||
-    (job.tags ?? []).some(t => t.toLowerCase().includes(q))
-  );
-}
+// App.tsx — the only change to this file for this feature
+import { useSearchParams } from 'react-router-dom';
+
+// Remove:
+const [activeTab, setActiveTab] = useState<Tab>('calculator');
+// Add:
+const [searchParams, setSearchParams] = useSearchParams();
+const activeTab = (searchParams.get('tab') as Tab) ?? 'calculator';
+const setActiveTab = useCallback((tab: Tab) => {
+  setSearchParams({ tab }, { replace: false });
+}, [setSearchParams]);
 ```
 
-This runs entirely in memory on the `jobs` array returned by `useLiveQuery`. At the scale of typical use (dozens to low hundreds of jobs), this is instant.
+**URL shape:** `/app?tab=calculator` | `/app?tab=jobs` | `/app?tab=insights`
 
-### react-window v2 + filtered subsets
+**Why not nested routes (`/app/calculator`):** The current architecture renders all tab panels from one App component that holds all Dexie hooks. Converting to nested routes would require either keeping the God-hook-fetching at a layout level (awkward) or splitting hooks per route (large refactor). Search params are the minimal-invasive migration that fixes the browser-Back bug without a routing architecture overhaul.
 
-The virtualized list (Phase 11, already shipped) uses `VariableSizeList` or `FixedSizeList` from react-window. The key constraint: when the filtered subset changes size (different number of visible rows), the list must:
+**History semantics:**
+- `replace: false` on tab changes → each tab is a browser history entry → Back goes to previous tab
+- `replace: true` for `handleEditJob` navigation (switching to calculator to edit is not a "real" navigation the user should Back out of; use `setSearchParams({ tab: 'calculator' }, { replace: true })`)
 
-1. Receive the filtered array as its data source, not the full `jobs` array.
-2. Reset its internal scroll position and cache when the filter changes.
+**Keyboard nav:** The existing `handleTablistKeyDown` roving-tabindex logic is unchanged — it calls `setActiveTab(nextTab.id)` which now writes a search param. Behavior is identical.
 
-Pattern:
-
-```typescript
-const filteredJobs = useMemo(() => {
-  return jobs
-    .filter(job => selectedTags.length === 0 || selectedTags.every(t => (job.tags ?? []).includes(t)))
-    .filter(job => jobMatchesSearch(job, searchQuery));
-}, [jobs, selectedTags, searchQuery]);
-
-// Pass filteredJobs.length as itemCount, filteredJobs[index] inside itemData
-// Reset scroll on filter change:
-const listRef = useRef<VariableSizeList>(null);
-useEffect(() => {
-  listRef.current?.scrollToItem(0);
-  listRef.current?.resetAfterIndex(0);  // VariableSizeList only
-}, [filteredJobs.length]);
-```
-
-The `filteredJobs` array replaces `jobs` as the data source passed into the virtualized list's `itemData`. The list renders `filteredJobs[index]` directly. No index remapping needed — the filtered array is already the correct contiguous set.
-
-**Tag chips source:** The set of available filter chips is derived from all unique tags across all jobs (not just filtered):
-
-```typescript
-const allTags = useMemo(() =>
-  [...new Set(jobs.flatMap(j => j.tags ?? []))].sort(),
-  [jobs]
-);
-```
-
-Chips are rendered above the search input. Selected chips highlight; clicking a chip toggles it in `selectedTags`.
+**OnboardingOverlay URL param:** Use `?onboarding=1` as a separate param alongside the tab: `/app?tab=calculator&onboarding=1`. The wizard overlay reads this param; closing the wizard removes it.
 
 ---
 
-## 5. Etsy ToS Helper Component
+### 6. GDPR Consent Layer
 
-### Structure: data-driven rule list in `src/data/etsyToS.ts`
+**What currently runs without consent:** Vercel Analytics (aggregate, anonymized, low GDPR risk but technically in scope). No other third-party scripts today.
 
-A static array in `src/data/etsyToS.ts` (following the convention of `src/data/bambuFilaments.ts` and `src/data/defaultMaterials.ts` for static data). Not `src/utils/` — utilities are pure functions; this is data.
+**What requires consent before backend launch:** any API call that sends data off-device (the publish action), any error tracking (Sentry), any analytics beyond Vercel.
 
-```typescript
-// src/data/etsyToS.ts
-export interface EtsyToSRule {
-  id:       string;
-  section:  string;   // e.g. "Listings", "Fees", "Intellectual Property"
-  summary:  string;   // one-sentence plain-English rule
-  detail?:  string;   // longer explanation shown on expand
-  severity: 'must' | 'should' | 'info';
-}
+**Pattern: consent context + localStorage**
 
-export const ETSY_TOS_RULES: EtsyToSRule[] = [
-  {
-    id: 'original-design',
-    section: 'Listings',
-    summary: 'Only sell items you designed or have rights to sell.',
-    severity: 'must',
-  },
-  // ... ~8–12 rules covering the most relevant ToS items for 3D print sellers ...
-];
+```
+src/
+├── components/
+│   └── CookieConsentBanner.tsx  (~100 LOC)
+│       renders: fixed bottom bar on first visit
+│       buttons: "Accept all" | "Essential only" | "Manage"
+│       on decision: writes ConsentState to localStorage, dispatches storage event
+│
+├── hooks/
+│   └── useConsent.ts  (~40 LOC)
+│       reads: ConsentState from localStorage
+│       exports: hasConsent(category: ConsentCategory): boolean
+│       listens: storage events for cross-tab sync
+│
+└── utils/
+    └── consent.ts  (~30 LOC)
+        types: ConsentCategory = 'analytics' | 'functional'
+        interface ConsentState { version: 1; decidedAt: string; analytics: boolean; functional: boolean }
+        const CONSENT_KEY = 'cookie_consent_v1'
 ```
 
-The component `src/components/EtsyToSHelper.tsx` renders the rule list. It is a **collapsible** section — collapsed by default, expanded on click (saves vertical space on the CostCalculator form).
+**Gating Vercel Analytics in main.tsx:**
 
-### Placement in CostCalculator
+```tsx
+// main.tsx — current: <Analytics /> is always mounted
+// After consent: gate it reactively
+import { hasConsent } from './hooks/useConsent';
+function AnalyticsGate() {
+  const consent = useConsent();
+  return consent.analytics ? <Analytics /> : null;
+}
+```
 
-Position: **below the job notes/tags fields**, above the "Save" button — after all costing fields are visible, so the seller reviews compliance before saving. This is a checklist, not a form field; it should not interrupt the cost entry flow.
+**GDPR requirements for v2.0 backend launch:**
+- Granular opt-in (analytics vs functional, separately)
+- Revocable via Settings → Privacy page
+- No pre-ticked boxes (opt-in by default is illegal in EU)
+- Privacy Policy page on marketing site
+- Terms of Service page on marketing site
 
-### PDF rendering
+**Tauri desktop:** Banner is web-only (`{!__IS_TAURI__ && <CookieConsentBanner />}`). Desktop users do not participate in browser analytics.
 
-The `EtsyToSHelper` renders on the PDF **only when the user's marketplace is `'etsy'` or `'etsy_offsite_ad'`** AND the user has not explicitly toggled it off. A prop `showOnPdf?: boolean` (default `true` when marketplace is Etsy) controls inclusion. The PDF version is non-interactive (no checkboxes) — it renders as a compact "Etsy compliance notes" section.
-
-Implementation: the `QuoteRenderer` receives the job's marketplace field, checks if it is an Etsy variant, and conditionally includes a static text block (not the interactive React component). No prop threading needed — the QuoteRenderer reads job data directly from IndexedDB.
+**Timing:** Deploy consent infrastructure before any backend call that touches user data. It can ship earlier — even just gating Vercel Analytics — to establish the pattern and satisfy users in strict-consent jurisdictions (DE, FR, NL) before it becomes legally urgent.
 
 ---
 
-## 6. Quick Duplicate
+### 7. Onboarding Wizard
 
-### Action location: JobsManager row — icon button, not context menu
+**First-run detection — no new Dexie version bump needed.**
 
-The existing `JobsManager` job rows have action buttons (edit, delete). Add a "Duplicate" icon button (copy icon) in the same row actions bar. This is consistent with the existing pattern and requires no new UI primitive (use `Button` with `btnSize="sm"` and the existing icon set in `src/components/ui/icons/`).
-
-A context menu pattern would require a new dropdown/popover UI primitive not yet in `src/components/ui/`. Building that for a single action is over-engineering.
-
-### Duplicate semantics
+`UserProfile` is stored as JSON in `db.settings` (key `'userProfile'`). Adding optional fields to the JSON shape requires no Dexie version bump:
 
 ```typescript
-// In useJobs() — new method duplicateJob:
-const duplicateJob = useCallback(async (sourceJob: PrintJob): Promise<string> => {
-  const newId = `job-${crypto.randomUUID()}`;
-  const duplicate: PrintJob = {
-    ...sourceJob,
-    id:         newId,
-    name:       `${sourceJob.name} (copy)`,
-    createdAt:  new Date(),
-    updatedAt:  new Date(),
-    copiesSold: 0,
-    // Reset customer and tax override — not inherited
-    customer:   undefined,
-    taxRate:    undefined,
-    taxAmount:  undefined,
-    // Tags ARE inherited — user duplicates to reuse the same category groupings
+// Add to UserProfile in types.ts (optional — backward compatible)
+onboardingStep?: number;          // last completed step; undefined = not started
+onboardingCompletedAt?: string;   // ISO date; if present, wizard never shows
+```
+
+The existing `updateUserProfile` hook in useDatabase.ts writes these via `setUserProfile`. No new hooks needed.
+
+**Overlay vs route:** Overlay. Reasons:
+- The wizard needs to highlight actual UI underneath (point at the Printers tab, the Asset Library, the calculator)
+- A route would require duplicating the Dexie hook subscriptions or lifting them further up the tree
+- An overlay can use `?onboarding=1` URL param (see section 5) for resumability without a dedicated route
+
+**Resumability:** The wizard reads `userProfile.onboardingStep` on mount and renders the correct step. If the user closes the browser mid-wizard, the next session resumes from `onboardingStep`. Completing all steps writes `onboardingCompletedAt` and removes the `?onboarding=1` param.
+
+**Component structure:**
+
+```
+src/components/onboarding/
+  OnboardingOverlay.tsx      (~150 LOC) — fixed overlay, reads onboardingStep, renders steps
+  OnboardingStep.tsx         (~80 LOC) — reusable step card with progress, title, next button
+  useOnboarding.ts           (~50 LOC) — reads onboardingStep, writes via updateUserProfile
+```
+
+The overlay mounts in `App.tsx` immediately after `<ToastProvider>`, reads `userProfile.onboardingCompletedAt` from the already-subscribed `useUserProfile` hook (no extra subscription needed).
+
+**Suggested steps (to be confirmed at plan phase):**
+1. Currency + region (sets userProfile.currency, address.country)
+2. Add your first printer (navigates to `?tab=settings`)
+3. Add a filament (navigates to `?tab=materials`)
+4. Price your first print (navigates to `?tab=calculator`)
+5. Done — surfaces the "share" or "save job" CTA
+
+---
+
+### 8. File-Based Sync (Multi-Device Without Backend)
+
+**What is realistic vs not for v2.0:**
+
+The existing schema has 9 stores with complex relationships, by-value snapshots (Quotes, Customer on Sale), append-only ledgers (stockEvents), and the reconcile-legacy-data rule. A full CRDT implementation would take months and risks correctness regressions. The "good enough" solution for v2.0 is explicit user-action merge.
+
+**Recommended approach: structured JSON export/import with last-write-wins per record**
+
+```typescript
+// Extend existing backup format in src/utils/backup.ts
+export interface SyncExport {
+  exportedAt: string;           // ISO — used to detect which file is newer
+  deviceId: string;             // random UUID stored in localStorage, stable per device
+  schemaVersion: number;        // db.verno at export time
+  data: {
+    jobs: PrintJob[];
+    sales: Sale[];
+    quotes: Quote[];
+    customers: Customer[];
+    materials: Asset[];
+    printerInstances: PrinterInstance[];
+    stockEvents: StockEvent[];
+    settings: { key: string; value: string }[];   // EXCLUDES seedState key
   };
-  await db.jobs.add(duplicate);
-  return newId;
-}, []);
+}
 ```
 
-Note: `crypto.randomUUID()` is used — not `Date.now()`. This fixes the fragile ID generation concern flagged in `CONCERNS.md`.
+**Merge strategy per store:**
 
-### Post-duplicate behaviour: stays in JobsManager
+| Store | Merge rule | Rationale |
+|-------|-----------|-----------|
+| `jobs`, `sales`, `quotes`, `customers` | Incoming `updatedAt` > local `updatedAt` → put; else skip | By-value snapshots are never edited retroactively; last-write-wins is correct |
+| `printerInstances` | Same as above | `printHours` is the critical field; last write wins |
+| `materials` | Put by id, always | Material edits are low-stakes; the user would see incoming catalog updates |
+| `stockEvents` | Union by id; never overwrite | Append-only ledger; dedup by id is correct and safe |
+| `settings` | Per key; local wins for `seedState`, `fxRateTable`; incoming wins for user-set values | SeedState flags must never be overwritten by an import (would re-run migrations) |
 
-After duplication, the new job appears at the top of the `JobsManager` list (ordered by `createdAt desc`, already the existing sort). Do **not** auto-switch to CostCalculator. The user's intent when duplicating is to have a copy in the list — they can then click "Edit" if they want to modify it. Auto-switching tabs is surprising and breaks the "I'm working in JobsManager" mental model.
+**Conflict documentation:** Two devices editing the same job's `sellingPrice` simultaneously → last-write-wins is wrong but acceptable for v2.0. Document the limitation: "Editing the same job on two devices before syncing may lose changes from the earlier device." CRDT semantics are a v3.0 consideration.
 
-If the user wants to edit immediately, the existing "Edit" button opens the job in `CostCalculator`. That flow is unchanged.
+**What to NOT build in v2.0:**
+- Auto-sync via watched folder (Tauri-only, complex, adds an always-on background process)
+- Conflict UI or three-way merge
+- Real-time sync (requires the backend)
+
+**User-facing flow:** "Export to sync file" (saves `.3dcoster-sync.json`) on device A → user copies file to device B (AirDrop, USB, cloud storage of their choice) → "Import from sync file" on device B runs the merge. Market as "multi-device without a cloud account — you control the file."
 
 ---
 
-## 7. Build Order and Hard Dependencies
-
-### Dependency graph
+## Recommended Project Structure for New v2.0 Files
 
 ```
-taxRates.ts (static data)
-  ↓
-UserProfile.defaultTaxRate (types.ts + useUserProfile hook + Settings UI)
-  ↓
-PrintJob: tags, customer, taxRate, taxAmount (types.ts + db v6 migration)
-  ↓
-calculateTax() helper (costCalc.ts) + tax row in CostCalculator UI
-  ↓                                       ↓
-JobCustomer fields in CostCalculator UI   PDF QuoteRenderer (needs all Job fields)
-  ↓
-Tags + filter/search in JobsManager
-  ↓
-Quick duplicate (reads job, writes copy)
+src/
+├── components/
+│   ├── calculator/              (NEW — CostCalculator extraction)
+│   │   ├── CostCalculator.tsx   (orchestrator, shrinks to ~150 LOC)
+│   │   ├── CostFormSection.tsx
+│   │   ├── CostParametersSection.tsx
+│   │   ├── ShippingSection.tsx
+│   │   ├── PricingSection.tsx
+│   │   └── CostSummaryPanel.tsx
+│   ├── insights/                (NEW)
+│   │   ├── InsightsPanel.tsx
+│   │   ├── WageInsight.tsx
+│   │   ├── ProductRanking.tsx
+│   │   ├── PrinterROI.tsx
+│   │   └── WhatIfSimulator.tsx
+│   └── onboarding/              (NEW)
+│       ├── OnboardingOverlay.tsx
+│       └── OnboardingStep.tsx
+│
+├── hooks/
+│   ├── useCostForm.ts           (NEW — extracted from CostCalculator)
+│   ├── useCostDerivedValues.ts  (NEW — extracted from CostCalculator, PERF-11 fix)
+│   ├── useFailureRate.ts        (NEW — empirical failure rate from failureEvents)
+│   ├── useWageInsight.ts        (NEW)
+│   ├── useProductRanking.ts     (NEW)
+│   ├── usePrinterROI.ts         (NEW)
+│   ├── useOnboarding.ts         (NEW)
+│   ├── useConsent.ts            (NEW)
+│   └── useDatabase.ts           (MODIFIED — add useFailureEvents; consider splitting
+│                                  into per-domain files once further hooks are added)
+│
+└── utils/
+    ├── insights.ts              (NEW — pure derivation functions for insight hooks)
+    ├── consent.ts               (NEW — ConsentState type + localStorage helpers)
+    ├── costCalc.ts              (MODIFIED — add new cost inputs for TOU electricity,
+    │                             abrasive wear; existing CalcInput fields unchanged)
+    └── syncMerge.ts             (NEW — last-write-wins merge logic for file-based sync)
 ```
-
-UI consistency sweep and Etsy ToS helper have no data dependencies and can start any time, but **touch the same forms** v1.2 is adding fields to. Best to run the UI consistency sweep **before** the new fields land, to avoid doing the work twice.
-
-### Suggested phase order
-
-| Phase | Feature(s) | Hard deps | Parallelizable with |
-|-------|-----------|-----------|---------------------|
-| **Phase 12** | Dexie v6 migration + `src/types.ts` delta (tags, customer, taxRate, taxAmount on PrintJob; defaultTaxRate on UserProfile; JobCustomer interface) + `src/data/taxRates.ts` static region table | None — this is the foundation | Phase 13 can start immediately after |
-| **Phase 13** | Tax/VAT — three-layer resolution, `calculateTax()` helper, Settings UI for `defaultTaxRate`, tax row in CostCalculator, `taxAmount` snapshot on save, test coverage (activates the `it.todo`) | Phase 12 (schema must exist) | Phase 14 can start in parallel once Phase 12 is done |
-| **Phase 14** | Customer details — `JobCustomer` fields in CostCalculator form + JobsManager display | Phase 12 (schema must exist) | Can run in parallel with Phase 13 |
-| **Phase 15** | Tags + filter/search — tag input in CostCalculator, chip filter + search in JobsManager, react-window integration | Phase 12 (tags field must exist on type) | Can run in parallel with 13 and 14 after Phase 12 |
-| **Phase 16** | UI consistency sweep — `compact` Input rollout, InfoTooltip replacements, dead badge cleanup | Best done BEFORE Phase 13/14/15 touch the same forms; but if phases 13–15 are already in flight, sweep the new fields as part of those phases | Sequential — but small |
-| **Phase 17** | Quick duplicate | Phase 12 (job schema complete); ideally after Phase 13/14/15 so duplicate inherits all new fields correctly | No downstream deps |
-| **Phase 18** | Etsy ToS helper — `src/data/etsyToS.ts`, `EtsyToSHelper.tsx`, placement in CostCalculator | No data deps; needs Phase 17 done if we want it on the PDF (QuoteRenderer), else can ship standalone | Can run in parallel with Phase 17 |
-| **Phase 19** | PDF QuoteRenderer — `/quote/:jobId` route, `QuoteRenderer.tsx`, `pdfExport.ts`, lazy chunk, "Made with 3DCoster" footer, Etsy ToS section on PDF | **Hard dep on Phases 13, 14** (tax and customer fields must be in the schema and saved correctly before PDF can display them). Phase 15 tags can be omitted from PDF if needed (tags are not a PDF requirement per PROJECT.md). Phase 18 Etsy section on PDF needs EtsyToSHelper data file. | Cannot start until Phase 13 + 14 complete |
-
-### Critical path
-
-```
-Phase 12 → Phase 13 + Phase 14 (parallel) → Phase 19 (PDF)
-                                           ↗
-Phase 15 + Phase 16 + Phase 17 + Phase 18 (can all proceed in parallel after Phase 12)
-```
-
-**Minimum to unblock PDF:** Phase 12 (schema) + Phase 13 (tax) + Phase 14 (customer). Once those three land, PDF development can start without waiting for tags, duplicate, Etsy helper, or sweep.
-
-### Phases that need deeper research at plan time
-
-| Phase | Why |
-|-------|-----|
-| Phase 19 (PDF) | PDF library choice (jspdf vs pdf-lib vs @react-pdf/renderer) not yet locked. Need to verify bundle size, Tailwind-incompatibility (jspdf uses its own coordinate system, not CSS), font embedding for non-Latin characters (relevant for CAD French / EU markets). **Dedicated research step recommended before Phase 19 planning.** |
-| Phase 13 (Tax) | Region tax table needs sourcing for accuracy. `src/data/taxRates.ts` entries need to be verified against current rates (GST/HST/PST splits for Canada, EU country-by-country, etc.) — cannot be generated from training data alone. |
-
-### Phases safe to plan from existing patterns (no additional research)
-
-- Phase 12: Pure schema migration — Dexie v5→v6 pattern is identical to v4→v5.
-- Phase 14: Customer fields — standard form fields + type additions.
-- Phase 15: Tags + filter — well-understood `useState` + `useMemo` pattern. react-window scroll reset is documented.
-- Phase 16: UI sweep — mechanical; follows conventions already in `CONVENTIONS.md`.
-- Phase 17: Quick duplicate — `db.jobs.add({ ...job })` + `crypto.randomUUID()`.
-- Phase 18: Etsy ToS helper — static data + collapsible component.
 
 ---
 
-## Component Map: New vs Modified
+## Suggested Build Order
 
-### New files
+Feature dependencies determine sequencing. Wave notation groups work that can proceed in parallel within a wave.
 
-| File | Type | Purpose |
-|------|------|---------|
-| `src/data/taxRates.ts` | Static data | ISO country → default VAT/GST rate |
-| `src/data/etsyToS.ts` | Static data | Rule list for EtsyToSHelper |
-| `src/components/EtsyToSHelper.tsx` | New component | Collapsible ToS checklist |
-| `src/components/QuoteRenderer.tsx` | New component (lazy chunk) | PDF preview page + download trigger |
-| `src/utils/pdfExport.ts` | New utility | PDF library calls (dynamically imported) |
+### Wave 1 — Foundation (blocks all new UI)
 
-### Modified files
+1. **Tab-in-URL routing** — one targeted change in `App.tsx` (`useState` → `useSearchParams`); must land before any new tab is added; fixes the browser-Back bug before users experience it on the new Insight tab. No other feature blocks this.
 
-| File | Change |
-|------|--------|
-| `src/types.ts` | Add `JobCustomer`, extend `PrintJob` (+4 fields), extend `UserProfile` (+1 field) |
-| `src/db/database.ts` | Add `db.version(6)` with `upgrade()` |
-| `src/utils/costCalc.ts` | Add `calculateTax()` helper |
-| `src/utils/costCalc.test.ts` | Activate `it.todo`, add tax tests |
-| `src/hooks/useDatabase.ts` | Add `duplicateJob` to `useJobs()`; update `useUserProfile` default to include `defaultTaxRate` |
-| `src/components/CostCalculator.tsx` | Tax row, customer fields, tags input, Etsy ToS section placement |
-| `src/components/JobsManager.tsx` | Customer display, tag chips + search, duplicate button |
-| `src/main.tsx` | Add `/quote/:jobId` lazy route |
-| `src/features.ts` | Register new feature keys for NewBadge |
-| `src/App.tsx` | Minimal: pass `duplicateJob` callback if needed (most new features are self-contained in CostCalculator and JobsManager) |
+2. **CostCalculator God-component split** — extract `useCostForm` first (no deps), then `useCostDerivedValues` (the PERF-11 fix, deps on useCostForm), then section components, then the orchestrator. No behavior change. This gates: PERF-11 close, clean surface for adding failure-cost hint row in Wave 2, correct dep array for the pricing interlink.
+
+### Wave 2 — Cost Realism (the moat; all free floor)
+
+3. **Failure-cost engine** — new `failureEvents` store (`db.version(12)`), `useFailureRate` hook, hint UI in `CostParametersSection`. Depends on CostCalculator split (section component must exist to add the hint row to).
+
+4. **Time-of-use electricity + abrasive wear + maintenance amortization** — extends `CalcInput` in `costCalc.ts` with new fields; new UI inputs in `CostParametersSection`. Depends on CostCalculator split. Can run in parallel with failure-cost engine.
+
+### Wave 3 — Insight Layer (depends on tab-in-URL, needs real data from existing jobs)
+
+5. **Insight tab + hooks** — `InsightsPanel`, `useWageInsight`, `useProductRanking`, `usePrinterROI`. Depends on tab-in-URL (Tab union type needs 'insights'). Can start immediately after Wave 1.
+
+6. **What-if simulator** — pure local state; no new Dexie dependency; ships as part of the Insight tab or immediately after.
+
+### Wave 4 — Connected Cost (benefits from Wave 2 data quality)
+
+7. **Filament-price reprice alerts** — reads `materials` + `jobs`; new `useRepriceAlerts` hook. No new stores.
+
+8. **Spool lifecycle / moisture tracking** — extends `StockEvent` with new event kinds, or adds a thin new store. New UI in Asset Library.
+
+### Wave 5 — GDPR + Onboarding (must precede backend launch)
+
+9. **GDPR consent banner + Privacy Policy + ToS pages** — self-contained; no Dexie dependency; must ship before Wave 6.
+
+10. **Onboarding wizard** — depends on tab-in-URL (wizard navigates between tabs by setting the `?tab=` param); depends on consent being in place for any analytics gate inside the wizard. Can run in parallel with Wave 4.
+
+### Wave 6 — Backend Launch (depends on GDPR consent being live in production)
+
+11. **Pro backend infrastructure** — Supabase Auth (magic-link), `hosted_quotes` table, Edge Functions for publish + serve. Depends on Wave 5 (GDPR gate must be live first).
+
+12. **Instant-quote share link UI** — new `[Share]` button in `PrintQuoteModal`, posts `Quote.lineItemsSnapshot` to backend, stores `publishedUrl` on the local Quote record. Depends on backend being live.
+
+13. **Marketing site redesign** (`test/design-skills-experiment` branch) — merge alongside or immediately after backend launch.
+
+### Wave 7 — File-Based Sync (independent; no backend dependency)
+
+14. **File-based sync** — extends existing backup/restore flow; can ship at any point after the schema is stable (after Wave 2 at earliest, to include failureEvents in the sync format).
+
+---
+
+## Component Boundaries Map (New vs Modified)
+
+| Component / Hook | Status | Owns | v2.0 Change |
+|-----------------|--------|------|-------------|
+| `App.tsx` | MODIFIED | Tab routing, global hook subscriptions | Replace `useState<Tab>` with `useSearchParams`; add 'insights' to Tab union; mount `OnboardingOverlay` |
+| `CostCalculator.tsx` | REFACTORED | Orchestrates form + derived values + save | Shrinks to ~150 LOC orchestrator; imports useCostForm + useCostDerivedValues |
+| `useCostForm.ts` | NEW | All form useState declarations + sessionStorage | Extracted from CostCalculator |
+| `useCostDerivedValues.ts` | NEW | All useMemos + pricing interlink effects | Extracted from CostCalculator; PERF-11 fix |
+| `CostParametersSection.tsx` | NEW | Print time, failure rate, prep/post, materials | Add empirical failure rate hint in Wave 2 |
+| `useDatabase.ts` | MODIFIED | All Dexie CRUD hooks | Add `useFailureEvents` hook; consider splitting into domain files (useJobsDb.ts, useAssetsDb.ts, etc.) once the file exceeds ~1600 LOC |
+| `costCalc.ts` | MODIFIED | Pure cost math | Add new CalcInput fields (TOU electricity, abrasive wear) in Wave 2; existing fields unchanged; `calculateCost` stays pure |
+| `InsightsPanel.tsx` | NEW | Insight tab orchestrator | New |
+| `useWageInsight.ts` | NEW | Hourly wage derivation | Reads jobs + sales; no new stores |
+| `useProductRanking.ts` | NEW | Revenue rank per product | Reads jobs + sales; no new stores |
+| `usePrinterROI.ts` | NEW | Printer payback progress | Reads printerInstances + jobs + sales; no new stores |
+| `insights.ts` (utils) | NEW | Pure derivation functions | Testable, no React |
+| `OnboardingOverlay.tsx` | NEW | First-run wizard overlay | Mounts in App.tsx; reads userProfile.onboardingStep |
+| `useOnboarding.ts` | NEW | Wizard state + profile writes | Thin wrapper over updateUserProfile |
+| `CookieConsentBanner.tsx` | NEW | Consent UI | Web-only (`!__IS_TAURI__`) |
+| `useConsent.ts` | NEW | Consent state reads | localStorage; gating layer for analytics + backend |
+| `consent.ts` (utils) | NEW | ConsentState type + helpers | Pure |
+| `syncMerge.ts` (utils) | NEW | File-based sync merge logic | Last-write-wins per store; pure; testable |
 
 ---
 
 ## Data Flow Changes
 
-### Tax resolution (new flow in CostCalculator)
+### Existing flows (unchanged)
 
 ```
-CostCalculator.tsx
-  reads: profile.defaultTaxRate, TAX_RATES[profile.address?.country]
-  computes: effectiveTaxRate = job.taxRate ?? profile.defaultTaxRate ?? TAX_RATES[country] ?? 0
-  displays: taxAmount = calculateTax(sellingPrice, effectiveTaxRate)  ← display only
-  on save: job.taxRate = perJobOverride (if user changed it), job.taxAmount = calculateTax(...)
+User input → CostCalculator useState → calculateCost() → CostBreakdown → render
+                    ↓
+             sessionStorage (form persistence)
+                    ↓
+             onSaveJob → db.jobs.put (IndexedDB)
 ```
 
-### PDF flow (new)
+### New in v2.0
 
 ```
-JobsManager → "Preview Quote" → navigate to /quote/:jobId
-QuoteRenderer → db.jobs.get(jobId), db.settings (userProfile)
-  → renders quote HTML
-  → "Download PDF" click → pdfExport.ts → dynamic import('jspdf') → build + download
+Failure event logged manually
+  → db.failureEvents (v12 store)
+  → useFailureRate(printerInstanceId, materialId)
+  → empiricalRate derived (not stored)
+  → hint shown in CostParametersSection
+
+Jobs + Sales
+  → useWageInsight → effectiveHourlyWage
+  → useProductRanking → revenue rank per product
+  → usePrinterROI → payback progress
+  All in InsightsPanel (read-only; no Dexie writes)
+
+URL ?tab=X
+  → App.tsx reads searchParams.get('tab')
+  → renders correct panel
+
+URL ?onboarding=1
+  → OnboardingOverlay mounts on top of current panel
+  → reads userProfile.onboardingStep
+  → writes step progress via updateUserProfile
+
+Quote (local, status='sent')
+  → Pro: POST /api/quotes { snapshot: Quote.lineItemsSnapshot, token }
+  → backend stores in hosted_quotes table
+  → returns { url: 'https://3dcoster.com/q/xyz123' }
+  → locally: db.quotes.put({ ...quote, publishedUrl: url, publishedAt: now })
+  → Quote.status updated to 'published' (new RuntimeQuoteStatus value)
+
+SyncExport.json (created by user)
+  → syncMerge(localDb, incomingExport) → last-write-wins per store
+  → db.transaction('rw', all-stores) → bulkPut winners
 ```
 
-### Tag filter flow (new, within JobsManager)
+---
 
-```
-useJobs() → jobs[] (all)
-  → useMemo filteredJobs (filter by selectedTags + searchQuery)
-  → VariableSizeList itemData={filteredJobs}
-  → on filter change: listRef.current?.scrollToItem(0); listRef.current?.resetAfterIndex(0)
-```
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Adding More Props to App.tsx
+
+**What people do:** Add the failure events hook, insight hooks, and consent hook to App.tsx and pass them as props into every tab panel.
+
+**Why it's wrong:** App.tsx already prop-drills 15+ values into CostCalculator. The pattern is at its structural limit. Every new hook added here widens every tab panel's props interface, even panels that don't use the data.
+
+**Do this instead:** Individual panels own their own hooks. `InsightsPanel.tsx` calls `useWageInsight()` directly. The CostCalculator orchestrator (after the split) calls `useFailureRate()` directly. App.tsx owns only what must be genuinely shared across multiple tabs (assets, userProfile, fxTable) — same rule as today.
+
+### Anti-Pattern 2: Storing Derived Insight Values in Dexie
+
+**What people do:** Pre-compute hourly wage, product ranking, printer ROI into a new Dexie store for fast reads.
+
+**Why it's wrong:** Derived values go stale. Dexie indexes cannot auto-update derived stores when source stores change. Maintaining a materialized view requires invalidation logic, reconcile helpers, and migration gates — all the complexity of caching with none of the index benefits (these datasets are too small to benefit).
+
+**Do this instead:** Derive in `useMemo` inside insight hooks. `useLiveQuery` on source stores gives reactive updates automatically. Pure derivation is testable in Vitest without Dexie.
+
+### Anti-Pattern 3: Making the Backend a Sync Target
+
+**What people do:** Build two-way sync: local Dexie ↔ Supabase. Every job save pushes to the backend, every page load pulls.
+
+**Why it's wrong:** This codebase has 9 Dexie stores with complex relationships (quotes FK jobs FK printerInstances), by-value snapshots that must never mutate, and an append-only ledger. Two-way sync requires CRDT semantics or optimistic locking for every entity, across every future schema migration. The reconcile-legacy-data rule alone would require careful audit of every sync endpoint.
+
+**Do this instead:** Backend is publish-only in v2.0. `Quote.lineItemsSnapshot` (self-contained, no FK) is the only payload. Local data is authoritative. File-based sync handles multi-device for the free tier.
+
+### Anti-Pattern 4: Breaking the Reconcile-Legacy-Data Rule for Insight Fields
+
+**What people do:** Add `empiricalFailureRateAtSave` to `PrintJob` as a new snapshot field, only populating it going forward.
+
+**Why it's wrong:** Old jobs with `undefined` cause silent rendering bugs in the insight layer (a wage chart that shows $0 for 80% of a user's history). The v1.9 audit caught this pattern repeatedly.
+
+**Do this instead:** Use option (a) for insight fields: default safely to `undefined` with read-side fallback that shows "no data" or "not enough history yet" rather than wrong data. Insight hooks already handle sparse data (return `null` when `sampleSize < 3`). Only use the full reconcile helper for correctness fields where `undefined` would produce an incorrect calculation.
 
 ---
 
 ## Sources
 
-All findings are from direct source file inspection:
-- `src/db/database.ts` (v1–v5 schema)
-- `src/types.ts` (PrintJob, UserProfile, all interfaces)
-- `src/utils/costCalc.ts` + `costCalc.test.ts` (cost math + pending test)
-- `src/hooks/useDatabase.ts` (all hooks, job/sale CRUD)
-- `src/main.tsx` (lazy-load pattern)
-- `vite.config.ts` (manualChunks pattern)
-- `src/components/ui/index.ts` (available primitives)
-- `.planning/codebase/ARCHITECTURE.md`, `STRUCTURE.md`, `CONVENTIONS.md`, `CONCERNS.md`, `STACK.md` (authoritative codebase map)
-- `.planning/PROJECT.md` (v1.2 requirements and decisions)
+All findings are from direct inspection of the current codebase (2026-07-03, branch `v1.9-hardening`):
+
+- `src/components/CostCalculator.tsx` (read lines 1–870, 1700–1814 — full structure confirmed)
+- `src/hooks/useDatabase.ts` (read lines 1–500, 1284–1384 — all hooks confirmed)
+- `src/db/database.ts` (read lines 1–399 — v1 through v11 confirmed, v11 is the last)
+- `src/types.ts` (read lines 1–293 — all interfaces confirmed)
+- `src/utils/costCalc.ts` (read fully — pure function interface confirmed)
+- `src/App.tsx` (read fully — tab state pattern confirmed, React Router imports confirmed)
+- `.planning/PROJECT.md` (v2.0 scope decision, PERF-11 deferral note)
+
+*Architecture research for: 3DCoster v2.0 Cost-Truth & Insight integration*
+*Researched: 2026-07-03*

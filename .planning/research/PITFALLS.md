@@ -1,389 +1,524 @@
-# Domain Pitfalls — v1.2 Quote-to-Customer
+# Domain Pitfalls — v2.0 Cost-Truth & Insight
 
-**Domain:** Adding tax/VAT, customer PII, tag-search, lazy PDF, quick duplicate, Etsy helper, and UI sweep to an existing local-first React 19 + Dexie v4 + react-window v2 + Tauri 2 app with a 300 KB gz main-chunk gate
-**Researched:** 2026-05-20
-**Confidence:** HIGH — all pitfalls grounded in source-file reading + verified external sources
+**Domain:** Adding a first backend, GDPR legal layer, STL-volume instant quotes, God-component refactor, file-based sync, onboarding wizard, tab-URL routing, and 11 cost/insight features to a shipped local-first React + Dexie/IndexedDB + Tauri app with a free-forever promise and EU user base.
+**Researched:** 2026-07-03
+**Confidence:** HIGH for pitfalls grounded in project history (PERF-11 regression, marketplace-fee FX bug, versionchange crash, seedState data-loss); MEDIUM for backend/GDPR/STL-volume findings (verified against official sources + enforcement records).
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, data loss, or silent incorrect prices.
+Mistakes that cause rewrites, data loss, pricing errors visible to customers, regulatory fines, or breaking the free-forever promise.
 
 ---
 
-### Pitfall C-01: Tax applied to wrong base (tax on profit instead of tax on subtotal)
+### Pitfall C-01: Free Floor Accidentally Requires an Account
 
 **What goes wrong:**
-`calculateCost` produces `subtotal` (per-unit variable cost only — filament + electricity + materials + labor) and `failureAdjusted` (subtotal after failure multiplier), but also exposes `printerDepreciation` and `nozzleWear` as separate fixed-cost fields. The "total customer pays" is currently composed outside `calculateCost` in the component (sellingPrice). If tax is inserted before the failure multiplier or applied to the wrong base the tax line will not match what the customer is quoted.
+The moment a backend is wired in, it is tempting to gate every Pro feature behind a login wall and then quietly let the login state leak into free features. The specific risk for 3DCoster: if the hosted quote-page check, the instant-quote share link, or the file-based sync is architected so that anonymous users get a degraded silent failure instead of a graceful local-only experience, existing free users effectively lose features they already have. This is the single fastest way to destroy the trust the free-forever promise has built.
 
-**Correct order of operations for 3DCoster:**
-```
-subtotal (per-unit variable cost)
-→ failureAdjusted = subtotal × failureMultiplier
-→ + depreciation + nozzleWear   (fixed, not per-unit)
-→ = trueUnitCost
-→ sellingPrice = trueUnitCost / (1 − profitMargin)
-→ taxAmount = sellingPrice × taxRate          ← tax is LAST, on the sell price
-→ customerPrice = sellingPrice + taxAmount
-```
+**Why it happens:**
+Auth middleware added at the router level gates all routes, not just Pro ones. Supabase RLS policies written for authenticated users don't have a corresponding anon-user path. The sync flow calls a backend endpoint on startup without checking whether the user is logged in first.
 
-Tax must go on the selling price, not on the cost subtotal. Applying tax to `subtotal` instead of `sellingPrice` understates the tax line. Applying tax to `failureAdjusted` but before adding depreciation/nozzle understates the taxable base by those fixed costs.
+**How to avoid:**
+Treat "unauthenticated" as a first-class, fully-functional state. Every feature must be designed with two flows: local-only (no backend call) and authenticated (backend call). The backend call should be additive, never a prerequisite. Specifically: the instant-quote share link has a free-floor path (in-browser-only, no hosted page) and a Pro path (hosted with custom domain). The two must be branching code paths, not the same code path with the non-Pro branch returning an error.
 
-**Warning sign:** Test `calculateTax(100, 0.15)` returns `15.00`. Then test `customerPrice = sellingPrice + taxAmount` against `subtotal * rate` — they must diverge when depreciation > 0 (which they correctly should; tax is on price, not cost).
+**Warning signs:**
+- Any call to a backend API endpoint occurs before checking `userIsLoggedIn`
+- A free-tier user sees a "Login required" error on a feature that existed in v1.9
+- The `supabase.auth.getUser()` result is awaited in the main app render path before the calculator loads
 
-**Prevention:** The existing `it.todo('tax/VAT applies after subtotal — activates in v1.2')` in `costCalc.test.ts` is the right hook. Activate it with assertions that verify: (a) taxAmount = `round2(sellingPrice × rate)`, (b) customerPrice = `sellingPrice + taxAmount`, and (c) the tax line does NOT equal `subtotal × rate` when depreciation/nozzle are non-zero (regression guard on the correct base).
-
-**Owner phase:** Tax/VAT phase (Phase 12 or wherever tax lands)
+**Phase to address:** Backend foundation phase — the auth architecture must define anonymous vs. authenticated flows before any feature is built on top of it.
 
 ---
 
-### Pitfall C-02: Floating-point rounding producing off-by-one-cent tax lines
+### Pitfall C-02: Data-Model Drift Between Dexie and Postgres
 
 **What goes wrong:**
-JavaScript IEEE 754: `(1.005).toFixed(2)` returns `"1.00"` in some engines (not `"1.01"`). More concretely: `12.50 * 0.23 = 2.8750000000000004` — displayed as `$2.88` via naive `toFixed(2)` but `2.875` rounds to `2.88` correctly. The dangerous case is `12.85 * 0.15 = 1.9275000000000002` which `toFixed(2)` rounds as `1.93`, while `total - subtotal` gives `1.92` or `1.93` depending on intermediate precision — these two methods can disagree by one cent.
+The local Dexie schema evolves via numbered migrations that run per-device. The Postgres schema evolves via SQL migrations run centrally. When a new field is added (e.g., `failureCostEngine.perPrinterRates`), it gets a Dexie migration on the client and a Postgres migration on the server — but they are not coordinated. A user who syncs after being offline for 2 weeks may push data that has a client schema newer than the server expects, or pull data that has a server schema newer than their client. The sync engine silently drops unknown fields or throws a 400.
 
-The existing codebase uses raw floating-point throughout `costCalc.ts` (no decimal library). This works acceptably for cost display (`.toFixed(2)` on the final number only). Adding a tax line that is also displayed separately and must add up to the total adds a second derived number that must round consistently.
+**Why it happens:**
+Local-first developers think of local and remote schemas as one thing. They are not. Dexie migrations run lazily on first open; Postgres migrations run eagerly on deploy. The two are never in lock-step for a user who is offline during a server deploy.
 
-**Prevention:**
-- Compute `taxAmount = Math.round(sellingPrice * rate * 100) / 100` (integer-centime rounding, not `toFixed`).
-- Compute `customerPrice = sellingPrice + taxAmount` (never `sellingPrice * (1 + rate)` and round — this produces a different result when `sellingPrice` has precision).
-- Do NOT derive tax by subtraction (`total - sellingPrice`). Always derive it from `sellingPrice * rate`, then add.
-- `costCalc.test.ts` edge cases to add: `rate=0.23, sellingPrice=12.50` (expect `taxAmount=2.88`); `rate=0.25, sellingPrice=1.00` (expect `0.25`); `rate=0.0` (expect `0`); `rate=1.0` (100% tax — exists in some jurisdictions as luxury tax).
+**How to avoid:**
+Schema versioning must be explicit in the sync protocol. The sync payload should carry `clientSchemaVersion`. The server must reject syncs from clients whose schema version is below the server's minimum supported version and return a clear error with an upgrade prompt — not a silent data drop. During development, maintain a canonical `SCHEMA_CHANGELOG.md` that tracks Dexie version → Postgres migration → sync protocol version as a triple. Never advance one without advancing all three in the same PR.
 
-**Warning sign:** Tax line and `customerPrice - sellingPrice` disagree on any test input.
+**Warning signs:**
+- A field added in a Dexie migration has no corresponding Postgres column added in the same PR
+- The sync payload format has no version field
+- Integration tests only test the happy path with matching client and server schema versions
 
-**Owner phase:** Tax/VAT phase
+**Phase to address:** Backend foundation phase — before any sync is built.
 
 ---
 
-### Pitfall C-03: PDF lazy chunk prefetched by Vite's modulePreload, killing the 300 KB win
+### Pitfall C-03: PERF-11 Repeating — Pricing State Desync During God-Component Split
 
 **What goes wrong:**
-Vite injects `<link rel="modulepreload">` tags into `index.html` for every dynamic import it resolves at build time. A `const PdfButton = React.lazy(() => import('./PdfExport'))` that also `import()`s jspdf inside it will still get a `modulepreload` link generated for the jspdf chunk — the browser fetches it speculatively at page load, restoring the parse cost that lazy-loading was supposed to defer. The 300 KB gz gate in `scripts/assert-bundle-size.mjs` only checks `index-*.js`; the PDF chunk sits in a separate file and is not measured by the gate. The gate passes but the user downloads the PDF library anyway.
+This already happened in v1.9. PERF-11 (trimming `useEffect` deps to `[trueCost, lastEdited]`) passed all 744 Vitest tests but desynced profit/margin on consecutive same-field edits. The fix was to revert rather than repair because the correct fix requires the full CostCalculator split. The v2.0 split of the ~1500-line CostCalculator into sub-components re-opens exactly this failure mode, but at larger scale: hoisting state into a context or splitting effects across component boundaries will create new stale-closure and stale-ref opportunities that contract tests cannot detect.
 
-**Prevention:**
-- Add `build: { modulePreload: false }` to `vite.config.ts` OR use the `resolveDependencies` fine-grained API to exclude the pdf chunk from preload. Simpler: `modulePreload: { polyfill: false }` only removes the polyfill, not the preload links — that is insufficient. The full `modulePreload: false` removes link tags.
-- Alternatively: trigger the PDF import only on explicit user click, using a ref-guarded import that only runs once. Browsers do not prefetch imports that are dynamically constructed at runtime (string-computed paths), but Vite's static analysis catches `import('./PdfExport')` and generates a preload regardless.
-- Validate: after build, check `dist/index.html` for `modulepreload` links pointing at the PDF chunk name. If present, the lazy strategy is broken.
-- The `assert-bundle-size.mjs` gate should be extended to also check the PDF chunk is absent from `index.html` modulepreload links, or a separate `scripts/assert-no-pdf-preload.mjs` check.
+The failure mode: a `useEffect` that recomputes derived pricing state (sellingPrice, margin, profit) fires with a stale snapshot of one of its inputs because the dep array was manually curated to avoid excessive re-renders. The component renders correct-looking values in isolation (tests pass) but stale values when two fields change in rapid succession.
 
-**Warning sign:** Running `grep -r "modulepreload" dist/index.html` after build shows a link referencing the pdf chunk.
+**Why it happens:**
+Source-contract tests assert input → output on individual functions. They cannot detect that the React rendering cycle has read a stale closure of `trueCost` from two renders ago. Only read-the-code review and human UAT on consecutive keystrokes catch this.
 
-**Owner phase:** PDF quote phase
+**How to avoid:**
+1. Write output-equivalence tests before splitting: for N representative inputs, assert that `[trueCost, sellingPrice, profit, margin, breakEven]` from the split component match the pre-split component byte-for-byte. Run these on every PR touching pricing state.
+2. Use `useReducer` instead of multiple `useState` + `useEffect` chains for pricing state. A reducer is a pure function; the transition is synchronous and not subject to stale-closure issues.
+3. Enforce `react-hooks/exhaustive-deps` at error level (not warn) for any `useEffect` that reads pricing state — the ESLint rule catches what code review misses.
+4. Do the split in phases: extract UI rendering first (pure presentational components with no state), then hoist state into a single context/reducer, then add the new pricing features (PERF-11 done right) on top of the clean architecture.
+
+**Warning signs:**
+- Any `// eslint-disable-next-line react-hooks/exhaustive-deps` in pricing effects added during the split
+- A dep array that omits a value read inside the effect (even if it "feels" stable)
+- Human UAT that skips the "type two fields rapidly" interaction
+
+**Phase to address:** CostCalculator God-component split phase. This is the highest-risk code change in the entire milestone.
 
 ---
 
-### Pitfall C-04: Quick duplicate carries over `id`, `createdAt`, and customer PII — three distinct failure modes
+### Pitfall C-04: Consent Banner That Is Itself Non-Compliant
 
 **What goes wrong:**
-A naive `{ ...job }` duplicate then `db.jobs.add(copy)` fails immediately with Dexie's unique-constraint violation on `id`. A developer fixes the `id` first, then later discovers the `createdAt` is wrong (duplicate shows as "created" at the original date), and later still discovers the customer name/email/address was copied silently.
+Adding a GDPR consent banner to satisfy regulators while making the banner itself non-compliant is the most common mistake. Concrete violations with real fines attached:
 
-These are three separate bugs that require three explicit decisions:
+- **Reject-all parity failure (most common):** Accept button is primary/filled; Reject is a plain text link or requires navigating to a settings sub-page. France's CNIL fined Google €150 million (Sept 2025) and €200 million (again Sept 2025) specifically for this. Honda was fined $632,500 for a two-click reject vs one-click accept.
+- **Pre-ticked boxes:** The CJEU ruled definitively that pre-checked consent checkboxes are invalid. Vercel Analytics loaded without explicit consent would be a violation for EU users.
+- **Consent wall:** Blocking access to the calculator until the user accepts. This violates "freely given" consent.
+- **Dark pattern contrast:** Accept button is high-contrast; Reject is low-contrast or grey. Visually asymmetric buttons are now explicitly documented as a violation.
 
-| Field | Correct behavior | Risk if inherited |
-|---|---|---|
-| `id` | New `crypto.randomUUID()` | DB constraint crash |
-| `createdAt` | `new Date()` | Wrong sort order in JobsManager |
-| `updatedAt` | `new Date()` | Misleading "last edited" |
-| `customer` (name/email/address) | `undefined` | PII leak — customer appears on a quote for a different customer |
-| `taxRate` (per-job override) | `undefined` or Settings default | Wrong jurisdiction rate on the new job |
-| `copiesSold` | `0` | Phantom sales on the new job's break-even tracking |
-| Quote number / job reference | Generate fresh | Collision if user ever cross-references |
+For 3DCoster specifically: Vercel Analytics is not GDPR-compliant by default. It requires IP anonymization configured, a Data Processing Agreement with Vercel, and explicit consent from EU users before the analytics script fires.
 
-**Prevention:** Define an explicit `duplicateJob(source: PrintJob): PrintJob` function with an allowlist (not a blocklist) — only copy the fields that should carry over: `name` (with "Copy of" prefix), `filaments`, `printTimeHours`, `printerInstanceId`, `modelCost`, `modelCostPerUnit`, `authorMinPrice`, `modelUrl`, `prepTimeMinutes`, `postProcessingMinutes`, `materialsUsed`, `failureRate`, `sellingPrice`, `notes`, `tags`. Reset everything else to neutral defaults. Unit-test the function explicitly with an assertion that `duplicate.customer === undefined`.
+**Why it happens:**
+Developers copy a template banner that has an "Accept All" button and a "Settings" link, thinking that surfaces a reject path. The Settings sub-page that requires three more clicks to reject is non-compliant even if a reject path technically exists.
 
-**Warning sign:** Duplicate operation with a job that has `customer: { name: 'Alice' }` — inspect the duplicate and assert customer is undefined.
+**How to avoid:**
+The banner must have:
+- "Accept All" and "Reject All" at identical visual weight on the first layer (same button style, same size, same position level)
+- Rejecting must take exactly one click — the same as accepting
+- No non-essential scripts (analytics, third-party embeds) fire until explicit consent is received
+- Consent is stored and sent as a signal to the analytics provider; re-shown if consent expires or user clears data
+- Granular categories (strictly necessary / analytics / marketing) — even if only one non-essential category exists today, the infrastructure needs to support adding more
 
-**Owner phase:** Quick duplicate phase
+**Warning signs:**
+- Vercel Analytics fires page-view events before the user has clicked Accept
+- The banner has "Accept All" and "Manage Cookies" but no direct "Reject All" on the first layer
+- Console shows analytics network requests on first page load before any user interaction
+
+**Phase to address:** GDPR/legal foundation phase — must be complete before any backend that processes EU user data goes live. Do not deploy the backend without the banner.
 
 ---
 
-### Pitfall C-05: Dexie downgrade — older web/PWA opens v6 database without v6 declarations
+### Pitfall C-05: Privacy Policy That Doesn't Match Actual Processing
 
 **What goes wrong:**
-A user upgrades the PWA (auto-update via `workbox: { registerType: 'autoUpdate' }`), gets Dexie v6 schema with `tags` and `customer` fields. They then open the app in a second tab that hasn't refreshed yet (still running v5 code). The v5 Dexie instance opens the database and finds version 6 — it throws `VersionError: The requested version (5) is less than the existing version (6)`. The second tab shows a blank white screen or an uncaught exception. This is not data loss, but it is a hard crash for the user.
+Writing a privacy policy from a template, then adding Vercel Analytics, a Supabase backend, and a hosted quote page without updating the policy to reflect what is actually collected. GDPR's accountability principle requires the organisation to demonstrate compliance, not merely declare it. Research shows 46% of apps have inconsistency between policy declarations and actual data collection behaviour.
 
-Separately: a Tauri desktop user who rolled back to an older app build has the same problem permanently until they reinstall.
+For 3DCoster's specific v2.0 data flows:
+- Vercel Analytics: IP-derived location, device info, referrer (requires disclosure)
+- Supabase: email/auth token for Pro users (requires disclosure of retention, deletion rights, subprocessors)
+- Hosted quote pages: customer name, email, address, price — these are third-party personal data for GDPR purposes. The seller is the data controller; 3DCoster (as the platform) is the data processor. This relationship requires a Data Processing Agreement between 3DCoster and its Pro users.
+- File-based sync (Dropbox/Drive integration): if 3DCoster writes to a user's Drive account, the data may transit Google/Dropbox infrastructure — requires disclosure
 
-**Prevention:**
-- Add a `versionchange` event listener via `db.on('versionchange', () => window.location.reload())` — this triggers when another tab upgrades the DB and tells the current tab to reload.
-- The PWA already uses `registerType: 'autoUpdate'` in `vite.config.ts`, which calls `skipWaiting` automatically. Add the corresponding `clients.claim()` in the service worker and a `controllerchange` listener that reloads the page. Together these ensure all tabs switch to the new version atomically.
-- Upgrade functions in Dexie run **once per client, on the first open after the version bump** — not on every open. This is correct and safe. However, if the upgrade function throws, the DB open fails and the entire app breaks. Wrap upgrade mutations in try/catch within the `.upgrade()` callback and log errors.
+**Why it happens:**
+Legal pages are written once at launch and never revisited as features ship.
 
-**Warning sign:** Console shows `VersionError` or `IDBVersionChangeEvent` in an open tab after deploying.
+**How to avoid:**
+Maintain a "Data Flow Inventory" (a simple table: what data, who collects it, where it goes, how long it's retained, legal basis). Update it as a PR checklist item every time a new data flow is added. The privacy policy is generated from the inventory, not written independently.
 
-**Owner phase:** Dexie migration phase (whichever phase adds v6 schema)
+**Warning signs:**
+- A new API endpoint collects data that is not listed in the privacy policy
+- The privacy policy says "we do not use third-party analytics" while Vercel Analytics is active
+- The hosted quote page stores customer PII in Supabase with no mention in the policy
+
+**Phase to address:** GDPR/legal foundation phase.
+
+---
+
+### Pitfall C-06: Hosted Quote Page Leaks Customer PII via Predictable URLs
+
+**What goes wrong:**
+A hosted quote page at `3dcoster.com/q/12345` where `12345` is a sequential integer, a short hash, or a UUID predictable from context leaks customer names, addresses, email addresses, and quote amounts to anyone who guesses or enumerates the URL. Quote pages contain customer PII (name, email, delivery address) and financial data (itemized costs, total price). A leaked URL is a GDPR data breach.
+
+**Why it happens:**
+Sequential IDs are the default in most database primary key schemes. Developers think "it's just a number, no one will guess it." At 1000 active Pro users each generating 10 quotes, the space is 10,000 IDs — trivially enumerable.
+
+**How to avoid:**
+- Quote share links must use cryptographically random tokens of at least 128 bits (UUID v4 or equivalent, never sequential). The token is the only key — no sequential ID should appear in the URL.
+- Quote pages must not be indexed by search engines (`X-Robots-Tag: noindex` or `<meta name="robots" content="noindex">`).
+- Consider quote expiry: hosted quote pages should expire after 30 days (configurable by the seller) and return 404 after expiry.
+- The hosted page must not cache in Vercel's CDN without a `Vary: Cookie` or token-based cache key, or any customer's quote could be served to another user from the edge cache.
+
+**Warning signs:**
+- Quote URL contains a number that increments by 1 between quotes
+- `curl -I https://3dcoster.com/q/[id]` returns `X-Robots-Tag: index`
+- The Supabase RLS policy for the `quotes` table allows SELECT without token authentication
+
+**Phase to address:** Instant-quote share link phase (Pro backend).
+
+---
+
+### Pitfall C-07: STL Volume Estimation Producing Wildly Wrong Instant Quotes
+
+**What goes wrong:**
+The in-browser STL volume estimate is the foundation of the instant-quote free floor. It will produce meaningless numbers — and undercut makers' actual prices — in three common situations:
+
+1. **Non-manifold / non-watertight meshes:** The signed-tetrahedron volume method (the correct algorithm, same math slicers use) requires a closed, manifold mesh. Meshes with holes, duplicate vertices, inverted normals, or self-intersections return garbage volume. Community STL files from Thingiverse/Printables frequently have these defects.
+
+2. **Units ambiguity:** STL files have no embedded unit declaration. A file modelled in inches produces a volume 16.4× larger than the same model in mm. Most common CAD tools export in mm; some (Fusion 360 by default, older SolidWorks exports) output in inches. A 1-inch cube appears as a 16,387 mm³ cube, producing a filament-weight estimate 16× too high and a quote 10–20× too expensive.
+
+3. **Infill assumption:** Volume calculators return solid volume. A real print at 15% infill uses ~0.15× the solid volume in filament. If the instant quote uses solid volume as the filament proxy without applying the infill factor, the estimated filament weight is 5–7× too high. A user quoting a vase at 15% infill would be quoted the price of a solid brick of plastic.
+
+The consequence is not just inaccuracy — it is undercutting. A maker who uses the instant quote to set their price and gets a 2× overestimate charges less than they need to. A maker who gets a 5× underestimate (from a tiny manifold-broken mesh) prices below cost.
+
+**Why it happens:**
+The volume library returns a number; the developer treats that number as the filament proxy without validation or disclaimers.
+
+**How to avoid:**
+- Use Three.js `STLLoader` + the signed-tetrahedron volume summation on the buffer geometry. After loading, check `geometry.boundingBox` — if any dimension is implausibly large (> 500 mm for consumer printing) or implausibly small (< 0.1 mm), warn that the unit assumption may be wrong and ask the user to confirm mm vs. inches.
+- Add a mesh integrity check: compute the ratio of vertices to faces. If the ratio is far outside the range for a manifold mesh, surface a warning: "This file may have mesh errors. Volume estimate may be inaccurate."
+- Expose an "infill %" input on the instant quote flow. The volume estimate is `solidVolume × (infill/100)` for infill calculation and `solidVolume × shellFraction` for perimeters — but for the MVP, just multiply by the user's chosen infill.
+- Never present the instant quote as a final price. Label it explicitly as an estimate with ±accuracy band. The user's saved G-code-based cost calculation remains the source of truth.
+
+**Warning signs:**
+- A test STL known to weigh 15g of PLA is estimated at 2.5g or 120g
+- No unit-detection or warning logic in the STL parsing code
+- The infill % input is absent and solid volume is used directly as filament proxy
+
+**Phase to address:** Instant-quote share link phase. Must be resolved before the free-floor path ships.
+
+---
+
+### Pitfall C-08: File-Based Sync Data Corruption and Multi-Tab Races
+
+**What goes wrong:**
+File-based sync (Dropbox/Google Drive) works by exporting the full Dexie database to a JSON file and importing it on another device. The failure modes are:
+
+1. **Partial write + sync:** Dropbox/Drive syncs while the write is in progress. The remote file is a truncated JSON. The second device imports a broken file, destroying data.
+2. **Multi-tab write race:** Two browser tabs are open on the same machine. Tab A exports and writes. Tab B (unaware of Tab A's write) also exports and writes 3 seconds later. Tab B's export snapshot pre-dates Tab A's last save; the Tab B file wins on the next sync and rolls back Tab A's changes.
+3. **Dexie `versionchange` during import:** If the user imports a file generated by a different schema version (e.g., they exported from v1.9, then imported into v2.0), missing fields are silently dropped. The app loads but data is incomplete. This is a forward-migration problem: the import must run the same Dexie upgrade logic as a regular version bump.
+4. **IndexedDB storage limit:** Safari limits IndexedDB to 1 GB per origin. At scale (many jobs with G-code attachments), users may hit the quota without warning. The JSON export of a large database becomes multi-MB; Dropbox/Drive sync of multi-MB files on mobile is slow and expensive.
+
+This project already experienced the versionchange crash (fixed in v1.2 with `db.on('versionchange', reload)`). File-based sync re-opens a version of the same problem via import.
+
+**Why it happens:**
+File-based sync looks simple: just JSON export/import. The edge cases are invisible until a user loses data.
+
+**How to avoid:**
+- Write atomically: generate the full JSON in memory, then write as a single operation. Never stream-write to a cloud file. Prefer writing to a temp file and atomically renaming it.
+- Include a schema version in the export JSON. On import, check that the schema version matches the current Dexie version. If it doesn't, run a migration pass on the imported data before writing to IndexedDB.
+- Lock multi-tab writes: before export, acquire a BroadcastChannel lock signal. Other tabs must observe the lock and queue their exports.
+- Add a conflict detection checksum: the export file includes a hash of the previous export's content. On import, if the hash doesn't match the local state's hash, surface a "Conflict detected — which version to keep?" UI rather than silently overwriting.
+- Never auto-import without user confirmation if a conflict is detected.
+
+**Warning signs:**
+- The export/import format has no schema version field
+- The import function does not check schema version before writing
+- Two-tab export test (open two tabs, save in both, export in both) produces two files with the same content rather than the last-one-wins or a conflict warning
+
+**Phase to address:** File-based sync phase. If the conflict detection complexity is underestimated, this phase needs its own research spike before planning.
 
 ---
 
 ## Moderate Pitfalls
 
+Mistakes that cause user confusion, bad data, or compliance gaps without rising to the level of data loss or fines.
+
 ---
 
-### Pitfall M-01: Region VAT table staleness — user gets wrong rate with no warning
+### Pitfall M-01: Onboarding Wizard That Blocks Returning Users
 
 **What goes wrong:**
-Bundling a static JSON rate table (e.g., `{ "DE": 0.19, "SK": 0.20, ... }`) without a `lastUpdated` timestamp means Slovakia's rate is 20% in the bundle but legally 23% as of January 2025. The user prices a quote at 20% VAT and under-collects. Worse: the user has no way to tell the rate is stale.
+A first-run onboarding wizard that fires on every cold start (e.g., after clearing localStorage, after a PWA reinstall) forces a returning user who already has 50 saved jobs to sit through "Welcome to 3DCoster — let's set up your first printer." Worse: if the wizard writes to the same Dexie stores that the import flow uses (e.g., seeding a default printer), it can overwrite a returning user's existing data if the "returning user" check fails.
 
-Concrete rate changes that will make any 2024-era table wrong:
-- Slovakia: 20% → 23% (Jan 2025)
-- Estonia: 22% → 24% (Jul 2025)
-- Romania: 19% → 21% (Aug 2025)
+The returning-user check failing is more likely than it sounds. The `isFirstRun` flag lives in `localStorage`. A user who clears browser storage (common in EU privacy-conscious users), uses a private/incognito window, or reinstalls the PWA loses the flag. The wizard fires again. If the wizard then seeds a "Bambu X1C" default printer because no printers exist in IndexedDB (also cleared), that is correct. But if IndexedDB was not cleared (separate storage from localStorage), the wizard seeds a duplicate printer.
 
-**Prevention:**
-- Embed a `rateAsOf: "YYYY-MM-DD"` field per country entry (not a single global date — countries change at different times).
-- Display "VAT rate as of [date]" in the UI wherever the rate appears. This is a legal protection for the user: they can see the rate may be stale and verify.
-- Add an inline note: "Rates are estimates. Verify with your tax authority before issuing invoices."
-- When a country is missing from the table, do not silently fall back to 0%. Show "No rate on file — enter manually" and require the user to input a rate. 0% VAT being the fallback for an unknown country is a silent pricing error.
-- The region table is small enough (~50 entries, ~3 KB) to ship inline in the main chunk — do not lazy-load it. Lazy-loading the tax table would block the tax UI on first render.
+**Why it happens:**
+The first-run flag is stored separately from the actual data, so the two can get out of sync.
 
-**Warning sign:** Country selector saves successfully but the tax line shows $0.00 for a country that has VAT.
+**How to avoid:**
+- Store the "has completed onboarding" flag in Dexie (on the `UserProfile` row), not in localStorage. localStorage is cleared independently of IndexedDB. IndexedDB is the source of truth for user state.
+- The wizard entry check: `await db.userProfile.get(1)` → if `userProfile.onboardingCompleted === true`, skip wizard entirely.
+- The wizard must have a "Skip — I know what I'm doing" path on every step that dismisses without writing anything.
+- Wizard steps that write data (e.g., "Add your first printer") must check whether that data already exists before writing.
 
-**Owner phase:** Tax/VAT phase
+**Warning signs:**
+- The onboarding skip button is absent or hidden
+- `isFirstRun` is stored in `localStorage` instead of Dexie
+- The wizard writes a default printer without checking `db.printers.count() === 0` first
+
+**Phase to address:** Guided first-run onboarding phase.
 
 ---
 
-### Pitfall M-02: Virtualized list cache stale after tag filter applied
+### Pitfall M-02: Tab-in-URL Routing Breaking PWA start_url and Back Navigation
 
 **What goes wrong:**
-The existing `useDynamicRowHeight` uses `key: selectedJobId ?? ''` to invalidate the height cache when selection changes (Phase 11 fix, per `JobsManager.tsx:464-467`). When a tag filter is applied, `jobs` prop changes (new subset), but `selectedJobId` may be unchanged — the cache still holds heights from the full list, indexed by old row positions. Row N in the filtered list may be a different job than row N was in the unfiltered list, but the cache returns a stale height. The row renders at the wrong height until the user scrolls past and triggers a remeasure.
+Adding URL-based tab routing (e.g., `/app/calculator`, `/app/jobs`, `/app/reports`) changes the app's URL structure. This breaks three things:
 
-Additionally: if the user has job #47 selected (expanded, tall) and applies a filter that removes that job from the list, `selectedJobId` still holds the now-invisible job's ID. The UI shows no expanded row but the cache key is non-null, so `useDynamicRowHeight` still operates in "something is expanded" mode.
+1. **PWA `start_url`:** The PWA manifest has `"start_url": "/"`. Users who installed the PWA before v2.0 now have a bookmark/home screen icon that opens `/`, which redirects to `/app/calculator`. Users who had the calculator mid-job open at `/app` will find their Back button navigates to `/` (outside the app) instead of doing nothing or staying in-app.
+2. **Service worker navigation fallback:** The service worker's fetch handler currently intercepts all navigation requests and serves `index.html` (SPA fallback). When URLs change to include `/app/calculator`, the service worker must be updated to also match the new routes, or users on cached old service workers will see 404 on hard reload.
+3. **Tauri deep links:** Tauri desktop uses `tauri://localhost/app` as the base URL. Deep-linking to `/app/jobs` works in the browser but may not work in Tauri without configuring `tauri.conf.json` `allowlist.http.allowedUrls` or the v2 security policy. A blank screen in Tauri on a tab link is a silent failure.
 
-**Prevention:**
-- The `key` passed to `useDynamicRowHeight` must encode both the selected job AND the active filter/search state. A cheap composite: `key: \`${selectedJobId ?? ''}::${filterTagKey}::${searchQuery}\`` resets the cache whenever any of these change.
-- When the filter changes, also call `setSelectedJobId(null)` if the currently-selected job is no longer in the filtered list: `useEffect(() => { if (selectedJobId && !filteredJobs.find(j => j.id === selectedJobId)) setSelectedJobId(null); }, [filteredJobs])`.
-- Add an empty-state guard: when `filteredJobs.length === 0` (filter matches nothing), render the empty state rather than `<List rowCount={0}>` — react-window with rowCount=0 can produce a zero-height container that breaks the layout.
+**Why it happens:**
+URL routing in SPAs looks like a pure frontend concern. It is not — it touches the service worker, the PWA manifest, the Tauri security config, and any bookmarks/home screen icons that existing users have.
 
-**Warning sign:** After filtering, some job cards visually overlap or show collapsed height for what should be an expanded card.
+**How to avoid:**
+- Update `start_url` in the manifest to the new canonical entry point (e.g., `/app`).
+- Add all new route patterns to the service worker's `precacheAndRoute` or navigation fallback list.
+- Test all routes in Tauri with `tauri dev` before shipping. Specifically test that `history.pushState` to a new route does not produce a blank screen.
+- Keep a backward-compat redirect: `/` → `/app` so existing PWA installs still work.
+- Use `@tauri-apps/plugin-window-state` or equivalent to restore the last active tab on desktop restart rather than always opening to the default tab.
 
-**Owner phase:** Tags + search phase
+**Warning signs:**
+- No update to `manifest.webmanifest` start_url when routes change
+- Hard reload at `/app/jobs` returns 404 rather than the SPA
+- Tauri desktop shows blank screen when navigating to a non-root route
+
+**Phase to address:** Tab-in-URL routing foundation phase — this must be completed before any feature is built on the new URL structure.
 
 ---
 
-### Pitfall M-03: Tag input parsing produces degenerate tags
+### Pitfall M-03: Backend Cost Blowup at Solo Scale
 
 **What goes wrong:**
-Users type comma-separated tags: `"Etsy, ,functional,,ETSY"`. A naive `input.split(',').map(t => t.trim())` produces `["Etsy", "", "functional", "", "ETSY"]`. Empty strings saved to `tags[]` cause filter chips to render as blank buttons. Duplicate-by-case `ETSY` and `Etsy` are treated as different tags, so filtering by `Etsy` misses items tagged `ETSY`.
+Supabase free tier caps at 500 MB database. Two hundred Pro users each with 500 jobs and 10 customer records comfortably fits inside 500 MB. But hosted quote pages, if they cache STL files or quote PDFs in Supabase Storage, can exhaust the storage budget rapidly. The Supabase Pro plan at $25/month adds 8 GB storage — but without a spend cap, realtime channels and database connections can add up. Railway's per-resource billing (CPU, RAM, bandwidth, storage) has no fixed ceiling.
 
-**Prevention:**
-- Parse function: `input.split(',').map(t => t.trim().toLowerCase()).filter(Boolean)`.
-- Deduplicate: `[...new Set(parsed)]`.
-- Max-tag guard: cap at a reasonable number (e.g., 20). Without a cap, a paste of a comma-dense string creates hundreds of tags that blow up the chip row and the DB record size.
-- When rendering filter chips, derive the tag list from `Array.from(new Set(jobs.flatMap(j => j.tags ?? [])))` — this automatically normalizes case-insensitive if all tags were lowercased on save.
-- Rename detection: if a user renames a saved tag (via a future tag management UI), existing jobs still hold the old tag string. v1.2 ships no tag rename feature, so document this as a known limitation.
+Separately: a bug in a background job (e.g., a failed sync retry loop) can issue thousands of Supabase reads per minute, consuming the free tier's 500 MB data cap in minutes.
 
-**Warning sign:** Filter chip bar shows blank chips, or searching for a tag returns fewer results than expected due to case mismatch.
+**Why it happens:**
+Solo founders focus on feature development, not cost instrumentation. The first spike arrives as a surprise invoice.
 
-**Owner phase:** Tags + search phase
+**How to avoid:**
+- Enable Supabase's spend cap by default. Set a hard budget alert at $50/month.
+- Do not store STL files or PDF binaries in Supabase Storage for the MVP. Store only quote metadata (JSON). The STL stays local; the hosted quote page renders from the stored metadata + the client's in-browser STL.
+- Instrument every backend function with a rate limit. Sync calls from a single user must be rate-limited to prevent retry storms.
+- Set up Vercel and Supabase billing alerts at 50% and 90% of budget before launch.
+
+**Warning signs:**
+- No spend cap set in Supabase dashboard
+- No rate limiting on sync or quote creation endpoints
+- Supabase Storage is used to store binary files rather than metadata-only JSON
+
+**Phase to address:** Backend foundation phase.
 
 ---
 
-### Pitfall M-04: Dexie v6 upgrade migration correctness — required fields need defaults
+### Pitfall M-04: Failure-Cost Engine Changing Every Displayed Price
 
 **What goes wrong:**
-Adding `tags` and `customer` to `PrintJob` in the TypeScript type without a migration that backfills existing records means every v1.0/v1.1 job loaded from DB has `job.tags === undefined`. Code that does `job.tags.includes('etsy')` throws `TypeError: Cannot read properties of undefined`. This is not Dexie's fault — Dexie stores only what was put; it does not materialize missing optional fields.
+Folding failure cost into `trueCost` as a new cost component (rather than the current failure-rate multiplier approach) will change every displayed price for every existing saved job. A user who saved a job at $18.50 opens it after the v2.0 update and sees $21.00. They don't know why. If the change is not communicated and not opt-in (or at least explained), users will assume the app has a bug and their existing pricing is wrong — or worse, they will re-quote existing customers at the new higher price.
 
-The v5 → v6 upgrade in `database.ts` must explicitly set defaults:
-```typescript
-db.version(6).stores({ /* same indexes + tags field */ }).upgrade(tx => {
-  return tx.table('jobs').toCollection().modify(job => {
-    if (!Array.isArray(job.tags)) job.tags = [];
-    // customer intentionally NOT defaulted — undefined is correct for old jobs
-  });
-});
-```
+This project already has the pattern: the marketplace-fee FX correction in v1.9 changed displayed margins. The lesson was that derived-field changes must ship with a one-time reconcile helper and a visible explanation.
 
-For 5000+ jobs, `toCollection().modify()` runs in a single IndexedDB transaction. This is generally fine (IndexedDB transactions have no timeout), but on low-power devices it will block the DB for 0.5–2 seconds. Users will see the skeleton loading state for slightly longer on first open after upgrade — this is acceptable, but do not add unrelated work inside the upgrade callback.
+**Why it happens:**
+Cost-model improvements are treated as bug fixes (transparent to the user) rather than as pricing-model changes (visible to the user).
 
-**Prevention:**
-- Always write the upgrade function before writing the TypeScript type. The type contract must match what the DB actually stores.
-- Tag every access of `job.tags` with `?? []`: `(job.tags ?? []).includes(tag)`. This makes pre-migration data safe even if the upgrade function is somehow delayed.
-- Add a Vitest test that constructs a PrintJob without `tags` and passes it through the tag filter logic — it must not throw.
+**How to avoid:**
+- Treat any change that alters a displayed price on a saved job as a schema migration requiring a reconcile helper and a changelog entry.
+- For the failure-cost engine specifically: add a `failureCostModelVersion` field to `UserProfile`. When the engine changes from multiplier to additive cost, bump the version and show a one-time banner: "Your cost calculations have been updated to include per-printer failure cost data. Previously saved jobs may show different prices."
+- The banner must link to a Help article explaining the change.
+- Provide a "use previous model" toggle in Settings for at least one release cycle to let users compare.
 
-**Warning sign:** TypeError in the console after deploy referencing `tags.includes` or `customer.name`.
+**Warning signs:**
+- A cost model change has no corresponding Dexie migration or reconcile helper
+- No changelog entry for the pricing change
+- No UI indication to the user that their saved job prices may have changed
 
-**Owner phase:** Dexie migration phase
+**Phase to address:** Failure-cost engine phase.
 
 ---
 
-### Pitfall M-05: PDF font loading fails in Tauri (file:// protocol, WKWebView on macOS)
+### Pitfall M-05: Scope Collapse — Backend Blocks Everything
 
 **What goes wrong:**
-jspdf's `addFont` via `fetch('/fonts/MyFont.ttf')` works in a browser (served over HTTP). In Tauri on macOS, the webview is WKWebView (WebKit, not Chromium). The app origin is `tauri://localhost` (Tauri 2) and font files served from the asset bundle use the `asset://` protocol or `tauri://` scheme. A relative `fetch('/fonts/MyFont.ttf')` may return a CORS error or 404 depending on how Tauri's `asset` scope is configured.
+The v2.0 milestone bundles a God-component refactor, 11 new features, a first backend, a GDPR legal layer, a marketing redesign, and an onboarding wizard in one release. The natural sequencing trap is to start with the backend (because several features depend on it) and then find that the backend takes 3× longer than estimated. Everything that depends on the backend (hosted quote pages, Pro tier, instant-quote link, file sync) blocks. The 11 features that do not require a backend (failure-cost engine, time-of-use electricity, true hourly wage, what-if simulator, spool lifecycle, tax threshold tracker) also stall because the team is firefighting the backend.
 
-The safe cross-runtime approach is to bundle the font as a base64 string in the PDF chunk itself (not a separate fetch). jspdf supports `doc.addFileToVFS('font.ttf', base64string)`. A TTF for Latin-only text (e.g., a subset of Roboto) is ~30–60 KB base64, acceptable inside the lazy PDF chunk. This eliminates the network/protocol dependency entirely.
+A second form of scope collapse: the CostCalculator split and PERF-11 (done right) is a prerequisite for the new pricing features (failure cost folded in, time-of-use modelling). If the split is the first phase and it takes longer than expected, every feature that touches the calculator is blocked.
 
-**Prevention:**
-- Bundle font as a base64 string in the PDF module. Use a build-time script or a Vite `?raw` + base64 encode at build to produce the constant.
-- Do not use `doc.setFont('helvetica')` — the 14 built-in PDF fonts do not support non-ASCII characters (euro sign €, accented characters, etc.) that appear in customer addresses or product names.
-- Test the PDF export path in `npm run tauri:dev`, not just the web dev server. The two protocols differ in Tauri 2.
+**Why it happens:**
+The milestone is sequenced foundation → insight features → backend crescendo, which is correct. But the foundation (split + routing) is underestimated because it looks like "just refactoring" but is actually the highest-risk change in the codebase.
 
-**Warning sign:** PDF generates correctly on web but shows boxes for non-ASCII characters in Tauri desktop, or the export button silently fails in Tauri (font fetch throws, uncaught promise rejection).
+**How to avoid:**
+- Set time-boxes on foundation phases. If the CostCalculator split is not complete in 3 phases, ship what is done as Phase A and continue in Phase B, rather than blocking all insight features.
+- The backend is the crescendo — it does not need to be complete for any free-floor feature to ship. The instant-quote share link free floor is entirely in-browser (no backend). The failure-cost engine is local. The true hourly wage is local. These can ship on their own without waiting for backend.
+- Design every free-floor feature to work in isolation first, then add the Pro hosted layer on top. This enables incremental shipping even if the backend is delayed.
+- Define a "shippable MVP within the milestone" that excludes the backend but includes at least 5 of the 11 insight features. This is the fallback plan if scope threatens the milestone.
 
-**Owner phase:** PDF quote phase
+**Warning signs:**
+- The first phase is "backend foundation" and every other phase is blocked on it
+- Week 3 of the milestone and the backend is still not deployed
+- Free-floor features like failure-cost engine are blocked on Pro backend being ready
 
----
-
-### Pitfall M-06: Customer PII in IndexedDB — no "forget me" story, duplicate leaks PII
-
-**What goes wrong:**
-IndexedDB in a browser is stored under the origin's site data. For the web app, it lives in the browser's profile directory. For Tauri on macOS, it lives in `~/Library/WebKit/<bundle-id>/WebsiteData/IndexedDB/`. After a Tauri app uninstall on macOS, this directory is NOT cleaned up by default — a user who uninstalls 3DCoster still has their IndexedDB (including customer names, emails, addresses) on disk. On Windows it lives in `%AppData%\...\WebView2\...` under the bundle ID, and is similarly not cleaned by a default NSIS uninstall.
-
-Additionally: if Quick Duplicate copies `customer` (see C-04), a user creating a duplicate job for a different customer and forgetting to clear the customer fields sends the wrong customer's name on the PDF quote.
-
-**Prevention:**
-- Add "Wipe all customer data" to Settings → Privacy. This is a single Dexie `jobs.toCollection().modify(j => { delete j.customer; })` operation.
-- Add a "Export my data" button (JSON dump of all jobs) in the same section. This is the GDPR "data portability" gesture for EU users.
-- Tauri uninstaller: add a Tauri `beforeExit` or the NSIS `[UninstallRun]` section to clear the WebView data directory. This is a Tauri-side concern, not a v1.2 React concern, but flag it in the phase so it is not forgotten.
-- Document in the FAQ/privacy policy: "Customer data is stored only on your device and is never transmitted. Use Settings → Privacy → Wipe Customer Data to remove it."
-- The Quick Duplicate function (C-04) must explicitly reset `customer: undefined`.
-
-**Warning sign:** JSON export of a duplicated job still contains the original customer's email.
-
-**Owner phase:** Customer PII phase; Tauri uninstaller is a separate future task to flag.
+**Phase to address:** Roadmap sequencing — this is a planning pitfall, not a code pitfall.
 
 ---
 
-## Minor Pitfalls
+## Technical Debt Patterns
+
+Shortcuts that seem reasonable but create long-term problems.
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Single auth check at the top of the backend router | Simpler code | All routes require login — free features break for unauthenticated users | Never for this project |
+| Storing `isFirstRun` in localStorage | Simple | Out-of-sync with IndexedDB; wizard fires on storage clear | Never — use Dexie |
+| Sequential IDs for share link URLs | Easy to debug | Enumerable — GDPR breach risk | Never for PII-bearing pages |
+| Vercel Analytics without consent | Zero setup | GDPR violation for EU users | Never when EU users are present |
+| Solid volume as filament proxy in STL quotes | Simple formula | 3–7× overestimate without infill factor | Never — multiply by infill always |
+| Privacy policy written once, never updated | Fast to ship | Policy diverges from actual processing — accountability violation | Never |
+| `useEffect` dep-array manual curation in pricing effects | Fewer re-renders | Stale closures = silent pricing regression (PERF-11 already proved this) | Never in pricing effects |
+| Schema migration for Dexie without matching Postgres migration | One less file | Data model drift during sync | Never — migrate both in same PR |
 
 ---
 
-### Pitfall m-01: Etsy ToS helper rules hard-coded and immediately stale
+## Integration Gotchas
 
-**What goes wrong:**
-Etsy updated its Creativity Standards on June 10, 2025, removing the allowance for 3D-printed items using third-party templates — a significant policy shift. An Etsy ToS helper that embeds rules as static strings becomes actively misleading within weeks. If a user relies on the helper to confirm compliance and Etsy has since changed the rule, the seller risks account suspension.
+Common mistakes when connecting to external services or new subsystems.
 
-**Prevention:**
-- Never display a static list of rules as "you are compliant if you meet these." Display it as "as of [date] — verify at etsy.com/legal/creativity."
-- Add a prominent disclaimer: "Etsy's policies change. This checklist is a reminder, not legal advice. Always check Etsy's current Seller Policy before listing."
-- Store the `policySummaryAsOf` date as a constant in the source file (not config) so it is visible in a code review when updating.
-- Limit the checklist to genuinely stable rules (e.g., "Is this your original design?") rather than procedural rules that change.
-- Link directly to `https://www.etsy.com/legal/creativity/` rather than summarizing the content inline.
-
-**Warning sign:** The date shown in the UI is more than 3 months old; any policy item says something about permitted template use.
-
-**Owner phase:** Etsy helper phase
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Supabase Auth | Requiring auth for free-floor features | Auth is additive — all free features have a no-auth code path |
+| Supabase RLS | Writing policies only for authenticated roles | Also write explicit `anon` role policies; test with `supabase.auth.signOut()` |
+| Vercel Analytics | Loading before consent | Gate analytics initialization behind consent callback; use Vercel's `va.track()` API only post-consent |
+| Dropbox/Drive sync | Writing directly to cloud file | Write to a temp local file first; atomic rename; include schema version in export |
+| STL parsing (Three.js) | Trusting `BufferGeometry.volume()` without validation | Check for non-manifold indicators; warn on implausible bounding box dimensions |
+| Dexie import from JSON file | No schema version check | Read `schemaVersion` from JSON; run migration logic before writing to IndexedDB |
+| Hosted quote pages | Using CDN caching with user-specific PII | Set `Cache-Control: private, no-store` on quote page responses; never cache PII at edge |
 
 ---
 
-### Pitfall m-02: Main chunk bloat — region table or PDF lib leaking into main chunk via manualChunks
+## Performance Traps
 
-**What goes wrong:**
-The `vite.config.ts` `manualChunks` function currently routes all `node_modules` not matched by react or dexie into a generic `vendor` chunk. If a PDF library is imported anywhere in the main app (even indirectly via a utility file that is not behind a `React.lazy`), it lands in `vendor`, which is eagerly loaded. The region VAT table, if implemented as a large JSON import at the module level of `CostCalculator.tsx` or `db/database.ts`, will also land in the main chunk.
+Patterns that work at small scale but fail as usage grows.
 
-Rough bundle-size context (from search results; MEDIUM confidence — verify at bundlephobia):
-- `jspdf`: ~348 KB uncompressed (est. ~120–150 KB gz) — will blow the 300 KB main-chunk gate if it lands there
-- `pdf-lib`: smaller than jspdf (est. ~50–80 KB gz) — still adds budget pressure if main-chunk is already near 300 KB
-- Region VAT table (50 countries, ~3 KB JSON): safe inline
-- Tag-filter logic (pure JS, no deps): safe inline
-
-**Prevention (per feature):**
-| Feature | Inline vs Lazy | Rationale |
-|---|---|---|
-| Region VAT table (JSON, ~3 KB) | Inline | Needed at form render; trivially small |
-| PDF library (jspdf / pdf-lib) | Lazy — dynamic `import()` behind a button click | 120-350 KB gz; only needed on export |
-| Tag filter logic | Inline | Pure JS, negligible size |
-| Customer PII form fields | Inline | Just HTML inputs; no new deps |
-| Etsy checklist | Inline | Static content; no deps |
-
-- Run `npm run analyze` (the rollup-plugin-visualizer mode already in `vite.config.ts`) after adding each new import to catch regressions before the CI gate does.
-- The `assert-bundle-size.mjs` gate at 300 KB catches the main chunk but does NOT catch the vendor chunk growing. Add a secondary check on the vendor chunk if concerns arise.
-
-**Warning sign:** `vite build` passes but `npm run analyze` shows the PDF lib in the `index-*.js` treemap or the `vendor` chunk.
-
-**Owner phase:** PDF quote phase (gating concern); Tags/customer phases (watch imports)
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Loading full Dexie DB into memory for sync export | Fast for 50 jobs; slow for 5000 | Stream export by table; paginate if > 1000 rows per table | ~500+ jobs on low-memory device |
+| Supabase realtime on every row change | Works in dev with 2 users | Each active connection costs; realtime is push-based but connections are not free | > 50 concurrent Pro users |
+| STL file parsed synchronously in the UI thread | Small STL < 5 MB fine | Large STL (> 20 MB, complex geometry) freezes UI for 2–5s | STL > 10 MB |
+| `db.liveQuery()` subscription on the full jobs table in the reporting component | Fine at 50 jobs | At 5000 jobs, the subscription re-fires the entire aggregate on every job change | > 500 jobs in the reports date range |
+| No spend cap on Supabase | Works until it doesn't | Set spend cap on day 1; set billing alert at 50% | First unexpected traffic spike |
 
 ---
 
-### Pitfall m-03: Scroll position not reset after filter applied in virtualized list
+## Security Mistakes
 
-**What goes wrong:**
-A user is scrolled to position 2000px in the jobs list (job #47 visible). They type a search query. The `jobs` prop changes to a 3-item filtered list, but react-window's internal `scrollOffset` is still 2000px — all three filtered rows are above the visible viewport. The list appears empty. Scrolling up reveals the results.
+Domain-specific security issues for this project.
 
-**Prevention:**
-- Keep a ref to the `List` component instance (`listRef = useRef<FixedSizeList>(null)`) and call `listRef.current?.scrollTo(0)` inside the same effect/handler that updates `filteredJobs`. In react-window v2 with `useDynamicRowHeight`, the ref is on the `List` element.
-- Alternatively: use a React `key` on the `<List>` element that encodes the active filter. Changing the key unmounts/remounts the List, resetting scroll to 0. This is heavier but simpler: `<List key={filterKey} ...>`.
-
-**Warning sign:** After typing in the search box, the list appears to show zero results until the user scrolls up.
-
-**Owner phase:** Tags + search phase
-
----
-
-### Pitfall m-04: Tax compound bug — "tax on tax" for US sales tax states with marketplace facilitator laws
-
-**What goes wrong:**
-In the US, 45 states have marketplace facilitator laws that make Etsy responsible for collecting and remitting sales tax — the seller does NOT add a separate tax line on their quote to the customer. If the region table includes US state rates and the seller applies them on top of Etsy's collected tax, the customer sees a double-tax line.
-
-**Prevention:**
-- For the US, the region table should show `taxRate: 0` with a note: `taxNote: "Etsy/marketplace collects sales tax in most US states. Check your state's nexus rules."`. Do not bundle per-state rates — it is unnecessary complexity for a small seller tool and the rates change frequently.
-- The per-job override allows a power user to add a rate if they sell direct (non-marketplace), covering the edge case.
-- For Canada (GST/HST/PST), include federal + common provincial rates but note that some provinces have separate PST administered separately from HST.
-
-**Warning sign:** US user reports their quote shows a tax line when selling through Etsy.
-
-**Owner phase:** Tax/VAT phase
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Share link token derived from job ID (not random) | Enumerable URLs — customer PII exposed | UUID v4 token, cryptographically random, stored separately from job ID |
+| Quote page served without `noindex` | Search engine indexes customer PII | `X-Robots-Tag: noindex` on all `/q/*` routes |
+| Supabase service key used client-side | Full DB access from browser | Only use `supabase.anon` key client-side; service key server-side only |
+| STL file parsed without size/complexity limits | Zip-bomb / memory exhaustion via large STL | Reject STL files > 50 MB; abort parsing if triangle count > 5M; already have 3MF guards — extend to STL |
+| Dexie export includes auth tokens or API keys stored by mistake | Credentials in sync file | Never store secrets in Dexie; audit export output before shipping sync feature |
+| Backend endpoint accepts sync payloads without schema validation | Malformed data corrupts server DB | Validate every sync payload against a JSON Schema before writing to Postgres |
 
 ---
 
-### Pitfall m-05: PDF generation blocking the main thread on large/complex quotes
+## UX Pitfalls
 
-**What goes wrong:**
-jspdf runs synchronously on the main thread. For a quote with a large text description, many line items, or an embedded image (e.g., a filament swatch or logo), generation can block the UI for 200–800 ms. On a low-end device this freezes the button animation and may cause the browser to mark the page as unresponsive.
+Common user experience mistakes for this specific domain.
 
-**Prevention:**
-- For v1.2 scope (simple quote: job summary + tax + customer details), generation time should be under 100 ms and is acceptable on the main thread. Flag this as a known limitation to revisit if image embedding is added.
-- Add a loading state on the "Download PDF" button (disabled + spinner) before the `await import(...)` and during generation. This prevents double-clicks and gives user feedback.
-- pdf-lib (if chosen instead of jspdf) is also synchronous but tends to produce smaller output. The web worker path for jspdf throws `ReferenceError: window is not defined` (jspdf requires DOM access) — do not attempt to offload to a worker without verifying the specific library supports it.
-
-**Warning sign:** The "Download" button visually sticks for 0.5+ seconds before the save dialog appears.
-
-**Owner phase:** PDF quote phase
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Instant-quote result presented without accuracy caveats | User sets price too low (volume error) or too high (infill error); loses sales or money | Always show "Estimated ±X%" and link to G-code-based calculation for final pricing |
+| Failure-cost model changes prices with no explanation | User thinks the app is broken; re-quotes customers at wrong price | One-time migration banner explaining the change; link to help article |
+| Onboarding wizard with no skip on every step | Returning users or power users are trapped in beginner content | "Skip setup" link visible on every wizard step, not just the first |
+| Consent banner as the first thing a new user sees | Kills the moment of product discovery | Show the calculator first; consent banner is a non-blocking notice below the fold, or a bottom bar — never a blocking modal over the app |
+| Pro features shown with a paywall before the user has experienced the free value | Feels like a bait-and-switch | Pro upsell surfaces contextually (e.g., "Share this quote" → "Upgrade for a hosted link") — never as the first impression |
+| "Spool moisture tracker" with no explanation of why it matters | Users skip the feature | Contextual copy: "Wet filament prints worse and costs more. Track spool storage to flag moisture risk." |
 
 ---
 
-## Phase-Specific Warnings Summary
+## "Looks Done But Isn't" Checklist
 
-| Phase topic | Likely pitfall | Mitigation |
-|---|---|---|
-| Tax / VAT (Phase 12) | C-01: tax on wrong base | Activate `it.todo` in costCalc.test.ts first; assert tax = `round2(sellingPrice × rate)` |
-| Tax / VAT (Phase 12) | C-02: floating-point cent drift | Use `Math.round(x * 100) / 100`, never `toFixed` for intermediate values |
-| Tax / VAT (Phase 12) | M-01: stale region table | Embed `rateAsOf` per country; show date in UI; fallback to "enter manually" not 0% |
-| Tax / VAT (Phase 12) | m-04: US double-tax | US entry = 0% with marketplace facilitator note |
-| Customer PII | C-04: duplicate carries PII | Use allowlist `duplicateJob()` function; unit-test `customer === undefined` |
-| Customer PII | M-06: no forget-me story | "Wipe customer data" in Settings; document Tauri uninstall gap |
-| Tags + search | M-02: stale height cache after filter | `key` must encode filter + selectedJobId; clear selectedJobId if filtered out |
-| Tags + search | M-03: degenerate tag strings | `split(',').map(trim).map(toLowerCase).filter(Boolean)` + `Set` dedup + max-count guard |
-| Tags + search | m-03: no scroll reset after filter | `listRef.current?.scrollTo(0)` or `key` on `<List>` when filter changes |
-| PDF quote | C-03: lazy chunk prefetched | `build: { modulePreload: false }` or assertion in CI that pdf chunk has no preload link |
-| PDF quote | M-05: font CORS in Tauri | Bundle font as base64 inside the lazy PDF module; test in `tauri:dev` not just browser |
-| PDF quote | m-02: lib leaks into main chunk | No PDF import outside the lazy boundary; `npm run analyze` after each commit |
-| PDF quote | m-05: main-thread freeze | Loading state on button; acceptable for v1.2 scope; no worker for jspdf |
-| Quick duplicate | C-04: id/PII/copiesSold reset | Explicit allowlist function; Vitest unit test |
-| Dexie migration | M-04: missing defaults on upgrade | `upgrade()` sets `tags: []`; all tag access uses `?? []` guard |
-| Dexie migration | C-05: version downgrade crash | `db.on('versionchange', reload)`; PWA `controllerchange` reload |
-| Etsy helper | m-01: stale ToS rules | Hard-code `policySummaryAsOf` date; link to Etsy legal page; disclaimer |
-| UI sweep | m-02: new imports grow main chunk | `npm run analyze` after every import addition before merge |
+Things that appear complete but are missing critical pieces — learned from v1.x history.
+
+- [ ] **GDPR consent banner:** Has "Accept All" and "Reject All" at equal visual weight on the first layer (not a link to a settings sub-page). Vercel Analytics does not fire until Accept is clicked. Tested: Reject → check Network tab → no analytics request.
+- [ ] **Privacy policy:** Explicitly names Vercel Analytics, Supabase, and any other processors. Includes data subject rights (access, deletion, portability) and a contact email. Updated every time a new data flow is added.
+- [ ] **Hosted quote page share link:** Token is a UUID v4 (or 128-bit random). URL is not guessable from any sequential ID. Page returns `noindex`. Page has expiry. RLS policy verified with a logged-out request.
+- [ ] **STL volume estimate:** Tested with a known-weight file. Has unit-detection warning (mm vs. inches). Has infill input. Has accuracy disclaimer in the UI.
+- [ ] **CostCalculator split:** Output-equivalence tests pass for 10 representative inputs (old component vs. new component, same numbers). `react-hooks/exhaustive-deps` at error level. Human UAT: type two pricing fields in rapid succession.
+- [ ] **Onboarding wizard:** Skip button on every step. "Has completed onboarding" stored in Dexie `UserProfile`, not `localStorage`. Wizard does not overwrite existing data.
+- [ ] **File-based sync:** Export includes `schemaVersion`. Import checks `schemaVersion` before writing. Multi-tab test: export from Tab A and Tab B simultaneously → one wins, no corruption, or conflict is surfaced.
+- [ ] **Backend free-floor check:** Sign out of Supabase. Open the calculator. Confirm it loads and saves locally without any 401 or 403.
+- [ ] **Spend caps:** Supabase spend cap enabled. Vercel spend cap enabled. Billing alert at 50% of budget configured. Confirmed in dashboard before first Pro user.
+
+---
+
+## Recovery Strategies
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Free floor requires account (ships) | HIGH | Emergency patch to remove auth check from free routes; deploy immediately; public announcement |
+| Consent banner non-compliant (post-launch) | MEDIUM | Remove non-essential scripts immediately; redeploy compliant banner within 24h; document incident; consult GDPR counsel if complaint received |
+| Share link URL is sequential (discovered pre-launch) | LOW | Migrate to UUID v4 tokens before launch; no user impact |
+| Share link URL is sequential (discovered post-launch) | HIGH | Rotate all tokens; notify affected Pro users; log as GDPR breach if customer PII was accessible |
+| STL quote wildly wrong (unit error) | MEDIUM | Add unit-detection warning in next patch; add disclaimer to all existing instant quotes; no data loss |
+| CostCalculator split introduces pricing regression | HIGH | Revert split (git revert); release as a patch; redo the split with output-equivalence tests — same as PERF-11 but with more safeguards |
+| Failure-cost model changes prices silently | MEDIUM | Ship a one-time reconcile banner + help article in next patch; document in CHANGELOG |
+| Supabase cost spike | LOW-MEDIUM | Enable spend cap immediately; identify runaway query; fix and redeploy; review with Supabase billing dashboard |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| C-01: Free floor requires account | Backend foundation | Sign out of Supabase; confirm calculator loads and saves locally |
+| C-02: Data-model drift Dexie↔Postgres | Backend foundation | Schema changelog triple (Dexie version, Postgres migration, sync protocol version) reviewed on every PR |
+| C-03: Pricing state desync during God-component split | CostCalculator split phase | Output-equivalence tests; `react-hooks/exhaustive-deps` at error; human UAT rapid-typing |
+| C-04: Non-compliant consent banner | GDPR/legal foundation | Network tab shows no analytics on page load before consent; Reject takes 1 click; equal button weight |
+| C-05: Privacy policy diverges from actual processing | GDPR/legal foundation | Data flow inventory table reviewed against policy on every PR adding a data flow |
+| C-06: Hosted quote PII via predictable URL | Instant-quote Pro phase | Verify token is UUID v4; `curl` logged-out request returns 403; `noindex` header present |
+| C-07: STL volume wrong (units/infill/manifold) | Instant-quote free-floor phase | Known-weight STL test; unit-detection warning visible; infill input present; disclaimer in UI |
+| C-08: File sync data corruption | File-based sync phase | Simultaneous two-tab export test; schema version in export; version-mismatch import shows warning |
+| M-01: Onboarding blocks returning users | First-run onboarding phase | Stored in Dexie `UserProfile.onboardingCompleted`; skip on every step; does not overwrite existing data |
+| M-02: Tab-URL routing breaks PWA/Tauri | Tab-URL routing phase | PWA manifest `start_url` updated; all routes serve SPA from service worker; Tauri deep-link test |
+| M-03: Backend cost blowup | Backend foundation | Spend cap enabled; billing alert at 50%; no binary files in Supabase Storage MVP |
+| M-04: Failure-cost model changes displayed prices | Failure-cost engine phase | One-time reconcile banner; changelog entry; `failureCostModelVersion` in UserProfile |
+| M-05: Scope collapse — backend blocks everything | Roadmap sequencing | Every free-floor feature designed to work without backend; shippable MVP defined before development starts |
 
 ---
 
 ## Sources
 
-- [jspdf NPM package page / bundlephobia references](https://www.npmjs.com/package/jspdf) (bundle size ~348 KB uncompressed; MEDIUM confidence — verify with `npm run analyze`)
-- [jspdf font/non-ASCII issue tracker](https://github.com/parallax/jsPDF/issues/2677) — confirmed 14 built-in fonts are ASCII-only
-- [jspdf web worker issue](https://github.com/parallax/jsPDF/issues/2605) — confirmed window reference prevents worker use
-- [Vite modulePreload disable discussion](https://github.com/vitejs/vite/discussions/8617) — confirmed preload links generated for dynamic imports
-- [Vite manualChunks and lazy loading issue](https://github.com/vitejs/vite/issues/5189) — confirmed chunks can load eagerly if dependency exists at module level
-- [Dexie versionchange event docs](https://dexie.org/docs/Dexie/Dexie.on.versionchange) — confirmed reload-on-versionchange pattern
-- [Dexie downgrade issue #1599](https://github.com/dexie/Dexie.js/issues/1599) — confirmed VersionError on lower-version open of higher-version DB
-- [Dexie Version.upgrade() docs / wiki](https://github.com/dexie/Dexie.js/wiki/Version.upgrade()) — confirmed upgrade runs once per version bump, not every open
-- [react-window VariableSizeList cache issue #202](https://github.com/bvaughn/react-window/issues/202) — confirmed cache does not auto-invalidate on data change
-- [Etsy Creativity Standards update June 2025](https://www.etsy.com/legal/creativity/) — confirmed policy changed June 10 2025 to require original design
-- [Etsy 3D printing policy change coverage](https://www.tomshardware.com/3d-printing/etsy-cracks-down-on-3d-printed-products-new-rules-exclude-many-3d-printed-items-from-listings) — confirmed scope of June 2025 change
-- [VAT rate changes 2025](https://www.vatai.com/blog/2025-vat-rates-in-europe-country-rates-changes) — Slovakia +3%, Estonia +2%, Romania +2% in 2025
-- [JavaScript floating-point tax rounding](https://www.robinwieruch.de/javascript-rounding-errors/) — confirmed `toFixed` is unreliable for intermediate computation
-- [Tauri WebView on macOS uses WKWebView](https://v2.tauri.app/reference/webview-versions/) — not Chromium; asset protocol differs
-- [Tauri IndexedDB / persistent state](https://aptabase.com/blog/persistent-state-tauri-apps) — data stored under OS app data path, not cleaned on uninstall
-- [Tauri font loading CORS issue #6815](https://github.com/tauri-apps/tauri/issues/6815) — confirmed web font fetch failures in Tauri app context
+**Project history (HIGH confidence — directly observed):**
+- PERF-11 regression: dep-array trim desynced profit/margin; caught by release-diff review, not 819 tests (v1.9 RELEASE REVIEW)
+- Marketplace-fee FX bug: fees were USD-hardcoded, ~150× wrong for JPY (v1.9 AUDIT)
+- Dexie `versionchange` multi-tab white-screen crash (v1.2 Phase 12)
+- Asset-library reset data-loss: scoped reset cleared all materials silently (v1.9 UAT)
+- seedState re-seeding bug: deleted defaults reappeared on every reload (v1.9 AUDIT)
+
+**GDPR enforcement (HIGH confidence — official enforcement records):**
+- [CNIL fines Google €150M for cookie rejection friction (2022)](https://www.cnil.fr/en/use-cookies-cnil-fines-google-150-million-euros-and-facebook-60-million-euros)
+- [CNIL fines Google €200M (September 2025)](https://seresa.io/blog/privacy-compliance/dark-patterns-in-your-consent-banner-could-cost-you-millions)
+- [SHEIN fined €150M for cookies firing post-reject (September 2025)](https://seresa.io/blog/privacy-compliance/dark-patterns-in-your-consent-banner-could-cost-you-millions)
+- [Honda fined $632,500 for two-click reject vs one-click accept (California CPPA)](https://seresa.io/blog/privacy-compliance/dark-patterns-in-your-consent-banner-could-cost-you-millions)
+- [GDPR pre-ticked boxes invalid — CJEU ruling](https://www.termsfeed.com/blog/gdpr-no-pre-ticked-boxes-cookies/)
+- [Vercel Analytics GDPR compliance guide](https://webeyez.com/insights/guides/is-vercel-analytics-gdpr-compliant)
+- [Vercel DPF certification](https://vercel.com/changelog/vercel-is-now-certified-under-the-eu-us-data-privacy-framework-dpf)
+
+**Local-first architecture (MEDIUM confidence — verified against official RxDB docs and Dexie issue tracker):**
+- [RxDB downsides of offline-first: storage limits, conflict resolution, auth complexity](https://rxdb.info/downsides-of-offline-first.html)
+- [Dexie.js versionchange documentation](https://dexie.org/docs/Dexie/Dexie.on.versionchange)
+- [Dexie.js Syncable for Google Drive/Dropbox — developer confirms multi-client sync to a single file is not the right approach](https://github.com/dfahlander/Dexie.js/issues/545)
+
+**STL volume estimation (MEDIUM confidence — verified against Three.js forum and iamRapid docs):**
+- [Three.js forum: signed-tetrahedron volume method for STL](https://discourse.threejs.org/t/help-load-stl-files-ascii-or-binary-to-calculate-volume-and-dimensions/5284)
+- [Non-manifold mesh impact on volume: "does not have a well defined inside or outside"](https://github.com/mikedh/trimesh/issues/1183)
+- [Volume calculator assumes solid part; infill factor must be applied separately](https://iamrapid.com/tools/export-cc/)
+- [Hubs.com: non-manifold, holes, inverted normals, degenerate triangles cause STL errors](https://www.hubs.com/knowledge-base/fixing-most-common-stl-file-errors/)
+
+**Backend cost (MEDIUM confidence — Supabase pricing page + community reports):**
+- [Supabase pricing: free tier 500 MB, Pro $25/month, spend cap available](https://supabase.com/pricing)
+- [Railway: per-resource billing, no fixed ceiling, no spending cap on by default](https://designrevision.com/blog/saas-hosting-compared)
+
+**React stale closures (HIGH confidence — React official docs + ESLint plugin):**
+- [TkDodo: Hooks, Dependencies and Stale Closures](https://tkdodo.eu/blog/hooks-dependencies-and-stale-closures)
+- [Kent C. Dodds: 5 React Hooks Pitfalls](https://kentcdodds.com/blog/react-hooks-pitfalls)
+
+---
+*Pitfalls research for: v2.0 Cost-Truth & Insight — adding first backend, GDPR layer, STL instant quotes, God-component split, file sync, and onboarding to a shipped local-first product*
+*Researched: 2026-07-03*
