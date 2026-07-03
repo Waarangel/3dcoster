@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.9
-milestone_name: Hardening
-status: Awaiting next milestone
-stopped_at: Completed 37-02-PLAN.md — HYG-12.2 + HYG-12.3; Phase 37 + v1.9 milestone complete. 760 tests green + tsc -b clean.
-last_updated: "2026-07-03T16:07:57.480Z"
-last_activity: 2026-07-03 — Milestone v1.9 completed and archived
+milestone: v2.0
+milestone_name: Cost-Truth & Insight
+status: planning
+last_updated: "2026-07-03T16:16:55.385Z"
+last_activity: 2026-07-03
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,10 +24,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: Milestone v1.9 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-03 — Milestone v1.9 completed and archived
+Status: Defining requirements
+Last activity: 2026-07-03 — Milestone v2.0 started
 
 ## v1.9 Phase Order Reference
 

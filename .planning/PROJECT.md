@@ -71,15 +71,25 @@ Full delivery map: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md). Aud
 
 </details>
 
-## Next Milestone Goals: v2.0 Cost-Truth & Insight (scoping via `/gsd:new-milestone`)
+## Current Milestone: v2.0 Cost-Truth & Insight
 
-DECIDED 2026-07-03: open the **full v2.0 milestone** next. Candidate pool (to be scoped/phased during new-milestone):
-- **Cost-Truth & Insight engine** — the 11 greenlit features (failure-cost engine, reprice alerts, true hourly wage, printer ROI, instant-quote link, spool moisture, tax threshold, etc.) — docs/ROADMAP.md, INTERNAL (don't tip competitors)
-- **Hosted/Pro backend tier** — accounts, hosted quote pages, instant-quote share links (floor & ceiling model: free self-service floor stays)
-- **GDPR compliance** — cookie-consent banner (granular, revocable) + EU-compliant privacy policy + Terms; legally required once the backend stores user data
-- **Marketing-site redesign** — "Cost-Truth Dark" on `test/design-skills-experiment`, ships WITH v2.0/paid tier
-- **Deferred-in:** CostCalculator God-component split + PERF-11; tab-in-URL (browser-Back fix); Tier 3.1 guided onboarding; `etsy_offsite_ad` picker option
-- Carry-over candidates: TAGS-F4 tag colors; DUP-F1 duplicate-job UI; customer CSV export; `feat/insight-pricing-coach` branch (Phase 33)
+**Goal:** Turn 3DCoster from a calculator into a cost-truth engine and launch the business — deeper cost realism, decision-grade insights, the hosted/Pro tier with a GDPR-compliant legal foundation, the new brand, and a guided first-run.
+
+**Scope decision (2026-07-03): FULL VISION in one milestone**, sequenced foundation → free-floor insight wave → backend/Pro launch crescendo.
+
+**Target features:**
+- **Foundation:** CostCalculator God-component split (+ PERF-11 done right), tab-in-URL routing (fixes browser-Back exiting `/app`)
+- **Cost realism (moat):** empirical failure-cost engine (per printer × material failure rates folded into true cost) · time-of-use electricity modeling · abrasive wear + maintenance amortization
+- **Insight & decisions:** true hourly wage + product profitability ranking · printer payback/ROI tracker (retrospective P&L) · what-if margin sensitivity simulator
+- **Connected cost:** filament-price → catalog reprice alerts · **instant-quote share link** (free local floor via in-browser mesh-volume estimate; Pro hosted quote page — the backend anchor)
+- **Maker-life:** spool lifecycle/moisture tracking · hobby→business tax-threshold tracker
+- **Architecture:** local-network / file-based sync (multi-device WITHOUT a backend — the headline differentiator)
+- **Launch bundle:** hosted/Pro backend tier (floor & ceiling model) · **GDPR cookie-consent banner (granular, revocable) + EU-compliant privacy policy + Terms** · marketing-site redesign ("Cost-Truth Dark", `test/design-skills-experiment`) · **guided first-run onboarding (Tier 3.1 — headline UX)**
+- **Small carry-ins:** `etsy_offsite_ad` in RecordSaleModal picker; candidates as scope allows: TAGS-F4 tag colors, DUP-F1 duplicate-job UI, customer CSV export
+
+**Explicitly DECLINED (do not re-add):** print-farm queue/scheduling optimizer; live competitor-price scraping (manual paste-a-price is the acceptable substitute).
+
+**Key context:** All v2.0 feature detail stays INTERNAL until launch (public /roadmap untouched — don't tip competitors). Existing seeds: `feat/insight-pricing-coach` branch (Phase 33) + redesign branch. Pro price anchor: 3DPrintQuote at €9.90/mo. Free-forever promise holds — every cost-model improvement ships to the free floor.
 
 ## Requirements
 
@@ -251,4 +261,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-03 after v1.9 Hardening milestone — shipped + tagged `v1.9.0`, milestone archived. Note: PROJECT.md doc-reconciliation for v1.4–v1.7 remains deferred (post-v1.3 GSD lapse) — Context section captures the shipped summary. Next: `/gsd:new-milestone` for v2.0 Cost-Truth & Insight.*
+*Last updated: 2026-07-03 — v2.0 Cost-Truth & Insight milestone opened (full-vision scope confirmed by founder). Note: PROJECT.md doc-reconciliation for v1.4–v1.7 remains deferred (post-v1.3 GSD lapse) — Context section captures the shipped summary.*

@@ -148,8 +148,8 @@ Note: GSD milestone versions (v1.2 Quote-to-Customer) are decoupled from the **d
 
 ## v1.1 Polish & Foundation (pre-GSD-archive)
 
-**Shipped:** 2026-05-20 — phases 7–11 (shared `ui/` primitives + empty states + skeletons + cost-calc Vitest suite + Phase 11 perf budget with 300 KB gz gate). Not archived under this index — the milestone was closed before `/gsd:complete-milestone` was first run on this project. Phase artifacts remain under `.planning/phases/07-styling-primitives-pass` through `.planning/phases/11-performance-optimization`.
+**Shipped:** 2026-05-20 — phases 7–11 (shared `ui/` primitives + empty states + skeletons + cost-calc Vitest suite + Phase 11 perf budget with 300 KB gz gate). Not archived under this index — the milestone was closed before `/gsd:complete-milestone` was first run on this project. Phase artifacts archived to `.planning/milestones/v1.1-phases/` (moved from `phases/` at v2.0 open, 2026-07-03).
 
 ## v1.0 Multi-Material Support (pre-GSD-archive)
 
-**Shipped:** 2026-04-15 — phases 1–6 (filaments[] array, slicer G-code import, 3MF multi-plate import, per-filament density fix for nozzle wear). Not archived under this index. Phase artifacts remain under `.planning/phases/01-data-foundation` through `.planning/phases/06-3mf-multi-plate-project-import`.
+**Shipped:** 2026-04-15 — phases 1–6 (filaments[] array, slicer G-code import, 3MF multi-plate import, per-filament density fix for nozzle wear). Not archived under this index. Phase artifacts archived to `.planning/milestones/v1.0-phases/` (moved from `phases/` at v2.0 open, 2026-07-03). v1.2/v1.3 phase dirs likewise live in `v1.2-phases/` + `v1.3-phases/`.
