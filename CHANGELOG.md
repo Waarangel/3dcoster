@@ -23,7 +23,7 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ---
 
-## [1.9.0] - 2026-06-26
+## [1.9.0] - 2026-07-03
 
 A reliability, accuracy, and accessibility hardening release — no new features, just a calmer, more trustworthy app.
 
