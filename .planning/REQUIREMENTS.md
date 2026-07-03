@@ -99,17 +99,45 @@
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements. Updated during roadmap creation 2026-07-03.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| FOUND-01 | Phase 38 | Pending |
+| FOUND-02 | Phase 38 | Pending |
+| FOUND-03 | Phase 38 | Pending |
+| FAIL-01 | Phase 39 | Pending |
+| FAIL-02 | Phase 39 | Pending |
+| FAIL-03 | Phase 39 | Pending |
+| FAIL-04 | Phase 39 | Pending |
+| TOU-01 | Phase 39 | Pending |
+| TOU-02 | Phase 39 | Pending |
+| WEAR-01 | Phase 39 | Pending |
+| WEAR-02 | Phase 39 | Pending |
+| INS-01 | Phase 40 | Pending |
+| INS-02 | Phase 40 | Pending |
+| INS-03 | Phase 40 | Pending |
+| CONN-01 | Phase 41 | Pending |
+| CONN-03 | Phase 41 | Pending |
+| LIFE-01 | Phase 41 | Pending |
+| LIFE-02 | Phase 41 | Pending |
+| GDPR-01 | Phase 42 | Pending |
+| GDPR-02 | Phase 42 | Pending |
+| GDPR-03 | Phase 42 | Pending |
+| ONBD-01 | Phase 42 | Pending |
+| PRO-01 | Phase 43 | Pending |
+| PRO-02 | Phase 43 | Pending |
+| PRO-03 | Phase 43 | Pending |
+| PRO-04 | Phase 43 | Pending |
+| SYNC-01 | Phase 44 | Pending |
+| CONN-02 | Phase 44 | Pending |
+| BRAND-01 | Phase 45 | Pending |
 
 **Coverage:**
-- v1 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27 ⚠️ (pre-roadmap)
+- v1 requirements: 29 total
+- Mapped to phases: 29
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-07-03*
-*Last updated: 2026-07-03 after initial definition*
+*Last updated: 2026-07-03 — traceability table populated after roadmap creation*

@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
-status: planning
-last_updated: "2026-07-03T16:16:55.385Z"
+status: in_progress
+last_updated: "2026-07-03T00:00:00.000Z"
 last_activity: 2026-07-03
 progress:
-  total_phases: 0
+  total_phases: 8
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,28 +17,32 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 34–37). Source of requirements: `docs/CALCULATOR_APP_AUDIT.md` (Tiers 3–6).
+See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–45). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 37 — code-health-stretch
+**Current focus:** Phase 38 — Foundation (not started; roadmap created 2026-07-03)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 38 — Foundation
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-03 — Milestone v2.0 started
+Status: Not started — roadmap created, awaiting `/gsd:plan-phase 38`
+Last activity: 2026-07-03 — v2.0 roadmap created (8 phases, 27 requirements, 100% coverage)
 
-## v1.9 Phase Order Reference
+## v2.0 Phase Order Reference
 
-| Phase | Theme | Requirements | Severity note | Notes |
-|-------|-------|--------------|---------------|-------|
-| 34 | Live papercut fixes | FIX-01..FIX-04 | live user papercuts | Web-mostly; partly built (FIX-01 on `fix/pwa-reload-uncontrolled`; FIX-02 = cherry-pick `4da205f`). Fast first phase. |
-| 35 | Accessibility Tier 4 | A11Y-10..A11Y-15 | A11Y-10 + A11Y-11 are WCAG **Critical** | Settings + Asset surfaces; depends on 34. |
-| 36 | Performance Tier 5 | PERF-09..PERF-11 | bites at scale | JobsManager + Calculator hotspots; depends on 34. |
-| 37 | Code health | HYG-11..HYG-12 | **STRETCH / optional** | Droppable if timeboxed without affecting milestone success. |
+| Phase | Theme | Requirements | Key constraint |
+|-------|-------|--------------|----------------|
+| 38 | Foundation — CostCalculator split + tab-in-URL | FOUND-01, FOUND-02, FOUND-03 | Highest-risk code change in milestone; gates all new cost inputs and new tabs. Research spike REQUIRED before planning. |
+| 39 | Cost Realism — failure engine, TOU electricity, maintenance amortization | FAIL-01..04, TOU-01..02, WEAR-01..02 | Depends on Phase 38 section components. New Dexie stores (failureEvents, maintenanceEvents). Must not silently reprice history. |
+| 40 | Insight Layer — hourly wage, printer ROI, what-if simulator | INS-01, INS-02, INS-03 | Depends on Phase 38 tab-in-URL (Insights tab slot). Pure derivation only — no Dexie writes for insight values. |
+| 41 | Quick-Win Features — reprice alerts, spool lifecycle, tax threshold, Quote Variants | CONN-01, CONN-03, LIFE-01, LIFE-02 | Independent of backend. Can partially overlap with Phase 39 or 40. Tax threshold data MEDIUM confidence — show "data current as of" note. |
+| 42 | GDPR & Onboarding — consent banner, privacy policy, ToS, wizard | GDPR-01, GDPR-02, GDPR-03, ONBD-01 | HARD GATE before Phase 43. Must be live in production and network-verified (zero analytics before consent) before backend ships. |
+| 43 | Pro Backend — Supabase auth, hosted quote pages, billing | PRO-01, PRO-02, PRO-03, PRO-04 | Depends on Phase 42. Research spike REQUIRED. Backend = Supabase eu-central-1 (locked). PRO-03 requires security review gate. |
+| 44 | Sync & STL Instant Quote — file-based sync, STL volume estimate | SYNC-01, CONN-02 | Depends on Phase 43 (sync format must include final v2.0 Dexie schema). Research spike REQUIRED for sync conflict handling. Three.js must be lazy-loaded (300 KB gz gate). |
+| 45 | Brand & Launch — Cost-Truth Dark redesign merge | BRAND-01 | Depends on Phase 43 (Pro pricing must exist before redesign fills pricing spots). Frontend work from existing branch `test/design-skills-experiment`. |
 
-> **Phase-numbering:** continue-numbering from v1.8 (Phases 27–32). Phase 33 is on an in-flight branch (not present here). v1.9 starts at **Phase 34** to avoid collision.
+> **Phase-numbering:** v1.9 used Phases 34–37. Phase 33 reserved on `feat/insight-pricing-coach` branch. v2.0 starts at Phase 38.
 
 ## Performance Metrics
 
@@ -48,9 +52,10 @@ Last activity: 2026-07-03 — Milestone v2.0 started
 - Average duration: —
 - Total execution time: —
 
-*Updated after each plan completion. v1.9 plan counts populated during `/gsd:plan-phase`.*
+*Updated after each plan completion.*
 
-**v1.3 Hardening (reference — the model this milestone follows):** 10 phases (18–26), 43 plans, 56 tasks, 53 requirements, 4 days, audit verdict `passed`.
+**v1.9 Hardening (reference):** 4 phases (34–37), 11 plans, 14/15 requirements, ~7 days incl. 1-week review/UAT hold.
+**v1.3 Hardening (reference — the model for structured milestones):** 10 phases (18–26), 43 plans, 56 tasks, 53 requirements, 4 days, audit verdict `passed`.
 
 ## Accumulated Context
 
@@ -60,55 +65,64 @@ Last activity: 2026-07-03 — Milestone v2.0 started
 - v1.1 Phases 7–11 shipped (Polish & Foundation, 2026-05-20)
 - v1.2 Phases 12–17 shipped (Quote-to-Customer, 2026-05-25) — inserted 15.1, closure 17
 - v1.3 Phases 18–26 shipped (Hardening, 2026-05-28) — inserted 22.1, closure 26
-- v1.4–v1.7 shipped ad-hoc OUTSIDE GSD (2026-05-29 → 2026-06-19) — management lapsed; tracked via CHANGELOG
-- v1.8 Phases 27–32 shipped (Inventory & Sales Reporting, 2026-06-25) — GSD revived; desktop tag `v1.8.0`. Phase 33 on an in-flight branch.
-- **v1.9 Phases 34–37 created 2026-06-25 (Hardening, sequel to v1.3)** — coarse, 4 phases mirroring requirement categories: 34 Live papercut fixes (FIX), 35 Accessibility Tier 4 (A11Y, 2 WCAG Critical), 36 Performance Tier 5 (PERF), 37 Code health STRETCH (HYG). Started at Phase 34 (continue-numbering; 33 reserved on a branch). 15 requirements, 100% coverage. Phase 37 marked STRETCH/optional — cut first if timeboxed.
+- v1.4–v1.7 shipped ad-hoc OUTSIDE GSD (2026-05-29 → 2026-06-19)
+- v1.8 Phases 27–32 shipped (Inventory & Sales Reporting, 2026-06-25) — GSD revived; desktop tag `v1.8.0`. Phase 33 on in-flight branch.
+- v1.9 Phases 34–37 shipped (Hardening, 2026-07-03) — desktop tag `v1.9.0`. 14/15 requirements (PERF-11 deferred to v2.0).
+- **v2.0 Phases 38–45 roadmapped 2026-07-03** — 8 phases, 27 requirements, 100% coverage. Wave structure: Foundation → Cost Realism + Insight + Quick Wins → GDPR (hard gate) → Pro Backend → Sync + STL → Brand.
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
 
-- [v1.9 Roadmap 2026-06-25]: Continue-numbering at Phase 34 (NOT reset, NOT inferred from local `phases/` dir which only holds 01–26). v1.8 used 27–32; Phase 33 is on an in-flight branch not present here. Start at 34 to avoid collision.
-- [v1.9 Roadmap 2026-06-25]: 4-phase coarse structure mirroring requirement categories. Phase 34 first because it is web-mostly + partly pre-built (fast win, low coupling to the audit-driven phases). Phases 35/36 sequenced after 34 since they brush the same Settings/Asset/JobsManager surfaces.
-- [v1.9 Roadmap 2026-06-25]: Phase 37 (HYG-11/12) marked STRETCH/optional in its goal — droppable without affecting milestone success if the milestone runs long.
-- [v1.9 Roadmap 2026-06-25]: Tier 2 brand cohesion (redesign branch), Tier 3.1 guided onboarding (v2.0 headline), and Tier 6.1–6.4 God-component splits (refactor risk) explicitly OUT of v1.9.
-- [35-01 2026-06-26]: Settings tabs use roving tabindex (not aria-activedescendant) — native `<button>` tabs make tabIndex toggling the idiomatic APG fit; automatic activation (arrow selects + moves focus) since the panel renders synchronously. A11Y-12 needed no source change for the Settings marketplace section (already used labelled EditButton/DeleteButton) — closed with a confirming test; the Asset-row portion of A11Y-12 remains for plan 35-02, so A11Y-12 stays Pending in REQUIREMENTS traceability until then.
-- [35-03 2026-06-26]: FilamentSelector trigger uses aria-labelledby (not htmlFor) to preserve the existing Button ref pattern. Brand submenu uses static aria-label={brand} (not aria-labelledby) per RESEARCH Pitfall 5 — trigger text is dynamic so labelledby on the menu would produce dynamic name changes while open. No live region or aria-activedescendant needed — existing .focus() calls on arrow-key nav already announce items.
-- [35-04 2026-06-26]: A11Y-14 chip hit target uses min-w/min-h 24px (not AAA 44px) per LOCKED context decision — glyph stays text-[10px], bounding box enlarged without visual change at rest. A11Y-15 break-even bar aria-valuetext template: "{N} of {M} copies sold[ — break-even reached]".
-- [35-05 2026-06-26]: InfoTooltip button label changed from verbose {text} prop to canonical "More information"; Escape handler calls e.stopPropagation() to prevent parent modal from intercepting. App.tsx full-render impractical in jsdom (Dexie DB hooks); used minimal replica subtrees in App.a11y.test.tsx per plan guidance.
-- [36-01 2026-06-26]: jobId kept in OrdersQuoteRows type signature (renamed _jobId) for API stability after PERF-09 removed internal quotesByJobId.get(jobId) usage. Source-contract test filters comment/JSDoc lines before counting useQuotes() calls (naive regex matches documentation references too).
-- [36-02 2026-06-26]: Pricing useEffect dep array trimmed to [trueCost, lastEdited] (Option A, dep trimming). Test for "removed deps not on dep-array line" uses line-by-line scanning, not a broad regex — the PERF-11 rationale comment itself mentions the removed dep names on a single line, causing a false-match in the naive approach.
+- [v2.0 Roadmap 2026-07-03]: Continue-numbering at Phase 38. v1.9 used 34–37; Phase 33 reserved on `feat/insight-pricing-coach`; start at 38 to avoid collision.
+- [v2.0 Roadmap 2026-07-03]: 8-phase structure derived from research consensus (all 4 research files converge on the same wave ordering independently). Coarse granularity applied: 8 phases for 27 requirements reflects natural delivery boundaries, not padding.
+- [v2.0 Roadmap 2026-07-03]: Phase 38 (Foundation) is the highest-risk code change in the milestone. Research spike flagged as REQUIRED — must resolve useCostDerivedValues dep-array design and useReducer vs refined useEffect patterns before any code is touched. Output-equivalence tests (old vs new component, same numbers for N inputs) are the primary correctness gate.
+- [v2.0 Roadmap 2026-07-03]: Phase 42 (GDPR) is a hard gate before Phase 43 (Pro Backend). The consent banner must be live in production and network-verified before any backend call ships user data off-device.
+- [v2.0 Roadmap 2026-07-03]: Phase 43 (Pro Backend) research spike flagged REQUIRED — Supabase auth implementation (magic-link, httpOnly cookie, Tauri secure keyring) needs a concrete plan. Backend = Supabase eu-central-1 (locked per REQUIREMENTS.md). PRO-03 requires a formal security review gate (non-enumerable URLs, RLS, no PII in CDN caches).
+- [v2.0 Roadmap 2026-07-03]: Phase 44 (Sync + STL) research spike flagged REQUIRED — file-based sync conflict detection (BroadcastChannel lock, atomic JSON write in Tauri) is likely underestimated per research SUMMARY.md. Sequenced after Phase 43 so the sync export format includes all v2.0 Dexie stores in their final shape.
+- [v2.0 Roadmap 2026-07-03]: CONN-02 (STL instant quote) paired with SYNC-01 in Phase 44 — both are high-complexity free-floor features not on the critical path, both benefit from a later sequencing once the schema is stable.
+- [v2.0 Roadmap 2026-07-03]: CONN-03 (Quote Variants PDF) placed in Phase 41 (Quick Wins), not Phase 39 or 43 — it rides the existing jsPDF engine, requires no new Dexie stores, and is independent of both the backend and the cost realism features.
+- [v2.0 Roadmap 2026-07-03]: Phases 39, 40, and 41 all depend on Phase 38 but are otherwise independent of each other and can begin planning in parallel once Phase 38 is complete.
+- [v2.0 Roadmap 2026-07-03]: Free-floor guarantee: every cost-model improvement (failure rate, TOU, maintenance amortization) ships to the free tier. No insight or cost feature requires an account.
 
 ### Pending Todos
 
-- FIX-01 is built on `fix/pwa-reload-uncontrolled` — Phase 34 plan should reconcile/merge that branch's work rather than rebuild.
-- FIX-02 is a cherry-pick of `4da205f` from the redesign branch (`test/design-skills-experiment`) — verify it picks cleanly and leaves `#hash` anchors alone.
-- A11Y-10 + A11Y-11 are WCAG **Critical** — prioritize within Phase 35. (A11Y-10 ✅ closed in 35-01; A11Y-11 remains, scheduled in 35-02.)
-- v1.9 is hardening-only: no `src/features.ts` entries / NEW badges (per project memory: badges only for user-perceivable new features; papercut fixes and a11y/perf are not new features).
+- Phase 38 requires a research spike BEFORE plan creation — useCostDerivedValues dep-array design is the highest-risk decision in the milestone. Run `/gsd:plan-phase 38` with research enabled.
+- PERF-11 is now addressed in Phase 38 (FOUND-02) as part of the CostCalculator split — the correct fix belongs with useCostDerivedValues, not a dep-trim patch.
+- Backend choice is locked (Supabase eu-central-1) but Supabase auth implementation details need a concrete plan at Phase 43 planning time.
+- Pro tier pricing: three placeholder spots exist. Founder must set actual price before Phase 45 ships. Anchor: 3DPrintQuote €9.90/mo.
+- Tax threshold data for LIFE-02 is MEDIUM confidence — the UI must show "data current as of [date]" and "consult a qualified accountant" disclaimer.
 
 ### Blockers/Concerns
 
-None.
+None currently — roadmap created, all requirements mapped, all gates documented.
 
 ## Session Continuity
 
-Last session: 2026-06-26T09:25:00Z
-Stopped at: Completed 37-02-PLAN.md — HYG-12.2 + HYG-12.3; Phase 37 + v1.9 milestone complete. 760 tests green + tsc -b clean.
+Last session: 2026-07-03
+Stopped at: v2.0 roadmap created. ROADMAP.md, STATE.md, REQUIREMENTS.md (traceability) all written.
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run `/gsd:plan-phase 38` with research enabled (research spike required before coding)
+- Phases 39, 40, 41 can be planned in parallel after Phase 38 completes
+- Phase 42 (GDPR) must complete and be verified live in production before Phase 43 begins
+- Phase 43 needs research spike at plan time (Supabase auth implementation, billing provider)
+- Phase 44 needs research spike at plan time (sync conflict detection, atomic write)
 
 ## Deferred Items
 
-Items acknowledged and deferred at v1.9 milestone close on 2026-07-03 (all pre-v1.9 stale artifacts; v1.9 phases 34-37 had zero open items):
+Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 
-| Category | Item | Status |
-|----------|------|--------|
-| quick_task | 260529-bg2-fix-newly-added-filaments-in-asset-libra | missing (likely overtaken by v1.9 AssetLibrary rework) |
-| uat_gap | Phase 07/09/13/19/20 HUMAN-UAT files | resolved/partial/deferred/passed — 0 pending scenarios each |
-| verification_gap | Phase 04 + 09 VERIFICATION.md | human_needed (v1.0-era, long shipped) |
-| context_questions | Phase 15/17/20 CONTEXT.md | planner-level questions, resolved at execution time |
-
-Also deferred to v2.0 (decided during v1.9): PERF-11 pricing dep-trim (pairs with CostCalculator split, audit 6.1); browser-Back exits /app (fix = tab-in-URL); etsy_offsite_ad in RecordSaleModal picker (roadmap backlog).
+| Category | Item | v2.0 disposition |
+|----------|------|-----------------|
+| backlog | PERF-11 pricing dep-trim | Addressed in Phase 38 (FOUND-02) |
+| backlog | Tab-in-URL browser navigation | Addressed in Phase 38 (FOUND-03) |
+| backlog | etsy_offsite_ad in RecordSaleModal | Deferred to v3.0+ (MISC-01, not in v2.0 scope) |
+| backlog | Guided first-run onboarding | Addressed in Phase 42 (ONBD-01) |
+| backlog | CostCalculator God-component split | Addressed in Phase 38 (FOUND-01) |
+| backlog | Cost-Truth Dark redesign merge | Addressed in Phase 45 (BRAND-01) |
+| v1.3-carryover | Customer CSV export | Still pending — no v2.0 requirement |
+| v1.3-carryover | VoiceOver UAT (Phase 19) | Still pending — no v2.0 requirement |
+| v1.3-carryover | TAGS-F4 tag colors, DUP-F1 duplicate UI | Still pending — no v2.0 requirement |
