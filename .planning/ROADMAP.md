@@ -1,7 +1,7 @@
 # Roadmap: 3DCoster
 
 **Project:** 3D printing cost calculator (Web + Tauri desktop) — local-first, free tier.
-**Status:** v1.9 Hardening **in planning** (Phases 34–37). v1.8 shipped 2026-06-25; v1.4–v1.7 shipped outside GSD.
+**Status:** v1.9 Hardening **SHIPPED 2026-07-03** (tag `v1.9.0`). Next: v2.0 milestone (Cost-Truth engine + hosted/Pro backend + GDPR) — run `/gsd:new-milestone`.
 
 ---
 
@@ -13,7 +13,8 @@
 - ✅ **v1.3 Hardening** — Phases 18–26 (shipped 2026-05-28) — [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md)
 - ⚠️ **v1.4 – v1.7 — shipped OUTSIDE GSD** (ad-hoc, 2026-05-29 → 2026-06-19). GSD management lapsed after v1.3; these were tracked via CHANGELOG + ad-hoc planning, not GSD phases. Highlights: v1.5 CSV export + roadmap page; v1.6 backup/restore + 3dcoster.com + CSP; v1.7 **Linux desktop builds** + 12 printers + calculator correctness fixes.
 - ✅ **v1.8 Inventory & Sales Reporting** — Phases 27–32 (shipped 2026-06-25, desktop tag `v1.8.0`). **GSD revived here.** Material inventory tracking (#20) + PDF sales report (#33) + filament-picker search + off-by-100× rate warnings.
-- 🔨 **v1.9 Hardening** — Phases 34–37 (IN PLANNING). Sequel to v1.3 Hardening — no new user-facing features; every requirement closes a live papercut or a `docs/CALCULATOR_APP_AUDIT.md` Tier 3–6 finding. Clears the runway for v2.0.
+- ✅ **v1.9 Hardening** — Phases 34–37 (shipped 2026-07-03, desktop tag `v1.9.0`) — [milestones/v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md). 14/15 requirements (PERF-11 deferred to v2.0). Data-loss + marketplace-fee/FX + net-margin fixes, A11Y Tier 4, perf, 0 CVEs.
+- 📋 **v2.0 Cost-Truth & Insight** — NOT YET SCOPED — run `/gsd:new-milestone`. Greenlit pool: 11 Cost-Truth features (docs/ROADMAP.md, internal), hosted/Pro backend, GDPR cookie-consent + privacy policy, marketing-site redesign branch, CostCalculator split + PERF-11, tab-in-URL, guided onboarding (Tier 3.1).
 
 > **Phase-numbering note:** v1.9 starts at **Phase 34** (continue-numbering). v1.8 used Phases 27–32; an in-flight branch holds **Phase 33** (not present on this branch). Starting at 34 avoids collision.
 
@@ -21,12 +22,17 @@
 
 ## Phases
 
-### 🔨 v1.9 Hardening (Phases 34–37) — IN PLANNING
+<details>
+<summary>✅ v1.9 Hardening (Phases 34–37) — SHIPPED 2026-07-03</summary>
 
-- [x] **Phase 34: Live papercut fixes** — PWA Reload reliability, ScrollToTop nav, styled "Reset all" confirm, edit-job scroll-to-banner
-- [x] **Phase 35: Accessibility Tier 4** — Settings arrow-key tabs, form-error ARIA association, icon-button labels, FilamentSelector name, tag-chip target size, AA cleanups
-- [x] **Phase 36: Performance Tier 5** — lift per-row `useQuotes()`, `materialsById` Map, pricing `useEffect` double-render fix
-- [x] **Phase 37: Code health (STRETCH)** — index-mutation immutability fixes + minor consistency cleanups (droppable if timeboxed)
+- [x] Phase 34: Live papercut fixes (2/2 plans) — completed 2026-06-25
+- [x] Phase 35: Accessibility Tier 4 (5/5 plans) — completed 2026-06-26
+- [x] Phase 36: Performance Tier 5 (2/2 plans) — completed 2026-06-26
+- [x] Phase 37: Code health (STRETCH) (2/2 plans) — completed 2026-06-26
+
+**Outcome:** 11 plans, 14/15 requirements (PERF-11 reverted as a pricing regression → v2.0). Plus release-review/audit/UAT-driven fixes: Asset-Library scoped reset (data-loss), deleted-defaults persistence, marketplace-fee FX + net margin, 19→0 CVEs. See [milestones/v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md).
+
+</details>
 
 <details>
 <summary>✅ v1.3 Hardening (Phases 18–26) — SHIPPED 2026-05-28</summary>
@@ -78,65 +84,16 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 ## Phase Details
 
-### Phase 34: Live papercut fixes
-**Goal**: Four live user-facing papercuts are gone — updates reload reliably, navigation lands at the top of the page, the most destructive action is properly guarded, and confirming an edit-job jump puts the user where they need to be.
-**Depends on**: Nothing (first v1.9 phase; mostly already built — FIX-01 done on `fix/pwa-reload-uncontrolled`, FIX-02 is cherry-pick `4da205f`)
-**Requirements**: FIX-01, FIX-02, FIX-03, FIX-04
-**Success Criteria** (what must be TRUE):
-  1. The "A new version is available · Reload" button reloads onto the new version even on a hard-refreshed / uncontrolled page (no controlling service worker), not just on a warm-controlled page.
-  2. Navigating between routes via footer/nav links lands the user at the top of the destination page; in-page `#hash` anchors still jump to their target (left untouched).
-  3. The Asset "Reset all" action opens the app's styled confirm modal showing the item counts about to be deleted, instead of a native `window.confirm()`.
-  4. Confirming an edit-job jump scrolls the calculator to the "Editing…" banner so the user can see which job they are editing.
-**Plans**: 2 plans
-- [x] 34-01-PLAN.md — Web-shell fixes: PWA Reload regression (FIX-01, verify) + ScrollToTop on route nav (FIX-02, cherry-pick)
-- [x] 34-02-PLAN.md — Calculator fixes: styled Reset-all confirm modal with counts (FIX-03) + scroll-to-Editing-banner on edit-job jump (FIX-04)
-**UI hint**: yes
-
-### Phase 35: Accessibility Tier 4
-**Goal**: Close the real Tier 4 accessibility gaps so keyboard and assistive-technology users can operate Settings, perceive form errors, and identify every interactive control — meeting the targeted WCAG success criteria. (A11Y-10 and A11Y-11 are WCAG **Critical**.)
-**Depends on**: Phase 34 (sequential; shares Settings + Asset surfaces — land papercuts first to avoid churn)
-**Requirements**: A11Y-10, A11Y-11, A11Y-12, A11Y-13, A11Y-14, A11Y-15
-**Success Criteria** (what must be TRUE):
-  1. **(WCAG Critical — A11Y-10)** Settings inner tabs are navigable with Left/Right arrow keys, and focus moves to the active panel on tab switch (WCAG 2.4.3).
-  2. **(WCAG Critical — A11Y-11)** Form-error containers announce as `role="alert"`, and failing inputs expose `aria-invalid` + `aria-describedby` pointing at their error text (WCAG 3.3.1 / 1.3.1).
-  3. Every icon-only edit/delete button (Settings carriers/marketplaces, Asset rows) has a descriptive `aria-label` (WCAG 4.1.2).
-  4. The FilamentSelector menu has an accessible name and its submenu announces selection correctly via a live region / `aria-activedescendant` (WCAG 4.1.2); tag-remove chip buttons meet the minimum target size and are discoverable on touch (no longer 14px / opacity-0 at rest) (WCAG 2.5.5 / 2.5.8).
-  5. The remaining AA cleanups land: main `tabpanel` `tabIndex={-1}` for post-switch focus; break-even bar exposes `role="progressbar"` with values; `InfoTooltip` is Escape-dismissable with a concise label; mobile "Back to site" link is labelled; category filter is a labelled `role="group"`.
-**Plans**: 5 plans
-- [x] 35-01-PLAN.md — SettingsModal: roving-tabindex arrow-key tab nav + panel focus (A11Y-10, WCAG Critical) + marketplace icon-button labels (A11Y-12)
-- [x] 35-02-PLAN.md — AssetLibrary: form-error ARIA association (A11Y-11, WCAG Critical) + asset-row icon labels (A11Y-12) + category role=group + SortIndicator aria-hidden (A11Y-15)
-- [x] 35-03-PLAN.md — FilamentSelector: trigger label association + brand-submenu aria-label (A11Y-13)
-- [x] 35-04-PLAN.md — JobsManager: 24×24 tag-chip hit target + focus ring (A11Y-14) + break-even role=progressbar (A11Y-15)
-- [x] 35-05-PLAN.md — App.tsx + InfoTooltip: main tabpanel tabIndex + back-to-site link label + InfoTooltip concise label/Escape (A11Y-15)
-**UI hint**: yes
-
-### Phase 36: Performance Tier 5
-**Goal**: Remove the three render/subscription hotspots that bite at scale so the Jobs and Calculator surfaces stay responsive with large datasets, with no behavioral change.
-**Depends on**: Phase 34 (sequential; PERF-09 touches JobsManager rows that the papercut work also brushes)
-**Requirements**: PERF-09, PERF-10, PERF-11
-**Success Criteria** (what must be TRUE):
-  1. There is no per-row Dexie subscription duplication for quotes — `useQuotes()` is lifted to the `JobsManager` parent and `quotesForJob` is passed down as a prop, so a 80-job list holds one quotes subscription, not one per visible row.
-  2. `getFilamentName` resolves filament names via a `materialsById` Map built once, not an `O(N×M)` `Array.find` per filament per render.
-  3. The pricing `useEffect` no longer triggers a double render per keystroke — it is moved to an event-handler pattern (or its dep array is trimmed so the values it sets are not in its deps).
-**Plans**: 2 plans
-- [x] 36-01-PLAN.md — JobsManager: lift per-row useQuotes() to parent (PERF-09) + materialsById Map for getFilamentName (PERF-10)
-- [x] 36-02-PLAN.md — CostCalculator: trim pricing useEffect deps to [trueCost, lastEdited] to kill the double-render (PERF-11)
-**UI hint**: yes
-
-### Phase 37: Code health (STRETCH)
-**Goal**: **(STRETCH / optional — droppable without affecting milestone success if timeboxed.)** Eliminate the remaining immutability violations and minor consistency rough edges flagged by the audit, leaving the codebase clean for the v2.0 refactor work. Cut this phase first if v1.9 runs long.
-**Depends on**: Phase 36 (last; lowest priority, no downstream dependents)
-**Requirements**: HYG-11, HYG-12
-**Success Criteria** (what must be TRUE):
-  1. The 3 remaining index-mutation immutability violations are converted to immutable updates (new objects/arrays, no in-place index assignment).
-  2. Minor consistency cleanups land: `updatePackagingMaterial` rewritten via `map`; `useAssets` init reads batched with `Promise.all`; `as UserProfile` / `as Currency` casts replaced with validated narrowing (matching the v9 migration pattern).
-**Plans**: 2 plans
-- [x] 37-01-PLAN.md — CostCalculator.tsx: functional-updater updateMaterialUsage + new updatePackagingMaterial helper (HYG-11 all 3 + HYG-12.1)
-- [x] 37-02-PLAN.md — useDatabase.ts + database.ts: batch useAssets init reads A+B via Promise.all (HYG-12.2) + narrow C1/C3 as-UserProfile casts to validated narrowing (HYG-12.3)
+*(No active milestone — v1.9 phase details archived to [milestones/v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md). Next milestone: v2.0 via `/gsd:new-milestone`.)*
 
 ---
 
 ## Progress
+
+*(No active phases.)*
+
+<details>
+<summary>✅ v1.9 Hardening progress (Phases 34–37) — all complete</summary>
 
 | Phase                                   | Milestone | Plans | Status      | Completed |
 | --------------------------------------- | --------- | ----- | ----------- | --------- |
@@ -144,6 +101,8 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 35. Accessibility Tier 4                | v1.9      | 5/5 | Complete   | 2026-06-26 |
 | 36. Performance Tier 5                  | v1.9      | 2/2 | Complete   | 2026-06-26 |
 | 37. Code health (STRETCH)               | v1.9      | 2/2   | Complete    | 2026-06-26 |
+
+</details>
 
 <details>
 <summary>✅ v1.3 Hardening progress (Phases 18–26) — all complete</summary>
@@ -167,8 +126,11 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 ## Backlog (carried forward)
 
-Deferred to v2.0 (per v1.9 REQUIREMENTS.md):
+Deferred to v2.0 (per v1.9 REQUIREMENTS.md + v1.9 close):
 
+- **PERF-11** — pricing `useEffect` double-render fix. Reverted in v1.9 (dep-trim desynced profit/margin on consecutive same-field edits); correct fix pairs with the CostCalculator God-component split (audit 6.1).
+- **Tab-in-URL** — browser Back from `/app` exits to the marketing site (in-app tabs are React state). Fix = active tab in the URL (`?tab=`); pairs with the redesign / `/app` seam work. *(UAT finding, 2026-06-26)*
+- **etsy_offsite_ad in RecordSaleModal picker** — fee engine supports it; the Record Sale marketplace picker doesn't surface it. *(v1.9 release review, 2026-07-03; also in docs/ROADMAP.md backlog)*
 - **UX-onboarding** — Guided first-run setup funnel (add printer → add filament → price). Audit 3.1 — headline UX feature, v2.0.
 - **UX-empty-states** — Real empty states for FilamentSelector + Printers. Audit 3.3 — low-risk; could be pulled into v1.9 if scope allows.
 - **UX-calc-flow** — Per-asset source currency, inline filament price override, CSV post-import summary, collapse optional calculator sections. Audit 3.4 / 3.5 — feature work, v2.0.

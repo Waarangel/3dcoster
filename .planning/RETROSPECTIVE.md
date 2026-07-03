@@ -62,6 +62,49 @@
 
 ---
 
+## Milestone: v1.9 — Hardening
+
+**Shipped:** 2026-07-03 (desktop tag `v1.9.0`, web same day)
+**Phases:** 4 (34–37) | **Plans:** 11 | **Requirements:** 14/15 (PERF-11 reverted → v2.0)
+
+*(Note: v1.8 shipped 2026-06-25 without a retrospective section — GSD was revived mid-v1.8; its summary lives in MILESTONES.md.)*
+
+### What Was Built
+
+No new features — the sequel to v1.3 Hardening. Live papercut fixes (PWA Reload, ScrollToTop, styled confirms, edit-job scroll), A11Y Tier 4 (roving tabindex, role=alert, labels, target sizes), perf Tier 5 (subscription lift, O(1) lookups), code health (immutability, validated narrowing). The review/audit/UAT gate then contributed as much as the planned scope: scoped Asset-Library reset (data-loss fix), deleted-defaults persistence, marketplace-fee FX + net-of-fees margin, 19→0 CVEs, Tauri fs scope, 3MF zip-bomb guards.
+
+### What Worked
+
+- **The ~1-week pre-release hold.** Founder-imposed gate (review + UAT before tag) caught: a real pricing regression (PERF-11 desync), a silent data-loss bug (custom-category reset), a ~150× currency error for non-USD sellers, and 19 CVEs — all before any user saw them. The hold is now a validated pattern, not overhead.
+- **Multi-lens review beats single-pass.** 4-parallel-reviewer release review + 5-parallel-lens app audit (security/React/cost-logic/data-integrity/a11y) each surfaced findings the other missed.
+- **Conversational UAT in the browser** surfaced the data-loss bug no reviewer or test caught — reading code ≠ clicking the app.
+- **Delta re-review before tag** — 2 commits landed after the "final" review PASS; a targeted react-reviewer pass kept the gate honest at trivial cost.
+
+### What Was Inefficient
+
+- **Source-string/contract tests gave false confidence.** PERF-11's tests asserted the dep array's *shape*, not pricing *behavior* — the regression sailed through green. Lesson codified: contract tests don't substitute for behavioral tests on money math.
+- **Stale service worker repeatedly served old JS during browser verification** (the recurring 4173-preview trap) — cost a debugging detour before being re-diagnosed.
+- **Milestone-close hygiene debt:** 11 stale open artifacts from v1.0–v1.3 phases surfaced at close (old UAT/verification flags, one orphaned quick-task) — acknowledged as deferred rather than swept.
+
+### Patterns Established
+
+- Pre-release checklist as a hard sequence: release-diff review (parallel reviewers) → conversational UAT → full app audit → fix Tiers → delta re-review → CHANGELOG date → deploy → tag with explicit approval.
+- Founder decisions recorded at audit time (deleted defaults STICK; fees FOLD into net margin) — decisions made once, applied everywhere.
+- Revert-and-defer over patch-in-place when a perf change regresses correctness (PERF-11 → v2.0 with the proper refactor).
+
+### Key Lessons
+
+1. Build-green + tests-green ≠ reviewed. The gate exists because it keeps catching what CI can't.
+2. Money math changes need output-equivalence proofs (the no-marketplace path was proven byte-identical before the net-margin fold shipped).
+3. UAT the empty/custom/reset states — data-loss hides in the paths tests rarely model.
+
+### Cost Observations
+
+- Sessions: ~4 working sessions over 8 days (2026-06-25 → 07-03), incl. the deliberate 1-week hold
+- Notable: review/audit agents (4+5 parallel reviewers + 1 delta reviewer) were the highest-value spend of the milestone — they found the only shipped-blocking bugs
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -72,6 +115,8 @@
 | v1.1 | (pre-GSD) | 5 | - | Pre-GSD-archive — built without milestone planning workflow |
 | v1.2 | ~10 sessions | 7 | 45 | First milestone fully under GSD workflow. Mid-milestone phase insertion debuted (Phase 15.1 Customer Library, Phase 17 PDF-04 closure). 2 rounds of gap closure on Phase 15. |
 | v1.3 | ~5 sessions | 10 | 43 | Decimal phase insertion (Phase 22.1) for in-scope surprises. Cleanup-phase-before-tag pattern (Phase 26). Wave-based parallel worktree execution scaled to 4-6 simultaneous agents per wave. First milestone to close with `passed` verdict (v1.2 closed with `tech_debt`). |
+| v1.8 | ~3 sessions | 6 | — | GSD revived after the v1.4–v1.7 ad-hoc lapse. 3-reviewer release-diff review pattern established. (No retrospective section written.) |
+| v1.9 | ~4 sessions | 4 | 11 | **1-week pre-release hold** (review + UAT + audit before tag) debuted and validated — caught a pricing regression, a data-loss bug, and 19 CVEs. Revert-and-defer pattern (PERF-11). Delta re-review before tag. |
 
 ### Cumulative Quality
 
@@ -81,6 +126,8 @@
 | v1.1 | ~200 | ~12 | ~50 KB | (pre-GSD) |
 | v1.2 | ~380 | ~26 | 61.5 KB | tech_debt (7 deferred — all rolled into v1.3) |
 | v1.3 | 466 (+1 todo) | 31 | 56.5 KB | passed (4 accepted deferrals carried to v1.4) |
+| v1.8 | ~730 | ~55 | ~70 KB | (no formal audit — release-diff review only) |
+| v1.9 | 819 (+1 todo) | 64 | 72.8 KB | no formal milestone audit — superseded by 2 release reviews + 5-lens app audit + full UAT (0 CRIT/HIGH at ship); 0 npm CVEs |
 
 ### Tech Debt Trajectory
 

@@ -8,7 +8,23 @@
 
 Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
 
-## Last Shipped Milestone: v1.3 Hardening — 2026-05-28
+## Last Shipped Milestone: v1.9 Hardening — 2026-07-03
+
+4 phases (34–37), 11 plans, **14/15 requirements** (PERF-11 reverted as a pricing regression → v2.0). Code: 102 commits / 115 files / +11,713 −1,291 since `v1.8.0`. Web deployed + desktop tag `v1.9.0` same day.
+
+**Key wins:**
+- Asset-Library scoped reset — fixed silent custom-category data-loss; deleted defaults stay deleted (persisted `seedState`)
+- Marketplace-fee correctness — fixed fees FX-converted (~150× JPY fix); quoted margin/profit folded to NET of fees (`pricingInterlink.ts`); break-even netted
+- A11Y Tier 4 closed (A11Y-10..15) — roving-tabindex App + Settings tabs, shared `ConfirmModal`, role=alert errors, carousel pause/reduced-motion
+- Perf: JobsManager quotes subscriptions 160 → 1; O(1) `materialsById` lookups
+- Security: npm audit 19 → 0 CVEs, WHATWG URL parser, Tauri fs scope narrowed, 3MF zip-bomb guards
+- Papercuts: PWA Reload works on uncontrolled pages; ScrollToTop; edit-job scroll-to-banner
+- Process: 2 release-diff review passes + 5-lens app audit + full UAT; review caught + reverted the PERF-11 regression tests missed
+
+Full delivery map: [milestones/v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md). Review artifacts: `v1.9-RELEASE-REVIEW.md`, `v1.9-AUDIT.md`, `v1.9-UAT-CHECKLIST.md`.
+
+<details>
+<summary>v1.3 Hardening SHIPPED 2026-05-28 (collapsed)</summary>
 
 10 phases (18–26), 43 plans, 56 tasks, 53 requirements satisfied (100%), audit verdict: **passed**. Code: 54 src files changed, +13,221 / −4,266 LOC over 322 commits in 4 days.
 
@@ -23,6 +39,8 @@ Accurate cost calculation for 3D prints so users can price jobs correctly, maint
 - 8 VALIDATION.md files brought to Nyquist-compliant state + REQUIREMENTS.md doc-lag sync + CustomerCsvImportModal layout parity (Phase 26 cleanup)
 
 Full delivery map: [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md). Audit: [milestones/v1.3-MILESTONE-AUDIT.md](milestones/v1.3-MILESTONE-AUDIT.md).
+
+</details>
 
 <details>
 <summary>v1.2 Quote-to-Customer SHIPPED 2026-05-25 (collapsed)</summary>
@@ -53,13 +71,15 @@ Full delivery map: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md). Aud
 
 </details>
 
-## Next Milestone Goals: v1.4 TBD
+## Next Milestone Goals: v2.0 Cost-Truth & Insight (scoping via `/gsd:new-milestone`)
 
-Not yet defined. Will be scoped via `/gsd:new-milestone` after v1.3 Hardening ships, informed by customer-facing usage of v1.2 features.
-
-**Carry-over feature candidates** (NOT in v1.3 — v1.3 is hardening-only):
-- TAGS-F4 — tag color picker (raised + self-deferred in Phase 15 Round 2 UAT)
-- DUP-F1 — DUP-01 row-action UI in a richer surface (job-detail panel or batch-action menu); helper DUP-02 + locked test contract are ready for consumption
+DECIDED 2026-07-03: open the **full v2.0 milestone** next. Candidate pool (to be scoped/phased during new-milestone):
+- **Cost-Truth & Insight engine** — the 11 greenlit features (failure-cost engine, reprice alerts, true hourly wage, printer ROI, instant-quote link, spool moisture, tax threshold, etc.) — docs/ROADMAP.md, INTERNAL (don't tip competitors)
+- **Hosted/Pro backend tier** — accounts, hosted quote pages, instant-quote share links (floor & ceiling model: free self-service floor stays)
+- **GDPR compliance** — cookie-consent banner (granular, revocable) + EU-compliant privacy policy + Terms; legally required once the backend stores user data
+- **Marketing-site redesign** — "Cost-Truth Dark" on `test/design-skills-experiment`, ships WITH v2.0/paid tier
+- **Deferred-in:** CostCalculator God-component split + PERF-11; tab-in-URL (browser-Back fix); Tier 3.1 guided onboarding; `etsy_offsite_ad` picker option
+- Carry-over candidates: TAGS-F4 tag colors; DUP-F1 duplicate-job UI; customer CSV export; `feat/insight-pricing-coach` branch (Phase 33)
 
 ## Requirements
 
@@ -125,17 +145,16 @@ All 53 v1.3 requirements satisfied. Snapshot: [milestones/v1.3-REQUIREMENTS.md](
 - ✓ **A11Y-09, DOC-01, DOC-02, HYG-01, HYG-04, HYG-05, HYG-10, PERF-05, PERF-06, POL-01..POL-04** — Doc-state lag closed (TAGS-01/04 flipped, CUST-01/02 archive note); JobsManager hygiene (`generatingJobIds` slot removed, `onQuoteCreated` made optional, image5 absence comment, `ui-consistency-sweep` audit); CustomerLibrary row alignment; CSV template download; jspdf module augmentation; QuoteRow overflow menu outside-click + Escape; QuoteStatusPill `aria-label` + Declined contrast (Phase 25)
 - ✓ **DOC-03, DOC-04, POL-05** — v1.3 audit cleanup: 8 VALIDATION.md files Nyquist-compliant (Phase 18/20/22/22.1 flipped, Phase 19/23/24/25 backfilled); REQUIREMENTS.md DATA-07/PERF-08 sync; CustomerCsvImportModal layout parity with asset modal — template block above upload zone with `👥 Customer template` label (Phase 26)
 
-### Active — v1.9 Hardening
+### Validated — v1.9 Hardening (shipped 2026-07-03)
 
-**Goal:** Ship live papercut fixes + a scoped a11y/perf hardening slice to clean the runway for the v2.0 milestone. No new user-facing features — the sequel to v1.3 Hardening, driven by `docs/CALCULATOR_APP_AUDIT.md` (Tiers 3–6).
+14/15 requirements satisfied (PERF-11 deferred). Snapshot: [milestones/v1.9-REQUIREMENTS.md](milestones/v1.9-REQUIREMENTS.md).
 
-**Target scope (phases 34+):**
-- **Live papercut fixes** — PWA web "Reload" update button (built on `fix/pwa-reload-uncontrolled`), ScrollToTop nav (cherry-pick `4da205f`), destructive "Reset all" → styled confirm modal (audit 3.2), edit-job scroll-to-banner (3.6)
-- **Accessibility (Tier 4)** — Settings inner-tab arrow-key nav + focus-to-panel (4.1), form-error `role=alert` + `aria-invalid`/`aria-describedby` (4.2), icon-only button labels (4.3), FilamentSelector menu accessible name (4.4), tag-remove chip target size (4.5), misc AA cleanups (4.6)
-- **Performance (Tier 5)** — lift per-row `useQuotes()` subscription (5.1), `materialsById` map for `getFilamentName` (5.2), pricing `useEffect` double-render (5.3)
-- **(Stretch) Code health** — 3 index-mutation immutability fixes + audit 6.5 minor consistency, only if timeboxed
-
-**Explicitly OUT (not hardening / belongs elsewhere):** Tier 2 brand cohesion → redesign/v2.0; Tier 3.1 guided onboarding → v2.0 headline feature; large Tier 6 God-component splits (6.1–6.4) → refactor risk in a release.
+- ✓ **FIX-01..FIX-04** — PWA Reload on uncontrolled pages; ScrollToTop nav; styled Reset-all confirm; edit-job scroll-to-banner (Phase 34)
+- ✓ **A11Y-10..A11Y-15** — Settings roving-tabindex arrow nav (WCAG Crit); form-error role=alert + aria-invalid/describedby (WCAG Crit); icon-button labels; FilamentSelector accessible name; 24×24 tag-chip targets; AA cleanups (Phase 35)
+- ✓ **PERF-09, PERF-10** — useQuotes lifted to JobsManager parent (160→1 subscriptions); materialsById O(1) Map (Phase 36)
+- ⚠️ **PERF-11** — REVERTED (dep-trim desynced profit/margin on consecutive same-field edits — caught by release review, not tests). Deferred to v2.0 with the CostCalculator split.
+- ✓ **HYG-11, HYG-12** — index-mutation immutability fixes; Promise.all batched init reads; validated narrowing over `as` casts (Phase 37)
+- ✓ **Plus review/audit/UAT-driven fixes outside the requirement set:** scoped Asset-Library reset (data-loss), deleted-defaults persistence (`seedState`), marketplace-fee FX conversion + net-of-fees margin (`pricingInterlink.ts`), stock atomicity + cascade, npm audit 0 CVEs, Tauri fs scope, 3MF zip-bomb guards, shared `ConfirmModal`, App main-tab roving tabindex
 
 ### Out of Scope (carried forward)
 
@@ -159,9 +178,10 @@ All 53 v1.3 requirements satisfied. Snapshot: [milestones/v1.3-REQUIREMENTS.md](
 - **v1.3 (Hardening) shipped 2026-05-28** across Phases 18–26 (10 phases, 43 plans, 4 days). Mid-milestone insertions: Phase 22.1 (Break-even formula reconciliation surfaced during Phase 22 UAT) and Phase 26 (v1.3 audit cleanup before tag). Final main bundle 56.5 KB gzipped (down from v1.2's 61.5 KB)
 - **v1.4–v1.7 shipped ad-hoc (GSD management lapsed after v1.3)** — desktop release tags `v1.4.x`–`v1.7.0`; notable: CSV export + public roadmap (v1.5), backup/restore + jobs totals bar + 3dcoster.com + CSP (v1.6), Linux desktop builds + 12 printers/add-custom-printer + calculator correctness fixes + i18n grouping (v1.7.0, 2026-06-19)
 - **v1.8 (Inventory & Sales Reporting) shipped 2026-06-25** — GSD revived; Phases 27–32. Material inventory tracking (#20: stockEvents ledger, deduct-on-job, low-stock badges/hints) + PDF sales report (#33: dedicated Reports tab, month/quarter/year/YTD/custom, branded PDF + CSV) + filament-picker search + Bambu PLA Pure + off-by-100× rate warnings + fuel-price per-gallon fix. Tagged `v1.8.0`; full 3-reviewer release-diff review (0 CRITICAL)
-- Current codebase: 13,221 src LOC added during v1.3 (54 src files changed); Dexie schema at v9 (v1.3 added v9 currency reconcile); 466 Vitest tests passing across 31 test files
-- v1.4 phase numbering continues — next phase is **Phase 27**
-- Roadmap: [ROADMAP.md](ROADMAP.md) (collapsed milestone-grouped index) + [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md) (latest full delivery map)
+- **v1.9 (Hardening) shipped 2026-07-03** — Phases 34–37 (4 phases, 11 plans, ~7 days incl. 1-week review/UAT hold). 14/15 requirements + review/audit-driven data-loss, fee-FX, and security fixes. Tagged `v1.9.0`; 2 release-diff review passes + 5-lens app audit + full UAT
+- Current codebase: **819 Vitest tests across 64 files**, 0 npm CVEs; main chunk 72.8 KB gzipped (300 KB gate intact)
+- Phase numbering continues — next phase is **Phase 38** (Phase 33 lives on the in-flight `feat/insight-pricing-coach` branch)
+- Roadmap: [ROADMAP.md](ROADMAP.md) (collapsed milestone-grouped index) + [milestones/v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md) (latest full delivery map)
 - Free/paid principle: "Free for the person; paid when the tool wears your brand to your customers, or works while you sleep"
 - Codebase map: `.planning/codebase/`
 - Desktop release tags decoupled from GSD milestones — v1.2 work shipped to users under `v1.2.0`..`v1.2.4` + `v1.3.0`..`v1.3.1` desktop tags as features landed
@@ -207,6 +227,11 @@ All 53 v1.3 requirements satisfied. Snapshot: [milestones/v1.3-REQUIREMENTS.md](
 | Phase 22.1 inserted mid-milestone for break-even formula reconciliation | Phase 22 HUMAN-UAT surfaced that the JobsManager break-even pill formula diverged from the Calculator widget on the same job. Inserted as decimal phase (22.1) rather than expanding Phase 22 scope. Reconciled at the snapshot layer (`fixedCostsAtSave` on saved jobs) so future Calculator changes propagate without backfill. | v1.3 | ✓ Shipped 2026-05-27 (PERF-08 round-trip test locks agreement) |
 | Phase 26 inserted as v1.3 closure cleanup before tagging | `/gsd:audit-milestone v1.3` returned `tech_debt` (no blockers, 8 doc-state items). Inserted Phase 26 to flip those items rather than ship `tech_debt`. 4 parallel-safe plans completed in 5 minutes, audit re-ran clean. Pattern: cleanup phase before tag if audit verdict has fixable items. | v1.3 | ✓ Shipped 2026-05-28 (verdict flipped `tech_debt` → `passed`) |
 | Customer CSV export deferred to v1.4+ | Phase 21 SC#5 specified a UAT for customer CSV export, but the export feature was never built — only `sanitizeCsvCell` shipped. Surfaced during Phase 21 HUMAN-UAT 2026-05-28. User deprioritized; backlog item rather than scope expansion. | v1.3 | ⚠️ Deferred 2026-05-28 |
+| Deleted defaults STICK (persisted `seedState` flags) | Founder decision 2026-06-26: re-seeding deleted default materials/printers on every reload silently overrode user intent. Per-row catalog top-up preserves new catalog additions without resurrecting deletions. | v1.9 | ✓ Shipped 2026-07-03 |
+| Marketplace fee FOLDS into net margin (not shown gross) | Founder decision 2026-06-26: the profit a seller is quoted must be the profit they keep. Closed-form `pricingInterlink.ts`; no-marketplace path proven byte-identical. | v1.9 | ✓ Shipped 2026-07-03 |
+| PERF-11 reverted + deferred to v2.0 | Release-diff review caught the dep-trim desyncing profit/margin on consecutive same-field edits — a regression the source-contract tests couldn't see. Correct fix belongs with the CostCalculator God-component split (audit 6.1). | v1.9 | ⚠️ Reverted 2026-06-26; → v2.0 |
+| Asset reset scoped to the active view | UAT surfaced silent data-loss: resetting from a custom-category view cleared ALL materials. Reset All keeps custom categories; per-category reset clears only that category. | v1.9 | ✓ Shipped 2026-07-03 |
+| v1.9 held ~1 week for review + UAT before tag | Founder gate 2026-06-26: build-green ≠ reviewed. The hold caught a pricing regression, a data-loss bug, and 19 CVEs before any user saw them. | v1.9 | ✓ Validated — keep the gate |
 
 ## Evolution
 
@@ -226,4 +251,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-25 — v1.8 (Inventory & Sales Reporting) shipped + tagged `v1.8.0`; starting v1.9 Hardening (sequel to v1.3 Hardening, driven by `docs/CALCULATOR_APP_AUDIT.md`). Note: PROJECT.md doc-reconciliation for v1.4–v1.7 was deferred during the post-v1.3 GSD lapse — Context section above captures the shipped summary; full per-requirement backfill not done. Next: `/gsd:plan-phase 34`.*
+*Last updated: 2026-07-03 after v1.9 Hardening milestone — shipped + tagged `v1.9.0`, milestone archived. Note: PROJECT.md doc-reconciliation for v1.4–v1.7 remains deferred (post-v1.3 GSD lapse) — Context section captures the shipped summary. Next: `/gsd:new-milestone` for v2.0 Cost-Truth & Insight.*

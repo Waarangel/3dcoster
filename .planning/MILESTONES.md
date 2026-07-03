@@ -6,6 +6,30 @@ Note: GSD milestone versions (v1.2 Quote-to-Customer) are decoupled from the **d
 
 ---
 
+## v1.9 Hardening
+
+**Shipped:** 2026-07-03 (desktop tag `v1.9.0`, web deployed same day; `main` fast-forwarded `42d9401 → be169b8`, 102 commits / 115 files / +11,713 −1,291 since v1.8.0)
+**Phases:** 4 GSD phases (34–37), 11 plans — **14/15 requirements delivered** (PERF-11 reverted as a pricing regression, deferred to v2.0 with the CostCalculator split)
+**Process:** 2 full release-diff review passes + react-reviewer delta review of post-review commits (0 CRITICAL/HIGH at ship) + full 5-lens app audit (`v1.9-AUDIT.md`) + complete UAT (`v1.9-UAT-CHECKLIST.md`); gate at ship: 819 tests/0 fail, tsc -b 0, lint 0 errors, 0 npm CVEs
+**Known deferred items at close:** 11 (all stale pre-v1.9 artifacts — see STATE.md Deferred Items)
+
+**Key accomplishments:**
+
+1. **Asset Library data safety** — scoped per-category Reset fixed a silent data-loss bug (resetting from a custom-category view wiped ALL materials); deleted defaults now stay deleted across reloads (persisted `seedState` flags); honest Add/Reset button labels that track the active tab
+2. **Marketplace-fee correctness** — fixed fees FX-converted from USD to the user's display currency (was ~150× off for JPY sellers); quoted margin/profit folded to NET of marketplace fees via closed-form `pricingInterlink.ts` (no-marketplace path proven byte-identical); saved-job break-even netted; record-sale path unified on the shared helper
+3. **Accessibility Tier 4 closed (A11Y-10..15)** — WAI-ARIA roving-tabindex keyboard nav on the main App tab bar + Settings inner tabs; shared styled `ConfirmModal` replaced every `window.confirm`; form errors announce via role=alert; carousel pause control + live reduced-motion reaction; modal inputs labelled; marketing pages gained `<main>` landmarks
+4. **Performance Tier 5** — JobsManager quotes subscription lifted from 160-per-list to 1 (PERF-09); O(1) `materialsById` Map filament lookups (PERF-10); PERF-11 dep-trim reverted after review caught a real pricing desync — deferred to v2.0
+5. **Security hygiene** — npm audit 19 → 0 CVEs; `isSafeHttpUrl` upgraded to WHATWG URL parser; Tauri fs write scope narrowed to PDF-save targets; 3MF zip-bomb size guards; `withGlobalTauri` disabled
+6. **Live papercuts (Phase 34)** — PWA "Reload" update button works even on uncontrolled pages/hard refresh; navigation lands at the top of the destination page; edit-job scrolls to the "Editing…" banner; destructive resets guarded by styled confirm modals
+
+### Archives
+
+- [v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md) — phase-by-phase delivery map
+- [v1.9-REQUIREMENTS.md](milestones/v1.9-REQUIREMENTS.md) — frozen REQUIREMENTS.md snapshot
+- Review/audit artifacts kept in `.planning/`: `v1.9-RELEASE-REVIEW.md`, `v1.9-AUDIT.md`, `v1.9-UAT-CHECKLIST.md`
+
+---
+
 ## v1.8 Inventory & Sales Reporting
 
 **Shipped:** 2026-06-25 (desktop tag `v1.8.0`)

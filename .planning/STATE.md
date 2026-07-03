@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Hardening
-status: completed
+status: Awaiting next milestone
 stopped_at: Completed 37-02-PLAN.md — HYG-12.2 + HYG-12.3; Phase 37 + v1.9 milestone complete. 760 tests green + tsc -b clean.
-last_updated: "2026-06-26T13:48:21.389Z"
-last_activity: 2026-06-26 -- Phase 37 marked complete
+last_updated: "2026-07-03T16:07:57.480Z"
+last_activity: 2026-07-03 — Milestone v1.9 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 37 — COMPLETE
-Plan: 2 of 2 (COMPLETE)
-Status: Phase 37 complete
-Last activity: 2026-06-26 -- Phase 37 marked complete
+Phase: Milestone v1.9 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-03 — Milestone v1.9 completed and archived
 
 ## v1.9 Phase Order Reference
 
@@ -99,4 +99,17 @@ Resume file: None
 
 ## Operator Next Steps
 
-- v1.9 Hardening milestone COMPLETE. All 4 phases (34–37), 11 plans done. Next: run `/gsd:verify-work` for v1.9 milestone closure, then prepare the v1.9 release (CHANGELOG entry, version bump, desktop tag).
+- Start the next milestone with /gsd-new-milestone
+
+## Deferred Items
+
+Items acknowledged and deferred at v1.9 milestone close on 2026-07-03 (all pre-v1.9 stale artifacts; v1.9 phases 34-37 had zero open items):
+
+| Category | Item | Status |
+|----------|------|--------|
+| quick_task | 260529-bg2-fix-newly-added-filaments-in-asset-libra | missing (likely overtaken by v1.9 AssetLibrary rework) |
+| uat_gap | Phase 07/09/13/19/20 HUMAN-UAT files | resolved/partial/deferred/passed — 0 pending scenarios each |
+| verification_gap | Phase 04 + 09 VERIFICATION.md | human_needed (v1.0-era, long shipped) |
+| context_questions | Phase 15/17/20 CONTEXT.md | planner-level questions, resolved at execution time |
+
+Also deferred to v2.0 (decided during v1.9): PERF-11 pricing dep-trim (pairs with CostCalculator split, audit 6.1); browser-Back exits /app (fix = tab-in-URL); etsy_offsite_ad in RecordSaleModal picker (roadmap backlog).
