@@ -62,7 +62,7 @@ if (typeof window.HTMLElement.prototype.scrollIntoView !== 'function') {
 
 // Single import-binding indirection (Plan 04 repoints this one line after the
 // git mv to `./CostCalculator`).
-const { CostCalculator: CostCalculatorUnderTest } = await import('../CostCalculator');
+const { CostCalculator: CostCalculatorUnderTest } = await import('./CostCalculator');
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;

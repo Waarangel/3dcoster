@@ -42,7 +42,7 @@ if (typeof window.HTMLElement.prototype.scrollIntoView !== 'function') {
   window.HTMLElement.prototype.scrollIntoView = () => {};
 }
 
-const { CostCalculator: CostCalculatorUnderTest } = await import('../CostCalculator');
+const { CostCalculator: CostCalculatorUnderTest } = await import('./CostCalculator');
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;

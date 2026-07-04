@@ -5,7 +5,7 @@ import { useFxRates } from './hooks/useFxRates';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
-import { CostCalculator } from './components/CostCalculator';
+import { CostCalculator } from './components/calculator/CostCalculator';
 import { CustomerLibrary } from './components/CustomerLibrary';
 import { ReportsSection } from './components/ReportsSection';
 import { JobsManager } from './components/JobsManager';

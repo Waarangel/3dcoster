@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { resolveTaxRate } from '../utils/taxResolution';
-import { calculateTax } from '../utils/costCalc';
+import { resolveTaxRate } from '../../utils/taxResolution';
+import { calculateTax } from '../../utils/costCalc';
 
 // ---------------------------------------------------------------------------
 // CostCalculator — Generate PDF surface retired (Phase 16 gap closure, D-13)
@@ -94,16 +94,29 @@ describe('FIX-04 edit-job scroll-to-banner', () => {
 // HYG-11 / HYG-12.1 — Immutable update handlers (Phase 37, plan 01)
 //
 // Source-contract tests verifying that all three snapshot-setState anti-patterns
-// (CostCalculator.tsx:842, :1304, :1320) have been converted to functional
-// updaters, and that the new updatePackagingMaterial helper is declared and
-// consumed by both packaging onChange handlers.
+// (CostCalculator.tsx:842, :1304, :1320 pre-split) have been converted to
+// functional updaters, and that the updatePackagingMaterial helper is declared
+// and consumed by both packaging onChange handlers.
 //
-// Same source-scan approach as FIX-04 and PERF-11 above.
+// UPDATED (Phase 38, Plan 04 — FOUND-01 section split): updateMaterialUsage
+// and updatePackagingMaterial still live in the orchestrator (CostCalculator.tsx)
+// exactly as before — only the JSX onChange call sites that INVOKE them moved
+// into ShippingSection.tsx and CostParametersSection.tsx as part of the JSX
+// decomposition. The two call-site source-contract assertions below were
+// updated to read the new section files (same string-contains approach, same
+// intent: the packaging onChange handlers delegate to the functional-updater
+// helper, not an index-mutation). The helper-declaration assertions still
+// check CostCalculator.tsx, which is unchanged. Same source-scan approach as
+// FIX-04 and PERF-11 above.
 // ---------------------------------------------------------------------------
 
 describe('HYG-11 / HYG-12.1 immutable update handlers', () => {
   const COST_CALC_SRC = readFileSync(
     resolve(__dirname, 'CostCalculator.tsx'),
+    'utf8',
+  );
+  const SHIPPING_SECTION_SRC = readFileSync(
+    resolve(__dirname, 'ShippingSection.tsx'),
     'utf8',
   );
 
@@ -121,16 +134,16 @@ describe('HYG-11 / HYG-12.1 immutable update handlers', () => {
     expect(COST_CALC_SRC).toContain('setPackagingMaterials(prev =>');
   });
 
-  it('source: packaging materialId handler delegates to updatePackagingMaterial with materialId field', () => {
-    expect(COST_CALC_SRC).toContain("updatePackagingMaterial(index, 'materialId', e.target.value)");
+  it('source: packaging materialId handler (in ShippingSection) delegates to onUpdatePackagingMaterial with materialId field', () => {
+    expect(SHIPPING_SECTION_SRC).toContain("onUpdatePackagingMaterial(index, 'materialId', e.target.value)");
   });
 
-  it('source: packaging quantity handler delegates to updatePackagingMaterial with quantity field', () => {
-    expect(COST_CALC_SRC).toContain("updatePackagingMaterial(index, 'quantity', parseFloat(e.target.value) || 0)");
+  it('source: packaging quantity handler (in ShippingSection) delegates to onUpdatePackagingMaterial with quantity field', () => {
+    expect(SHIPPING_SECTION_SRC).toContain("onUpdatePackagingMaterial(index, 'quantity', parseFloat(e.target.value) || 0)");
   });
 
-  it('source: updated[index] = appears zero times in the whole file (no residual index-mutation)', () => {
-    const matches = COST_CALC_SRC.match(/updated\[index\]\s*=/g) ?? [];
+  it('source: updated[index] = appears zero times in either file (no residual index-mutation)', () => {
+    const matches = (COST_CALC_SRC + SHIPPING_SECTION_SRC).match(/updated\[index\]\s*=/g) ?? [];
     expect(matches.length).toBe(0);
   });
 });
@@ -159,9 +172,17 @@ describe('D-21 tax save site regression', () => {
     expect(matches.length).toBe(0);
   });
 
-  it('source: two occurrences of `taxRate: tax.ratePercent` (resolved rate persisted at both save sites)', () => {
+  // UPDATED (Phase 38, Plan 04 — Task 3 orchestrator shrink): the create/update
+  // job-construction paths were de-duplicated into a single `sharedFields`
+  // object consumed by BOTH the create and update branches (D-11 LOC
+  // reduction — pure object-assembly consolidation, no behavior change). The
+  // resolved-rate contract this test protects (never the raw override) now
+  // has exactly ONE occurrence that both save paths read, not two duplicated
+  // literals — still stronger than before, since there's no longer a second
+  // literal that could drift out of sync with the first.
+  it('source: one occurrence of `taxRate: tax.ratePercent` in the shared create/update fields object (resolved rate persisted, not duplicated)', () => {
     const matches = COST_CALC_SRC.match(/taxRate:\s*tax\.ratePercent/g) ?? [];
-    expect(matches.length).toBe(2);
+    expect(matches.length).toBe(1);
   });
 
   it('chain: blank override + 13% default + USD currency → ratePercent === 13 (the bug scenario)', () => {
