@@ -1,16 +1,15 @@
-import { useState, useEffect, useMemo, useCallback, useId, useRef } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../types';
+import { useEffect, useId, useMemo, useRef } from 'react';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../types';
 import { FilamentSelector } from './FilamentSelector';
 import { GcodeImport } from './GcodeImport';
 import { NewBadge } from './NewBadge';
 import { useStockEvents } from '../hooks/useStockEvents';
+import { useCostForm, nextRowKey, FORM_STORAGE_KEY, type FilamentRow } from '../hooks/useCostForm';
+import { useCostDerivedValues } from '../hooks/useCostDerivedValues';
 import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
 import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
-import { convert, type FxRateTable } from '../utils/fxConvert';
-import { computeMarketplaceFee } from '../utils/marketplaceFee';
-import { priceFromMargin, priceFromProfit, marginFromPrice } from '../utils/pricingInterlink';
-import { calculateCost, calculateTax } from '../utils/costCalc';
-import { resolveTaxRate, tooltipForSource, labelForSource } from '../utils/taxResolution';
+import type { FxRateTable } from '../utils/fxConvert';
+import { tooltipForSource, labelForSource } from '../utils/taxResolution';
 import { etsyChecklist, policySummaryAsOf, policyLink } from '../data/etsyToS';
 
 // Default marketplace fees based on research (to be implemented)
@@ -35,44 +34,6 @@ interface CostCalculatorProps {
   onCancelEdit: () => void;
   onViewJobs: () => void;
 }
-
-// Session storage key for form persistence
-const FORM_STORAGE_KEY = 'costCalculatorForm';
-
-// Helper to get initial state from sessionStorage or default
-function getStoredValue<T>(key: string, defaultValue: T): T {
-  try {
-    const stored = sessionStorage.getItem(FORM_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (key in parsed) return parsed[key];
-    }
-  } catch (e) {
-    console.error('[CostCalculator] Failed to parse sessionStorage:', e);
-    sessionStorage.removeItem(FORM_STORAGE_KEY);
-  }
-  return defaultValue;
-}
-
-// Internal form state for multi-filament rows (NOT the DB FilamentUsage type)
-// Monotonic source of stable, view-only row keys for the dynamic filament &
-// material lists. A key is assigned when a row enters component state and is
-// never persisted — it's stripped before a job is written to IndexedDB — so
-// React gets stable keys (no index keys on reorderable/deletable lists) without
-// leaking a view concern into the stored schema.
-let rowKeySeq = 0;
-const nextRowKey = (): string => `row-${++rowKeySeq}`;
-
-interface FilamentRow {
-  uid: string;
-  filamentId: string;
-  grams: number;
-  editedPrice: number;
-  editedCurrency: Currency;
-}
-
-// MaterialUsage augmented with a stable view-only key (see nextRowKey).
-type MaterialRow = MaterialUsage & { uid: string };
 
 export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, marketplaceFees, onSaveJob, onUpdateJob, editingJob, onCancelEdit, onViewJobs }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
@@ -117,238 +78,38 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     });
   }, [editingJob]);
 
-  // Convert a stored price from its native currency into the user's currency for
-  // display and cost math. Falls back to the raw amount only when no rate table
-  // is cached yet (rare: offline before the first successful fetch).
-  //
-  // NOTE: this fallback differs from AssetLibrary's `convertForDisplay`, which
-  // shows the native currency CODE on a missing rate. Here we deliberately fall
-  // back to the raw number under the profile symbol, because the calculator
-  // renders every value with a single `currencySymbol` and can't mix codes
-  // mid-total. The trade-off (a USD figure shown under a CAD symbol) only occurs
-  // offline before the first fetch and self-heals once a rate loads.
-  const convertToProfile = useCallback(
-    (amount: number, from: Currency): number => convert(amount, from, userCurrency, fxTable) ?? amount,
-    [userCurrency, fxTable],
-  );
-
-  // Materials with costPerUnit pre-converted into the user's currency, so every
-  // downstream cost computation and display operates in a single currency. Name,
-  // filamentType, and all other fields are preserved.
-  const materialsInProfile = useMemo<Material[]>(
-    () => materials.map(m =>
-      m.costPerUnit == null
-        ? m
-        : { ...m, costPerUnit: convertToProfile(m.costPerUnit, m.currency ?? userCurrency), currency: userCurrency },
-    ),
-    [materials, convertToProfile, userCurrency],
-  );
-
-  // makeDefaultRow is a function (not a constant) so it captures userCurrency at call time
-  const makeDefaultRow = (currency: Currency): FilamentRow => ({
-    uid: nextRowKey(),
-    filamentId: '',
-    grams: 0,
-    editedPrice: 0,
-    editedCurrency: currency,
-  });
-
-  // Wrap a stored MaterialUsage in a view-only key for the editable list, and
-  // strip it back out before the job is persisted (keeps the stored schema clean).
-  const toMaterialRow = (usage: MaterialUsage): MaterialRow => ({ ...usage, uid: nextRowKey() });
-  const stripRowKey = (row: MaterialRow): MaterialUsage => ({ materialId: row.materialId, quantity: row.quantity });
-
-  // Print job inputs - restore from sessionStorage if available
-  const [printName, setPrintName] = useState(() => getStoredValue('printName', ''));
-  const [filamentRows, setFilamentRows] = useState<FilamentRow[]>(() => {
-    try {
-      const stored = sessionStorage.getItem(FORM_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // New format: has filamentRows array
-        if (Array.isArray(parsed.filamentRows) && parsed.filamentRows.length > 0) {
-          // Reassign view-only keys from the live sequence so restored rows can't
-          // collide with freshly-added ones (persisted keys are not trusted).
-          return (parsed.filamentRows as FilamentRow[]).map(r => ({ ...r, uid: nextRowKey() }));
-        }
-        // Old format: has filamentId scalar -- graceful fallback per PERSIST-02
-        // Just fall through to default
-      }
-    } catch (e) {
-      console.error('[CostCalculator] Failed to parse filamentRows from sessionStorage:', e);
-      sessionStorage.removeItem(FORM_STORAGE_KEY);
-    }
-    return [makeDefaultRow(userCurrency)];
-  });
-
-  // Helper functions for filament row management
-  const addFilamentRow = () => {
-    if (filamentRows.length >= 16) return;
-    setFilamentRows(prev => [...prev, makeDefaultRow(userCurrency)]);
-  };
-
-  const removeFilamentRow = (index: number) => {
-    if (index === 0) return;
-    setFilamentRows(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateFilamentRow = (index: number, patch: Partial<FilamentRow>) => {
-    setFilamentRows(prev => prev.map((row, i) => i === index ? { ...row, ...patch } : row));
-  };
-  const [selectedInstanceId, setSelectedInstanceId] = useState(() => {
-    const stored = getStoredValue('selectedInstanceId', '');
-    // If stored value is empty or doesn't match any current printer, use first available
-    if (!stored || !printerInstances.some(p => p.id === stored)) {
-      return printerInstances[0]?.id || '';
-    }
-    return stored;
-  });
-  const [printTimeHours, setPrintTimeHours] = useState(() => getStoredValue('printTimeHours', 0));
-  const [modelCost, setModelCost] = useState(() => getStoredValue('modelCost', 0));
-  const [modelCostPerUnit, setModelCostPerUnit] = useState(() => getStoredValue('modelCostPerUnit', false));
-  const [authorMinPrice, setAuthorMinPrice] = useState(() => getStoredValue('authorMinPrice', 0));
-  const [modelUrl, setModelUrl] = useState(() => getStoredValue('modelUrl', ''));
-  const [prepTimeMinutes, setPrepTimeMinutes] = useState(() => getStoredValue('prepTimeMinutes', 0));
-  const [postProcessingMinutes, setPostProcessingMinutes] = useState(() => getStoredValue('postProcessingMinutes', 0));
-  const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
-  const [materialsUsed, setMaterialsUsed] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('materialsUsed', []).map(toMaterialRow));
-
-  // Pricing inputs (interlinked)
-  const [profitMarginPercent, setProfitMarginPercent] = useState(() => getStoredValue('profitMarginPercent', defaultProfitMargin));
-  const [targetProfit, setTargetProfit] = useState(() => getStoredValue('targetProfit', 0));
-  const [sellingPrice, setSellingPrice] = useState(() => getStoredValue('sellingPrice', 0));
-  const [lastEdited, setLastEdited] = useState<'margin' | 'profit' | 'price'>(() => getStoredValue('lastEdited', 'margin'));
-
-  // Per-job Tax Rate override (Phase 13). Undefined ⇒ chain falls back to Settings default → region → manual.
-  // editingJob takes precedence over sessionStorage (resumed-job-edit case).
-  const [taxRateOverride, setTaxRateOverride] = useState<number | undefined>(
-    () => editingJob?.taxRate ?? getStoredValue<number | undefined>('taxRateOverride', undefined)
-  );
-
-  // Shipping
-  const [shippingMethod, setShippingMethod] = useState<ShippingMethodType>(() => getStoredValue('shippingMethod', 'local_pickup'));
-  const [shippingDistanceKm, setShippingDistanceKm] = useState(() => getStoredValue('shippingDistanceKm', 0));
-  const [shippingOverrideCost, setShippingOverrideCost] = useState<number | null>(() => getStoredValue('shippingOverrideCost', null));
-  const [packagingMaterials, setPackagingMaterials] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('packagingMaterials', []).map(toMaterialRow));
-
-  // Marketplace
-  const [marketplace, setMarketplace] = useState<MarketplaceType>(() => getStoredValue('marketplace', 'none'));
-
-  // Etsy self-review check state (Phase 14 — ETSY-01, D-18).
-  // editingJob takes precedence over sessionStorage (resumed-job-edit case).
-  const [etsyChecks, setEtsyChecks] = useState<Record<string, boolean>>(
-    () => editingJob?.etsyChecks ?? getStoredValue('etsyChecks', {} as Record<string, boolean>)
-  );
-
+  const form = useCostForm({ editingJob, userCurrency, printerInstances, materials });
+  const {
+    printName, setPrintName,
+    filamentRows, setFilamentRows,
+    addFilamentRow, removeFilamentRow, updateFilamentRow,
+    selectedInstanceId, setSelectedInstanceId,
+    printTimeHours, setPrintTimeHours,
+    modelCost, setModelCost,
+    modelCostPerUnit, setModelCostPerUnit,
+    authorMinPrice, setAuthorMinPrice,
+    modelUrl, setModelUrl,
+    prepTimeMinutes, setPrepTimeMinutes,
+    postProcessingMinutes, setPostProcessingMinutes,
+    failureRate, setFailureRate,
+    materialsUsed, setMaterialsUsed,
+    taxRateOverride, setTaxRateOverride,
+    shippingMethod, setShippingMethod,
+    shippingDistanceKm, setShippingDistanceKm,
+    shippingOverrideCost, setShippingOverrideCost,
+    packagingMaterials, setPackagingMaterials,
+    marketplace, setMarketplace,
+    etsyChecks, setEtsyChecks,
+    makeDefaultRow,
+    toMaterialRow,
+    stripRowKey,
+    clearForm,
+    nonPricingFormState,
+  } = form;
 
   const toast = useToast();
   // Live per-asset stock (grams for filament) — drives the "won't finish this print" hint.
   const { stockByAssetId } = useStockEvents();
-
-  // Persist form state to sessionStorage whenever values change
-  useEffect(() => {
-    // Don't persist when editing an existing job
-    if (editingJob) return;
-
-    const formState = {
-      printName,
-      filamentRows,
-      selectedInstanceId,
-      printTimeHours,
-      modelCost,
-      modelCostPerUnit,
-      authorMinPrice,
-      modelUrl,
-      prepTimeMinutes,
-      postProcessingMinutes,
-      failureRate,
-      materialsUsed,
-      profitMarginPercent,
-      targetProfit,
-      sellingPrice,
-      taxRateOverride,
-      lastEdited,
-      shippingMethod,
-      shippingDistanceKm,
-      shippingOverrideCost,
-      packagingMaterials,
-      marketplace,
-      etsyChecks,
-    };
-    sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
-  }, [
-    editingJob, printName, filamentRows,
-    selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes, postProcessingMinutes,
-    failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, taxRateOverride, lastEdited,
-    shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace, etsyChecks
-  ]);
-
-  // Populate fields when editing an existing job
-  useEffect(() => {
-    if (editingJob) {
-      setPrintName(editingJob.name);
-      setSelectedInstanceId(editingJob.printerInstanceId);
-      setPrintTimeHours(editingJob.printTimeHours);
-      setModelCost(editingJob.modelCost);
-      setModelCostPerUnit(editingJob.modelCostPerUnit ?? false);
-      setAuthorMinPrice(editingJob.authorMinPrice ?? 0);
-      setModelUrl(editingJob.modelUrl ?? '');
-      setPrepTimeMinutes(editingJob.prepTimeMinutes);
-      setPostProcessingMinutes(editingJob.postProcessingMinutes);
-      setFailureRate(editingJob.failureRate);
-      setMaterialsUsed(editingJob.materialsUsed.map(toMaterialRow));
-      setSellingPrice(editingJob.sellingPrice);
-      setTaxRateOverride(editingJob.taxRate);
-      setEtsyChecks(editingJob.etsyChecks ?? {});
-      // Cost-input snapshot restore (Phase 14 fix-up). Fields are optional on PrintJob —
-      // pre-fix-up records have these undefined, in which case we leave form state alone
-      // (it falls back to sessionStorage / defaults from the initial useState).
-      if (editingJob.shippingMethod !== undefined) setShippingMethod(editingJob.shippingMethod);
-      if (editingJob.shippingDistanceKm !== undefined) setShippingDistanceKm(editingJob.shippingDistanceKm);
-      if (editingJob.shippingOverrideCost !== undefined) setShippingOverrideCost(editingJob.shippingOverrideCost);
-      if (editingJob.packagingMaterials !== undefined) setPackagingMaterials(editingJob.packagingMaterials.map(toMaterialRow));
-      if (editingJob.marketplace !== undefined) setMarketplace(editingJob.marketplace);
-      // Seed profit margin + target profit from the saved cost basis so the
-      // user sees the historical margin immediately, not the user-profile default.
-      // The derive-from-price effect rebases these against current trueCost once
-      // filaments and materials reconcile, so changed asset prices still surface.
-      if (editingJob.sellingPrice > 0 && editingJob.costPerUnit > 0) {
-        const savedProfit = editingJob.sellingPrice - editingJob.costPerUnit;
-        const savedMargin = (savedProfit / editingJob.sellingPrice) * 100;
-        setTargetProfit(parseFloat(savedProfit.toFixed(2)));
-        setProfitMarginPercent(parseFloat(savedMargin.toFixed(1)));
-      }
-      setLastEdited('price');
-
-      // Restore filament rows from FilamentUsage[] (new multi-filament data model)
-      const restoredRows: FilamentRow[] = (editingJob.filaments ?? []).map(fu => {
-        const asset = materials.find(m => m.id === fu.filamentId);
-        return {
-          uid: nextRowKey(),
-          filamentId: fu.filamentId,
-          grams: fu.grams,
-          editedPrice: fu.pricePerGram ?? asset?.costPerUnit ?? 0,
-          editedCurrency: fu.currency ?? asset?.currency ?? userCurrency,
-        };
-      });
-      setFilamentRows(restoredRows.length > 0 ? restoredRows : [makeDefaultRow(userCurrency)]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingJob]);
-
-  // Auto-select first printer if none selected but printers exist
-  // Also handles case where stored printer ID no longer exists or is empty
-  useEffect(() => {
-    if (editingJob) return; // Don't auto-select when editing
-    if (printerInstances.length === 0) return; // No printers available yet
-
-    // Check if current selection is valid (exists and is not empty)
-    const hasValidSelection = selectedInstanceId && selectedInstanceId.trim() !== '' && printerInstances.some(p => p.id === selectedInstanceId);
-
-    if (!hasValidSelection) {
-      setSelectedInstanceId(printerInstances[0].id);
-    }
-  }, [printerInstances, selectedInstanceId, editingJob]);
 
   // Get the selected printer instance and its config
   const selectedInstance = printerInstances.find(p => p.id === selectedInstanceId);
@@ -362,60 +123,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const packagingItems = materials.filter(m => m.category === 'packaging');
   const consumableItems = materials.filter(m => m.category === 'consumable');
   const consumables = [...packagingItems, ...consumableItems];
-
-  // Calculate shipping cost based on method
-  const shippingCost = useMemo(() => {
-    if (shippingOverrideCost !== null) return shippingOverrideCost;
-
-    switch (shippingMethod) {
-      case 'local_pickup':
-        return 0;
-      case 'dropoff': {
-        // Round trip distance * fuel consumption * fuel price.
-        // Ceil to the next cent so float math (e.g. 6.354179999…) doesn't leak
-        // into the input value or the totals — always at-or-above the real cost.
-        const roundTripKm = shippingDistanceKm * 2;
-        const litersUsed = (roundTripKm / 100) * shippingConfig.vehicleFuelEfficiency;
-        return Math.ceil(litersUsed * shippingConfig.gasPricePerLiter * 100) / 100;
-      }
-      case 'ups':
-        return shippingConfig.upsBaseCost;
-      case 'fedex':
-        return shippingConfig.fedexBaseCost;
-      case 'dhl':
-        return shippingConfig.dhlBaseCost;
-      case 'purolator':
-        return shippingConfig.purolatorBaseCost;
-      case 'usps':
-        return shippingConfig.uspsBaseCost;
-      case 'royal_mail':
-        return shippingConfig.royalMailBaseCost;
-      case 'australia_post':
-        return shippingConfig.australiaPostBaseCost;
-      case 'canada_post':
-        return shippingConfig.canadaPostBaseCost;
-      default: {
-        // Check if it's a custom carrier
-        const customCarrier = shippingConfig.customCarriers?.find(c => c.id === shippingMethod);
-        if (customCarrier) {
-          return customCarrier.defaultCost;
-        }
-        return 0;
-      }
-    }
-  }, [shippingMethod, shippingDistanceKm, shippingOverrideCost, shippingConfig]);
-
-  // Calculate packaging materials cost
-  const packagingCost = useMemo(() => {
-    return packagingMaterials.reduce((total, usage) => {
-      const material = materialsInProfile.find(m => m.id === usage.materialId);
-      if (!material) return total;
-      return total + usage.quantity * (material.costPerUnit ?? 0);
-    }, 0);
-  }, [packagingMaterials, materialsInProfile]);
-
-  // Total shipping = carrier/delivery cost + packaging materials
-  const totalShippingCost = shippingCost + packagingCost;
 
   // Get available marketplace options based on currency
   const availableMarketplaces = useMemo(() => {
@@ -437,28 +144,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
     return options;
   }, [userCurrency]);
-
-  // Marketplace fee decomposition (pctFees + fixedFees + total), all in the
-  // user's currency. The fixed-dollar fee constants are stored in USD in the
-  // Settings → Marketplaces config and FX-converted here (cost HIGH fix) — a
-  // non-USD seller was previously charged the raw USD number (e.g. ¥0.45
-  // instead of ~¥70). Percentage fees are currency-agnostic. The pct/fixed
-  // split also feeds the net-margin closed-form in the pricing interlink below.
-  const marketplaceFeeParts = useMemo(
-    () => computeMarketplaceFee({ sellingPrice, marketplace, fees: marketplaceFees, userCurrency, fxTable }),
-    [sellingPrice, marketplace, marketplaceFees, userCurrency, fxTable],
-  );
-  const marketplaceFee = marketplaceFeeParts.total;
-
-  // Net-margin fee shape (pct + fixed, user currency) for the pricing interlink's
-  // closed-form solve. Held in a ref the effect can read WITHOUT adding it to the
-  // locked dep array (PERF-11 revert constraint): the dep array stays exactly
-  // [trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice], so a
-  // marketplace-platform change (not a dep) is propagated through this ref. The
-  // re-derivation effect is also chained to fire when `marketplace` changes (see
-  // the lastEdited re-fire effect below) so the price stays net-correct.
-  const feeShapeRef = useRef({ pctFees: marketplaceFeeParts.pctFees, fixedFees: marketplaceFeeParts.fixedFees });
-  feeShapeRef.current = { pctFees: marketplaceFeeParts.pctFees, fixedFees: marketplaceFeeParts.fixedFees };
 
   // Get available shipping methods based on currency
   const availableShippingMethods = useMemo(() => {
@@ -498,151 +183,84 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     return methods;
   }, [userCurrency, shippingConfig.customCarriers]);
 
-  // Filament rows with each per-gram price converted into the user's currency,
-  // so the cost math runs in a single currency regardless of the filament's
-  // native currency (grams + filamentId are preserved for the nozzle-wear calc).
-  const filamentRowsForCalc = useMemo(
-    () => filamentRows.map(row => ({
-      ...row,
-      editedPrice: convertToProfile(row.editedPrice, row.editedCurrency),
-      editedCurrency: userCurrency,
-    })),
-    [filamentRows, convertToProfile, userCurrency],
-  );
-
-  // Cost calculation extracted to src/utils/costCalc.ts for testability (Phase 10, D-01).
-  // Prices are fed in already converted to the user's currency (filamentRowsForCalc,
-  // materialsInProfile), so calculateCost itself stays currency-agnostic.
-  const costs = useMemo((): CostBreakdown => calculateCost({
-    filamentRows: filamentRowsForCalc,
+  const {
+    materialsInProfile,
+    shippingCost,
+    packagingCost,
+    totalShippingCost,
+    marketplaceFee,
+    costs,
+    trueCost,
+    fixedCosts,
+    breakEvenInfo,
+    taxSource,
+    tax,
+    inheritedTaxRate,
+    pricing,
+    dispatchPricing,
+  } = useCostDerivedValues({
+    editingJob,
+    userCurrency,
+    fxTable,
+    materials,
+    materialsUsed,
+    filamentRows,
     printTimeHours,
     selectedPrinter,
     selectedInstance,
     electricity,
-    materials: materialsInProfile,
-    materialsUsed,
+    laborHourlyRate,
     prepTimeMinutes,
     postProcessingMinutes,
-    laborHourlyRate,
     failureRate,
-    profitMarginPercent,
-    targetProfit,
-    sellingPrice,
     modelCost,
     modelCostPerUnit,
-  }), [
-    materialsInProfile, filamentRowsForCalc, printTimeHours, selectedPrinter, electricity,
-    selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
-    postProcessingMinutes, failureRate, profitMarginPercent, targetProfit, sellingPrice,
-    modelCost, modelCostPerUnit
-  ]);
+    defaultProfitMargin,
+    shippingMethod,
+    shippingDistanceKm,
+    shippingOverrideCost,
+    shippingConfig,
+    packagingMaterials,
+    marketplace,
+    marketplaceFees,
+    taxRateOverride,
+    userProfile,
+  });
+  const { profitMarginPercent, targetProfit, sellingPrice, lastEdited } = pricing;
 
-  // True cost = failure adjusted cost + shipping
-  // True cost = failure adjusted cost + total shipping (carrier + packaging)
-  const trueCost = costs.failureAdjusted + totalShippingCost;
+  // Persist the FULL form-state blob (useCostForm's non-pricing fields +
+  // useCostDerivedValues' live pricing snapshot) to sessionStorage whenever
+  // any of it changes — one JSON.stringify call, exactly as the pre-split
+  // component's single persistence effect did. Lives in the orchestrator
+  // because it's the natural place these two sibling hooks' outputs combine;
+  // neither hook alone has both halves of the state in the same render.
+  useEffect(() => {
+    // Don't persist when editing an existing job
+    if (editingJob) return;
 
-  // Fixed costs for this print job (recovered through sales, not added to per-unit cost)
-  // When modelCostPerUnit is true, model cost is NOT a fixed cost - it's included in per-unit
-  const fixedCosts = useMemo(() => {
-    const fixedModelCost = modelCostPerUnit ? 0 : modelCost;
-    return {
-      depreciation: costs.printerDepreciation,
-      nozzleWear: costs.nozzleWear,
-      modelCost: fixedModelCost,
-      total: costs.printerDepreciation + costs.nozzleWear + fixedModelCost,
+    const formState = {
+      ...nonPricingFormState,
+      profitMarginPercent,
+      targetProfit,
+      sellingPrice,
+      lastEdited,
     };
-  }, [costs.printerDepreciation, costs.nozzleWear, modelCost, modelCostPerUnit]);
+    sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
+  }, [editingJob, nonPricingFormState, profitMarginPercent, targetProfit, sellingPrice, lastEdited]);
 
-  // Calculate break-even info. profitPerUnit is NET of the marketplace fee
-  // (v1.9 cost-MEDIUM decision) so the widget's break-even matches the net
-  // framing and the sales-report treatment (fee comes off revenue). With no
-  // marketplace selected marketplaceFee = 0 and this reduces to the prior math.
-  const breakEvenInfo = useMemo(() => {
-    const costPerUnit = trueCost;  // Per-unit consumable cost only (fee-free — persisted as-is)
-    const profitPerUnit = sellingPrice - costPerUnit - marketplaceFee;
-
-    // Copies needed to break even on ALL fixed costs (model + depreciation + nozzle)
-    const breakEvenCopies = profitPerUnit > 0
-      ? Math.ceil(fixedCosts.total / profitPerUnit)
-      : fixedCosts.total > 0 ? Infinity : 0;
-
-    // Total investment to break even
-    const totalInvestmentToBreakEven = fixedCosts.total + (costPerUnit * breakEvenCopies);
-
-    return {
-      costPerUnit,
-      profitPerUnit,
-      breakEvenCopies,
-      totalInvestmentToBreakEven,
-    };
-  }, [trueCost, sellingPrice, fixedCosts, marketplaceFee]);
-
-  // Phase 13: tax-rate provenance chain (override → settings → province → region → eu-average → manual).
-  // Reads `taxRateOverride` local state so in-progress edits flow through `resolveTaxRate`.
-  // address takes precedence over currency-keyed default once filled (e.g., Ontario 13% HST
-  // beats the Canadian federal 5% GST default).
-  const taxSource = useMemo(
-    () => resolveTaxRate({
-      jobOverride: taxRateOverride,
-      settingsDefault: userProfile.defaultTaxRate,
-      currency: userCurrency,
-      address: userProfile.address,
-    }),
-    [taxRateOverride, userProfile.defaultTaxRate, userCurrency, userProfile.address]
-  );
-  // Phase 13: tax math (TAX-05 lock — applied to sellingPrice, NOT subtotal).
-  const tax = useMemo(
-    () => calculateTax(sellingPrice, taxSource.rate),
-    [sellingPrice, taxSource.rate]
-  );
-
-  // Per-job Tax Rate input placeholder — resolves the chain WITHOUT the override
-  // so the user sees the inherited rate they'd get if they left the field blank.
-  // Blank input means "inherit"; the placeholder makes the inherited value visible.
-  const inheritedTaxRate = useMemo(
-    () => resolveTaxRate({
-      jobOverride: undefined,
-      settingsDefault: userProfile.defaultTaxRate,
-      currency: userCurrency,
-      address: userProfile.address,
-    }).rate,
-    [userProfile.defaultTaxRate, userCurrency, userProfile.address]
-  );
-
-  // Clear form handler
-  const clearForm = () => {
-    setPrintName('');
-    setFilamentRows([makeDefaultRow(userCurrency)]);
-    setSelectedInstanceId(printerInstances[0]?.id || '');
-    setPrintTimeHours(0);
-    setModelCost(0);
-    setModelCostPerUnit(false);
-    setAuthorMinPrice(0);
-    setModelUrl('');
-    setPrepTimeMinutes(0);
-    setPostProcessingMinutes(0);
-    setFailureRate(5);
-    setMaterialsUsed([]);
-    setSellingPrice(0);
-    setTargetProfit(0);
-    setProfitMarginPercent(defaultProfitMargin);
-    setTaxRateOverride(undefined);
-    setLastEdited('margin');
-    setShippingMethod('local_pickup');
-    setShippingDistanceKm(0);
-    setShippingOverrideCost(null);
-    setPackagingMaterials([]);
-    setMarketplace('none');
-    setEtsyChecks({});
-    // Clear sessionStorage when form is cleared
-    sessionStorage.removeItem(FORM_STORAGE_KEY);
+  // Reset both useCostForm's non-pricing fields AND the pricing reducer
+  // together — the pre-split component's single clearForm() touched both
+  // slices of what is now two hooks' worth of state.
+  const clearFormAndPricing = () => {
+    clearForm();
+    dispatchPricing({ type: 'RESET', profitMarginPercent: defaultProfitMargin });
   };
 
   // After a successful save/update: reset the form for the next job, scroll back
   // to the top, and surface a toast whose one action jumps to My Jobs (so the
   // user is never forced off the calculator but can review in a click).
   const finishAfterSave = (message: string) => {
-    clearForm();
+    clearFormAndPricing();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const id = toast.success(
       <span className="flex flex-wrap items-center gap-2">
@@ -663,7 +281,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // scrolls to the top. A saved job is safe in My Jobs; an unsaved one is cheap
   // to re-enter, so a confirm dialog isn't worth the friction.
   const handleClearForm = () => {
-    clearForm();
+    clearFormAndPricing();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -786,70 +404,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     }
   };
 
-  // Update interlinked pricing fields based on true cost (including shipping).
-  //
-  // The derivations are now NET of marketplace fees (v1.9 cost-MEDIUM decision):
-  // `targetProfit`/`profitMarginPercent` are the NET profit/margin the seller
-  // keeps after the platform fee. The fee shape (pct + fixed, user currency) is
-  // read from feeShapeRef so the LOCKED dep array below stays untouched. With no
-  // marketplace selected the fee shape is {0,0} and every formula reduces EXACTLY
-  // to the prior gross math — the no-marketplace path is byte-identical.
-  useEffect(() => {
-    if (trueCost <= 0) return;
-    const fee = feeShapeRef.current;
-
-    if (lastEdited === 'margin') {
-      const { price, netProfit } = priceFromMargin(trueCost, profitMarginPercent, fee);
-      setSellingPrice(parseFloat(price.toFixed(2)));
-      setTargetProfit(parseFloat(netProfit.toFixed(2)));
-    } else if (lastEdited === 'profit') {
-      const { price, marginPercent } = priceFromProfit(trueCost, targetProfit, fee);
-      setSellingPrice(parseFloat(price.toFixed(2)));
-      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
-    } else if (lastEdited === 'price') {
-      const { netProfit, marginPercent } = marginFromPrice(trueCost, sellingPrice, fee);
-      setTargetProfit(parseFloat(netProfit.toFixed(2)));
-      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
-    }
-    // The interlinked pricing values MUST stay in the deps. Re-editing the SAME field
-    // (e.g. typing into Selling Price twice) leaves `lastEdited` unchanged, and `trueCost`
-    // is a derived const that does not depend on pricing — so without these deps the effect
-    // would not re-fire and the other two fields (profit/margin) would silently go stale
-    // relative to the value the user just typed. (A PERF-11 dep-trim to `[trueCost, lastEdited]`
-    // was reverted in the v1.9 release review — the "double render" it removed is the benign,
-    // self-terminating second pass; any real micro-opt belongs in the v2.0 CostCalculator split.)
-    // The marketplace fee shape is read via feeShapeRef (not a dep) to keep this array locked;
-    // a separate effect below re-fires this derivation when the platform changes.
-  }, [trueCost, lastEdited, profitMarginPercent, targetProfit, sellingPrice]);
-
-  // Marketplace-platform sync: when the selected platform changes the fee shape
-  // (pct/fixed) shifts, so the interlinked price/profit/margin must re-derive even
-  // though the user didn't touch a pricing field. We re-run the SAME derivation
-  // the locked effect uses, off the current `lastEdited` branch. Keyed on the fee
-  // SHAPE (pct + fixed), not the platform string, so identical-fee platforms don't
-  // churn. trueCost is intentionally excluded — the locked effect already owns
-  // trueCost-driven updates; this effect owns fee-driven ones.
-  useEffect(() => {
-    if (trueCost <= 0) return;
-    const fee = feeShapeRef.current;
-    if (lastEdited === 'margin') {
-      const { price, netProfit } = priceFromMargin(trueCost, profitMarginPercent, fee);
-      setSellingPrice(parseFloat(price.toFixed(2)));
-      setTargetProfit(parseFloat(netProfit.toFixed(2)));
-    } else if (lastEdited === 'profit') {
-      const { price, marginPercent } = priceFromProfit(trueCost, targetProfit, fee);
-      setSellingPrice(parseFloat(price.toFixed(2)));
-      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
-    } else if (lastEdited === 'price') {
-      const { netProfit, marginPercent } = marginFromPrice(trueCost, sellingPrice, fee);
-      setTargetProfit(parseFloat(netProfit.toFixed(2)));
-      setProfitMarginPercent(parseFloat(marginPercent.toFixed(1)));
-    }
-    // Only the fee shape should drive this effect; the pricing values + trueCost are
-    // owned by the locked effect above. Reading them here without depping is safe
-    // because any change to them already re-runs the locked effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketplaceFeeParts.pctFees, marketplaceFeeParts.fixedFees]);
+  // The interlinked pricing derivation (margin/profit/price + marketplace-fee
+  // re-derivation) now lives entirely in useCostDerivedValues' pricingReducer —
+  // see its RECALC effect. The old ref-based fee-shape escape hatch and both
+  // pre-split effects are gone.
 
   // Add material to job
   const addMaterialUsage = () => {
@@ -888,7 +446,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             variant="ghost"
             btnSize="sm"
             onClick={() => {
-              clearForm();
+              clearFormAndPricing();
               onCancelEdit();
             }}
           >
@@ -1436,8 +994,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 type="number"
                 value={profitMarginPercent || ''}
                 onChange={e => {
-                  setProfitMarginPercent(parseFloat(e.target.value) || 0);
-                  setLastEdited('margin');
+                  dispatchPricing({ type: 'EDIT_MARGIN', value: parseFloat(e.target.value) || 0 });
                 }}
                 className="pl-8"
               />
@@ -1454,8 +1011,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 step="0.01"
                 value={targetProfit || ''}
                 onChange={e => {
-                  setTargetProfit(parseFloat(e.target.value) || 0);
-                  setLastEdited('profit');
+                  dispatchPricing({ type: 'EDIT_PROFIT', value: parseFloat(e.target.value) || 0 });
                 }}
                 className="pl-8"
               />
@@ -1472,8 +1028,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
                 step="0.01"
                 value={sellingPrice || ''}
                 onChange={e => {
-                  setSellingPrice(parseFloat(e.target.value) || 0);
-                  setLastEdited('price');
+                  dispatchPricing({ type: 'EDIT_PRICE', value: parseFloat(e.target.value) || 0 });
                 }}
                 className="pl-8"
               />
@@ -1781,7 +1336,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
             variant="secondary"
             btnSize="lg"
             onClick={() => {
-              clearForm();
+              clearFormAndPricing();
               onCancelEdit();
             }}
             className="w-full md:w-auto"

@@ -17,19 +17,18 @@
 // independent setState-driven re-renders, since the wrapper itself never
 // re-renders when only CostCalculator's internal state changes).
 //
-// NOTE (plan-mandated): against the CURRENT component, this assertion records
-// the OBSERVED pre-fix baseline rather than asserting === 1 outright. Measured
-// via React.Profiler: a single margin keystroke commits 3 times — (1) the
-// input's own setProfitMarginPercent/setLastEdited state commit, (2) the
-// "locked" derivation effect (CostCalculator.tsx lines 797-823) committing
-// setSellingPrice/setTargetProfit, and (3) the marketplace fee-shape re-fire
-// effect (lines 832-852) committing again because marketplaceFeeParts is
-// keyed on `sellingPrice` (which just changed in commit 2) — so the fee-shape
-// effect's dependency array sees a change and re-runs, even though the user
-// only touched ONE field once. This 3-commit chain is exactly the class of
-// bug FOUND-02 exists to fix. The exact baseline observed here is recorded in
-// the plan SUMMARY. Plan 03's useReducer redesign (FOUND-02) should tighten
-// this assertion down as the redesign collapses the effect chain.
+// TIGHTENED (Plan 03, FOUND-02): the pre-fix baseline recorded here was 3
+// commits per keystroke — (1) the input's own state commit, (2) the "locked"
+// derivation effect committing setSellingPrice/setTargetProfit, and (3) the
+// marketplace fee-shape re-fire effect committing again because
+// marketplaceFeeParts was keyed on `sellingPrice` (which had just changed in
+// commit 2). Plan 03 replaced both effects + the ref-based fee-shape escape
+// hatch with a single useReducer pricing interlink (dispatchPricing called
+// directly from the field's onChange handler, one RECALC effect for the
+// remaining external-trigger case). Measured post-fix: a single margin
+// keystroke now commits exactly ONCE. The assertion below is tightened to
+// === 1 unconditionally — a regression back to multiple commits should fail
+// this test loudly, not silently widen back to a baseline-acceptance branch.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
@@ -139,21 +138,11 @@ describe('renderCount — PERF-11 tripwire (D-15, RESEARCH Pitfall 4)', () => {
 
     const rendersFromSingleKeystroke = commitCount;
 
-    // Plan-mandated documentation of the observed baseline: if the current
-    // component already renders exactly once per keystroke, assert === 1
-    // outright (the fix is already effectively present for this path).
-    // Otherwise, pin the OBSERVED pre-fix count explicitly (not an
-    // open-ended "any number is fine") so both a regression (MORE commits)
-    // and a silent improvement (FEWER commits) are caught by this test —
-    // either one should be a deliberate, reviewed change, not an accident.
-    // Observed baseline: 3 commits (see file-header note for the full
-    // 3-commit chain — input state, locked derivation effect, fee-shape
-    // re-fire effect). Plan 03's useReducer redesign (FOUND-02) should
-    // collapse this chain and tighten the assertion down to === 1.
-    if (rendersFromSingleKeystroke === 1) {
-      expect(rendersFromSingleKeystroke, 'single keystroke renders exactly once (fix already present)').toBe(1);
-    } else {
-      expect(rendersFromSingleKeystroke, 'pre-fix baseline: input commit + locked derivation effect + fee-shape re-fire effect all commit for one keystroke').toBe(3);
-    }
+    // TIGHTENED (Plan 03, FOUND-02): the useReducer pricing interlink dispatches
+    // synchronously from the field's onChange handler — no effect-driven
+    // re-derivation chain remains for a same-field re-edit. Exactly one commit
+    // per keystroke, unconditionally. A regression back to multiple commits
+    // (e.g. a reintroduced effect-driven derivation) must fail this test.
+    expect(rendersFromSingleKeystroke, 'single keystroke renders exactly once (useReducer pricing interlink)').toBe(1);
   });
 });

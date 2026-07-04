@@ -16,7 +16,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     coverage: {
       provider: 'v8',
-      include: ['src/utils/costCalc.ts'],
+      include: ['src/utils/costCalc.ts', 'src/hooks/useCostDerivedValues.ts'],
       thresholds: {
         lines: 95,
         functions: 100,

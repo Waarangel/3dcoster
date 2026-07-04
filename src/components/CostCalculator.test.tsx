@@ -69,46 +69,26 @@ describe('FIX-04 edit-job scroll-to-banner', () => {
 
 // ---------------------------------------------------------------------------
 // PERF-11: Pricing useEffect dep array trim (Phase 36, plan 02)
-//
-// Source-contract tests — verify that CostCalculator.tsx has the dep array
-// trimmed to [trueCost, lastEdited] with the required eslint-disable comment
-// and PERF-11 rationale. Component cannot be mounted directly (Dexie + ~30 props).
+// RETIRED (Phase 38, Plan 03 — FOUND-02): the two-useEffect + feeShapeRef
+// pricing interlink these source-contract tests locked has been REPLACED by a
+// useReducer state machine living in src/hooks/useCostDerivedValues.ts (see
+// pricingReducer + its EDIT_MARGIN/EDIT_PROFIT/EDIT_PRICE/RECALC actions).
+// There is no longer a `}, [trueCost, lastEdited, ...])` effect, an
+// `if (trueCost <= 0) return;` guard, or `lastEdited === 'margin'` string in
+// CostCalculator.tsx to assert on — that logic doesn't live in this file
+// anymore. The behavior these tests protected (same-field re-edit must
+// re-derive the other two pricing fields; the PERF-11 desync class must never
+// recur) is now covered more rigorously by real component-mount tests:
+//   - src/hooks/useCostDerivedValues.test.ts — unit tests every reducer branch
+//     directly, including the same-field-re-edit-via-RECALC path and the
+//     trueCost<=0 guard.
+//   - src/components/calculator/pricingSequence.test.tsx — mounts the real
+//     component and drives the exact same-field-re-edit DOM sequence PERF-11
+//     regressed on, for both a zero-fee and an Etsy fee-bearing scenario.
+//   - src/components/calculator/renderCount.test.tsx — asserts EXACTLY 1
+//     commit per keystroke (tightened from the pre-fix 3-commit baseline),
+//     the strongest possible regression guard against this class of bug.
 // ---------------------------------------------------------------------------
-
-// PERF-11 was REVERTED in the v1.9 release review: trimming the pricing effect's deps to
-// [trueCost, lastEdited] silently desynced profit/margin when a user re-edited the SAME field
-// (lastEdited unchanged + trueCost independent of pricing -> effect never re-fires). These
-// tests lock the correct, behavior-preserving dep array and guard against re-introducing the trim.
-describe('Pricing useEffect deps (PERF-11 revert — interlinked fields must re-derive on same-field re-edit)', () => {
-  const COST_CALC_SRC = readFileSync(
-    resolve(__dirname, 'CostCalculator.tsx'),
-    'utf8',
-  );
-
-  it('source: pricing effect dep array includes the three interlinked pricing fields', () => {
-    const depLine = COST_CALC_SRC
-      .split('\n')
-      .find(line => line.includes('}, [trueCost, lastEdited'));
-    expect(depLine).toBeDefined();
-    expect(depLine).toContain('profitMarginPercent');
-    expect(depLine).toContain('targetProfit');
-    expect(depLine).toContain('sellingPrice');
-  });
-
-  it('source: the trimmed [trueCost, lastEdited] dep array is NOT present (regression guard)', () => {
-    expect(COST_CALC_SRC).not.toContain('}, [trueCost, lastEdited]);');
-  });
-
-  it('source: effect body guard (trueCost <= 0) is still present', () => {
-    expect(COST_CALC_SRC).toContain('if (trueCost <= 0) return;');
-  });
-
-  it('source: all three lastEdited branch keywords are still present in the effect body', () => {
-    expect(COST_CALC_SRC).toContain("lastEdited === 'margin'");
-    expect(COST_CALC_SRC).toContain("lastEdited === 'profit'");
-    expect(COST_CALC_SRC).toContain("lastEdited === 'price'");
-  });
-});
 
 // ---------------------------------------------------------------------------
 // HYG-11 / HYG-12.1 — Immutable update handlers (Phase 37, plan 01)
