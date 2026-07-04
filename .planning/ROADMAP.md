@@ -105,8 +105,8 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   3. User can navigate between calculator, jobs, customers, reports, and settings tabs without the URL changing to the marketing landing page — pressing browser Back while inside the app moves between tabs, not to the marketing site
   4. The URL reflects the active tab (`/app?tab=calculator`, `/app?tab=jobs`, etc.) so tab links are bookmarkable and shareable
 **Plans**: 4 plans in 3 waves
-- [ ] 38-01-PLAN.md — Golden fixtures + sequence/render-count tests captured from the CURRENT component (FOUND-01/02)
-- [ ] 38-02-PLAN.md — Tab-in-URL via useSearchParams; Back navigates tabs, invalid ?tab= falls back (FOUND-03)
+- [x] 38-01-PLAN.md — Golden fixtures + sequence/render-count tests captured from the CURRENT component (FOUND-01/02)
+- [x] 38-02-PLAN.md — Tab-in-URL via useSearchParams; Back navigates tabs, invalid ?tab= falls back (FOUND-03)
 - [ ] 38-03-PLAN.md — Extract useCostForm + useCostDerivedValues with the useReducer PERF-11 fix (FOUND-01/02)
 - [ ] 38-04-PLAN.md — Section components + orchestrator shrink to zero-business-logic ~150 LOC (FOUND-01)
 **Research flag**: REQUIRED before planning — useCostDerivedValues dep-array design and useReducer vs refined useEffect patterns for the pricing interlink are the highest-risk technical decisions in the milestone. Output-equivalence test strategy must be settled before code is touched.
@@ -203,7 +203,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 38. Foundation | 0/4 | Planned | - |
+| 38. Foundation | 2/4 | In Progress|  |
 | 39. Cost Realism | 0/TBD | Not started | - |
 | 40. Insight Layer | 0/TBD | Not started | - |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
