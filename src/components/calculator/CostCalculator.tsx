@@ -1,16 +1,16 @@
 import { useEffect, useId, useMemo, useRef } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../types';
-import { FilamentSelector } from './FilamentSelector';
-import { GcodeImport } from './GcodeImport';
-import { NewBadge } from './NewBadge';
-import { useStockEvents } from '../hooks/useStockEvents';
-import { useCostForm, nextRowKey, FORM_STORAGE_KEY, type FilamentRow } from '../hooks/useCostForm';
-import { useCostDerivedValues } from '../hooks/useCostDerivedValues';
-import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, useToast } from './ui';
-import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../utils/currency';
-import type { FxRateTable } from '../utils/fxConvert';
-import { tooltipForSource, labelForSource } from '../utils/taxResolution';
-import { etsyChecklist, policySummaryAsOf, policyLink } from '../data/etsyToS';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../../types';
+import { FilamentSelector } from '../FilamentSelector';
+import { GcodeImport } from '../GcodeImport';
+import { NewBadge } from '../NewBadge';
+import { useStockEvents } from '../../hooks/useStockEvents';
+import { useCostForm, nextRowKey, FORM_STORAGE_KEY, type FilamentRow } from '../../hooks/useCostForm';
+import { useCostDerivedValues } from '../../hooks/useCostDerivedValues';
+import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, useToast } from '../ui';
+import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../../utils/currency';
+import type { FxRateTable } from '../../utils/fxConvert';
+import { tooltipForSource, labelForSource } from '../../utils/taxResolution';
+import { etsyChecklist, policySummaryAsOf, policyLink } from '../../data/etsyToS';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items

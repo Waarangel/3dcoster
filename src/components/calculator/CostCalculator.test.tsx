@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { resolveTaxRate } from '../utils/taxResolution';
-import { calculateTax } from '../utils/costCalc';
+import { resolveTaxRate } from '../../utils/taxResolution';
+import { calculateTax } from '../../utils/costCalc';
 
 // ---------------------------------------------------------------------------
 // CostCalculator — Generate PDF surface retired (Phase 16 gap closure, D-13)
