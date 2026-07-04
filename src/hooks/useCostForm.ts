@@ -39,15 +39,29 @@ export interface FilamentRow {
 // MaterialUsage augmented with a stable view-only key (see nextRowKey).
 export type MaterialRow = MaterialUsage & { uid: string };
 
+// Pricing snapshot shape the reducer in useCostDerivedValues owns. useCostForm
+// no longer holds this state directly (moved to a useReducer — Plan 03 Task 2,
+// the PERF-11 fix). The FULL form-state sessionStorage persistence (all
+// fields, one JSON.stringify call, exactly as before the split) now lives in
+// the orchestrator (CostCalculator.tsx), which is the natural place two
+// sibling hooks' outputs are combined — useCostForm exposes `nonPricingFormState`
+// below so the orchestrator's persistence effect doesn't have to enumerate
+// every field itself.
+export interface PricingSnapshot {
+  profitMarginPercent: number;
+  targetProfit: number;
+  sellingPrice: number;
+  lastEdited: 'margin' | 'profit' | 'price';
+}
+
 export interface UseCostFormProps {
   editingJob: PrintJob | null;
   userCurrency: Currency;
   printerInstances: PrinterInstance[];
   materials: Material[];
-  defaultProfitMargin: number;
 }
 
-export function useCostForm({ editingJob, userCurrency, printerInstances, materials, defaultProfitMargin }: UseCostFormProps) {
+export function useCostForm({ editingJob, userCurrency, printerInstances, materials }: UseCostFormProps) {
   // makeDefaultRow is a function (not a constant) so it captures userCurrency at call time
   const makeDefaultRow = (currency: Currency): FilamentRow => ({
     uid: nextRowKey(),
@@ -117,12 +131,6 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
   const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
   const [materialsUsed, setMaterialsUsed] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('materialsUsed', []).map(toMaterialRow));
 
-  // Pricing inputs (interlinked)
-  const [profitMarginPercent, setProfitMarginPercent] = useState(() => getStoredValue('profitMarginPercent', defaultProfitMargin));
-  const [targetProfit, setTargetProfit] = useState(() => getStoredValue('targetProfit', 0));
-  const [sellingPrice, setSellingPrice] = useState(() => getStoredValue('sellingPrice', 0));
-  const [lastEdited, setLastEdited] = useState<'margin' | 'profit' | 'price'>(() => getStoredValue('lastEdited', 'margin'));
-
   // Per-job Tax Rate override (Phase 13). Undefined ⇒ chain falls back to Settings default → region → manual.
   // editingJob takes precedence over sessionStorage (resumed-job-edit case).
   const [taxRateOverride, setTaxRateOverride] = useState<number | undefined>(
@@ -144,43 +152,33 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     () => editingJob?.etsyChecks ?? getStoredValue('etsyChecks', {} as Record<string, boolean>)
   );
 
-  // Persist form state to sessionStorage whenever values change
-  useEffect(() => {
-    // Don't persist when editing an existing job
-    if (editingJob) return;
-
-    const formState = {
-      printName,
-      filamentRows,
-      selectedInstanceId,
-      printTimeHours,
-      modelCost,
-      modelCostPerUnit,
-      authorMinPrice,
-      modelUrl,
-      prepTimeMinutes,
-      postProcessingMinutes,
-      failureRate,
-      materialsUsed,
-      profitMarginPercent,
-      targetProfit,
-      sellingPrice,
-      taxRateOverride,
-      lastEdited,
-      shippingMethod,
-      shippingDistanceKm,
-      shippingOverrideCost,
-      packagingMaterials,
-      marketplace,
-      etsyChecks,
-    };
-    sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formState));
-  }, [
-    editingJob, printName, filamentRows,
-    selectedInstanceId, printTimeHours, modelCost, modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes, postProcessingMinutes,
-    failureRate, materialsUsed, profitMarginPercent, targetProfit, sellingPrice, taxRateOverride, lastEdited,
-    shippingMethod, shippingDistanceKm, shippingOverrideCost, packagingMaterials, marketplace, etsyChecks
-  ]);
+  // The non-pricing slice of the persisted form-state blob. Computed inline
+  // (no effect) every render — cheap plain-object assembly, not the actual
+  // sessionStorage write. The orchestrator (CostCalculator.tsx) merges this
+  // with useCostDerivedValues' `pricing` snapshot and owns the SINGLE
+  // sessionStorage.setItem effect, preserving the pre-split behavior of one
+  // full-blob write per change to ANY field across both hooks.
+  const nonPricingFormState = {
+    printName,
+    filamentRows,
+    selectedInstanceId,
+    printTimeHours,
+    modelCost,
+    modelCostPerUnit,
+    authorMinPrice,
+    modelUrl,
+    prepTimeMinutes,
+    postProcessingMinutes,
+    failureRate,
+    materialsUsed,
+    taxRateOverride,
+    shippingMethod,
+    shippingDistanceKm,
+    shippingOverrideCost,
+    packagingMaterials,
+    marketplace,
+    etsyChecks,
+  };
 
   // Populate fields when editing an existing job
   useEffect(() => {
@@ -196,7 +194,6 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
       setPostProcessingMinutes(editingJob.postProcessingMinutes);
       setFailureRate(editingJob.failureRate);
       setMaterialsUsed(editingJob.materialsUsed.map(toMaterialRow));
-      setSellingPrice(editingJob.sellingPrice);
       setTaxRateOverride(editingJob.taxRate);
       setEtsyChecks(editingJob.etsyChecks ?? {});
       // Cost-input snapshot restore (Phase 14 fix-up). Fields are optional on PrintJob —
@@ -207,17 +204,10 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
       if (editingJob.shippingOverrideCost !== undefined) setShippingOverrideCost(editingJob.shippingOverrideCost);
       if (editingJob.packagingMaterials !== undefined) setPackagingMaterials(editingJob.packagingMaterials.map(toMaterialRow));
       if (editingJob.marketplace !== undefined) setMarketplace(editingJob.marketplace);
-      // Seed profit margin + target profit from the saved cost basis so the
-      // user sees the historical margin immediately, not the user-profile default.
-      // The derive-from-price effect rebases these against current trueCost once
-      // filaments and materials reconcile, so changed asset prices still surface.
-      if (editingJob.sellingPrice > 0 && editingJob.costPerUnit > 0) {
-        const savedProfit = editingJob.sellingPrice - editingJob.costPerUnit;
-        const savedMargin = (savedProfit / editingJob.sellingPrice) * 100;
-        setTargetProfit(parseFloat(savedProfit.toFixed(2)));
-        setProfitMarginPercent(parseFloat(savedMargin.toFixed(1)));
-      }
-      setLastEdited('price');
+      // Pricing fields (sellingPrice, targetProfit, profitMarginPercent, lastEdited)
+      // are now owned by the pricingReducer in useCostDerivedValues — seeded via
+      // its SEED_FROM_JOB action, dispatched by the orchestrator's own
+      // editingJob-keyed effect (mirrors this one). Not set here anymore.
 
       // Restore filament rows from FilamentUsage[] (new multi-filament data model)
       const restoredRows: FilamentRow[] = (editingJob.filaments ?? []).map(fu => {
@@ -263,11 +253,9 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     setPostProcessingMinutes(0);
     setFailureRate(5);
     setMaterialsUsed([]);
-    setSellingPrice(0);
-    setTargetProfit(0);
-    setProfitMarginPercent(defaultProfitMargin);
+    // Pricing fields are reset via the pricingReducer's RESET action, dispatched
+    // by the orchestrator alongside this call (see CostCalculator.tsx clearForm wiring).
     setTaxRateOverride(undefined);
-    setLastEdited('margin');
     setShippingMethod('local_pickup');
     setShippingDistanceKm(0);
     setShippingOverrideCost(null);
@@ -292,10 +280,6 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     postProcessingMinutes, setPostProcessingMinutes,
     failureRate, setFailureRate,
     materialsUsed, setMaterialsUsed,
-    profitMarginPercent, setProfitMarginPercent,
-    targetProfit, setTargetProfit,
-    sellingPrice, setSellingPrice,
-    lastEdited, setLastEdited,
     taxRateOverride, setTaxRateOverride,
     shippingMethod, setShippingMethod,
     shippingDistanceKm, setShippingDistanceKm,
@@ -307,5 +291,6 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     toMaterialRow,
     stripRowKey,
     clearForm,
+    nonPricingFormState,
   };
 }
