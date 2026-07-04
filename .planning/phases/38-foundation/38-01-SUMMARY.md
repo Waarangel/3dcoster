@@ -135,3 +135,19 @@ None - no external service configuration required.
 ---
 *Phase: 38-foundation*
 *Completed: 2026-07-03*
+
+## Self-Check: PASSED
+
+All created files verified present on disk:
+- `src/components/calculator/__fixtures__/goldenScenarios.ts` — FOUND
+- `src/components/calculator/outputEquivalence.test.tsx` — FOUND
+- `src/components/calculator/__snapshots__/outputEquivalence.test.tsx.snap` — FOUND
+- `src/components/calculator/pricingSequence.test.tsx` — FOUND
+- `src/components/calculator/renderCount.test.tsx` — FOUND
+- `.planning/phases/38-foundation/38-01-SUMMARY.md` — FOUND
+
+All task commits verified present in git history:
+- `3e2b4c8` (Task 1) — FOUND
+- `5f58ab6` (Task 2) — FOUND
+- `600e08a` (Task 3) — FOUND
+- `8cf0a7f` (plan metadata) — FOUND
