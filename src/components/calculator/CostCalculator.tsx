@@ -1,16 +1,16 @@
-import { useEffect, useId, useMemo, useRef } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, FilamentUsage, UserProfile } from '../../types';
-import { FilamentSelector } from '../FilamentSelector';
-import { GcodeImport } from '../GcodeImport';
-import { NewBadge } from '../NewBadge';
+import { useEffect, useId, useRef } from 'react';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, MarketplaceFees, FilamentUsage, UserProfile } from '../../types';
 import { useStockEvents } from '../../hooks/useStockEvents';
-import { useCostForm, nextRowKey, FORM_STORAGE_KEY, type FilamentRow } from '../../hooks/useCostForm';
+import { useCostForm, nextRowKey, FORM_STORAGE_KEY } from '../../hooks/useCostForm';
 import { useCostDerivedValues } from '../../hooks/useCostDerivedValues';
-import { Button, RemoveButton, Input, Select, InfoTooltip, CollapsibleSection, useToast } from '../ui';
-import { getCurrencySymbol, getDistanceUnit, kmToMiles, milesToKm } from '../../utils/currency';
+import { Button, useToast } from '../ui';
+import { getCurrencySymbol, getDistanceUnit } from '../../utils/currency';
 import type { FxRateTable } from '../../utils/fxConvert';
-import { tooltipForSource, labelForSource } from '../../utils/taxResolution';
-import { etsyChecklist, policySummaryAsOf, policyLink } from '../../data/etsyToS';
+import { CostFormSection } from './CostFormSection';
+import { CostParametersSection } from './CostParametersSection';
+import { ShippingSection } from './ShippingSection';
+import { PricingSection } from './PricingSection';
+import { CostSummaryPanel } from './CostSummaryPanel';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -124,64 +124,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const consumableItems = materials.filter(m => m.category === 'consumable');
   const consumables = [...packagingItems, ...consumableItems];
 
-  // Get available marketplace options based on currency
-  const availableMarketplaces = useMemo(() => {
-    const options: { value: MarketplaceType; label: string; description: string }[] = [
-      { value: 'none', label: 'Direct Sale', description: 'No marketplace fees' },
-    ];
-
-    if (userCurrency === 'CAD') {
-      options.push({ value: 'facebook_local', label: 'FB Marketplace (Local)', description: 'Free for local pickup' });
-      options.push({ value: 'facebook_shipped', label: 'FB Marketplace (Shipped)', description: '10% + 2.9% processing' });
-      options.push({ value: 'kijiji', label: 'Kijiji', description: 'Free basic listing' });
-    } else {
-      options.push({ value: 'facebook_local', label: 'FB Marketplace (Local)', description: 'Free for local pickup' });
-      options.push({ value: 'facebook_shipped', label: 'FB Marketplace (Shipped)', description: '10% + 2.9% processing' });
-    }
-
-    options.push({ value: 'etsy', label: 'Etsy', description: '6.5% + 3% + 0.45 fees' });
-    options.push({ value: 'etsy_offsite_ad', label: 'Etsy (Offsite Ad)', description: '+ 15% offsite ad fee' });
-
-    return options;
-  }, [userCurrency]);
-
-  // Get available shipping methods based on currency
-  const availableShippingMethods = useMemo(() => {
-    const methods: { value: ShippingMethodType; label: string }[] = [];
-
-    // Universal options - available for all currencies
-    methods.push({ value: 'local_pickup', label: 'Local Pickup (Free)' });
-    methods.push({ value: 'dropoff', label: 'Dropoff (Fuel Cost)' });
-
-    // International carriers - available everywhere
-    methods.push({ value: 'ups', label: 'UPS' });
-    methods.push({ value: 'fedex', label: 'FedEx' });
-    methods.push({ value: 'dhl', label: 'DHL' });
-
-    // Region-specific carriers
-    if (userCurrency === 'CAD') {
-      methods.push({ value: 'canada_post', label: 'Canada Post' });
-      methods.push({ value: 'purolator', label: 'Purolator' });
-    }
-    if (userCurrency === 'USD') {
-      methods.push({ value: 'usps', label: 'USPS' });
-    }
-    if (userCurrency === 'GBP') {
-      methods.push({ value: 'royal_mail', label: 'Royal Mail' });
-    }
-    if (userCurrency === 'AUD' || userCurrency === 'NZD') {
-      methods.push({ value: 'australia_post', label: 'Australia Post' });
-    }
-
-    // Add custom carriers from shipping config
-    if (shippingConfig.customCarriers && shippingConfig.customCarriers.length > 0) {
-      shippingConfig.customCarriers.forEach(carrier => {
-        methods.push({ value: carrier.id, label: carrier.name });
-      });
-    }
-
-    return methods;
-  }, [userCurrency, shippingConfig.customCarriers]);
+  // availableMarketplaces / availableShippingMethods (A1) now live LOCALLY in
+  // ShippingSection, derived from userCurrency/shippingConfig.customCarriers —
+  // not routed through a hook or computed here.
 
   const {
     materialsInProfile,
@@ -455,879 +400,143 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         </div>
       )}
 
-      {/* Print Job Details */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold text-white mb-4">Print Job Details</h2>
+      <CostFormSection
+        materials={materials}
+        printers={printers}
+        printerInstances={printerInstances}
+        userCurrency={userCurrency}
+        currencySymbol={currencySymbol}
+        printName={printName}
+        onPrintNameChange={setPrintName}
+        selectedInstanceId={selectedInstanceId}
+        onSelectedInstanceIdChange={setSelectedInstanceId}
+        modelUrl={modelUrl}
+        onModelUrlChange={setModelUrl}
+        modelCost={modelCost}
+        onModelCostChange={setModelCost}
+        modelCostPerUnit={modelCostPerUnit}
+        onModelCostPerUnitChange={setModelCostPerUnit}
+        authorMinPrice={authorMinPrice}
+        onAuthorMinPriceChange={setAuthorMinPrice}
+        filamentRows={filamentRows}
+        onAddFilamentRow={addFilamentRow}
+        onRemoveFilamentRow={removeFilamentRow}
+        onUpdateFilamentRow={updateFilamentRow}
+        onImportFilamentRows={setFilamentRows}
+        onImportPrintTime={setPrintTimeHours}
+        onImportPrintName={setPrintName}
+        stockByAssetId={stockByAssetId}
+        editingJob={!!editingJob}
+        makeDefaultRow={makeDefaultRow}
+        nextRowKey={nextRowKey}
+        printNameId={printNameId}
+        printerSelectId={printerSelectId}
+        modelUrlId={modelUrlId}
+        modelCostId={modelCostId}
+        authorMinPriceId={authorMinPriceId}
+        gramsBaseId={gramsBaseId}
+      />
 
-        {/* G-code Import */}
-        <GcodeImport
-          assets={materials}
-          onImport={({ filaments, printTimeHours: time, printName: name }) => {
-            if (time > 0) setPrintTimeHours(time);
-            if (name && !printName) setPrintName(name);
-            if (filaments.length > 0) {
-              const newRows: FilamentRow[] = filaments.map(f => {
-                const asset = f.filamentId ? materials.find(m => m.id === f.filamentId) : null;
-                return {
-                  uid: nextRowKey(),
-                  filamentId: f.filamentId ?? '',
-                  grams: f.grams,
-                  editedPrice: asset?.costPerUnit ?? 0,
-                  editedCurrency: asset?.currency ?? userCurrency,
-                };
-              });
-              setFilamentRows(newRows.length > 0 ? newRows : [makeDefaultRow(userCurrency)]);
-            }
-          }}
-        />
+      <CostParametersSection
+        printTimeHours={printTimeHours}
+        onPrintTimeHoursChange={setPrintTimeHours}
+        failureRate={failureRate}
+        onFailureRateChange={setFailureRate}
+        prepTimeMinutes={prepTimeMinutes}
+        onPrepTimeMinutesChange={setPrepTimeMinutes}
+        postProcessingMinutes={postProcessingMinutes}
+        onPostProcessingMinutesChange={setPostProcessingMinutes}
+        materialsUsed={materialsUsed}
+        materialsInProfile={materialsInProfile}
+        nonFilaments={nonFilaments}
+        currencySymbol={currencySymbol}
+        onAddMaterialUsage={addMaterialUsage}
+        onUpdateMaterialUsage={updateMaterialUsage}
+        onRemoveMaterialUsage={removeMaterialUsage}
+        printTimeId={printTimeId}
+        failureRateId={failureRateId}
+        prepTimeId={prepTimeId}
+        postProcessingId={postProcessingId}
+      />
 
-        <div className="space-y-4">
-          {/* Identity row — Print Name takes 2/3, Printer takes 1/3 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
-            <div className="md:col-span-2">
-              <label htmlFor={printNameId} className="block text-xs text-slate-400 mb-1">Print Name *</label>
-              <Input
-                id={printNameId}
-                type="text"
-                value={printName}
-                onChange={e => setPrintName(e.target.value)}
-                placeholder="e.g., Dragon Figurine"
-              />
-            </div>
+      <ShippingSection
+        shippingMethod={shippingMethod}
+        onShippingMethodChange={setShippingMethod}
+        shippingDistanceKm={shippingDistanceKm}
+        onShippingDistanceKmChange={setShippingDistanceKm}
+        shippingOverrideCost={shippingOverrideCost}
+        onShippingOverrideCostChange={setShippingOverrideCost}
+        shippingCost={shippingCost}
+        packagingCost={packagingCost}
+        totalShippingCost={totalShippingCost}
+        shippingConfig={shippingConfig}
+        distanceUnit={distanceUnit}
+        currencySymbol={currencySymbol}
+        packagingMaterials={packagingMaterials}
+        materialsInProfile={materialsInProfile}
+        consumables={consumables}
+        onAddPackagingMaterial={() => {
+          if (consumables.length > 0) {
+            setPackagingMaterials([...packagingMaterials, toMaterialRow({ materialId: consumables[0].id, quantity: 1 })]);
+          }
+        }}
+        onUpdatePackagingMaterial={updatePackagingMaterial}
+        onRemovePackagingMaterial={(index) => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
+        marketplace={marketplace}
+        onMarketplaceChange={setMarketplace}
+        marketplaceFee={marketplaceFee}
+        sellingPrice={sellingPrice}
+        userCurrency={userCurrency}
+        shippingMethodId={shippingMethodId}
+        shippingDistanceId={shippingDistanceId}
+        carrierCostId={carrierCostId}
+        sellingPlatformId={sellingPlatformId}
+      />
 
-            <div>
-              <label htmlFor={printerSelectId} className="block text-xs text-slate-400 mb-1">Printer</label>
-              {printerInstances.length === 0 ? (
-                <p className="text-yellow-400 text-sm">No printers set up. Go to Printer Settings to add one.</p>
-              ) : (
-                <Select
-                  id={printerSelectId}
-                  value={selectedInstanceId}
-                  onChange={e => setSelectedInstanceId(e.target.value)}
-                >
-                  {printerInstances.map(instance => {
-                    const config = printers.find(p => p.id === instance.printerConfigId);
-                    return (
-                      <option key={instance.id} value={instance.id}>
-                        {instance.nickname} ({config?.name || 'Unknown'}) - {instance.printHours.toFixed(1)}h
-                      </option>
-                    );
-                  })}
-                </Select>
-              )}
-            </div>
-          </div>
+      <PricingSection
+        currencySymbol={currencySymbol}
+        trueCost={trueCost}
+        sellingPrice={sellingPrice}
+        targetProfit={targetProfit}
+        profitMarginPercent={profitMarginPercent}
+        marketplaceFee={marketplaceFee}
+        authorMinPrice={authorMinPrice}
+        taxRateOverride={taxRateOverride}
+        onTaxRateOverrideChange={setTaxRateOverride}
+        inheritedTaxRate={inheritedTaxRate}
+        dispatchPricing={dispatchPricing}
+        profitMarginId={profitMarginId}
+        targetProfitId={targetProfitId}
+        sellingPriceId={sellingPriceId}
+        taxRateId={taxRateId}
+      />
 
-          {/* Model context row — URL flexes to fill, Cost + Author Min are compact. Wraps on narrow viewports. */}
-          <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
-            <div className="flex-1 min-w-[220px] max-w-md">
-              <label htmlFor={modelUrlId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Model URL</span>
-                <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
-                <NewBadge feature="model-url" />
-              </label>
-              <Input
-                id={modelUrlId}
-                type="url"
-                value={modelUrl}
-                onChange={e => setModelUrl(e.target.value)}
-                placeholder="https://makerworld.com/..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor={modelCostId} className="block text-xs text-slate-400 mb-1">Model Cost ({currencySymbol})</label>
-              <Input
-                id={modelCostId}
-                type="number"
-                step="0.01"
-                min="0"
-                compact
-                value={modelCost || ''}
-                onChange={e => setModelCost(Math.max(parseFloat(e.target.value) || 0, 0))}
-                placeholder="0"
-              />
-              {/* Per-unit toggle slot — reserved at all times so the row never shifts.
-                  Visibility (not display) is toggled so the label still occupies its space. */}
-              <label
-                className={`flex items-center gap-2 mt-2 cursor-pointer ${modelCost > 0 ? '' : 'invisible'}`}
-                aria-hidden={modelCost > 0 ? undefined : true}
-              >
-                {/* allow-raw-html: checkbox uses accent-blue + custom border styling not covered by Input primitive */}
-                <input
-                  type="checkbox"
-                  checked={modelCostPerUnit}
-                  onChange={e => setModelCostPerUnit(e.target.checked)}
-                  tabIndex={modelCost > 0 ? 0 : -1}
-                  className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
-                />
-                <span className="text-xs text-slate-400">Per-unit license</span>
-              </label>
-            </div>
-
-            <div>
-              <label htmlFor={authorMinPriceId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Author Min Price ({currencySymbol})</span>
-                <InfoTooltip text="Warn if selling below this" />
-              </label>
-              <Input
-                id={authorMinPriceId}
-                type="number"
-                step="0.01"
-                compact
-                value={authorMinPrice || ''}
-                onChange={e => setAuthorMinPrice(parseFloat(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-          </div>
-
-          {/* Multi-Filament Rows */}
-          <div className="space-y-3">
-            <label className="block text-xs text-slate-400">Filaments *</label>
-
-            {filamentRows.map((row, index) => {
-              // Stock hint (new jobs only — an edited job's grams are already in the ledger,
-              // so comparing against post-deduction stock would double-count).
-              const stock = row.filamentId ? stockByAssetId.get(row.filamentId) : undefined;
-              const short = !editingJob && stock != null && row.grams > 0 && stock < row.grams;
-              return (
-              <div key={row.uid} className="bg-slate-700/30 p-3 rounded-lg">
-                <div className="flex items-start gap-2">
-                <div className="flex-1 min-w-0">
-                  <FilamentSelector
-                    materials={materials}
-                    selectedFilamentId={row.filamentId}
-                    onSelect={(filament) => updateFilamentRow(index, {
-                      filamentId: filament.id,
-                      editedPrice: filament.costPerUnit ?? 0,
-                      editedCurrency: filament.currency || userCurrency,
-                    })}
-                    onPriceChange={(price) => updateFilamentRow(index, { editedPrice: price })}
-                    onCurrencyChange={(currency) => updateFilamentRow(index, { editedCurrency: currency })}
-                  />
-                </div>
-                <div className="shrink-0 w-[196px]">
-                  <label htmlFor={`${gramsBaseId}-${index}`} className="block text-xs text-slate-400 mb-1">Grams</label>
-                  <div className="flex gap-1 items-center">
-                    <Input
-                      id={`${gramsBaseId}-${index}`}
-                      type="number"
-                      min="0"
-                      value={row.grams || ''}
-                      onChange={e => updateFilamentRow(index, { grams: Math.max(parseFloat(e.target.value) || 0, 0) })}
-                      placeholder="g"
-                      className="w-24"
-                    />
-                    {index === filamentRows.length - 1 && filamentRows.length < 16 && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={addFilamentRow}
-                        className="w-[44px] h-[44px] !px-0 !py-0 shrink-0"
-                        aria-label="Add filament row"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </Button>
-                    )}
-                    {index > 0 && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => removeFilamentRow(index)}
-                        className="w-[44px] h-[44px] !px-0 !py-0 shrink-0 text-red-400 hover:text-red-300"
-                        aria-label="Remove filament row"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                </div>
-                {short && (
-                  <p className="mt-2 text-xs text-amber-400 flex items-start gap-1.5">
-                    <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                    </svg>
-                    <span>
-                      {stock != null && stock <= 0
-                        ? `Out of stock — this print needs ${Math.round(row.grams)} g.`
-                        : `Only ${Math.round(stock ?? 0)} g left in stock — ${Math.round(row.grams - (stock ?? 0))} g short for this print.`}
-                    </span>
-                  </p>
-                )}
-              </div>
-              );
-            })}
-          </div>
-
-          {/* Print parameters — flex-wrap so compact inputs pack tightly left-to-right (matches SettingsModal pattern). */}
-          <div className="flex flex-wrap gap-x-4 gap-y-3">
-            <div>
-              <label htmlFor={printTimeId} className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
-              <Input
-                id={printTimeId}
-                type="number"
-                step="0.1"
-                min="0"
-                compact
-                value={printTimeHours || ''}
-                onChange={e => setPrintTimeHours(Math.max(parseFloat(e.target.value) || 0, 0))}
-                placeholder="0"
-              />
-            </div>
-
-            <div>
-              <label htmlFor={failureRateId} className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
-              <Input
-                id={failureRateId}
-                type="number"
-                min="0"
-                max="99"
-                compact
-                value={failureRate || ''}
-                onChange={e => setFailureRate(Math.min(parseFloat(e.target.value) || 0, 99))}
-                placeholder="5"
-              />
-            </div>
-
-            <div>
-              <label htmlFor={prepTimeId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Prep Time (min)</span>
-                <InfoTooltip text="Slicing, bed prep, etc." />
-              </label>
-              <Input
-                id={prepTimeId}
-                type="number"
-                min="0"
-                compact
-                value={prepTimeMinutes || ''}
-                onChange={e => setPrepTimeMinutes(Math.max(parseInt(e.target.value) || 0, 0))}
-                placeholder="0"
-              />
-            </div>
-
-            <div>
-              <label htmlFor={postProcessingId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Post-Processing (min)</span>
-                <InfoTooltip text="Support removal, sanding, etc." />
-              </label>
-              <Input
-                id={postProcessingId}
-                type="number"
-                min="0"
-                compact
-                value={postProcessingMinutes || ''}
-                onChange={e => setPostProcessingMinutes(Math.max(parseInt(e.target.value) || 0, 0))}
-                placeholder="0"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Post-Processing Materials */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Post-Processing Materials</h2>
-          <Button
-            btnSize="sm"
-            onClick={addMaterialUsage}
-            disabled={nonFilaments.length === 0}
-          >
-            + Add Material
-          </Button>
-        </div>
-
-        {materialsUsed.length === 0 ? (
-          <p className="text-slate-500 text-sm">No post-processing materials added yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {materialsUsed.map((usage, index) => {
-              const material = materialsInProfile.find(m => m.id === usage.materialId);
-              return (
-                <div key={usage.uid} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
-                  <Select
-                    value={usage.materialId}
-                    onChange={e => updateMaterialUsage(index, 'materialId', e.target.value)}
-                    className="flex-1"
-                  >
-                    {nonFilaments.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </Select>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      compact
-                      value={usage.quantity}
-                      onChange={e => updateMaterialUsage(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="text-right"
-                    />
-                    <span className="text-slate-400 text-sm w-12">{material?.unit || ''}</span>
-                  </div>
-                  <span className="text-slate-300 text-sm font-mono w-16 text-right">
-                    {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
-                  </span>
-                  <RemoveButton
-                    label={material?.name ?? 'material'}
-                    onClick={() => removeMaterialUsage(index)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Shipping */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold text-white mb-4">Shipping</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
-          <div>
-            <label htmlFor={shippingMethodId} className="block text-xs text-slate-400 mb-1">Shipping Method</label>
-            <Select
-              id={shippingMethodId}
-              value={shippingMethod}
-              onChange={e => {
-                setShippingMethod(e.target.value as ShippingMethodType);
-                setShippingOverrideCost(null); // Reset override when method changes
-              }}
-            >
-              {availableShippingMethods.map(method => (
-                <option key={method.value} value={method.value}>{method.label}</option>
-              ))}
-            </Select>
-          </div>
-
-          {shippingMethod === 'dropoff' && (
-            <div>
-              <label htmlFor={shippingDistanceId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <span>Distance ({distanceUnit})</span>
-                <InfoTooltip text="Round-trip distance" />
-              </label>
-              <Input
-                id={shippingDistanceId}
-                type="number"
-                compact
-                value={distanceUnit === 'mi' ? (shippingDistanceKm > 0 ? kmToMiles(shippingDistanceKm).toFixed(1) : '') : (shippingDistanceKm || '')}
-                onChange={e => {
-                  const inputVal = parseFloat(e.target.value) || 0;
-                  // Convert miles to km for internal storage if using miles
-                  setShippingDistanceKm(distanceUnit === 'mi' ? milesToKm(inputVal) : inputVal);
-                }}
-                max={distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm) : shippingConfig.maxDeliveryRadiusKm}
-                placeholder={`Max ${distanceUnit === 'mi' ? kmToMiles(shippingConfig.maxDeliveryRadiusKm).toFixed(0) : shippingConfig.maxDeliveryRadiusKm}${distanceUnit}`}
-              />
-              {shippingDistanceKm > shippingConfig.maxDeliveryRadiusKm && (
-                <p className="text-xs text-red-400 mt-1">Exceeds max delivery radius!</p>
-              )}
-            </div>
-          )}
-
-          <div>
-            <label htmlFor={carrierCostId} className="block text-xs text-slate-400 mb-1">Carrier Cost ({currencySymbol})</label>
-            <Input
-              id={carrierCostId}
-              type="number"
-              step="0.01"
-              compact
-              value={shippingOverrideCost !== null ? shippingOverrideCost : shippingCost}
-              onChange={e => setShippingOverrideCost(parseFloat(e.target.value) || 0)}
-              placeholder={shippingCost.toFixed(2)}
-            />
-            {shippingOverrideCost !== null && (
-              <Button
-                variant="ghost"
-                btnSize="sm"
-                onClick={() => setShippingOverrideCost(null)}
-                className="mt-1 text-blue-400 hover:text-blue-300 text-xs"
-              >
-                Reset to default
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Packaging Materials */}
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="flex items-center gap-2 text-sm font-medium text-white">
-                <span>Packaging Materials</span>
-              </h3>
-              <p className="text-xs text-slate-500">Boxes, bubble wrap, tape, etc.</p>
-            </div>
-            <Button
-              btnSize="sm"
-              onClick={() => {
-                if (consumables.length > 0) {
-                  setPackagingMaterials([...packagingMaterials, toMaterialRow({ materialId: consumables[0].id, quantity: 1 })]);
-                }
-              }}
-              disabled={consumables.length === 0}
-              className="text-xs"
-            >
-              + Add Packaging
-            </Button>
-          </div>
-
-          {packagingMaterials.length === 0 ? (
-            <p className="text-slate-500 text-xs">No packaging materials added.</p>
-          ) : (
-            <div className="space-y-2">
-              {packagingMaterials.map((usage, index) => {
-                const material = materialsInProfile.find(m => m.id === usage.materialId);
-                return (
-                  <div key={usage.uid} className="flex items-center gap-3 bg-slate-700/50 p-2 rounded-lg">
-                    <Select
-                      value={usage.materialId}
-                      onChange={e => updatePackagingMaterial(index, 'materialId', e.target.value)}
-                      className="flex-1"
-                    >
-                      {consumables.map(m => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
-                    </Select>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={usage.quantity}
-                        onChange={e => updatePackagingMaterial(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        inputSize="sm"
-                        className="w-16 text-right"
-                      />
-                      <span className="text-slate-400 text-xs w-8">{material?.unit || ''}</span>
-                    </div>
-                    <span className="text-slate-300 text-sm font-mono w-14 text-right">
-                      {currencySymbol}{material ? (usage.quantity * (material.costPerUnit ?? 0)).toFixed(2) : '0.00'}
-                    </span>
-                    <RemoveButton
-                      label={material?.name ?? 'material'}
-                      onClick={() => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Total Shipping Summary */}
-          {(shippingCost > 0 || packagingCost > 0) && (
-            <div className="mt-3 p-3 bg-slate-700/30 rounded-lg">
-              <div className="flex justify-between text-xs text-slate-400">
-                <span>Carrier/Delivery:</span>
-                <span>{currencySymbol}{shippingCost.toFixed(2)}</span>
-              </div>
-              {packagingCost > 0 && (
-                <div className="flex justify-between text-xs text-slate-400">
-                  <span>Packaging:</span>
-                  <span>{currencySymbol}{packagingCost.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm font-medium text-white mt-1 pt-1 border-t border-slate-600">
-                <span>Total Shipping:</span>
-                <span>{currencySymbol}{totalShippingCost.toFixed(2)}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Marketplace Selection */}
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <div className="mb-3">
-            <h3 className="text-sm font-medium text-white">Marketplace</h3>
-            <p className="text-xs text-slate-500">Platform fees deducted from your revenue</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-3">
-            <div>
-              <label htmlFor={sellingPlatformId} className="block text-xs text-slate-400 mb-1">Selling Platform</label>
-              <Select
-                id={sellingPlatformId}
-                value={marketplace}
-                onChange={e => setMarketplace(e.target.value as MarketplaceType)}
-              >
-                {availableMarketplaces.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </Select>
-              <p className="text-xs text-slate-500 mt-1">
-                {availableMarketplaces.find(m => m.value === marketplace)?.description}
-              </p>
-            </div>
-
-            {marketplaceFee > 0 && (
-              <div className="flex items-center">
-                <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg w-full">
-                  <div className="text-xs text-orange-400">Marketplace Fee</div>
-                  <div className="text-lg font-semibold text-orange-400">{currencySymbol}{marketplaceFee.toFixed(2)}</div>
-                  <div className="text-xs text-slate-500">Deducted from {currencySymbol}{sellingPrice.toFixed(2)} sale</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Pricing - Moved above Cost Breakdown */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold text-white mb-4">Set Financial Targets</h2>
-        <p className="text-slate-400 text-sm mb-4">Set targets and keep track of profitability throughout your project</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-4">
-          <div>
-            <label htmlFor={profitMarginId} className="block text-sm font-medium text-white mb-1">Profit Margin</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
-              <Input
-                id={profitMarginId}
-                type="number"
-                value={profitMarginPercent || ''}
-                onChange={e => {
-                  dispatchPricing({ type: 'EDIT_MARGIN', value: parseFloat(e.target.value) || 0 });
-                }}
-                className="pl-8"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor={targetProfitId} className="block text-sm font-medium text-white mb-1">Target Profit</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
-              <Input
-                id={targetProfitId}
-                type="number"
-                step="0.01"
-                value={targetProfit || ''}
-                onChange={e => {
-                  dispatchPricing({ type: 'EDIT_PROFIT', value: parseFloat(e.target.value) || 0 });
-                }}
-                className="pl-8"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor={sellingPriceId} className="block text-sm font-medium text-white mb-1">Selling Price</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
-              <Input
-                id={sellingPriceId}
-                type="number"
-                step="0.01"
-                value={sellingPrice || ''}
-                onChange={e => {
-                  dispatchPricing({ type: 'EDIT_PRICE', value: parseFloat(e.target.value) || 0 });
-                }}
-                className="pl-8"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor={taxRateId} className="block text-sm font-medium text-white mb-1">Tax Rate</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
-              <Input
-                id={taxRateId}
-                type="number"
-                min="0"
-                max="99.9"
-                step="0.1"
-                className="pl-8"
-                value={taxRateOverride ?? ''}
-                placeholder={inheritedTaxRate > 0 ? String(inheritedTaxRate) : 'e.g., 20'}
-                onChange={e => {
-                  const v = e.target.value;
-                  if (v === '') {
-                    setTaxRateOverride(undefined);
-                  } else {
-                    const parsed = parseFloat(v);
-                    if (Number.isFinite(parsed)) {
-                      setTaxRateOverride(Math.min(Math.max(parsed, 0), 99.9));
-                    }
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {trueCost > 0 && sellingPrice > 0 && (
-          <div className="mt-6 p-4 bg-slate-700/50 rounded-lg">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-white">{currencySymbol}{trueCost.toFixed(2)}</div>
-                <div className="text-xs text-slate-400">True Cost</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-400">{currencySymbol}{sellingPrice.toFixed(2)}</div>
-                <div className="text-xs text-slate-400">Sell Price</div>
-              </div>
-              {marketplaceFee > 0 && (
-                <div>
-                  <div className="text-2xl font-bold text-orange-400">-{currencySymbol}{marketplaceFee.toFixed(2)}</div>
-                  <div className="text-xs text-slate-400">Platform Fee</div>
-                </div>
-              )}
-              <div>
-                {/* targetProfit / profitMarginPercent are now NET of the platform
-                    fee (interlink derives them net), so render them directly —
-                    re-subtracting the fee here would double-count it. */}
-                <div className={`text-2xl font-bold ${targetProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {currencySymbol}{targetProfit.toFixed(2)}
-                </div>
-                <div className="text-xs text-slate-400">Net Profit</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-400">
-                  {profitMarginPercent.toFixed(1)}%
-                </div>
-                <div className="text-xs text-slate-400">Net Margin</div>
-              </div>
-            </div>
-            {marketplaceFee > 0 && (
-              <p className="text-xs text-orange-400 text-center mt-3">
-                Marketplace fees reduce your profit by {currencySymbol}{marketplaceFee.toFixed(2)} ({((marketplaceFee / sellingPrice) * 100).toFixed(1)}% of sale)
-              </p>
-            )}
-            {authorMinPrice > 0 && sellingPrice < authorMinPrice && (
-              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                <p className="text-sm text-red-400 text-center font-medium">
-                  Warning: Your selling price ({currencySymbol}{sellingPrice.toFixed(2)}) is below the author's minimum price ({currencySymbol}{authorMinPrice.toFixed(2)})
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Cost Breakdown */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold text-white mb-4">Cost Breakdown</h2>
-
-        <div className="space-y-2 text-sm">
-          {/* Per-Unit Costs (Consumables) */}
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Per-Unit Costs (Consumables)</div>
-          <div className="flex justify-between text-slate-300">
-            <span>Filament</span>
-            <span className="font-mono">{currencySymbol}{costs.filament.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-slate-300">
-            <span>Electricity</span>
-            <span className="font-mono">{currencySymbol}{costs.electricity.toFixed(2)}</span>
-          </div>
-          {costs.materials > 0 && (
-            <div className="flex justify-between text-slate-300">
-              <span>Post-Processing Materials</span>
-              <span className="font-mono">{currencySymbol}{costs.materials.toFixed(2)}</span>
-            </div>
-          )}
-          {costs.labor > 0 && (
-            <div className="flex justify-between text-slate-300">
-              <span>Labor ({prepTimeMinutes + postProcessingMinutes} min @ {currencySymbol}{laborHourlyRate}/hr)</span>
-              <span className="font-mono">{currencySymbol}{costs.labor.toFixed(2)}</span>
-            </div>
-          )}
-          {shippingCost > 0 && (
-            <div className="flex justify-between text-slate-300">
-              <span>Shipping ({shippingMethod.replace('_', ' ')})</span>
-              <span className="font-mono">{currencySymbol}{shippingCost.toFixed(2)}</span>
-            </div>
-          )}
-          {packagingCost > 0 && (
-            <div className="flex justify-between text-slate-300">
-              <span>Packaging Materials</span>
-              <span className="font-mono">{currencySymbol}{packagingCost.toFixed(2)}</span>
-            </div>
-          )}
-          {modelCostPerUnit && modelCost > 0 && (
-            <div className="flex justify-between text-purple-400">
-              <span>Model License (per unit)</span>
-              <span className="font-mono">{currencySymbol}{modelCost.toFixed(2)}</span>
-            </div>
-          )}
-
-          <div className="border-t border-slate-700 pt-2 mt-2">
-            <div className="flex justify-between text-slate-300">
-              <span>Subtotal</span>
-              <span className="font-mono">{currencySymbol}{(costs.subtotal + totalShippingCost).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-yellow-400">
-              <span>+ Failure Adjustment ({failureRate}%)</span>
-              <span className="font-mono">+{currencySymbol}{(costs.failureAdjusted - costs.subtotal).toFixed(2)}</span>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-600 pt-3 mt-3">
-            <div className="flex justify-between text-white text-lg font-semibold">
-              <span>Cost Per Unit</span>
-              <span className="font-mono">{currencySymbol}{trueCost.toFixed(2)}</span>
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              This is what you spend each time you print this item
-            </div>
-          </div>
-
-          {/* Tax row (TAX-04 — hides at 0%; total uses sellingPrice + taxAmount per TAX-05).
-              Also requires sellingPrice > 0 so we don't render "Tax (20%) — $0.00 / Total — $0.00"
-              when the user has set a rate but not yet a price. */}
-          {tax.ratePercent > 0 && sellingPrice > 0 && (
-            <div className="border-t border-slate-700 pt-2 mt-2">
-              <div className="flex justify-between text-slate-300">
-                <span className="flex items-center gap-1.5">
-                  <span>Tax ({tax.ratePercent.toFixed(1)}%)</span>
-                  <span className="text-xs text-slate-500">· {labelForSource(taxSource)}</span>
-                  <InfoTooltip text={tooltipForSource(taxSource, userCurrency)} />
-                </span>
-                <span className="font-mono">{currencySymbol}{tax.taxAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-white font-semibold mt-1">
-                <span>Total (with Tax)</span>
-                <span className="font-mono">{currencySymbol}{(sellingPrice + tax.taxAmount).toFixed(2)}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Marketplace Fee Note */}
-          {marketplaceFee > 0 && sellingPrice > 0 && (
-            <div className="mt-3 p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-sm text-orange-400">Marketplace Fee ({marketplace.replace('_', ' ')})</div>
-                  <div className="text-xs text-slate-500">Deducted from your sale revenue, not added to cost</div>
-                </div>
-                <div className="text-lg font-semibold text-orange-400">-{currencySymbol}{marketplaceFee.toFixed(2)}</div>
-              </div>
-              <div className="text-xs text-slate-400 mt-2">
-                You receive: {currencySymbol}{(sellingPrice - marketplaceFee).toFixed(2)} | Net profit: {currencySymbol}{(sellingPrice - marketplaceFee - trueCost).toFixed(2)}
-              </div>
-            </div>
-          )}
-
-          {/* Fixed Costs Section */}
-          {fixedCosts.total > 0 && (
-            <div className="mt-6 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
-              <div className="text-xs text-slate-500 uppercase tracking-wide mb-3">Fixed Costs (Recovered Through Sales)</div>
-
-              {fixedCosts.depreciation > 0 && (
-                <div className="flex justify-between text-slate-300 mb-2">
-                  <span>Printer Depreciation ({printTimeHours}h print)</span>
-                  <span className="font-mono">{currencySymbol}{fixedCosts.depreciation.toFixed(2)}</span>
-                </div>
-              )}
-              {fixedCosts.nozzleWear > 0 && (
-                <div className="flex justify-between text-slate-300 mb-2">
-                  <span>Nozzle Wear</span>
-                  <span className="font-mono">{currencySymbol}{fixedCosts.nozzleWear.toFixed(2)}</span>
-                </div>
-              )}
-              {modelCost > 0 && !modelCostPerUnit && (
-                <div className="flex justify-between text-slate-300 mb-2">
-                  <span>Model/STL Cost (one-time)</span>
-                  <span className="font-mono">{currencySymbol}{modelCost.toFixed(2)}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between text-white font-semibold pt-2 border-t border-slate-600">
-                <span>Total Fixed Costs</span>
-                <span className="font-mono">{currencySymbol}{fixedCosts.total.toFixed(2)}</span>
-              </div>
-              <div className="text-xs text-slate-500 mt-2">
-                These costs are spread across all units sold. The more you sell, the less each unit carries.
-              </div>
-            </div>
-          )}
-
-          {/* Break-even Banner */}
-          {trueCost > 0 && sellingPrice > 0 && fixedCosts.total > 0 && (
-            <div className="mt-4 p-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg border border-blue-500/30">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-blue-300 font-medium">Break-even Units</div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    Sell this many to recover {currencySymbol}{fixedCosts.total.toFixed(2)} in fixed costs
-                  </div>
-                </div>
-                <div className="text-4xl font-bold text-blue-400">
-                  {breakEvenInfo.breakEvenCopies === Infinity ? '∞' : breakEvenInfo.breakEvenCopies}
-                </div>
-              </div>
-              {breakEvenInfo.profitPerUnit > 0 && (
-                <div className="text-xs text-slate-400 mt-2">
-                  {currencySymbol}{breakEvenInfo.profitPerUnit.toFixed(2)} profit per unit at {currencySymbol}{sellingPrice.toFixed(2)} selling price
-                </div>
-              )}
-              {breakEvenInfo.profitPerUnit <= 0 && (
-                <div className="text-xs text-red-400 mt-2">
-                  Warning: Selling price is below cost. You lose {currencySymbol}{Math.abs(breakEvenInfo.profitPerUnit).toFixed(2)} per unit.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/*
-        Etsy compliance helper — Phase 14 ETSY-01, ETSY-02 (revised on 2026-05-22).
-        Now conditional on marketplace === 'etsy' (D-22): the section is irrelevant
-        when the user isn't selling on Etsy, so we hide it instead of always showing
-        a checklist for a marketplace they don't use.
-      */}
-      {marketplace === 'etsy' && (
-      <CollapsibleSection
-        title="Selling on Etsy?"
-        badge={<NewBadge feature="etsy-helper" className="absolute -top-1 -right-1" />}
-      >
-        {/* Disclaimer at top — verbatim wording locked by D-17 / ROADMAP success criterion #4 */}
-        <div className="bg-slate-700/50 border border-yellow-500/30 text-yellow-100/90 rounded p-3 text-sm mb-4">
-          Etsy's policies change — this is a reminder, not legal advice.
-        </div>
-
-        {/* 5-item checklist; raw checkbox elements require the `allow-raw-html` comment per lint guard (PATTERNS Gotcha) */}
-        <div className="space-y-1">
-          {etsyChecklist.map(item => (
-            <label key={item.id} className="flex items-start gap-3 p-2 rounded hover:bg-slate-700/30 cursor-pointer">
-              {/* allow-raw-html: per-item checklist toggle; no Checkbox primitive exists, matches BambuImport.tsx:209 precedent */}
-              <input
-                type="checkbox"
-                className="mt-1 w-4 h-4 accent-blue-500 cursor-pointer"
-                checked={!!etsyChecks?.[item.id]}
-                onChange={e => setEtsyChecks(prev => ({ ...prev, [item.id]: e.target.checked }))}
-              />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-white">{item.title}</div>
-                <div className="text-xs text-slate-400 mt-0.5">{item.body}</div>
-              </div>
-            </label>
-          ))}
-        </div>
-
-        {/* Date + live link rendered inline below checklist — D-17 */}
-        <div className="mt-4 text-xs text-slate-500">
-          Verified against Etsy policy as of {policySummaryAsOf} —{' '}
-          <a
-            href={policyLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline"
-          >
-            etsy.com/legal/creativity/
-          </a>
-        </div>
-      </CollapsibleSection>
-      )}
+      <CostSummaryPanel
+        currencySymbol={currencySymbol}
+        userCurrency={userCurrency}
+        costs={costs}
+        trueCost={trueCost}
+        sellingPrice={sellingPrice}
+        shippingCost={shippingCost}
+        shippingMethod={shippingMethod}
+        packagingCost={packagingCost}
+        totalShippingCost={totalShippingCost}
+        modelCost={modelCost}
+        modelCostPerUnit={modelCostPerUnit}
+        prepTimeMinutes={prepTimeMinutes}
+        postProcessingMinutes={postProcessingMinutes}
+        laborHourlyRate={laborHourlyRate}
+        failureRate={failureRate}
+        fixedCosts={fixedCosts}
+        breakEvenInfo={breakEvenInfo}
+        printTimeHours={printTimeHours}
+        taxSource={taxSource}
+        tax={tax}
+        marketplaceFee={marketplaceFee}
+        marketplace={marketplace}
+        etsyChecks={etsyChecks}
+        onEtsyChecksChange={setEtsyChecks}
+      />
 
       {/* Save Job Button */}
       <div className="flex flex-col md:flex-row md:justify-end gap-4">
