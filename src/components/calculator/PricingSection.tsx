@@ -1,23 +1,25 @@
 import { memo } from 'react';
 import { Input } from '../ui';
-import type { PricingAction } from '../../hooks/useCostDerivedValues';
+import type { PricingAction, UseCostDerivedValuesResult } from '../../hooks/useCostDerivedValues';
+import type { CalculatorFieldIds } from './fieldIds';
+
+// Derived-values subset this section reads — Pick<> keeps field names
+// identical to useCostDerivedValues' return shape so the orchestrator can
+// pass the hook's result object through directly (D-11: still just wiring,
+// no new business math computed here).
+type PricingDerived = Pick<UseCostDerivedValuesResult, 'trueCost' | 'marketplaceFee' | 'inheritedTaxRate'>;
 
 interface PricingSectionProps {
   currencySymbol: string;
-  trueCost: number;
+  derived: PricingDerived;
   sellingPrice: number;
   targetProfit: number;
   profitMarginPercent: number;
-  marketplaceFee: number;
   authorMinPrice: number;
   taxRateOverride: number | undefined;
   onTaxRateOverrideChange: (value: number | undefined) => void;
-  inheritedTaxRate: number;
   dispatchPricing: (action: PricingAction) => void;
-  profitMarginId: string;
-  targetProfitId: string;
-  sellingPriceId: string;
-  taxRateId: string;
+  ids: CalculatorFieldIds;
 }
 
 /**
@@ -29,20 +31,15 @@ interface PricingSectionProps {
  */
 export const PricingSection = memo(function PricingSection({
   currencySymbol,
-  trueCost,
+  derived: { trueCost, marketplaceFee, inheritedTaxRate },
   sellingPrice,
   targetProfit,
   profitMarginPercent,
-  marketplaceFee,
   authorMinPrice,
   taxRateOverride,
   onTaxRateOverrideChange,
-  inheritedTaxRate,
   dispatchPricing,
-  profitMarginId,
-  targetProfitId,
-  sellingPriceId,
-  taxRateId,
+  ids,
 }: PricingSectionProps) {
   return (
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
@@ -51,11 +48,11 @@ export const PricingSection = memo(function PricingSection({
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-4">
         <div>
-          <label htmlFor={profitMarginId} className="block text-sm font-medium text-white mb-1">Profit Margin</label>
+          <label htmlFor={ids.profitMargin} className="block text-sm font-medium text-white mb-1">Profit Margin</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
             <Input
-              id={profitMarginId}
+              id={ids.profitMargin}
               type="number"
               value={profitMarginPercent || ''}
               onChange={e => {
@@ -67,11 +64,11 @@ export const PricingSection = memo(function PricingSection({
         </div>
 
         <div>
-          <label htmlFor={targetProfitId} className="block text-sm font-medium text-white mb-1">Target Profit</label>
+          <label htmlFor={ids.targetProfit} className="block text-sm font-medium text-white mb-1">Target Profit</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
             <Input
-              id={targetProfitId}
+              id={ids.targetProfit}
               type="number"
               step="0.01"
               value={targetProfit || ''}
@@ -84,11 +81,11 @@ export const PricingSection = memo(function PricingSection({
         </div>
 
         <div>
-          <label htmlFor={sellingPriceId} className="block text-sm font-medium text-white mb-1">Selling Price</label>
+          <label htmlFor={ids.sellingPrice} className="block text-sm font-medium text-white mb-1">Selling Price</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">{currencySymbol}</span>
             <Input
-              id={sellingPriceId}
+              id={ids.sellingPrice}
               type="number"
               step="0.01"
               value={sellingPrice || ''}
@@ -101,11 +98,11 @@ export const PricingSection = memo(function PricingSection({
         </div>
 
         <div>
-          <label htmlFor={taxRateId} className="block text-sm font-medium text-white mb-1">Tax Rate</label>
+          <label htmlFor={ids.taxRate} className="block text-sm font-medium text-white mb-1">Tax Rate</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10">%</span>
             <Input
-              id={taxRateId}
+              id={ids.taxRate}
               type="number"
               min="0"
               max="99.9"

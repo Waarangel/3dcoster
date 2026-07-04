@@ -4,7 +4,21 @@ import { FilamentSelector } from '../FilamentSelector';
 import { GcodeImport } from '../GcodeImport';
 import { NewBadge } from '../NewBadge';
 import { Button, Input, Select, InfoTooltip } from '../ui';
-import type { FilamentRow } from '../../hooks/useCostForm';
+import type { FilamentRow, UseCostFormResult } from '../../hooks/useCostForm';
+import type { CalculatorFieldIds } from './fieldIds';
+
+// Form-state subset this section reads/writes — Pick<> keeps field names
+// identical to useCostForm's return shape so the orchestrator can pass the
+// hook's result object through directly (D-11: still just wiring, no new
+// business math computed here). setX naming (not onXChange) matches the
+// hook's own setter names since this section is an internal-only 1:1 view
+// of a slice of useCostForm's state, not a reusable public widget.
+type CostFormFormState = Pick<UseCostFormResult,
+  'printName' | 'setPrintName' | 'selectedInstanceId' | 'setSelectedInstanceId' |
+  'modelUrl' | 'setModelUrl' | 'modelCost' | 'setModelCost' |
+  'modelCostPerUnit' | 'setModelCostPerUnit' | 'authorMinPrice' | 'setAuthorMinPrice' |
+  'filamentRows' | 'setFilamentRows' | 'addFilamentRow' | 'removeFilamentRow' |
+  'updateFilamentRow' | 'setPrintTimeHours' | 'makeDefaultRow'>;
 
 interface CostFormSectionProps {
   materials: Material[];
@@ -12,37 +26,13 @@ interface CostFormSectionProps {
   printerInstances: PrinterInstance[];
   userCurrency: Currency;
   currencySymbol: string;
-  printName: string;
-  onPrintNameChange: (value: string) => void;
-  selectedInstanceId: string;
-  onSelectedInstanceIdChange: (value: string) => void;
-  modelUrl: string;
-  onModelUrlChange: (value: string) => void;
-  modelCost: number;
-  onModelCostChange: (value: number) => void;
-  modelCostPerUnit: boolean;
-  onModelCostPerUnitChange: (value: boolean) => void;
-  authorMinPrice: number;
-  onAuthorMinPriceChange: (value: number) => void;
-  filamentRows: FilamentRow[];
-  onAddFilamentRow: () => void;
-  onRemoveFilamentRow: (index: number) => void;
-  onUpdateFilamentRow: (index: number, patch: Partial<FilamentRow>) => void;
-  onImportFilamentRows: (rows: FilamentRow[]) => void;
-  onImportPrintTime: (hours: number) => void;
-  onImportPrintName: (name: string) => void;
+  form: CostFormFormState;
   stockByAssetId: Map<string, number>;
   editingJob: boolean;
-  makeDefaultRow: (currency: Currency) => FilamentRow;
   nextRowKey: () => string;
-  // Stable IDs for label<->input associations, passed down from the orchestrator
-  // (WCAG 1.3.1 / 4.1.2) so every field keeps its useId-generated id.
-  printNameId: string;
-  printerSelectId: string;
-  modelUrlId: string;
-  modelCostId: string;
-  authorMinPriceId: string;
-  gramsBaseId: string;
+  // Stable IDs for label<->input associations (WCAG 1.3.1 / 4.1.2), passed
+  // down from the orchestrator as a single grouped object.
+  ids: CalculatorFieldIds;
 }
 
 /**
@@ -56,36 +46,27 @@ export const CostFormSection = memo(function CostFormSection({
   printerInstances,
   userCurrency,
   currencySymbol,
-  printName,
-  onPrintNameChange,
-  selectedInstanceId,
-  onSelectedInstanceIdChange,
-  modelUrl,
-  onModelUrlChange,
-  modelCost,
-  onModelCostChange,
-  modelCostPerUnit,
-  onModelCostPerUnitChange,
-  authorMinPrice,
-  onAuthorMinPriceChange,
-  filamentRows,
-  onAddFilamentRow,
-  onRemoveFilamentRow,
-  onUpdateFilamentRow,
-  onImportFilamentRows,
-  onImportPrintTime,
-  onImportPrintName,
+  form: {
+    printName, setPrintName: onPrintNameChange,
+    selectedInstanceId, setSelectedInstanceId: onSelectedInstanceIdChange,
+    modelUrl, setModelUrl: onModelUrlChange,
+    modelCost, setModelCost: onModelCostChange,
+    modelCostPerUnit, setModelCostPerUnit: onModelCostPerUnitChange,
+    authorMinPrice, setAuthorMinPrice: onAuthorMinPriceChange,
+    filamentRows, setFilamentRows: onImportFilamentRows,
+    addFilamentRow: onAddFilamentRow, removeFilamentRow: onRemoveFilamentRow, updateFilamentRow: onUpdateFilamentRow,
+    setPrintTimeHours: onImportPrintTime,
+    makeDefaultRow,
+  },
   stockByAssetId,
   editingJob,
-  makeDefaultRow,
   nextRowKey,
-  printNameId,
-  printerSelectId,
-  modelUrlId,
-  modelCostId,
-  authorMinPriceId,
-  gramsBaseId,
+  ids,
 }: CostFormSectionProps) {
+  // onImportPrintName mirrors setPrintName but is only invoked from the
+  // G-code import callback below (never from the Print Name field's own
+  // onChange) — kept as a local alias for readability at the call site.
+  const onImportPrintName = onPrintNameChange;
   return (
     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
       <h2 className="text-lg font-semibold text-white mb-4">Print Job Details</h2>
@@ -116,9 +97,9 @@ export const CostFormSection = memo(function CostFormSection({
         {/* Identity row — Print Name takes 2/3, Printer takes 1/3 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
           <div className="md:col-span-2">
-            <label htmlFor={printNameId} className="block text-xs text-slate-400 mb-1">Print Name *</label>
+            <label htmlFor={ids.printName} className="block text-xs text-slate-400 mb-1">Print Name *</label>
             <Input
-              id={printNameId}
+              id={ids.printName}
               type="text"
               value={printName}
               onChange={e => onPrintNameChange(e.target.value)}
@@ -127,12 +108,12 @@ export const CostFormSection = memo(function CostFormSection({
           </div>
 
           <div>
-            <label htmlFor={printerSelectId} className="block text-xs text-slate-400 mb-1">Printer</label>
+            <label htmlFor={ids.printerSelect} className="block text-xs text-slate-400 mb-1">Printer</label>
             {printerInstances.length === 0 ? (
               <p className="text-yellow-400 text-sm">No printers set up. Go to Printer Settings to add one.</p>
             ) : (
               <Select
-                id={printerSelectId}
+                id={ids.printerSelect}
                 value={selectedInstanceId}
                 onChange={e => onSelectedInstanceIdChange(e.target.value)}
               >
@@ -152,13 +133,13 @@ export const CostFormSection = memo(function CostFormSection({
         {/* Model context row — URL flexes to fill, Cost + Author Min are compact. Wraps on narrow viewports. */}
         <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
           <div className="flex-1 min-w-[220px] max-w-md">
-            <label htmlFor={modelUrlId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+            <label htmlFor={ids.modelUrl} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
               <span>Model URL</span>
               <InfoTooltip text="Save the source link so you can find it again later (works for free models too)" />
               <NewBadge feature="model-url" />
             </label>
             <Input
-              id={modelUrlId}
+              id={ids.modelUrl}
               type="url"
               value={modelUrl}
               onChange={e => onModelUrlChange(e.target.value)}
@@ -167,9 +148,9 @@ export const CostFormSection = memo(function CostFormSection({
           </div>
 
           <div>
-            <label htmlFor={modelCostId} className="block text-xs text-slate-400 mb-1">Model Cost ({currencySymbol})</label>
+            <label htmlFor={ids.modelCost} className="block text-xs text-slate-400 mb-1">Model Cost ({currencySymbol})</label>
             <Input
-              id={modelCostId}
+              id={ids.modelCost}
               type="number"
               step="0.01"
               min="0"
@@ -197,12 +178,12 @@ export const CostFormSection = memo(function CostFormSection({
           </div>
 
           <div>
-            <label htmlFor={authorMinPriceId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+            <label htmlFor={ids.authorMinPrice} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
               <span>Author Min Price ({currencySymbol})</span>
               <InfoTooltip text="Warn if selling below this" />
             </label>
             <Input
-              id={authorMinPriceId}
+              id={ids.authorMinPrice}
               type="number"
               step="0.01"
               compact
@@ -239,10 +220,10 @@ export const CostFormSection = memo(function CostFormSection({
                 />
               </div>
               <div className="shrink-0 w-[196px]">
-                <label htmlFor={`${gramsBaseId}-${index}`} className="block text-xs text-slate-400 mb-1">Grams</label>
+                <label htmlFor={`${ids.gramsBase}-${index}`} className="block text-xs text-slate-400 mb-1">Grams</label>
                 <div className="flex gap-1 items-center">
                   <Input
-                    id={`${gramsBaseId}-${index}`}
+                    id={`${ids.gramsBase}-${index}`}
                     type="number"
                     min="0"
                     value={row.grams || ''}

@@ -41,26 +41,31 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // Get distance unit based on region (mi for US, km for most others)
   const distanceUnit = getDistanceUnit(userCurrency);
 
-  // Stable IDs for label↔input associations (WCAG 1.3.1 / 4.1.2). One per field;
-  // per-row filament grams derive their id as `${gramsBaseId}-${index}`.
-  const printNameId = useId();
-  const printerSelectId = useId();
-  const modelUrlId = useId();
-  const modelCostId = useId();
-  const authorMinPriceId = useId();
-  const gramsBaseId = useId();
-  const printTimeId = useId();
-  const failureRateId = useId();
-  const prepTimeId = useId();
-  const postProcessingId = useId();
-  const shippingMethodId = useId();
-  const shippingDistanceId = useId();
-  const carrierCostId = useId();
-  const sellingPlatformId = useId();
-  const profitMarginId = useId();
-  const targetProfitId = useId();
-  const sellingPriceId = useId();
-  const taxRateId = useId();
+  // Stable IDs for label↔input associations (WCAG 1.3.1 / 4.1.2), one per
+  // field — useId() must be called unconditionally at the top level (Rules of
+  // Hooks forbid looping/generating these), so each call site stays explicit;
+  // grouped into a single `ids` object afterward to keep prop-passing terse.
+  // Per-row filament grams derive their id as `${ids.gramsBase}-${index}`.
+  const ids = {
+    printName: useId(),
+    printerSelect: useId(),
+    modelUrl: useId(),
+    modelCost: useId(),
+    authorMinPrice: useId(),
+    gramsBase: useId(),
+    printTime: useId(),
+    failureRate: useId(),
+    prepTime: useId(),
+    postProcessing: useId(),
+    shippingMethod: useId(),
+    shippingDistance: useId(),
+    carrierCost: useId(),
+    sellingPlatform: useId(),
+    profitMargin: useId(),
+    targetProfit: useId(),
+    sellingPrice: useId(),
+    taxRate: useId(),
+  };
 
   // FIX-04: ref for the Editing banner — scrolled into view when editingJob
   // becomes set so the user can see which job they are editing.
@@ -80,15 +85,18 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   const form = useCostForm({ editingJob, userCurrency, printerInstances, materials });
   const {
-    printName, setPrintName,
-    filamentRows, setFilamentRows,
-    addFilamentRow, removeFilamentRow, updateFilamentRow,
-    selectedInstanceId, setSelectedInstanceId,
+    // Value-only reads: setters/handlers for these fields are consumed by
+    // CostFormSection via the wholesale `form` prop (Pick<UseCostFormResult>)
+    // below — not destructured here since the orchestrator itself no longer
+    // renders that JSX.
+    printName,
+    filamentRows,
+    selectedInstanceId,
     printTimeHours, setPrintTimeHours,
-    modelCost, setModelCost,
-    modelCostPerUnit, setModelCostPerUnit,
-    authorMinPrice, setAuthorMinPrice,
-    modelUrl, setModelUrl,
+    modelCost,
+    modelCostPerUnit,
+    authorMinPrice,
+    modelUrl,
     prepTimeMinutes, setPrepTimeMinutes,
     postProcessingMinutes, setPostProcessingMinutes,
     failureRate, setFailureRate,
@@ -100,7 +108,6 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     packagingMaterials, setPackagingMaterials,
     marketplace, setMarketplace,
     etsyChecks, setEtsyChecks,
-    makeDefaultRow,
     toMaterialRow,
     stripRowKey,
     clearForm,
@@ -128,22 +135,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   // ShippingSection, derived from userCurrency/shippingConfig.customCarriers —
   // not routed through a hook or computed here.
 
-  const {
-    materialsInProfile,
-    shippingCost,
-    packagingCost,
-    totalShippingCost,
-    marketplaceFee,
-    costs,
-    trueCost,
-    fixedCosts,
-    breakEvenInfo,
-    taxSource,
-    tax,
-    inheritedTaxRate,
-    pricing,
-    dispatchPricing,
-  } = useCostDerivedValues({
+  const derived = useCostDerivedValues({
     editingJob,
     userCurrency,
     fxTable,
@@ -171,6 +163,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     taxRateOverride,
     userProfile,
   });
+  const { trueCost, fixedCosts, tax, pricing, dispatchPricing } = derived;
   const { profitMarginPercent, targetProfit, sellingPrice, lastEdited } = pricing;
 
   // Persist the FULL form-state blob (useCostForm's non-pricing fields +
@@ -258,43 +251,40 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     const materialsUsedToSave = materialsUsed.map(stripRowKey);
     const packagingMaterialsToSave = packagingMaterials.map(stripRowKey);
 
-    if (editingJob) {
-      // Update existing job
-      const updatedJob: PrintJob = {
-        ...editingJob,
-        name: printName.trim(),
-        updatedAt: new Date(),
-        filaments,
-        printTimeHours,
-        printerInstanceId: selectedInstanceId,
-        modelCost,
-        modelCostPerUnit,
-        authorMinPrice: authorMinPrice || undefined,
-        modelUrl: modelUrl.trim() || undefined,
-        prepTimeMinutes,
-        postProcessingMinutes,
-        materialsUsed: materialsUsedToSave,
-        failureRate,
-        costPerUnit: trueCost,
-        sellingPrice,
-        taxRate: tax.ratePercent,
-        taxAmount: tax.taxAmount,
-        etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
-        shippingMethod,
-        shippingDistanceKm,
-        shippingOverrideCost,
-        packagingMaterials: packagingMaterialsToSave,
-        marketplace,
-        tags: editingJob.tags,
-        // Phase 22.1 D-03 — snapshot the Calculator's broader break-even fixed
-        // costs (depreciation + nozzleWear) so the JobsManager pill can converge
-        // on the Calculator widget's formula for the same job. Reads the
-        // existing `fixedCosts` memo (line 449-457) computed from current
-        // printer/material state at Update time.
-        fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
-        currency: userCurrency,
-      };
+    // Fields shared by create + update — pure object assembly (no business
+    // math; trueCost/tax/fixedCosts are hook outputs consumed as-is). Phase
+    // 22.1 D-03: fixedCostsAtSave snapshots the current printer/material
+    // depreciation + nozzleWear so the JobsManager break-even pill converges
+    // on the Calculator widget's formula for the same job.
+    const sharedFields = {
+      name: printName.trim(),
+      filaments,
+      printTimeHours,
+      printerInstanceId: selectedInstanceId,
+      modelCost,
+      modelCostPerUnit,
+      authorMinPrice: authorMinPrice || undefined,
+      modelUrl: modelUrl.trim() || undefined,
+      prepTimeMinutes,
+      postProcessingMinutes,
+      materialsUsed: materialsUsedToSave,
+      failureRate,
+      costPerUnit: trueCost,
+      sellingPrice,
+      taxRate: tax.ratePercent,
+      taxAmount: tax.taxAmount,
+      etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
+      shippingMethod,
+      shippingDistanceKm,
+      shippingOverrideCost,
+      packagingMaterials: packagingMaterialsToSave,
+      marketplace,
+      fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
+      currency: userCurrency,
+    };
 
+    if (editingJob) {
+      const updatedJob: PrintJob = { ...editingJob, ...sharedFields, updatedAt: new Date(), tags: editingJob.tags };
       try {
         await onUpdateJob(updatedJob);
         onCancelEdit();
@@ -303,43 +293,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         toast.error('Could not save the job — please try again.');
       }
     } else {
-      // Create new job
-      const job: PrintJob = {
-        id: `job-${Date.now()}`,
-        name: printName.trim(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        filaments,
-        printTimeHours,
-        printerInstanceId: selectedInstanceId,
-        modelCost,
-        modelCostPerUnit,
-        authorMinPrice: authorMinPrice || undefined,
-        modelUrl: modelUrl.trim() || undefined,
-        prepTimeMinutes,
-        postProcessingMinutes,
-        materialsUsed: materialsUsedToSave,
-        failureRate,
-        costPerUnit: trueCost,
-        sellingPrice,
-        taxRate: tax.ratePercent,
-        taxAmount: tax.taxAmount,
-        etsyChecks: Object.keys(etsyChecks).length > 0 ? etsyChecks : undefined,
-        shippingMethod,
-        shippingDistanceKm,
-        shippingOverrideCost,
-        packagingMaterials: packagingMaterialsToSave,
-        marketplace,
-        copiesSold: 0,
-        // Phase 22.1 D-03 — snapshot the Calculator's broader break-even fixed
-        // costs (depreciation + nozzleWear) so the JobsManager pill can converge
-        // on the Calculator widget's formula for the same job. Reads the
-        // existing `fixedCosts` memo (line 449-457) computed from current
-        // printer/material state at Save (Create) time.
-        fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
-        currency: userCurrency,
-      };
-
+      const job: PrintJob = { id: `job-${Date.now()}`, createdAt: new Date(), updatedAt: new Date(), copiesSold: 0, ...sharedFields };
       try {
         await onSaveJob(job, printTimeHours);
         finishAfterSave('Job saved.');
@@ -406,35 +360,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         printerInstances={printerInstances}
         userCurrency={userCurrency}
         currencySymbol={currencySymbol}
-        printName={printName}
-        onPrintNameChange={setPrintName}
-        selectedInstanceId={selectedInstanceId}
-        onSelectedInstanceIdChange={setSelectedInstanceId}
-        modelUrl={modelUrl}
-        onModelUrlChange={setModelUrl}
-        modelCost={modelCost}
-        onModelCostChange={setModelCost}
-        modelCostPerUnit={modelCostPerUnit}
-        onModelCostPerUnitChange={setModelCostPerUnit}
-        authorMinPrice={authorMinPrice}
-        onAuthorMinPriceChange={setAuthorMinPrice}
-        filamentRows={filamentRows}
-        onAddFilamentRow={addFilamentRow}
-        onRemoveFilamentRow={removeFilamentRow}
-        onUpdateFilamentRow={updateFilamentRow}
-        onImportFilamentRows={setFilamentRows}
-        onImportPrintTime={setPrintTimeHours}
-        onImportPrintName={setPrintName}
+        form={form}
         stockByAssetId={stockByAssetId}
         editingJob={!!editingJob}
-        makeDefaultRow={makeDefaultRow}
         nextRowKey={nextRowKey}
-        printNameId={printNameId}
-        printerSelectId={printerSelectId}
-        modelUrlId={modelUrlId}
-        modelCostId={modelCostId}
-        authorMinPriceId={authorMinPriceId}
-        gramsBaseId={gramsBaseId}
+        ids={ids}
       />
 
       <CostParametersSection
@@ -447,16 +377,13 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         postProcessingMinutes={postProcessingMinutes}
         onPostProcessingMinutesChange={setPostProcessingMinutes}
         materialsUsed={materialsUsed}
-        materialsInProfile={materialsInProfile}
+        materialsInProfile={derived.materialsInProfile}
         nonFilaments={nonFilaments}
         currencySymbol={currencySymbol}
         onAddMaterialUsage={addMaterialUsage}
         onUpdateMaterialUsage={updateMaterialUsage}
         onRemoveMaterialUsage={removeMaterialUsage}
-        printTimeId={printTimeId}
-        failureRateId={failureRateId}
-        prepTimeId={prepTimeId}
-        postProcessingId={postProcessingId}
+        ids={ids}
       />
 
       <ShippingSection
@@ -466,14 +393,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         onShippingDistanceKmChange={setShippingDistanceKm}
         shippingOverrideCost={shippingOverrideCost}
         onShippingOverrideCostChange={setShippingOverrideCost}
-        shippingCost={shippingCost}
-        packagingCost={packagingCost}
-        totalShippingCost={totalShippingCost}
+        derived={derived}
         shippingConfig={shippingConfig}
         distanceUnit={distanceUnit}
         currencySymbol={currencySymbol}
         packagingMaterials={packagingMaterials}
-        materialsInProfile={materialsInProfile}
         consumables={consumables}
         onAddPackagingMaterial={() => {
           if (consumables.length > 0) {
@@ -484,55 +408,37 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         onRemovePackagingMaterial={(index) => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
         marketplace={marketplace}
         onMarketplaceChange={setMarketplace}
-        marketplaceFee={marketplaceFee}
         sellingPrice={sellingPrice}
         userCurrency={userCurrency}
-        shippingMethodId={shippingMethodId}
-        shippingDistanceId={shippingDistanceId}
-        carrierCostId={carrierCostId}
-        sellingPlatformId={sellingPlatformId}
+        ids={ids}
       />
 
       <PricingSection
         currencySymbol={currencySymbol}
-        trueCost={trueCost}
+        derived={derived}
         sellingPrice={sellingPrice}
         targetProfit={targetProfit}
         profitMarginPercent={profitMarginPercent}
-        marketplaceFee={marketplaceFee}
         authorMinPrice={authorMinPrice}
         taxRateOverride={taxRateOverride}
         onTaxRateOverrideChange={setTaxRateOverride}
-        inheritedTaxRate={inheritedTaxRate}
         dispatchPricing={dispatchPricing}
-        profitMarginId={profitMarginId}
-        targetProfitId={targetProfitId}
-        sellingPriceId={sellingPriceId}
-        taxRateId={taxRateId}
+        ids={ids}
       />
 
       <CostSummaryPanel
         currencySymbol={currencySymbol}
         userCurrency={userCurrency}
-        costs={costs}
-        trueCost={trueCost}
+        derived={derived}
         sellingPrice={sellingPrice}
-        shippingCost={shippingCost}
         shippingMethod={shippingMethod}
-        packagingCost={packagingCost}
-        totalShippingCost={totalShippingCost}
         modelCost={modelCost}
         modelCostPerUnit={modelCostPerUnit}
         prepTimeMinutes={prepTimeMinutes}
         postProcessingMinutes={postProcessingMinutes}
         laborHourlyRate={laborHourlyRate}
         failureRate={failureRate}
-        fixedCosts={fixedCosts}
-        breakEvenInfo={breakEvenInfo}
         printTimeHours={printTimeHours}
-        taxSource={taxSource}
-        tax={tax}
-        marketplaceFee={marketplaceFee}
         marketplace={marketplace}
         etsyChecks={etsyChecks}
         onEtsyChecksChange={setEtsyChecks}

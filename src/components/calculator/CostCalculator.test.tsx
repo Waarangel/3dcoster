@@ -172,9 +172,17 @@ describe('D-21 tax save site regression', () => {
     expect(matches.length).toBe(0);
   });
 
-  it('source: two occurrences of `taxRate: tax.ratePercent` (resolved rate persisted at both save sites)', () => {
+  // UPDATED (Phase 38, Plan 04 — Task 3 orchestrator shrink): the create/update
+  // job-construction paths were de-duplicated into a single `sharedFields`
+  // object consumed by BOTH the create and update branches (D-11 LOC
+  // reduction — pure object-assembly consolidation, no behavior change). The
+  // resolved-rate contract this test protects (never the raw override) now
+  // has exactly ONE occurrence that both save paths read, not two duplicated
+  // literals — still stronger than before, since there's no longer a second
+  // literal that could drift out of sync with the first.
+  it('source: one occurrence of `taxRate: tax.ratePercent` in the shared create/update fields object (resolved rate persisted, not duplicated)', () => {
     const matches = COST_CALC_SRC.match(/taxRate:\s*tax\.ratePercent/g) ?? [];
-    expect(matches.length).toBe(2);
+    expect(matches.length).toBe(1);
   });
 
   it('chain: blank override + 13% default + USD currency → ratePercent === 13 (the bug scenario)', () => {

@@ -294,3 +294,9 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     nonPricingFormState,
   };
 }
+
+// Shared return-shape type so section components can accept a typed SUBSET
+// of this hook's output (via Pick<>) instead of re-declaring every field name
+// individually — keeps the orchestrator's JSX prop-passing terse while each
+// section's prop interface still enumerates exactly which fields it reads.
+export type UseCostFormResult = ReturnType<typeof useCostForm>;

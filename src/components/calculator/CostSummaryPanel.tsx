@@ -1,52 +1,32 @@
 import { memo } from 'react';
-import type { CostBreakdown, ShippingMethodType, MarketplaceType, Currency } from '../../types';
+import type { ShippingMethodType, MarketplaceType, Currency } from '../../types';
 import { CollapsibleSection, InfoTooltip } from '../ui';
 import { NewBadge } from '../NewBadge';
 import { tooltipForSource, labelForSource } from '../../utils/taxResolution';
 import { etsyChecklist, policySummaryAsOf, policyLink } from '../../data/etsyToS';
-import type { TaxRateSource } from '../../utils/taxResolution';
+import type { UseCostDerivedValuesResult } from '../../hooks/useCostDerivedValues';
 
-interface FixedCosts {
-  depreciation: number;
-  nozzleWear: number;
-  modelCost: number;
-  total: number;
-}
-
-interface BreakEvenInfo {
-  costPerUnit: number;
-  profitPerUnit: number;
-  breakEvenCopies: number;
-  totalInvestmentToBreakEven: number;
-}
-
-interface TaxInfo {
-  ratePercent: number;
-  taxAmount: number;
-}
+// Derived-values subset this panel reads — Pick<> keeps field names identical
+// to useCostDerivedValues' return shape so the orchestrator can pass the
+// hook's result object through directly (D-11: still just wiring, no new
+// business math computed here).
+type SummaryDerived = Pick<UseCostDerivedValuesResult,
+  'costs' | 'trueCost' | 'shippingCost' | 'packagingCost' | 'totalShippingCost' |
+  'fixedCosts' | 'breakEvenInfo' | 'taxSource' | 'tax' | 'marketplaceFee'>;
 
 interface CostSummaryPanelProps {
   currencySymbol: string;
   userCurrency: Currency;
-  costs: CostBreakdown;
-  trueCost: number;
+  derived: SummaryDerived;
   sellingPrice: number;
-  shippingCost: number;
   shippingMethod: ShippingMethodType;
-  packagingCost: number;
-  totalShippingCost: number;
   modelCost: number;
   modelCostPerUnit: boolean;
   prepTimeMinutes: number;
   postProcessingMinutes: number;
   laborHourlyRate: number;
   failureRate: number;
-  fixedCosts: FixedCosts;
-  breakEvenInfo: BreakEvenInfo;
   printTimeHours: number;
-  taxSource: TaxRateSource;
-  tax: TaxInfo;
-  marketplaceFee: number;
   marketplace: MarketplaceType;
   etsyChecks: Record<string, boolean>;
   onEtsyChecksChange: (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => void;
@@ -61,25 +41,16 @@ interface CostSummaryPanelProps {
  */
 export const CostSummaryPanel = memo(function CostSummaryPanel({
   currencySymbol,
-  costs,
-  trueCost,
+  derived: { costs, trueCost, shippingCost, packagingCost, totalShippingCost, fixedCosts, breakEvenInfo, taxSource, tax, marketplaceFee },
   sellingPrice,
-  shippingCost,
   shippingMethod,
-  packagingCost,
-  totalShippingCost,
   modelCost,
   modelCostPerUnit,
   prepTimeMinutes,
   postProcessingMinutes,
   laborHourlyRate,
   failureRate,
-  fixedCosts,
-  breakEvenInfo,
   printTimeHours,
-  taxSource,
-  tax,
-  marketplaceFee,
   marketplace,
   etsyChecks,
   onEtsyChecksChange,

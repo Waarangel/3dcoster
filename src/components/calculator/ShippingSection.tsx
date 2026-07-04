@@ -3,6 +3,14 @@ import type { Material, MaterialUsage, ShippingConfig, ShippingMethodType, Marke
 import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import { kmToMiles, milesToKm, type DistanceUnit } from '../../utils/currency';
 import type { MaterialRow } from '../../hooks/useCostForm';
+import type { UseCostDerivedValuesResult } from '../../hooks/useCostDerivedValues';
+import type { CalculatorFieldIds } from './fieldIds';
+
+// Derived-values subset this section reads — Pick<> keeps the field names
+// identical to useCostDerivedValues' return shape so the orchestrator can
+// pass the hook's result object through directly (D-11: still just wiring,
+// no new business math computed here).
+type ShippingDerived = Pick<UseCostDerivedValuesResult, 'shippingCost' | 'packagingCost' | 'totalShippingCost' | 'materialsInProfile' | 'marketplaceFee'>;
 
 interface ShippingSectionProps {
   shippingMethod: ShippingMethodType;
@@ -11,27 +19,20 @@ interface ShippingSectionProps {
   onShippingDistanceKmChange: (km: number) => void;
   shippingOverrideCost: number | null;
   onShippingOverrideCostChange: (cost: number | null) => void;
-  shippingCost: number;
-  packagingCost: number;
-  totalShippingCost: number;
+  derived: ShippingDerived;
   shippingConfig: ShippingConfig;
   distanceUnit: DistanceUnit;
   currencySymbol: string;
   packagingMaterials: MaterialRow[];
-  materialsInProfile: Material[];
   consumables: Material[];
   onAddPackagingMaterial: () => void;
   onUpdatePackagingMaterial: (index: number, field: keyof MaterialUsage, value: string | number) => void;
   onRemovePackagingMaterial: (index: number) => void;
   marketplace: MarketplaceType;
   onMarketplaceChange: (marketplace: MarketplaceType) => void;
-  marketplaceFee: number;
   sellingPrice: number;
   userCurrency: Currency;
-  shippingMethodId: string;
-  shippingDistanceId: string;
-  carrierCostId: string;
-  sellingPlatformId: string;
+  ids: CalculatorFieldIds;
 }
 
 /**
@@ -47,27 +48,20 @@ export const ShippingSection = memo(function ShippingSection({
   onShippingDistanceKmChange,
   shippingOverrideCost,
   onShippingOverrideCostChange,
-  shippingCost,
-  packagingCost,
-  totalShippingCost,
+  derived: { shippingCost, packagingCost, totalShippingCost, materialsInProfile, marketplaceFee },
   shippingConfig,
   distanceUnit,
   currencySymbol,
   packagingMaterials,
-  materialsInProfile,
   consumables,
   onAddPackagingMaterial,
   onUpdatePackagingMaterial,
   onRemovePackagingMaterial,
   marketplace,
   onMarketplaceChange,
-  marketplaceFee,
   sellingPrice,
   userCurrency,
-  shippingMethodId,
-  shippingDistanceId,
-  carrierCostId,
-  sellingPlatformId,
+  ids,
 }: ShippingSectionProps) {
   // Get available shipping methods based on currency (A1 — computed locally, not via hooks)
   const availableShippingMethods = useMemo(() => {
@@ -134,9 +128,9 @@ export const ShippingSection = memo(function ShippingSection({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
         <div>
-          <label htmlFor={shippingMethodId} className="block text-xs text-slate-400 mb-1">Shipping Method</label>
+          <label htmlFor={ids.shippingMethod} className="block text-xs text-slate-400 mb-1">Shipping Method</label>
           <Select
-            id={shippingMethodId}
+            id={ids.shippingMethod}
             value={shippingMethod}
             onChange={e => {
               onShippingMethodChange(e.target.value as ShippingMethodType);
@@ -151,12 +145,12 @@ export const ShippingSection = memo(function ShippingSection({
 
         {shippingMethod === 'dropoff' && (
           <div>
-            <label htmlFor={shippingDistanceId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+            <label htmlFor={ids.shippingDistance} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
               <span>Distance ({distanceUnit})</span>
               <InfoTooltip text="Round-trip distance" />
             </label>
             <Input
-              id={shippingDistanceId}
+              id={ids.shippingDistance}
               type="number"
               compact
               value={distanceUnit === 'mi' ? (shippingDistanceKm > 0 ? kmToMiles(shippingDistanceKm).toFixed(1) : '') : (shippingDistanceKm || '')}
@@ -175,9 +169,9 @@ export const ShippingSection = memo(function ShippingSection({
         )}
 
         <div>
-          <label htmlFor={carrierCostId} className="block text-xs text-slate-400 mb-1">Carrier Cost ({currencySymbol})</label>
+          <label htmlFor={ids.carrierCost} className="block text-xs text-slate-400 mb-1">Carrier Cost ({currencySymbol})</label>
           <Input
-            id={carrierCostId}
+            id={ids.carrierCost}
             type="number"
             step="0.01"
             compact
@@ -288,9 +282,9 @@ export const ShippingSection = memo(function ShippingSection({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-3">
           <div>
-            <label htmlFor={sellingPlatformId} className="block text-xs text-slate-400 mb-1">Selling Platform</label>
+            <label htmlFor={ids.sellingPlatform} className="block text-xs text-slate-400 mb-1">Selling Platform</label>
             <Select
-              id={sellingPlatformId}
+              id={ids.sellingPlatform}
               value={marketplace}
               onChange={e => onMarketplaceChange(e.target.value as MarketplaceType)}
             >

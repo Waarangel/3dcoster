@@ -2,6 +2,7 @@ import { memo } from 'react';
 import type { Material, MaterialUsage } from '../../types';
 import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import type { MaterialRow } from '../../hooks/useCostForm';
+import type { CalculatorFieldIds } from './fieldIds';
 
 interface CostParametersSectionProps {
   printTimeHours: number;
@@ -19,10 +20,7 @@ interface CostParametersSectionProps {
   onAddMaterialUsage: () => void;
   onUpdateMaterialUsage: (index: number, field: keyof MaterialUsage, value: string | number) => void;
   onRemoveMaterialUsage: (index: number) => void;
-  printTimeId: string;
-  failureRateId: string;
-  prepTimeId: string;
-  postProcessingId: string;
+  ids: CalculatorFieldIds;
 }
 
 /**
@@ -48,19 +46,16 @@ export const CostParametersSection = memo(function CostParametersSection({
   onAddMaterialUsage,
   onUpdateMaterialUsage,
   onRemoveMaterialUsage,
-  printTimeId,
-  failureRateId,
-  prepTimeId,
-  postProcessingId,
+  ids,
 }: CostParametersSectionProps) {
   return (
     <>
       {/* Print parameters — flex-wrap so compact inputs pack tightly left-to-right (matches SettingsModal pattern). */}
       <div className="flex flex-wrap gap-x-4 gap-y-3">
         <div>
-          <label htmlFor={printTimeId} className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
+          <label htmlFor={ids.printTime} className="block text-xs text-slate-400 mb-1">Print Time (hours)</label>
           <Input
-            id={printTimeId}
+            id={ids.printTime}
             type="number"
             step="0.1"
             min="0"
@@ -72,9 +67,9 @@ export const CostParametersSection = memo(function CostParametersSection({
         </div>
 
         <div>
-          <label htmlFor={failureRateId} className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
+          <label htmlFor={ids.failureRate} className="block text-xs text-slate-400 mb-1">Failure Rate (%)</label>
           <Input
-            id={failureRateId}
+            id={ids.failureRate}
             type="number"
             min="0"
             max="99"
@@ -86,12 +81,12 @@ export const CostParametersSection = memo(function CostParametersSection({
         </div>
 
         <div>
-          <label htmlFor={prepTimeId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+          <label htmlFor={ids.prepTime} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
             <span>Prep Time (min)</span>
             <InfoTooltip text="Slicing, bed prep, etc." />
           </label>
           <Input
-            id={prepTimeId}
+            id={ids.prepTime}
             type="number"
             min="0"
             compact
@@ -102,12 +97,12 @@ export const CostParametersSection = memo(function CostParametersSection({
         </div>
 
         <div>
-          <label htmlFor={postProcessingId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+          <label htmlFor={ids.postProcessing} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
             <span>Post-Processing (min)</span>
             <InfoTooltip text="Support removal, sanding, etc." />
           </label>
           <Input
-            id={postProcessingId}
+            id={ids.postProcessing}
             type="number"
             min="0"
             compact
