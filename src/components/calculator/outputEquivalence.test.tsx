@@ -155,6 +155,21 @@ describe('CostCalculator output-equivalence oracle (pre-split baseline, D-01/D-0
   // baseline the split components must reproduce. Vitest's toMatchSnapshot
   // writes/compares against __snapshots__/outputEquivalence.test.tsx.snap,
   // committed alongside this file as the pre-split oracle.
+  //
+  // *** SCENARIO ORDER IS FROZEN (WR-05) ***
+  // The loop below re-renders into the SAME root for every scenario, so React
+  // UPDATES one component instance rather than remounting — useState/useReducer
+  // initializers run only for scenario 1, and fields the next editingJob leaves
+  // `undefined` (shippingMethod, packagingMaterials, marketplace, ... — see
+  // useCostForm.ts populate effect) CARRY FORWARD from the previous scenario.
+  // The committed baseline was captured against the pre-split component with
+  // this exact accumulation, so split-vs-pre-split parity holds — but ONLY
+  // while scenario order is byte-identical. Per-scenario snapshot values do
+  // NOT mean "this fixture in isolation". Do not reorder/insert/remove
+  // scenarios, and do not switch to per-scenario remounts, without
+  // re-capturing the baseline against the pre-split component at the diff
+  // base (05677f2:src/components/CostCalculator.tsx) in a dedicated,
+  // auditable commit. See goldenScenarios.ts header for the same warning.
   it('mounts every curated + random scenario and captures well-formed rendered readouts', async () => {
     const snapshot: Record<string, CapturedReadout> = {};
 

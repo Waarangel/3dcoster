@@ -34,6 +34,21 @@ import type { FxRateTable } from '../../../utils/fxConvert';
 // every relevant field off `editingJob` into form state on mount. Scenarios
 // that need a specific marketplace, failure rate, or selling price therefore
 // set `editingJob` rather than a (nonexistent) prop.
+//
+// *** SCENARIO ORDER IS FROZEN (WR-05) — DO NOT reorder, insert, or remove ***
+// outputEquivalence.test.tsx renders ALL scenarios into the SAME React root
+// without remounting, so React UPDATES one component instance across the
+// whole run. The editingJob-population effect deliberately skips fields a job
+// leaves `undefined` (shippingMethod, shippingDistanceKm, shippingOverrideCost,
+// packagingMaterials, marketplace — useCostForm.ts), which means those fields
+// CARRY the previous scenario's values forward. Every snapshot entry is
+// therefore a function of the scenarios BEFORE it, not just its own fixture —
+// and the committed baseline was captured against the pre-split component with
+// this exact accumulation. Reordering/inserting/removing ANY scenario silently
+// changes the effective inputs of every scenario after it. If the scenario
+// list must change, the baseline MUST be re-captured against the pre-split
+// component at the diff base (05677f2:src/components/CostCalculator.tsx) in a
+// dedicated, auditable commit — never `--update` the snapshot in passing.
 // ---------------------------------------------------------------------------
 
 export interface CostCalculatorProps {
