@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import type { Material, MaterialUsage } from '../../types';
 import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import type { MaterialRow } from '../../hooks/useCostForm';
@@ -30,7 +29,7 @@ interface CostParametersSectionProps {
  * failure/TOU/wear inputs attach to as ordinary additions — no speculative
  * extension props are added ahead of that need.
  */
-export const CostParametersSection = memo(function CostParametersSection({
+export function CostParametersSection({
   printTimeHours,
   onPrintTimeHoursChange,
   failureRate,
@@ -169,4 +168,4 @@ export const CostParametersSection = memo(function CostParametersSection({
       </div>
     </>
   );
-});
+}

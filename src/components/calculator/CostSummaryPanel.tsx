@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import type { ShippingMethodType, MarketplaceType, Currency } from '../../types';
 import { CollapsibleSection, InfoTooltip } from '../ui';
 import { NewBadge } from '../NewBadge';
@@ -39,7 +38,7 @@ interface CostSummaryPanelProps {
  * pipeline — never recomputed here). Props-in, callbacks-out; no Dexie
  * access, no business math (D-11).
  */
-export const CostSummaryPanel = memo(function CostSummaryPanel({
+export function CostSummaryPanel({
   currencySymbol,
   derived: { costs, trueCost, shippingCost, packagingCost, totalShippingCost, fixedCosts, breakEvenInfo, taxSource, tax, marketplaceFee },
   sellingPrice,
@@ -275,4 +274,4 @@ export const CostSummaryPanel = memo(function CostSummaryPanel({
       )}
     </>
   );
-});
+}

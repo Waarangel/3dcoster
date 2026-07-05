@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, Currency } from '../../types';
 import { FilamentSelector } from '../FilamentSelector';
 import { GcodeImport } from '../GcodeImport';
@@ -40,7 +39,7 @@ interface CostFormSectionProps {
  * URL/cost/author-min-price, and the multi-filament row list. Props-in,
  * callbacks-out; no Dexie access, no business math (D-11).
  */
-export const CostFormSection = memo(function CostFormSection({
+export function CostFormSection({
   materials,
   printers,
   printerInstances,
@@ -279,4 +278,4 @@ export const CostFormSection = memo(function CostFormSection({
       </div>
     </div>
   );
-});
+}

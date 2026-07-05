@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { Input } from '../ui';
 import type { PricingAction, UseCostDerivedValuesResult } from '../../hooks/useCostDerivedValues';
 import type { CalculatorFieldIds } from './fieldIds';
@@ -29,7 +28,7 @@ interface PricingSectionProps {
  * local pricing state. Props-in, callbacks-out; no Dexie access, no business
  * math (D-11).
  */
-export const PricingSection = memo(function PricingSection({
+export function PricingSection({
   currencySymbol,
   derived: { trueCost, marketplaceFee, inheritedTaxRate },
   sellingPrice,
@@ -175,4 +174,4 @@ export const PricingSection = memo(function PricingSection({
       )}
     </div>
   );
-});
+}

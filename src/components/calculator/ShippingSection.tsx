@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Material, MaterialUsage, ShippingConfig, ShippingMethodType, MarketplaceType, Currency } from '../../types';
 import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import { kmToMiles, milesToKm, type DistanceUnit } from '../../utils/currency';
@@ -41,7 +41,7 @@ interface ShippingSectionProps {
  * here from userCurrency/shippingConfig.customCarriers — not routed through
  * the hooks. Props-in, callbacks-out; no Dexie access, no business math (D-11).
  */
-export const ShippingSection = memo(function ShippingSection({
+export function ShippingSection({
   shippingMethod,
   onShippingMethodChange,
   shippingDistanceKm,
@@ -312,4 +312,4 @@ export const ShippingSection = memo(function ShippingSection({
       </div>
     </div>
   );
-});
+}
