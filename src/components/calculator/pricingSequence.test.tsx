@@ -196,6 +196,43 @@ describe('pricingSequence — same-field rapid re-edit + field-to-field chains (
       }
     });
 
+    it('typed price BEFORE any cost basis is retained, persisted, and drives derivation once trueCost > 0 (CR-01)', async () => {
+      // Self-contained: a previous test in this file persists its form state
+      // (print time etc.) to sessionStorage; clear it so this mount really
+      // starts with trueCost === 0.
+      sessionStorage.clear();
+      const props = makeScenarioProps({ editingJob: null });
+      await act(async () => {
+        root!.render(
+          <ToastProvider>
+            <CostCalculatorUnderTest {...props} />
+          </ToastProvider>
+        );
+      });
+
+      // Fresh form, no filament / print time → trueCost === 0. Type the target
+      // price FIRST ("I want to sell this at $25").
+      const priceInput = inputForLabel('Selling Price');
+      await setInputValue(priceInput, '25');
+
+      // Pre-split contract: the value is STORED (controlled input keeps it,
+      // sessionStorage persists it) even though no derivation can run yet.
+      expect(priceInput.value, 'typed price must survive in the controlled input while trueCost is 0').toBe('25');
+      const persisted = JSON.parse(sessionStorage.getItem('costCalculatorForm') ?? '{}');
+      expect(persisted.sellingPrice, 'typed price must reach sessionStorage persistence').toBe(25);
+      expect(persisted.lastEdited).toBe('price');
+
+      // Now enter a cost basis — the RECALC effect must derive profit/margin
+      // FROM the typed price (lastEdited: 'price'), not snap it back to a
+      // margin-derived value.
+      await setInputValue(inputForLabel('Print Time (hours)'), '5');
+      const triple = readTriple();
+      expect(triple.price, 'typed price must survive the trueCost 0 -> positive transition').toBeCloseTo(25, 1);
+      // no-fee scenario: profit = price - trueCost, so trueCost inverts cleanly.
+      const trueCost = 25 - triple.profit;
+      assertTripleClose(triple, expectedTripleFromPrice(trueCost, 25), 'price typed before cost basis');
+    });
+
     it('field-to-field chain: margin -> profit -> price stays consistent with pricingInterlink math', async () => {
       const props = makeScenarioProps({ editingJob: null });
       await act(async () => {

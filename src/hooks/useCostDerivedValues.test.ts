@@ -156,11 +156,39 @@ describe('pricingReducer', () => {
   });
 
   describe('trueCost<=0 guard', () => {
-    it('returns state unchanged for EDIT_MARGIN when trueCost is 0', () => {
+    // CR-01: the pre-split contract stores EDIT_* input unconditionally and
+    // only skips the DERIVATION while trueCost <= 0 — a user can type a target
+    // price/margin/profit before entering any cost basis and the value must be
+    // kept (and persisted), not silently dropped.
+    it('stores the edited margin + lastEdited WITHOUT deriving when trueCost is 0', () => {
+      const reducer = createPricingReducer(0, NO_FEE);
+      const state = makeState({ sellingPrice: 5, targetProfit: 1, profitMarginPercent: 20, lastEdited: 'price' });
+      const next = reducer(state, { type: 'EDIT_MARGIN', value: 50 });
+      expect(next.profitMarginPercent).toBe(50);
+      expect(next.lastEdited).toBe('margin');
+      // Derivation skipped — the other two fields are untouched.
+      expect(next.sellingPrice).toBe(5);
+      expect(next.targetProfit).toBe(1);
+    });
+
+    it('stores the edited profit + lastEdited WITHOUT deriving when trueCost is 0', () => {
       const reducer = createPricingReducer(0, NO_FEE);
       const state = makeState({ sellingPrice: 5, targetProfit: 1, profitMarginPercent: 20 });
-      const next = reducer(state, { type: 'EDIT_MARGIN', value: 50 });
-      expect(next).toEqual(state);
+      const next = reducer(state, { type: 'EDIT_PROFIT', value: 7 });
+      expect(next.targetProfit).toBe(7);
+      expect(next.lastEdited).toBe('profit');
+      expect(next.sellingPrice).toBe(5);
+      expect(next.profitMarginPercent).toBe(20);
+    });
+
+    it('stores the edited price + lastEdited WITHOUT deriving when trueCost is 0', () => {
+      const reducer = createPricingReducer(0, NO_FEE);
+      const state = makeState({ sellingPrice: 5, targetProfit: 1, profitMarginPercent: 20 });
+      const next = reducer(state, { type: 'EDIT_PRICE', value: 25 });
+      expect(next.sellingPrice).toBe(25);
+      expect(next.lastEdited).toBe('price');
+      expect(next.targetProfit).toBe(1);
+      expect(next.profitMarginPercent).toBe(20);
     });
 
     it('returns state unchanged for RECALC when trueCost is negative', () => {

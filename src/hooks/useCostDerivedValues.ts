@@ -86,12 +86,20 @@ export function createPricingReducer(trueCost: number, fee: FeeShape) {
         break;
     }
 
-    // Guard: matches the existing `if (trueCost <= 0) return;` in both
-    // pre-split effects — no derivation runs until there's a real cost basis.
-    if (trueCost <= 0) return state;
-
+    // trueCost<=0 handling (CR-01 fix): the pre-split component stored EDIT_*
+    // input UNCONDITIONALLY (the field's onChange called setSellingPrice/
+    // setProfitMarginPercent/setTargetProfit + setLastEdited directly) and only
+    // the DERIVATION effect was guarded on `if (trueCost <= 0) return;`. So a
+    // user could type a price before entering any cost basis, the value was
+    // kept (and persisted), and derivation kicked in once trueCost > 0.
+    // Mirror that per-case: store the edited field + lastEdited, skip only the
+    // derivation. A blanket `return state` here would drop the keystroke
+    // entirely (React's eager-reducer bailout → no re-render → controlled-input
+    // desync) and silently replace the typed value once costs are entered.
+    // Only RECALC keeps the full guard (it is pure derivation, nothing to store).
     switch (action.type) {
       case 'EDIT_MARGIN': {
+        if (trueCost <= 0) return { ...state, profitMarginPercent: action.value, lastEdited: 'margin' };
         const { price, netProfit } = priceFromMargin(trueCost, action.value, fee);
         return {
           sellingPrice: round2(price),
@@ -101,6 +109,7 @@ export function createPricingReducer(trueCost: number, fee: FeeShape) {
         };
       }
       case 'EDIT_PROFIT': {
+        if (trueCost <= 0) return { ...state, targetProfit: action.value, lastEdited: 'profit' };
         const { price, marginPercent } = priceFromProfit(trueCost, action.value, fee);
         return {
           sellingPrice: round2(price),
@@ -110,6 +119,7 @@ export function createPricingReducer(trueCost: number, fee: FeeShape) {
         };
       }
       case 'EDIT_PRICE': {
+        if (trueCost <= 0) return { ...state, sellingPrice: action.value, lastEdited: 'price' };
         const { netProfit, marginPercent } = marginFromPrice(trueCost, action.value, fee);
         return {
           sellingPrice: action.value,
@@ -119,6 +129,9 @@ export function createPricingReducer(trueCost: number, fee: FeeShape) {
         };
       }
       case 'RECALC': {
+        // Guard: matches the pre-split `if (trueCost <= 0) return;` — no
+        // derivation runs until there's a real cost basis.
+        if (trueCost <= 0) return state;
         // Re-derive off the CURRENT lastEdited branch — replaces the second
         // pre-split effect (the marketplace-fee-shape-change trigger). Never
         // flips lastEdited.
