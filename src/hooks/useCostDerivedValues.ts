@@ -376,6 +376,11 @@ export function useCostDerivedValues({
   // editingJob's saved cost basis (resumed edit), mirroring the pre-split
   // component's useState lazy initializers exactly.
   const [pricing, dispatchPricing] = useReducer(
+    // The getter below is only invoked inside the reducer at dispatch-
+    // PROCESSING time (event handler / queued update), never while rendering
+    // output; this is the pre-split feeShapeRef read-at-run-time pattern
+    // (WR-01 fix) — hence the targeted suppression.
+    // eslint-disable-next-line react-hooks/refs
     createPricingReducer(trueCostForReducer, () => feeShapeRef.current),
     undefined,
     (): PricingState => {
@@ -483,9 +488,15 @@ export function useCostDerivedValues({
   const marketplaceFee = marketplaceFeeParts.total;
 
   // Keep the reducer's fee shape in lockstep with the live, floor-aware
-  // decomposition (WR-01 fix) — render-body ref assignment, byte-for-byte the
-  // pre-split component's `feeShapeRef.current = { ... }` pattern.
-  feeShapeRef.current = { pctFees: marketplaceFeeParts.pctFees, fixedFees: marketplaceFeeParts.fixedFees };
+  // decomposition (WR-01 fix). Assigned in an effect (not the render body) so
+  // discarded renders never leak a value into the ref; declared BEFORE the
+  // RECALC effect below so that within any commit the ref is updated first,
+  // and the RECALC dispatched by the next effect is processed against the
+  // fresh shape. Same observable semantics as the pre-split component's
+  // feeShapeRef (its effects also read the last committed decomposition).
+  useEffect(() => {
+    feeShapeRef.current = { pctFees: marketplaceFeeParts.pctFees, fixedFees: marketplaceFeeParts.fixedFees };
+  }, [marketplaceFeeParts.pctFees, marketplaceFeeParts.fixedFees]);
 
   // The ONE remaining pricing effect: dispatches RECALC when trueCost or the fee
   // shape changes but the user didn't touch a pricing field. Dep array is honest
