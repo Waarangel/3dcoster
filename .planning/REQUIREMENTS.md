@@ -15,9 +15,9 @@
 
 ### Foundation (engineering prerequisite)
 
-- [ ] **FOUND-01**: CostCalculator (1,814 LOC) is split along the researched seams (useCostForm, useCostDerivedValues, ~4 presentational sections) with **zero behavioral change**, gated by output-equivalence tests (old vs new: same inputs → same numbers), not just contract tests
-- [ ] **FOUND-02**: The pricing double-render per keystroke is eliminated inside the split architecture (the deferred PERF-11, done right — `useReducer`/event-handler pattern, `exhaustive-deps` at error level)
-- [ ] **FOUND-03**: The active app tab lives in the URL (`useSearchParams`), so browser Back/Forward navigates tabs instead of exiting `/app`, and tab links are shareable/bookmarkable (existing PWA start_url and bookmarks keep working)
+- [x] **FOUND-01**: CostCalculator (1,814 LOC) is split along the researched seams (useCostForm, useCostDerivedValues, ~4 presentational sections) with **zero behavioral change**, gated by output-equivalence tests (old vs new: same inputs → same numbers), not just contract tests
+- [x] **FOUND-02**: The pricing double-render per keystroke is eliminated inside the split architecture (the deferred PERF-11, done right — `useReducer`/event-handler pattern, `exhaustive-deps` at error level)
+- [x] **FOUND-03**: The active app tab lives in the URL (`useSearchParams`), so browser Back/Forward navigates tabs instead of exiting `/app`, and tab links are shareable/bookmarkable (existing PWA start_url and bookmarks keep working)
 
 ### Cost Realism — failure engine
 
@@ -103,9 +103,9 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 38 | Pending |
-| FOUND-02 | Phase 38 | Pending |
-| FOUND-03 | Phase 38 | Pending |
+| FOUND-01 | Phase 38 | Complete |
+| FOUND-02 | Phase 38 | Complete |
+| FOUND-03 | Phase 38 | Complete |
 | FAIL-01 | Phase 39 | Pending |
 | FAIL-02 | Phase 39 | Pending |
 | FAIL-03 | Phase 39 | Pending |
