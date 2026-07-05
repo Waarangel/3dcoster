@@ -56,8 +56,16 @@ function App() {
   const activeTab: Tab = (rawTab && VALID_TABS.includes(rawTab as Tab)) ? (rawTab as Tab) : 'calculator';
 
   const navigateToTab = useCallback((tab: Tab, options?: { replace?: boolean }) => {
+    // WR-04: re-clicking the already-active tab is a no-op (matches the
+    // pre-split useState behavior, where setState to the same value had zero
+    // history impact). Without this guard react-router pushes a NEW history
+    // entry even when the resulting URL is identical, so idle re-clicks stack
+    // duplicate entries and Back appears to "do nothing" once per click.
+    // Replace-mode calls (D-07 cleanup, A3 edit-nav) are allowed through —
+    // they never grow the history stack.
+    if (tab === activeTab && !options?.replace) return;
     setSearchParams(tab === 'calculator' ? {} : { tab }, { replace: options?.replace ?? false });
-  }, [setSearchParams]);
+  }, [setSearchParams, activeTab]);
 
   // push-semantics setter — preserves the exact `(tab: Tab) => void` signature
   // every existing call site (tab bar onClick, keyboard nav, onViewJobs,
