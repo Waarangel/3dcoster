@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useReducer } from 'react';
+import { useMemo, useCallback, useEffect, useReducer, useRef } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, UserProfile } from '../types';
 import { getStoredValue } from './useCostForm';
 import type { FilamentRow } from './useCostForm';
@@ -45,8 +45,15 @@ const round1 = (n: number): number => parseFloat(n.toFixed(1));
 // dispatched actions always compute against the LATEST inputs — mirrors the
 // pre-split effects, which read trueCost/marketplaceFeeParts from the render
 // scope directly, not from stale closures.
-export function createPricingReducer(trueCost: number, fee: FeeShape) {
+//
+// `feeSource` accepts either a plain FeeShape (unit tests) or a getter
+// (the hook passes `() => feeShapeRef.current`, WR-01 fix): the fee shape is
+// resolved at INVOCATION time, so the reducer always reads the latest
+// floor-aware decomposition assigned from the real marketplaceFeeParts —
+// mirroring the pre-split effects, which read feeShapeRef.current at run time.
+export function createPricingReducer(trueCost: number, feeSource: FeeShape | (() => FeeShape)) {
   return function pricingReducer(state: PricingState, action: PricingAction): PricingState {
+    const fee = typeof feeSource === 'function' ? feeSource() : feeSource;
     switch (action.type) {
       case 'SEED_FROM_JOB': {
         // Seed sellingPrice from the job's saved cost basis, then IMMEDIATELY
@@ -347,27 +354,29 @@ export function useCostDerivedValues({
   const trueCostForReducer = costsForTrueCost.failureAdjusted + totalShippingCost;
 
   // Marketplace fee decomposition needs sellingPrice, which is circular with
-  // the reducer it feeds — so it's computed in the same two-pass shape,
-  // reading the PREVIOUS committed pricing.sellingPrice below (after the
-  // reducer is declared) for the real value, and 0 here only to unblock the
-  // reducer's construction order. Since RECALC re-fires whenever the real
-  // marketplaceFeeParts changes (see the effect below, which reads the REAL
-  // marketplaceFeeParts computed after `pricing` exists), this bootstrapping
-  // value never leaks into a rendered/persisted result.
-  const feeShapeForReducer = useMemo(
-    () => computeMarketplaceFee({ sellingPrice: 0, marketplace, fees: marketplaceFees, userCurrency, fxTable }),
-    [marketplace, marketplaceFees, userCurrency, fxTable],
-  );
+  // the reducer it feeds — resolved with the pre-split pattern (WR-01 fix): a
+  // ref assigned from the REAL, floor-aware marketplaceFeeParts every render
+  // (after `pricing` exists below), read by the reducer at INVOCATION time via
+  // the getter passed to createPricingReducer. This matters for platforms
+  // whose decomposition depends on the price itself — facebook_shipped's
+  // $0.80 min-fee floor yields { pctFees: processing-only, fixedFees: minFee }
+  // when the floor binds, which a shape computed at sellingPrice: 0 can never
+  // represent. The pre-split component read feeShapeRef.current (assigned from
+  // live marketplaceFeeParts) inside both derivation effects — same contract.
+  // At worst the shape lags one committed render behind (same as pre-split);
+  // the RECALC effect below re-fires when the real parts change, so it
+  // converges immediately.
+  const feeShapeRef = useRef<FeeShape>({ pctFees: 0, fixedFees: 0 });
 
   // Pricing interlink state — see createPricingReducer above for the derivation.
-  // The reducer argument is rebuilt every render from trueCostForReducer/
-  // feeShapeForReducer so any dispatch (RECALC or a field EDIT_*) processed on
-  // or after this render always computes against fresh inputs. Initial state
-  // is seeded from sessionStorage (new job) or the editingJob's saved cost
-  // basis (resumed edit), mirroring the pre-split component's useState lazy
-  // initializers exactly.
+  // The reducer argument is rebuilt every render from trueCostForReducer (and
+  // reads feeShapeRef at invocation time) so any dispatch (RECALC or a field
+  // EDIT_*) processed on or after this render always computes against fresh
+  // inputs. Initial state is seeded from sessionStorage (new job) or the
+  // editingJob's saved cost basis (resumed edit), mirroring the pre-split
+  // component's useState lazy initializers exactly.
   const [pricing, dispatchPricing] = useReducer(
-    createPricingReducer(trueCostForReducer, { pctFees: feeShapeForReducer.pctFees, fixedFees: feeShapeForReducer.fixedFees }),
+    createPricingReducer(trueCostForReducer, () => feeShapeRef.current),
     undefined,
     (): PricingState => {
       if (editingJob && editingJob.sellingPrice > 0 && editingJob.costPerUnit > 0) {
@@ -472,6 +481,11 @@ export function useCostDerivedValues({
     [pricing.sellingPrice, marketplace, marketplaceFees, userCurrency, fxTable],
   );
   const marketplaceFee = marketplaceFeeParts.total;
+
+  // Keep the reducer's fee shape in lockstep with the live, floor-aware
+  // decomposition (WR-01 fix) — render-body ref assignment, byte-for-byte the
+  // pre-split component's `feeShapeRef.current = { ... }` pattern.
+  feeShapeRef.current = { pctFees: marketplaceFeeParts.pctFees, fixedFees: marketplaceFeeParts.fixedFees };
 
   // The ONE remaining pricing effect: dispatches RECALC when trueCost or the fee
   // shape changes but the user didn't touch a pricing field. Dep array is honest
