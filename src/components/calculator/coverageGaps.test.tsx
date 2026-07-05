@@ -45,6 +45,11 @@ let container: HTMLDivElement | null = null;
 let root: Root | null = null;
 
 beforeEach(() => {
+  // WR-06: mounts with editingJob: null trigger the real persistence effect,
+  // which writes the full form blob to sessionStorage — and jsdom's
+  // sessionStorage persists across tests within a file, so without this clear
+  // each mount restores the PREVIOUS test's form state before driving its own.
+  sessionStorage.clear();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);

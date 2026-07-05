@@ -68,6 +68,9 @@ let container: HTMLDivElement | null = null;
 let root: Root | null = null;
 
 beforeEach(() => {
+  // WR-06: start from a clean sessionStorage so no persisted form blob from
+  // another test can leak into the useState/useReducer initializers.
+  sessionStorage.clear();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
