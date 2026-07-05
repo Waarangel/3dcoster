@@ -166,6 +166,10 @@ All 53 v1.3 requirements satisfied. Snapshot: [milestones/v1.3-REQUIREMENTS.md](
 - ✓ **HYG-11, HYG-12** — index-mutation immutability fixes; Promise.all batched init reads; validated narrowing over `as` casts (Phase 37)
 - ✓ **Plus review/audit/UAT-driven fixes outside the requirement set:** scoped Asset-Library reset (data-loss), deleted-defaults persistence (`seedState`), marketplace-fee FX conversion + net-of-fees margin (`pricingInterlink.ts`), stock atomicity + cascade, npm audit 0 CVEs, Tauri fs scope, 3MF zip-bomb guards, shared `ConfirmModal`, App main-tab roving tabindex
 
+### Validated — v2.0 Cost-Truth & Insight (in progress)
+
+- ✓ **FOUND-01..FOUND-03** — Validated in Phase 38: Foundation (2026-07-05). CostCalculator split into `useCostForm` + `useCostDerivedValues` (useReducer pricing interlink — PERF-11 done right) + 5 section components under `src/components/calculator/`; 120-scenario output-equivalence oracle + keystroke/render tripwires; tab-in-URL routing via `useSearchParams` (browser Back stays in `/app`). Post-execution review: 1 Critical + 6 Warnings found and all fixed.
+
 ### Out of Scope (carried forward)
 
 - White-label PDF quote (paid tier, v2.0+) — only the free-tier "Made with 3DCoster" footer ships in v1.x
@@ -261,4 +265,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-03 — v2.0 Cost-Truth & Insight milestone opened (full-vision scope confirmed by founder). Note: PROJECT.md doc-reconciliation for v1.4–v1.7 remains deferred (post-v1.3 GSD lapse) — Context section captures the shipped summary.*
+*Last updated: 2026-07-05 — Phase 38 (Foundation) complete: CostCalculator split + PERF-11 fixed via useReducer + tab-in-URL routing; FOUND-01..03 validated. Note: PROJECT.md doc-reconciliation for v1.4–v1.7 remains deferred (post-v1.3 GSD lapse) — Context section captures the shipped summary.*
