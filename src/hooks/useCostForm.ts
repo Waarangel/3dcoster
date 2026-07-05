@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Material, PrinterInstance, MaterialUsage, PrintJob, Currency, ShippingMethodType, MarketplaceType } from '../types';
 
 // Session storage key for form persistence
@@ -152,13 +152,18 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     () => editingJob?.etsyChecks ?? getStoredValue('etsyChecks', {} as Record<string, boolean>)
   );
 
-  // The non-pricing slice of the persisted form-state blob. Computed inline
-  // (no effect) every render — cheap plain-object assembly, not the actual
-  // sessionStorage write. The orchestrator (CostCalculator.tsx) merges this
-  // with useCostDerivedValues' `pricing` snapshot and owns the SINGLE
+  // The non-pricing slice of the persisted form-state blob. useMemo'd on its
+  // constituent fields (WR-02 fix) so its IDENTITY only changes when a field
+  // actually changes — the orchestrator's persistence effect deps this object
+  // directly, and a fresh literal every render made that effect fire (full
+  // JSON.stringify + sessionStorage.setItem) on EVERY CostCalculator render,
+  // not just on field edits. The pre-split effect depped each scalar field
+  // individually; keying the memo on the same fields restores that behavior.
+  // The orchestrator (CostCalculator.tsx) merges this with
+  // useCostDerivedValues' `pricing` snapshot and owns the SINGLE
   // sessionStorage.setItem effect, preserving the pre-split behavior of one
   // full-blob write per change to ANY field across both hooks.
-  const nonPricingFormState = {
+  const nonPricingFormState = useMemo(() => ({
     printName,
     filamentRows,
     selectedInstanceId,
@@ -178,7 +183,13 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     packagingMaterials,
     marketplace,
     etsyChecks,
-  };
+  }), [
+    printName, filamentRows, selectedInstanceId, printTimeHours, modelCost,
+    modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes,
+    postProcessingMinutes, failureRate, materialsUsed, taxRateOverride,
+    shippingMethod, shippingDistanceKm, shippingOverrideCost,
+    packagingMaterials, marketplace, etsyChecks,
+  ]);
 
   // Populate fields when editing an existing job
   useEffect(() => {
