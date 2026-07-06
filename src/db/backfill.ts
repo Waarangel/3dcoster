@@ -629,3 +629,57 @@ export function reconcileFixedCostsAtSave(
   }
   return out;
 }
+
+/**
+ * reconcileTouSnapshot — Phase 39 TOU-01/02 (D-12) reconcile helper.
+ *
+ * Formalizes the "undefined = flat rate was used" contract for legacy PrintJob
+ * records (saved before the touStartTime/touRateUsedPerKwh snapshot fields
+ * existed). Unlike reconcileFixedCostsAtSave, this helper does NOT compute or
+ * backfill a numeric rate for legacy jobs — per RESEARCH.md Pitfall 5, a legacy
+ * job by definition never used TOU, so guessing today's flat rate (or any other
+ * number) onto it would fabricate cost history that never happened. The correct
+ * backfill is to leave both fields explicitly absent.
+ *
+ * Because there is never a real value to write for a legacy job, this helper's
+ * patch list is always empty — its role is to exist as the required reconcile
+ * helper for this schema change (locked milestone rule: every derived-money
+ * schema change ships with a reconcile helper) and to serve as the single,
+ * documented extension point where a future TOU-02 snapshot backfill would
+ * attach if the "leave absent" semantic is ever revisited.
+ *
+ * Idempotent — a job that already has EITHER field set (touStartTime OR
+ * touRateUsedPerKwh) is left alone (both as an idempotency guard and because
+ * a job with one field set but not the other is still "already reconciled":
+ * partial snapshots are a valid intentional state, e.g. a future write path
+ * that sets touRateUsedPerKwh without a start time).
+ *
+ * Pure helper. No imports from `dexie` or `./database` — keeps this module
+ * jsdom-safe, matching every other reconcile helper in this file.
+ *
+ * Examples:
+ *   // Legacy job — both fields absent, left absent (not backfilled with a number):
+ *   reconcileTouSnapshot([{ ...job, touStartTime: undefined, touRateUsedPerKwh: undefined }])
+ *     → []  (no patch — fields stay undefined, meaning "flat rate was used")
+ *
+ *   // Already-reconciled job (has a touStartTime from a real TOU-aware save) — skipped:
+ *   reconcileTouSnapshot([{ ...job, touStartTime: '20:00', touRateUsedPerKwh: 0.08 }])
+ *     → []  (idempotency guard — already has TOU snapshot fields)
+ *
+ *   // Mixed batch — every legacy job returns no patch, batch result is empty:
+ *   reconcileTouSnapshot([legacyJob1, legacyJob2])
+ *     → []
+ */
+export function reconcileTouSnapshot(jobs: PrintJob[]): PrintJob[] {
+  const out: PrintJob[] = [];
+  for (const job of jobs) {
+    // Idempotency guard FIRST — a job with either field already set has already
+    // been reconciled (or was saved with real TOU data); leave it alone.
+    if (job.touStartTime !== undefined || job.touRateUsedPerKwh !== undefined) continue;
+
+    // Per Pitfall 5: legacy jobs never used TOU. The correct backfill is
+    // "leave absent," not "compute/guess a number." No patch is written —
+    // this loop iteration intentionally produces no output for `job`.
+  }
+  return out;
+}
