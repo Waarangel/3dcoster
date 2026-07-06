@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, StockEvent } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, StockEvent, FailureEvent, MaintenanceEvent } from '../types';
 import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency, stampRecordCurrency } from './backfill';
 import type { FxRateTable } from '../utils/fxConvert';
 
@@ -20,6 +20,8 @@ const db = new Dexie('3DCosterDB') as Dexie & {
   customers: EntityTable<Customer, 'id'>;
   quotes: EntityTable<Quote, 'id'>;
   stockEvents: EntityTable<StockEvent, 'id'>;
+  failureEvents: EntityTable<FailureEvent, 'id'>;
+  maintenanceEvents: EntityTable<MaintenanceEvent, 'id'>;
 };
 
 // Schema - version 3 (added jobs and sales tables)
@@ -258,6 +260,24 @@ db.version(11).stores({
   stockEvents: 'id, assetId, refId, timestamp',
 });
 
+// v12 (v2.0 Phase 39): add the `failureEvents` and `maintenanceEvents` ledgers
+// (FAIL-01..04, WEAR-01/02). New empty stores, so no upgrade/backfill —
+// existing users start with zero logged failures/maintenance and build up
+// history going forward, exactly like v11's `stockEvents` precedent.
+db.version(12).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+  customers: 'id, name, email, lastUsedAt',
+  quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+  stockEvents: 'id, assetId, refId, timestamp',
+  failureEvents: 'id, printerInstanceId, materialId, jobId, failedAt',
+  maintenanceEvents: 'id, printerInstanceId, partType, occurredAt',
+});
+
 // Reload this tab if another tab loads a newer schema (SCHEMA-02 / D-10 / D-11).
 // Without this, Dexie's default closes the connection and console.warn()s,
 // which crashes the React tree via useLiveQuery references.
@@ -407,11 +427,15 @@ export async function setPrinter(value: PrinterConfig): Promise<void> {
 }
 
 /** DATA-06 — structural validator for ElectricityConfig stored in db.settings.
- *  Strict on numeric fields. */
+ *  Strict on numeric fields. Phase 39 TOU-01/02: touBands is optional — when
+ *  present it must be an array (shape of individual bands is validated at the
+ *  Settings editor boundary, not here, matching isShippingConfig/isMarketplaceFees'
+ *  precedent for optional-array fields). */
 export function isElectricityConfig(x: unknown): x is ElectricityConfig {
   if (typeof x !== 'object' || x === null) return false;
   const o = x as Record<string, unknown>;
-  return typeof o.costPerKwh === 'number';
+  return typeof o.costPerKwh === 'number'
+    && (o.touBands === undefined || Array.isArray(o.touBands));
 }
 
 export async function getElectricity(defaultValue: ElectricityConfig): Promise<ElectricityConfig> {

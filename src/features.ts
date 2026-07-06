@@ -22,6 +22,10 @@ export const featureReleases: Record<string, Date> = {
   // 14-day window at the v1.8.0 tag in Phase 31)
   'material-inventory': new Date('2026-06-19'),
   'sales-report': new Date('2026-06-19'),
+  // v2.0 Phase 39 — Cost Realism (owned here in Plan 01 to avoid a wave-2
+  // parallel-write conflict; Plans 02/04 reference these keys via NewBadge)
+  'log-failure': new Date('2026-07-06'),
+  'maintenance-log': new Date('2026-07-06'),
   // Add new features here with their release date
 };
 

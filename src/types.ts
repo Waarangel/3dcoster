@@ -55,6 +55,10 @@ export interface Asset {
   // unit — grams for filament, units otherwise). Undefined = no low-stock flag.
   lowStockThreshold?: number;
   filamentType?: FilamentType;
+  // Phase 39 WEAR-01 (D-13): undefined = auto-detect abrasiveness from
+  // filamentType (e.g. *-CF/*-GF matchers in src/utils/abrasive.ts, Plan 04);
+  // explicit true/false = user override wins over the auto-detect matcher.
+  isAbrasive?: boolean;
 
   // Printer-specific fields
   purchasePrice?: number;
@@ -101,6 +105,21 @@ export interface PrinterInstance {
   actualPurchasePrice?: number;          // What user actually paid (may differ from MSRP)
   recoveryMonths?: number;               // Target months to recover investment (e.g., 6, 12, 24)
   estimatedMonthlyPrintHours?: number;   // How many hours/month user expects to print
+
+  /**
+   * Phase 39 WEAR-01/02 (D-13/RESEARCH Assumption A2). Lives on the physical
+   * INSTANCE, not PrinterAsset/PrinterConfig — a user's two identical printer
+   * models can carry different nozzles (one swapped to hardened steel for
+   * abrasive filament, one left stock brass). Undefined on existing instances
+   * that never set this field — defaults to catalog-implied brass.
+   *
+   * Consumers must NEVER gate on this raw optional field with a literal `===`
+   * comparison (that would silently treat every pre-Phase-39 instance as "not
+   * brass" instead of "brass by default"). Read it through
+   * `resolveNozzleType(instance)` (`instance.nozzleType ?? 'brass'`, added in
+   * Plan 04's src/utils/abrasive.ts) so the default-to-brass semantic applies.
+   */
+  nozzleType?: 'brass' | 'hardened' | 'ruby';
 }
 
 export interface MaterialUsage {
@@ -124,8 +143,64 @@ export interface StockEvent {
   note?: string;
 }
 
+/**
+ * Phase 39 FAIL-01..04 (D-01/D-02/D-03/D-08). Append-only failure ledger — one
+ * row per logged failed print, standalone or tied to a saved job. `jobId` is
+ * undefined for a standalone failure log (D-01); `materialId` is the dominant
+ * filament (by weight) for multi-material jobs (D-08). `gramsWasted` drives an
+ * optional paired stockEvent deduction (useFailureEvents, D-03) when present
+ * alongside a jobId — standalone failures skip stock deduction unless the user
+ * also supplies gramsWasted directly.
+ */
+export interface FailureEvent {
+  id: string;
+  printerInstanceId: string;
+  materialId: string;
+  jobId?: string;
+  percentComplete: number;
+  reason: 'adhesion' | 'stringing' | 'clog' | 'mechanical' | 'power_loss' | 'other';
+  notes?: string;
+  failedAt: Date;
+  gramsWasted?: number;
+}
+
+/**
+ * Phase 39 WEAR-01/02 (D-14). Append-only maintenance-event ledger — one row
+ * per logged part swap/repair. `printerHoursAtEvent` snapshots the instance's
+ * cumulative print hours at logging time (for next-swap-interval prediction);
+ * `nozzleType` is captured on the event only when `partType === 'nozzle'`, so
+ * the maintenance history preserves what nozzle was installed at each swap
+ * even if the instance's current `PrinterInstance.nozzleType` changes later.
+ */
+export interface MaintenanceEvent {
+  id: string;
+  printerInstanceId: string;
+  partType: 'nozzle' | 'belt' | 'bed' | 'other';
+  cost: number;
+  occurredAt: Date;
+  printerHoursAtEvent: number;
+  nozzleType?: 'brass' | 'hardened' | 'ruby';
+  notes?: string;
+}
+
+// Time-of-use electricity rate band (Phase 39 TOU-01/02 — D-09: max 3 bands).
+// startTime/endTime are "HH:MM" 24h clock strings; a band may wrap past
+// midnight (e.g. startTime "22:00" / endTime "06:00") — resolveWeightedCostPerKwh
+// (src/utils/touElectricity.ts) handles the wrap using modulo-1440 minute math.
+export interface TouBand {
+  id: string;
+  name: string;
+  ratePerKwh: number;
+  startTime: string; // "HH:MM"
+  endTime: string;   // "HH:MM"
+}
+
 export interface ElectricityConfig {
   costPerKwh: number;
+  // Phase 39 TOU-01/02 (D-09). Undefined/empty = flat costPerKwh rate is used
+  // everywhere (existing behavior unchanged). Max 3 bands enforced by the
+  // Settings editor UI, not this type.
+  touBands?: TouBand[];
 }
 
 export interface LaborConfig {
@@ -388,6 +463,20 @@ export interface PrintJob {
    * until the v10 migration backfills it with the user's profile currency.
    */
   currency?: Currency;
+
+  // Phase 39 TOU-01/02 (D-12) — snapshot-at-save pattern, same as fixedCostsAtSave
+  // above. touStartTime is the "HH:MM" print-start time used at Save time, or
+  // undefined if no TOU bands were configured (flat rate was used). touRateUsedPerKwh
+  // is the resolved weighted $/kWh rate actually applied. Both undefined on legacy
+  // jobs — reconcileTouSnapshot (src/db/backfill.ts) intentionally leaves them
+  // undefined rather than guessing a rate, since legacy jobs never used TOU.
+  touStartTime?: string;
+  touRateUsedPerKwh?: number;
+
+  // Phase 39 WEAR-01/02 (D-14) — snapshot-at-save pattern. The maintenance $/hr
+  // amortization rate applied at save time; undefined = no maintenance
+  // amortization was applied (e.g. no logged maintenance history yet).
+  maintenanceCostAtSave?: number;
 }
 
 // Sales record for a print job

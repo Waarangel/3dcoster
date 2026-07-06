@@ -22,7 +22,7 @@ import { MAX_BACKUP_BYTES } from '../utils/backupSchema';
 let dbCounter = 0;
 function makeTestDb(): Dexie {
   const db = new Dexie(`BackupSectionTest-${++dbCounter}`);
-  db.version(10).stores({
+  db.version(12).stores({
     materials: 'id, category, brand, filamentType, currency',
     printers: 'id, name',
     printerInstances: 'id, printerConfigId, nickname',
@@ -32,6 +32,8 @@ function makeTestDb(): Dexie {
     customers: 'id, name, email, lastUsedAt',
     quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
     stockEvents: 'id, assetId, refId, timestamp',
+    failureEvents: 'id, printerInstanceId, materialId, jobId, failedAt',
+    maintenanceEvents: 'id, printerInstanceId, partType, occurredAt',
   });
   return db;
 }
