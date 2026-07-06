@@ -382,3 +382,83 @@ describe('SettingsModal — A11Y-12: marketplace icon-button aria-labels', () =>
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// TOU-01: Time-of-use tariff band editor (Costs & Rates tab, Electricity section)
+// ---------------------------------------------------------------------------
+
+function renderModalWithElectricity(electricity: ElectricityConfig, onElectricityChange = vi.fn()) {
+  act(() => {
+    root!.render(
+      <SettingsModal
+        isOpen={true}
+        onClose={vi.fn()}
+        electricity={electricity}
+        shippingConfig={defaultShipping}
+        marketplaceFees={defaultFees}
+        userCurrency="USD"
+        userProfile={defaultProfile}
+        onElectricityChange={onElectricityChange}
+        onShippingChange={vi.fn()}
+        onMarketplaceFeesChange={vi.fn()}
+        onResetMarketplaceFees={vi.fn()}
+        onUserProfileChange={vi.fn()}
+      />
+    );
+  });
+  return onElectricityChange;
+}
+
+describe('SettingsModal — TOU-01: tariff band editor', () => {
+  it('renders the flat rate input plus an "+ Add band" affordance when fewer than 3 bands exist', () => {
+    renderModalWithElectricity({ costPerKwh: 0.15 });
+
+    const panel = getTabpanel();
+    expect(panel.textContent).toMatch(/Time-of-Use bands/i);
+
+    const addButton = Array.from(panel.querySelectorAll('button')).find(b => /\+\s*Add band/i.test(b.textContent || ''));
+    expect(addButton).toBeTruthy();
+  });
+
+  it('renders each band row with name, rate, start/end and a RemoveButton (label = band name)', () => {
+    renderModalWithElectricity({
+      costPerKwh: 0.15,
+      touBands: [{ id: 'b1', name: 'Off-Peak', ratePerKwh: 0.08, startTime: '23:00', endTime: '07:00' }],
+    });
+
+    const panel = getTabpanel();
+    expect(panel.textContent).toMatch(/Off-Peak/);
+
+    const removeButton = document.body.querySelector('button[aria-label="Remove Off-Peak"]');
+    expect(removeButton).toBeTruthy();
+  });
+
+  it('hides the "+ Add band" affordance once 3 bands are configured (D-09)', () => {
+    renderModalWithElectricity({
+      costPerKwh: 0.15,
+      touBands: [
+        { id: 'b1', name: 'Band 1', ratePerKwh: 0.08, startTime: '23:00', endTime: '07:00' },
+        { id: 'b2', name: 'Band 2', ratePerKwh: 0.1, startTime: '07:00', endTime: '17:00' },
+        { id: 'b3', name: 'Band 3', ratePerKwh: 0.2, startTime: '17:00', endTime: '23:00' },
+      ],
+    });
+
+    const panel = getTabpanel();
+    const addButton = Array.from(panel.querySelectorAll('button')).find(b => /\+\s*Add band/i.test(b.textContent || ''));
+    expect(addButton).toBeUndefined();
+  });
+
+  it('writes touBands via onElectricityChange when removing a band', async () => {
+    const onElectricityChange = renderModalWithElectricity({
+      costPerKwh: 0.15,
+      touBands: [{ id: 'b1', name: 'Off-Peak', ratePerKwh: 0.08, startTime: '23:00', endTime: '07:00' }],
+    });
+
+    const removeButton = document.body.querySelector('button[aria-label="Remove Off-Peak"]') as HTMLButtonElement;
+    await act(async () => {
+      removeButton.click();
+    });
+
+    expect(onElectricityChange).toHaveBeenCalledWith({ costPerKwh: 0.15, touBands: [] });
+  });
+});

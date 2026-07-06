@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile } from '../types';
+import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile, TouBand } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km, pricePerLiterToPerGallon, pricePerGallonToPerLiter, DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { BackupRestoreSection } from './BackupRestoreSection';
-import { Button, IconButton, EditButton, DeleteButton, Input, SidePanel, FieldWarning } from './ui';
+import { Button, IconButton, EditButton, DeleteButton, RemoveButton, Input, SidePanel, FieldWarning } from './ui';
 import { CheckIcon } from './ui/icons';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { electricityRateWarning, fuelPriceWarning } from '../utils/inputSanity';
+import { useTouTariff, MAX_TOU_BANDS } from '../hooks/useTouTariff';
 
 // localStorage flag so the one-time per-gallon fuel-price re-check notice
 // (see showFuelUnitNotice below) stays dismissed across sessions.
@@ -46,6 +47,36 @@ export function SettingsModal({
   const currencySymbol = CURRENCY_CONFIG[userCurrency].symbol;
   const distanceUnit = getDistanceUnit(userCurrency);
   const fuelUnit = getFuelUnit(userCurrency);
+
+  // Phase 39 TOU-01 — TOU tariff band editor (flat rate + up to 3 named bands).
+  const { bands: touBands, upsertBand: upsertTouBand, removeBand: removeTouBand } = useTouTariff(electricity, onElectricityChange);
+  const [editingBandId, setEditingBandId] = useState<string | null>(null);
+  const [newBandName, setNewBandName] = useState('');
+  const [newBandRate, setNewBandRate] = useState('');
+  const [newBandStart, setNewBandStart] = useState('');
+  const [newBandEnd, setNewBandEnd] = useState('');
+
+  const handleAddTouBand = () => {
+    if (!newBandName.trim() || !newBandRate || !newBandStart || !newBandEnd) return;
+    const rate = parseFloat(newBandRate);
+    if (!Number.isFinite(rate)) return;
+    const band: TouBand = {
+      id: `tou-${Date.now()}`,
+      name: newBandName.trim(),
+      ratePerKwh: rate,
+      startTime: newBandStart,
+      endTime: newBandEnd,
+    };
+    upsertTouBand(band);
+    setNewBandName('');
+    setNewBandRate('');
+    setNewBandStart('');
+    setNewBandEnd('');
+  };
+
+  const handleUpdateTouBand = (band: TouBand, field: keyof TouBand, value: string | number) => {
+    upsertTouBand({ ...band, [field]: value });
+  };
 
   // One-time, non-destructive nudge for USD users whose fuel price predates the
   // per-gallon display fix. Earlier builds labeled this field "$/gal" but stored
@@ -274,9 +305,113 @@ export function SettingsModal({
                     compact
                     placeholder="0.15"
                     value={electricity.costPerKwh}
-                    onChange={e => onElectricityChange({ costPerKwh: parseFloat(e.target.value) || 0 })}
+                    onChange={e => onElectricityChange({ ...electricity, costPerKwh: parseFloat(e.target.value) || 0 })}
                   />
                   <FieldWarning message={electricityRateWarning(electricity.costPerKwh, currencySymbol)} />
+                </div>
+
+                {/* Phase 39 TOU-01 (D-09) — flat rate above, up to 3 named TOU bands here. */}
+                <div className="mt-4">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
+                    <span>Time-of-Use bands</span>
+                    <InfoTooltip text="Optional peak/off-peak rate windows (e.g. cheaper overnight electricity). Prints that start during a band use that band's rate instead of the flat rate above." />
+                  </label>
+
+                  {touBands.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {touBands.map(band => (
+                        <div key={band.id} className="flex items-center gap-2 bg-slate-700/50 p-2 rounded-lg flex-wrap">
+                          {editingBandId === band.id ? (
+                            <>
+                              <Input
+                                type="text"
+                                value={band.name}
+                                onChange={e => handleUpdateTouBand(band, 'name', e.target.value)}
+                                className="flex-1 min-w-[6rem]"
+                              />
+                              <Input
+                                type="number"
+                                step="0.01"
+                                compact
+                                value={band.ratePerKwh}
+                                onChange={e => handleUpdateTouBand(band, 'ratePerKwh', parseFloat(e.target.value) || 0)}
+                              />
+                              <Input
+                                type="time"
+                                compact
+                                value={band.startTime}
+                                onChange={e => handleUpdateTouBand(band, 'startTime', e.target.value)}
+                              />
+                              <Input
+                                type="time"
+                                compact
+                                value={band.endTime}
+                                onChange={e => handleUpdateTouBand(band, 'endTime', e.target.value)}
+                              />
+                              <IconButton
+                                label={`Done editing ${band.name}`}
+                                icon={<CheckIcon className="w-4 h-4" />}
+                                onClick={() => setEditingBandId(null)}
+                                className="text-green-400 hover:text-green-300"
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <span className="flex-1 text-sm text-white min-w-[6rem]">{band.name}</span>
+                              <span className="text-xs text-slate-400 font-mono">
+                                {currencySymbol}{band.ratePerKwh.toFixed(2)} · {band.startTime}–{band.endTime}
+                              </span>
+                              <EditButton
+                                label={band.name}
+                                onClick={() => setEditingBandId(band.id)}
+                              />
+                              <RemoveButton
+                                label={band.name}
+                                onClick={() => removeTouBand(band.id)}
+                              />
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {touBands.length < MAX_TOU_BANDS && (
+                    <div className="grid grid-cols-[1fr_4rem_5rem_5rem_auto] gap-2 items-center">
+                      <Input
+                        type="text"
+                        placeholder="Band name"
+                        value={newBandName}
+                        onChange={e => setNewBandName(e.target.value)}
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        compact
+                        placeholder={currencySymbol}
+                        value={newBandRate}
+                        onChange={e => setNewBandRate(e.target.value)}
+                      />
+                      <Input
+                        type="time"
+                        compact
+                        value={newBandStart}
+                        onChange={e => setNewBandStart(e.target.value)}
+                      />
+                      <Input
+                        type="time"
+                        compact
+                        value={newBandEnd}
+                        onChange={e => setNewBandEnd(e.target.value)}
+                      />
+                      <Button
+                        onClick={handleAddTouBand}
+                        disabled={!newBandName.trim() || !newBandRate || !newBandStart || !newBandEnd}
+                      >
+                        + Add band
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
