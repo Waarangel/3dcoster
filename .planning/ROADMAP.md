@@ -122,7 +122,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   4. User can log a maintenance event (nozzle/belt/bed swap with cost, date, and printer-hours) and see cumulative abrasive-material hours tracked for CF/GF filaments on brass nozzles
   5. The maintenance log amortizes into a real cost-per-hour per printer that appears in the calculator, and the app predicts the next likely swap date
 **Plans**: 5 plans in 3 waves
-- [ ] 39-01-PLAN.md — Foundation: db.version(12) stores, types/snapshot fields, backup inclusion, event hooks, TOU math, NEW-badge keys (FAIL-01/TOU-01/TOU-02/WEAR-01)
+- [x] 39-01-PLAN.md — Foundation: db.version(12) stores, types/snapshot fields, backup inclusion, event hooks, TOU math, NEW-badge keys (FAIL-01/TOU-01/TOU-02/WEAR-01)
 - [ ] 39-02-PLAN.md — Failure engine: empirical rate derivation, LogFailureModal, JobsManager log action, Reports Failures ledger (FAIL-01/FAIL-02/FAIL-04)
 - [ ] 39-03-PLAN.md — TOU config: Settings tariff-band editor + reconcile helper (TOU-01)
 - [ ] 39-04-PLAN.md — Maintenance/wear: abrasive detection, amortization/prediction, LogMaintenanceModal, Printer Settings drill-in (WEAR-01/WEAR-02)
@@ -209,7 +209,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
-| 39. Cost Realism | 0/5 | Planned | - |
+| 39. Cost Realism | 1/5 | In Progress|  |
 | 40. Insight Layer | 0/TBD | Not started | - |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
