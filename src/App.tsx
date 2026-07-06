@@ -426,6 +426,7 @@ function App() {
             userCurrency={userProfile.currency}
             userProfile={userProfile}
             fxTable={fxTable}
+            printerInstances={printerInstances}
             onDeleteJob={deleteJob}
             onEditJob={handleEditJob}
             onSwitchTab={setActiveTab}
