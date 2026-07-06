@@ -143,3 +143,7 @@ None - no external service configuration required.
 ---
 *Phase: 39-cost-realism*
 *Completed: 2026-07-06*
+
+## Self-Check: PASSED
+
+All created files verified present on disk; all task commit hashes (`ca93f6b`, `fe9266c`, `f655415`) verified present in git log.
