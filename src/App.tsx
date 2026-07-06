@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers, useAllSales } from './hooks/useDatabase';
 import { useFxRates } from './hooks/useFxRates';
+import { useFailureEvents } from './hooks/useFailureEvents';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
@@ -113,6 +114,13 @@ function App() {
     [assets]
   );
 
+  // Phase 39 FAIL-04: filament-only assets for the Reports Failures section's
+  // material Select (mirrors the LogFailureModal filamentAssets convention).
+  const filamentAssets = useMemo(
+    () => assets.filter(a => a.category === 'filament'),
+    [assets]
+  );
+
   const {
     customers,
     isLoading: customersLoading,
@@ -159,6 +167,8 @@ function App() {
   // currency regardless of the price's native currency.
   const fxTable = useFxRates();
   const allSales = useAllSales();
+  // Phase 39 FAIL-04: failureEvents ledger threaded to ReportsSection's Failures sub-section.
+  const { events: failureEvents } = useFailureEvents();
 
   const {
     shipping: shippingConfig,
@@ -477,7 +487,15 @@ function App() {
 
         {activeTab === 'reports' && (
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <ReportsSection allSales={allSales} jobs={jobs} userCurrency={userProfile.currency} fxTable={fxTable} />
+            <ReportsSection
+              allSales={allSales}
+              jobs={jobs}
+              userCurrency={userProfile.currency}
+              fxTable={fxTable}
+              failureEvents={failureEvents}
+              printerInstances={printerInstances}
+              filamentAssets={filamentAssets}
+            />
           </div>
         )}
       </main>
