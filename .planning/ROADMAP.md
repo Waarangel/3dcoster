@@ -127,6 +127,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 - [x] 39-03-PLAN.md — TOU config: Settings tariff-band editor + reconcile helper (TOU-01)
 - [x] 39-04-PLAN.md — Maintenance/wear: abrasive detection, amortization/prediction, LogMaintenanceModal, Printer Settings drill-in (WEAR-01/WEAR-02)
 - [x] 39-05-PLAN.md — Calculator convergence: TOU-weighted electricity, maintenance $/hr + abrasive surcharge, 3 Apply-gated hints, extended golden fixtures (FAIL-02/FAIL-03/TOU-02/WEAR-02)
+- [ ] 39-06-PLAN.md — Gap closure: HH:MM text-input TOU band editor + calculator start-time picker, feedback-driven Add-band gate, real add-band interaction tests (TOU-01/TOU-02)
 
 ### Phase 40: Insight Layer
 **Goal**: Users can see decision-grade analytics derived from their existing jobs and sales data — without entering anything new
