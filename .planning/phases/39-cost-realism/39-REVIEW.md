@@ -1,6 +1,6 @@
 ---
 phase: 39-cost-realism
-reviewed: 2026-07-07T00:00:00Z
+reviewed: 2026-07-07T20:40:00Z
 depth: standard
 files_reviewed: 52
 files_reviewed_list:
@@ -56,16 +56,27 @@ files_reviewed_list:
   - src/utils/touElectricity.test.ts
   - src/utils/touElectricity.ts
 findings:
-  critical: 3
-  warning: 8
-  info: 8
-  total: 19
-status: fixes_applied
+  critical: 4
+  warning: 10
+  info: 11
+  total: 25
+status: needs_fixes
 fix_pass:
   fixed_at: 2026-07-07
   scope: critical_warning
   fixed: 11
   skipped: 0
+delta_review:
+  reviewed: 2026-07-07T20:40:00Z
+  scope: 51fce5d..8acc0cf (plan 39-06 gap closure — TOU band editor UX)
+  files:
+    - src/components/SettingsModal.tsx
+    - src/components/calculator/CostParametersSection.tsx
+    - src/components/SettingsModal.test.tsx
+  findings:
+    critical: 1
+    warning: 2
+    info: 3
 ---
 
 # Phase 39: Code Review Report
@@ -294,7 +305,74 @@ Apply the same rounding to `onApplyAmortizedMaintenance` (`Math.round(x * 100) /
 
 ---
 
+## Delta Review: 39-06 Gap Closure (TOU band editor UX)
+
+**Reviewed:** 2026-07-07T20:40:00Z · **Depth:** standard · **Scope:** commits `51fce5d..8acc0cf` (diff base `e3c5e9f`) — SettingsModal.tsx (HH:MM text-input swap + rewritten `handleAddTouBand`), CostParametersSection.tsx (`#tou-start-time` swap), SettingsModal.test.tsx (3 add-path regression tests).
+
+**Verdict: needs_fixes** — the ADD path is genuinely fixed and well-tested, but the same swap **broke the EDIT path** (empirically verified below) and left the calculator-side input with no validation feedback. Delta findings: 1 Critical, 2 Warning, 3 Info.
+
+**Verified clean (no findings):**
+- Add path works end-to-end: local draft state (`newBandStart`/`newBandEnd`) drives the inputs, validation happens only on "+ Add band" click, rejection keeps the user's inputs and surfaces via `role="alert"`, success clears both inputs and `bandError` (`setBandError(error)` with `null`). The 3 new regression tests exercise the real typing+click interaction and pass (21/21 suite green).
+- All four new/changed time inputs carry descriptive `aria-label`s (edit rows interpolate the band name); all use the shared `Input` component — `lint:no-raw-html` convention respected.
+- `maxLength={5}` truncates pasted overlong input harmlessly; `parseHHMM` strictness (zero-padded, range-checked) means truncated garbage is rejected, not misparsed.
+- `ratePerKwh: parseFloat(newBandRate)` with empty rate yields `NaN` → correctly rejected by `isValidBand` (`Number.isFinite`), never written.
+- CostParametersSection: clearing the field maps `''` → `undefined` → flat rate, per the documented contract.
+
+### CR-04: Edit-row HH:MM inputs are keystroke-frozen — bands' time windows can no longer be edited by typing
+
+**File:** `src/components/SettingsModal.tsx:345-360` (edit-row time inputs), `:83-85` (`handleUpdateTouBand`); rejection at `src/hooks/useTouTariff.ts:59-62`
+**Issue:** The edit rows are controlled by **persisted** state (`value={band.startTime}`), but every keystroke routes through `handleUpdateTouBand` → `upsertTouBand`, which rejects any partial HH:MM value (`isValidBand` → `parseHHMM` is strict) and performs **no write**. So the controlled value never changes and React reverts the input on re-render: backspacing `"22:00"` → `"22:0"` is swallowed and the field snaps back to `"22:00"`; select-all-and-retype is swallowed at the first character. **Empirically verified** with a throwaway probe test against the live component: after one simulated backspace the input value was still `"22:00"` and the `role="alert"` error "Enter a valid rate and HH:MM start/end times." had fired. Practical consequences:
+1. A band's window is effectively **read-only** in edit mode — the only working edits are select-all-paste of a complete valid `HH:MM` or a surgical single-digit selection replacement. The pre-delta `type="time"` inputs, whatever their other faults, delivered complete values from the browser picker and did allow window edits — this is a functional regression introduced by the very plan meant to fix the input trap.
+2. Every rejected keystroke re-fires the assertive `role="alert"` region — screen readers announce the full error message per keystroke.
+3. The new add-path regression tests cannot catch this: they only cover the add row (whose inputs are local draft state) and simulate input as a single full-value event (paste-like), never per-keystroke typing, and there is no edit-row test at all.
+
+The name field is unaffected (rate/times of the existing band stay valid, so name writes flow through), which makes the frozen time fields look even more like a bug to the user.
+**Fix:** Mirror the add row's draft-then-commit pattern: when `editingBandId` is set, hold `editDraftStart`/`editDraftEnd` (seeded from the band) in local state, let them drive the inputs freely, and call `upsertTouBand` on the Done (CheckIcon) click — surfacing rejection via `bandError` and keeping edit mode open on failure. A minimal alternative (keystroke-commit preserved for valid values) is a local draft that always drives the input while `onChange` only calls `upsertTouBand` when `parseHHMM(e.target.value) !== null`, clearing `bandError` on partials — but the draft-then-commit form is simpler and matches the add row. Add an edit-path regression test that types per-keystroke (or at least backspaces once) and asserts the field accepts the intermediate value.
+
+### WR-09: Calculator "Print Start Time" accepts any text with zero validation feedback — invalid input silently prices at flat rate and is persisted onto saved jobs
+
+**File:** `src/components/calculator/CostParametersSection.tsx:195-203`; silent fallback at `src/utils/touElectricity.ts:99-100`; persistence at `src/components/calculator/CostCalculator.tsx:331-332`
+**Issue:** The swap from `type="time"` to free text removed the browser's guarantee that the value is a valid time, and nothing replaced it: `onChange` forwards `e.target.value` verbatim, `resolveWeightedCostPerKwh` returns the **flat rate silently** when `parseHHMM` yields null, and the malformed string is snapshotted onto the saved job (`touStartTime`). Concretely: a user types `9:30` (rejected by the strict zero-padded parser — an extremely likely entry, and the exact string the Settings side now shows an explicit error for) or stops at `22:0` — the field looks set, the savings hint disappears without explanation, TOU pricing is silently skipped, and the job is saved with `touStartTime: "9:30"` plus a flat-rate snapshot the user believes is band-priced. This is the same "typed input silently ignored" trap class that plan 39-06 fixed on the Settings side, minus the error surfacing. It also collides with the project rule "fail fast with clear error messages / never trust user input at boundaries."
+**Fix:** Surface an inline warning with the existing `FieldWarning` component (already the pattern for electricity/fuel sanity in Settings):
+```tsx
+import { parseHHMM } from '../../utils/touElectricity'; // pure, no IO — or pass a computed warning prop from CostCalculator to keep D-11 strict
+...
+<FieldWarning message={
+  touStartTime && parseHHMM(touStartTime) === null
+    ? 'Enter time as HH:MM (e.g. 09:30) — the flat rate is being used until this is valid.'
+    : null
+} />
+```
+Also gate the save-time snapshot so a malformed `touStartTime` is not persisted (ties into the still-open IN-08).
+
+### WR-10: Edit-row time inputs lost their width constraint — `w-full` inputs blow up the band row layout
+
+**File:** `src/components/SettingsModal.tsx:345-360`; base style at `src/components/ui/Input.tsx:24` (`w-full`)
+**Issue:** The delta removed `compact` (which capped the inputs at `max-w-28`) from the edit-row time inputs and added no replacement sizing. Unlike the add row — whose grid template (`grid-cols-[1fr_4rem_5.5rem_5.5rem_auto]`) sizes its cells — the edit rows are a `flex flex-wrap` container, so each time input's base `w-full` makes it demand the full row width and wrap onto its own line. A 5-character field now renders as two stacked full-width inputs, visibly breaking the band-row layout that the rest of the row (name `flex-1 min-w-[6rem]`, rate `compact`) was tuned for.
+**Fix:** Constrain the two edit-row time inputs to match the add grid, e.g. `className="w-[5.5rem] shrink-0"` (or restore `compact`).
+
+### IN-09: The `'Enter a band name.'` guard is unreachable, and the combined validation message doesn't say which field is wrong
+
+**File:** `src/components/SettingsModal.tsx:63-66` (guard) vs `:423` (`disabled={!newBandName.trim()}`)
+**Issue:** The button is disabled for empty/whitespace-only names, so the guard's error can never surface through the UI — dead defensive code (harmless, but a maintainer may believe it's a live path). Separately, a bad rate and a bad time both produce the single message "Enter a valid rate and HH:MM start/end times." — with three candidate fields, the user must guess which one failed.
+**Fix:** Either drop the guard (the disabled gate owns that case) or keep it with a `// defense-in-depth, unreachable via UI` note. Consider splitting the upsert message into rate vs. time variants in `useTouTariff.isValidBand`.
+
+### IN-10: `bandError` can go stale — not cleared on band removal or tab switch
+
+**File:** `src/components/SettingsModal.tsx:60` (state), `:143-146` (tab-switch effect resets carrier/marketplace edit state only), `removeTouBand` call at `:380`
+**Issue:** With the delta widening the paths that set `bandError` (all add-path validation now flows through it), stale-display windows widen too: (a) trigger an overlap error via Add, then remove the conflicting band — the "Overlaps the …" alert persists even though the add would now succeed; (b) the tab-switch effect resets `editingCarrierId`/`editingMarketplaceId` but neither `editingBandId` nor `bandError`, so navigating Delivery → Costs & Rates re-presents a stale error (and a still-open edit row).
+**Fix:** `setBandError(null)` in the remove handler and add `setEditingBandId(null); setBandError(null);` to the existing tab-switch effect.
+
+### IN-11: New regression tests don't cover the edit path and simulate paste, not typing
+
+**File:** `src/components/SettingsModal.test.tsx:472-476` (`typeIntoInput`), `:478-480` (`getAddBandButton`), tests at `:482-573`
+**Issue:** (a) No test touches the edit-row time inputs — exactly where CR-04 lives; (b) `typeIntoInput` dispatches one `input` event with the final value (paste-like), so per-keystroke controlled-input behavior — the interaction class this whole plan was about — is never exercised; (c) `getAddBandButton` casts a possibly-`undefined` `find` result to `HTMLButtonElement`, so a missing button fails with an opaque `TypeError` instead of a clear assertion; (d) the rate input is located via `input[placeholder="$"]`, coupling tests to the placeholder-as-label anti-pattern and to USD.
+**Fix:** Add an edit-path test (enter edit mode, backspace/type per keystroke, assert the value updates) as part of the CR-04 fix; assert `expect(addButton).toBeDefined()` before use; prefer aria-label/label selectors once the rate input gains one.
+
+---
+
 _Reviewed: 2026-07-07_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
 _Fix pass: 2026-07-07 — Claude (gsd-code-fixer)_
+_Delta review (39-06): 2026-07-07 — Claude (gsd-code-reviewer) — 1 Critical / 2 Warning / 3 Info → status: needs_fixes_
