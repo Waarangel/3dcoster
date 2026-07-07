@@ -60,13 +60,14 @@ export function SettingsModal({
   const [bandError, setBandError] = useState<string | null>(null);
 
   const handleAddTouBand = () => {
-    if (!newBandName.trim() || !newBandRate || !newBandStart || !newBandEnd) return;
-    const rate = parseFloat(newBandRate);
-    if (!Number.isFinite(rate)) return;
+    if (!newBandName.trim()) {
+      setBandError('Enter a band name.');
+      return;
+    }
     const band: TouBand = {
       id: `tou-${Date.now()}`,
       name: newBandName.trim(),
-      ratePerKwh: rate,
+      ratePerKwh: parseFloat(newBandRate),
       startTime: newBandStart,
       endTime: newBandEnd,
     };
@@ -342,14 +343,18 @@ export function SettingsModal({
                                 onChange={e => handleUpdateTouBand(band, 'ratePerKwh', parseFloat(e.target.value) || 0)}
                               />
                               <Input
-                                type="time"
-                                compact
+                                type="text"
+                                placeholder="22:00"
+                                maxLength={5}
+                                aria-label={`Band start time (HH:MM) for ${band.name}`}
                                 value={band.startTime}
                                 onChange={e => handleUpdateTouBand(band, 'startTime', e.target.value)}
                               />
                               <Input
-                                type="time"
-                                compact
+                                type="text"
+                                placeholder="22:00"
+                                maxLength={5}
+                                aria-label={`Band end time (HH:MM) for ${band.name}`}
                                 value={band.endTime}
                                 onChange={e => handleUpdateTouBand(band, 'endTime', e.target.value)}
                               />
@@ -382,7 +387,7 @@ export function SettingsModal({
                   )}
 
                   {touBands.length < MAX_TOU_BANDS && (
-                    <div className="grid grid-cols-[1fr_4rem_5rem_5rem_auto] gap-2 items-center">
+                    <div className="grid grid-cols-[1fr_4rem_5.5rem_5.5rem_auto] gap-2 items-center">
                       <Input
                         type="text"
                         placeholder="Band name"
@@ -398,20 +403,24 @@ export function SettingsModal({
                         onChange={e => setNewBandRate(e.target.value)}
                       />
                       <Input
-                        type="time"
-                        compact
+                        type="text"
+                        placeholder="22:00"
+                        maxLength={5}
+                        aria-label="Band start time (HH:MM)"
                         value={newBandStart}
                         onChange={e => setNewBandStart(e.target.value)}
                       />
                       <Input
-                        type="time"
-                        compact
+                        type="text"
+                        placeholder="22:00"
+                        maxLength={5}
+                        aria-label="Band end time (HH:MM)"
                         value={newBandEnd}
                         onChange={e => setNewBandEnd(e.target.value)}
                       />
                       <Button
                         onClick={handleAddTouBand}
-                        disabled={!newBandName.trim() || !newBandRate || !newBandStart || !newBandEnd}
+                        disabled={!newBandName.trim()}
                       >
                         + Add band
                       </Button>

@@ -461,4 +461,114 @@ describe('SettingsModal — TOU-01: tariff band editor', () => {
 
     expect(onElectricityChange).toHaveBeenCalledWith({ costPerKwh: 0.15, touBands: [] });
   });
+
+  // -------------------------------------------------------------------------
+  // Gap-closure regression tests (Plan 39-06): exercise the REAL add-band
+  // interaction path (typing + click) that the tests above never touched.
+  // These must FAIL against the pre-fix component (native time-input trap +
+  // permanently-disabled button) and PASS after the HH:MM text-input swap.
+  // -------------------------------------------------------------------------
+
+  function typeIntoInput(input: HTMLInputElement, value: string) {
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    nativeSetter.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function getAddBandButton(panel: HTMLElement) {
+    return Array.from(panel.querySelectorAll('button')).find(b => /\+\s*Add band/i.test(b.textContent || '')) as HTMLButtonElement;
+  }
+
+  it('happy path: typing a name, rate, and valid HH:MM start/end and clicking "+ Add band" writes the new band', async () => {
+    const onElectricityChange = renderModalWithElectricity({ costPerKwh: 0.15 });
+    const panel = getTabpanel();
+
+    const nameInput = panel.querySelector('input[placeholder="Band name"]') as HTMLInputElement;
+    const rateInput = panel.querySelector('input[placeholder="$"]') as HTMLInputElement;
+    const startInput = panel.querySelector('input[aria-label="Band start time (HH:MM)"]') as HTMLInputElement;
+    const endInput = panel.querySelector('input[aria-label="Band end time (HH:MM)"]') as HTMLInputElement;
+
+    await act(async () => {
+      typeIntoInput(nameInput, 'Off-Peak');
+      typeIntoInput(rateInput, '0.08');
+      typeIntoInput(startInput, '22:00');
+      typeIntoInput(endInput, '08:00');
+    });
+
+    const addButton = getAddBandButton(getTabpanel());
+    expect(addButton.disabled).toBe(false);
+
+    await act(async () => {
+      addButton.click();
+    });
+
+    expect(onElectricityChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        touBands: [
+          expect.objectContaining({
+            name: 'Off-Peak',
+            ratePerKwh: 0.08,
+            startTime: '22:00',
+            endTime: '08:00',
+          }),
+        ],
+      })
+    );
+  });
+
+  it('invalid/incomplete time: leaving the end time empty shows the upsertBand HH:MM validation message and does not write', async () => {
+    const onElectricityChange = renderModalWithElectricity({ costPerKwh: 0.15 });
+    const panel = getTabpanel();
+
+    const nameInput = panel.querySelector('input[placeholder="Band name"]') as HTMLInputElement;
+    const rateInput = panel.querySelector('input[placeholder="$"]') as HTMLInputElement;
+    const startInput = panel.querySelector('input[aria-label="Band start time (HH:MM)"]') as HTMLInputElement;
+
+    await act(async () => {
+      typeIntoInput(nameInput, 'Off-Peak');
+      typeIntoInput(rateInput, '0.08');
+      typeIntoInput(startInput, '22:00');
+      // end time intentionally left empty
+    });
+
+    const addButton = getAddBandButton(getTabpanel());
+    expect(addButton.disabled).toBe(false);
+
+    await act(async () => {
+      addButton.click();
+    });
+
+    const alert = document.body.querySelector('[role="alert"]');
+    expect(alert?.textContent).toMatch(/Enter a valid rate and HH:MM start\/end times\./);
+    expect(onElectricityChange).not.toHaveBeenCalled();
+  });
+
+  it('overlap: an overlapping window surfaces the upsertBand overlap message and does not write', async () => {
+    const onElectricityChange = renderModalWithElectricity({
+      costPerKwh: 0.15,
+      touBands: [{ id: 'b1', name: 'Existing', ratePerKwh: 0.1, startTime: '22:00', endTime: '06:00' }],
+    });
+    const panel = getTabpanel();
+
+    const nameInput = panel.querySelector('input[placeholder="Band name"]') as HTMLInputElement;
+    const rateInput = panel.querySelector('input[placeholder="$"]') as HTMLInputElement;
+    const startInput = panel.querySelector('input[aria-label="Band start time (HH:MM)"]') as HTMLInputElement;
+    const endInput = panel.querySelector('input[aria-label="Band end time (HH:MM)"]') as HTMLInputElement;
+
+    await act(async () => {
+      typeIntoInput(nameInput, 'New Band');
+      typeIntoInput(rateInput, '0.12');
+      typeIntoInput(startInput, '23:00');
+      typeIntoInput(endInput, '05:00');
+    });
+
+    const addButton = getAddBandButton(getTabpanel());
+    await act(async () => {
+      addButton.click();
+    });
+
+    const alert = document.body.querySelector('[role="alert"]');
+    expect(alert?.textContent).toMatch(/Overlaps the "Existing" band/);
+    expect(onElectricityChange).not.toHaveBeenCalled();
+  });
 });
