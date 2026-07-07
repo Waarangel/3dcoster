@@ -84,6 +84,23 @@ export function CostSummaryPanel({
               <span className="font-mono">{currencySymbol}{costs.labor.toFixed(2)}</span>
             </div>
           )}
+          {/* Phase 39 WEAR-02 (WR-06): both new Subtotal components get their own
+              labeled line so the itemized rows still sum to the Subtotal row —
+              the maintenance tooltip explicitly promises "its own labeled cost
+              line", and the abrasive surcharge must never be an invisible
+              price change. */}
+          {costs.maintenanceCost > 0 && (
+            <div className="flex justify-between text-slate-300">
+              <span>Maintenance ({printTimeHours}h print)</span>
+              <span className="font-mono">{currencySymbol}{costs.maintenanceCost.toFixed(2)}</span>
+            </div>
+          )}
+          {costs.abrasiveSurcharge > 0 && (
+            <div className="flex justify-between text-slate-300">
+              <span>Abrasive nozzle wear (brass)</span>
+              <span className="font-mono">{currencySymbol}{costs.abrasiveSurcharge.toFixed(2)}</span>
+            </div>
+          )}
           {shippingCost > 0 && (
             <div className="flex justify-between text-slate-300">
               <span>Shipping ({shippingMethod.replace('_', ' ')})</span>
