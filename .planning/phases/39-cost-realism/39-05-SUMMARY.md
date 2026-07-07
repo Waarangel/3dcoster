@@ -59,7 +59,7 @@ key-decisions:
 requirements-completed: [FAIL-02, FAIL-03, TOU-02, WEAR-02]
 
 # Metrics
-duration: ~50min
+duration: ~55min
 completed: 2026-07-06
 ---
 
@@ -69,8 +69,8 @@ completed: 2026-07-06
 
 ## Performance
 
-- **Duration:** ~50 min
-- **Tasks:** 2 of 3 complete (Task 3 is a `checkpoint:human-verify` gate — automation complete, awaiting human verification)
+- **Duration:** ~55 min
+- **Tasks:** 3 of 3 complete (Task 3's `checkpoint:human-verify` gate APPROVED by the user; the orchestrator independently verified the snapshot diff is append-only and the calculator suite is green)
 - **Files modified:** 9 (1 created, 8 modified)
 
 ## Accomplishments
@@ -89,9 +89,9 @@ completed: 2026-07-06
 
 1. **Task 1: Extend CalcInput + costCalc.ts** — `c808c47` (feat)
 2. **Task 2: Wire hooks in orchestrator + 3 hint rows + TOU snapshot at save** — `a5bd1f4` (feat)
-3. **Task 3 (automation half of the checkpoint): Extend golden fixtures + re-capture baseline** — `bcde91f` (test)
+3. **Task 3: Extend golden fixtures + re-capture baseline (human-verified)** — `bcde91f` (test)
 
-Task 3 is `type="checkpoint:human-verify" gate="blocking"` per the plan — the automation (fixture extension + baseline re-capture + full-suite/tsc/build verification) is complete and committed, but the checkpoint itself requires human sign-off before the plan is considered done. See "Checkpoint Status" below.
+Task 3 is `type="checkpoint:human-verify" gate="blocking"` per the plan. The executor completed the automation (fixture extension + baseline re-capture + full-suite/tsc/build verification), stopped at the gate without self-approving (per `autonomous: false`), and returned the checkpoint state. The user APPROVED the gate; the orchestrator independently confirmed the snapshot diff is append-only and the calculator suite is green. See "Checkpoint Status" below.
 
 ## Files Created/Modified
 
@@ -133,14 +133,14 @@ None — plan executed as written. All acceptance-criteria greps pass:
 
 ## Checkpoint Status
 
-**Task 3 (`checkpoint:human-verify`, `gate="blocking"`) is PENDING human sign-off.** The automation half is complete and committed (3 appended scenarios, re-captured baseline, full-suite/tsc/build all green). Per the plan's `autonomous: false` directive and the workflow config (`workflow.auto_advance` is not `"true"`), this checkpoint was NOT auto-approved — the executor stopped here and returned the checkpoint state to the user/orchestrator rather than self-approving.
+**Task 3 (`checkpoint:human-verify`, `gate="blocking"`): APPROVED.** The executor completed the automation half (3 appended scenarios, re-captured baseline, full-suite/tsc/build all green), then stopped at the gate WITHOUT self-approving — per the plan's `autonomous: false` directive and the workflow config (`workflow.auto_advance` not `"true"`) — and returned the checkpoint state. The user responded "approved"; the orchestrator additionally verified independently that the snapshot diff is append-only and the calculator suite is green.
 
-**Human verification needed (see plan's `<how-to-verify>` for the full checklist):**
-1. Confirm `bcde91f` is a clean, dedicated commit naming the 3 appended scenarios (not folded into a feature commit, not an unaudited `--update`) — confirmed via `git log`.
-2. Confirm the 3 scenarios are appended at the end of `CURATED_SCENARIOS` with no reordering — confirmed via `git diff --stat` (pure 24-line addition).
-3. Confirm each new scenario actually varies its target field (TOU rate / CF-on-brass / applied failure rate) — confirmed via the scenario definitions and their distinct captured snapshot values.
+**Verification checklist (all confirmed before + at approval):**
+1. `bcde91f` is a clean, dedicated commit naming the 3 appended scenarios (not folded into a feature commit, not an unaudited `--update`) — confirmed via `git log`.
+2. The 3 scenarios are appended at the end of `CURATED_SCENARIOS` with no reordering — confirmed via `git diff --stat` (pure 24-line addition).
+3. Each new scenario actually varies its target field (TOU rate / CF-on-brass / applied failure rate) — confirmed via the scenario definitions and their distinct captured snapshot values.
 4. Full suite + tsc + build all green — confirmed above.
-5. Confirm no saved job reprices silently — the save path (`CostCalculator.tsx` `sharedFields`) only sets `touRateUsedPerKwh`/`maintenanceCostAtSave` when the corresponding input was actually used; both are `undefined` otherwise.
+5. No saved job reprices silently — the save path (`CostCalculator.tsx` `sharedFields`) only sets `touRateUsedPerKwh`/`maintenanceCostAtSave` when the corresponding input was actually used; both are `undefined` otherwise.
 
 ## Issues Encountered
 
@@ -152,12 +152,12 @@ None — no external service configuration required.
 
 ## Next Phase Readiness
 
-- Once the checkpoint is approved, Phase 39 (Cost Realism) is complete: FAIL-01..04, TOU-01/02, WEAR-01/02 all satisfied across Plans 01-05.
+- Phase 39 (Cost Realism) is complete: FAIL-01..04, TOU-01/02, WEAR-01/02 all satisfied across Plans 01-05.
 - No blockers — all 5 plans converge cleanly on the shared calculator surface with the shared-file risk isolated to this single plan, per the plan's own design.
 
 ---
 *Phase: 39-cost-realism*
-*Completed: 2026-07-06 (Tasks 1-2 + Task 3 automation; checkpoint pending)*
+*Completed: 2026-07-06 (all 3/3 tasks; human-verify gate approved)*
 
 ## Self-Check: PASSED
 
