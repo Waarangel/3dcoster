@@ -586,6 +586,61 @@ export const CURATED_SCENARIOS: Scenario[] = [
       }),
     }),
   },
+
+  // --- Phase 39 (39-05 Task 3): 3 scenarios exercising the new CalcInput
+  // paths — TOU-active electricity, a CF-on-brass abrasive surcharge, and an
+  // empirical-failure-rate value seeded as if Apply had been used. APPENDED
+  // ONLY, never inserted earlier (FROZEN-ORDER rule) — the accumulation
+  // carries these fields' seeded values into every RANDOM_SCENARIOS entry
+  // after them via the shared mount, same as every prior scenario. ---
+  {
+    name: 'phase39-tou-active: TOU-configured electricity with a print-start time snapshot',
+    props: makeScenarioProps({
+      materials: [makeMaterial()],
+      electricity: makeElectricity({
+        touBands: [
+          { id: 'off-peak', name: 'Off-Peak', ratePerKwh: 0.06, startTime: '23:00', endTime: '07:00' },
+        ],
+      }),
+      editingJob: makeEditingJob({
+        marketplace: 'none' as MarketplaceType,
+        printTimeHours: 3,
+        touStartTime: '23:30',
+        touRateUsedPerKwh: 0.06,
+        sellingPrice: 22,
+        costPerUnit: 11,
+      }),
+    }),
+  },
+  {
+    name: 'phase39-cf-brass: CF filament on a stock (brass, undefined nozzleType) instance triggers the abrasive surcharge',
+    props: makeScenarioProps({
+      materials: [makeMaterial({ id: 'mat-cf', name: 'PLA-CF Spool', filamentType: 'PLA-CF', costPerUnit: 0.035 })],
+      printerInstances: [makeInstance({ nozzleType: undefined })],
+      editingJob: makeEditingJob({
+        marketplace: 'none' as MarketplaceType,
+        filaments: [{ filamentId: 'mat-cf', grams: 124, pricePerGram: 0.035, currency: 'USD' }],
+        printTimeHours: 3,
+        sellingPrice: 26,
+        costPerUnit: 13,
+      }),
+    }),
+  },
+  {
+    name: 'phase39-empirical-applied: failure rate seeded as if the empirical suggestion had been Applied',
+    props: makeScenarioProps({
+      materials: [makeMaterial()],
+      editingJob: makeEditingJob({
+        marketplace: 'none' as MarketplaceType,
+        // Simulates the post-Apply state (D-06 threshold cleared, exact
+        // provenance) — the manual failureRate field itself, now holding the
+        // suggested value, is what actually flows into calculateCost.
+        failureRate: 22,
+        sellingPrice: 24,
+        costPerUnit: 12,
+      }),
+    }),
+  },
 ];
 
 // ---------------------------------------------------------------------------
