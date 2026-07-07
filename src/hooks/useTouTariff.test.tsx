@@ -92,15 +92,23 @@ describe('useTouTariff — read', () => {
   });
 });
 
+// Distinct, non-overlapping windows — since WR-07, upsertBand rejects
+// overlapping bands, so multi-band fixtures must use disjoint windows.
+const DISJOINT_WINDOWS = [
+  { startTime: '23:00', endTime: '07:00' },
+  { startTime: '09:00', endTime: '12:00' },
+  { startTime: '13:00', endTime: '17:00' },
+] as const;
+
 describe('useTouTariff — max 3 bands (D-09)', () => {
   it('rejects adding a 4th band', () => {
     const onElectricityChange = vi.fn();
     const electricity: ElectricityConfig = {
       costPerKwh: 0.15,
       touBands: [
-        makeBand({ id: 'b1' }),
-        makeBand({ id: 'b2' }),
-        makeBand({ id: 'b3' }),
+        makeBand({ id: 'b1', ...DISJOINT_WINDOWS[0] }),
+        makeBand({ id: 'b2', ...DISJOINT_WINDOWS[1] }),
+        makeBand({ id: 'b3', ...DISJOINT_WINDOWS[2] }),
       ],
     };
     const getResult = renderHook(electricity, onElectricityChange);
@@ -109,7 +117,7 @@ describe('useTouTariff — max 3 bands (D-09)', () => {
     expect(result.bands).toHaveLength(MAX_TOU_BANDS);
 
     act(() => {
-      result.upsertBand(makeBand({ id: 'b4' }));
+      result.upsertBand(makeBand({ id: 'b4', startTime: '18:00', endTime: '21:00' }));
     });
 
     expect(onElectricityChange).not.toHaveBeenCalled();
@@ -120,16 +128,16 @@ describe('useTouTariff — max 3 bands (D-09)', () => {
     const electricity: ElectricityConfig = {
       costPerKwh: 0.15,
       touBands: [
-        makeBand({ id: 'b1', ratePerKwh: 0.08 }),
-        makeBand({ id: 'b2' }),
-        makeBand({ id: 'b3' }),
+        makeBand({ id: 'b1', ratePerKwh: 0.08, ...DISJOINT_WINDOWS[0] }),
+        makeBand({ id: 'b2', ...DISJOINT_WINDOWS[1] }),
+        makeBand({ id: 'b3', ...DISJOINT_WINDOWS[2] }),
       ],
     };
     const getResult = renderHook(electricity, onElectricityChange);
     const result = getResult();
 
     act(() => {
-      result.upsertBand(makeBand({ id: 'b1', ratePerKwh: 0.09 }));
+      result.upsertBand(makeBand({ id: 'b1', ratePerKwh: 0.09, ...DISJOINT_WINDOWS[0] }));
     });
 
     expect(onElectricityChange).toHaveBeenCalledTimes(1);
@@ -145,7 +153,7 @@ describe('useTouTariff — max 3 bands (D-09)', () => {
     const result = getResult();
 
     act(() => {
-      result.upsertBand(makeBand({ id: 'b2' }));
+      result.upsertBand(makeBand({ id: 'b2', ...DISJOINT_WINDOWS[1] }));
     });
 
     expect(onElectricityChange).toHaveBeenCalledTimes(1);
@@ -207,6 +215,86 @@ describe('useTouTariff — HH:MM validation (parseHHMM boundary)', () => {
     expect(onElectricityChange).toHaveBeenCalledTimes(1);
     const written = onElectricityChange.mock.calls[0][0] as ElectricityConfig;
     expect(written.touBands).toHaveLength(1);
+  });
+});
+
+describe('useTouTariff — overlapping bands rejected (WR-07)', () => {
+  it('rejects adding a band that overlaps an existing band, with a clear message', () => {
+    const onElectricityChange = vi.fn();
+    // Off-Peak 22:00-08:00 (wraps midnight) already configured.
+    const electricity: ElectricityConfig = {
+      costPerKwh: 0.15,
+      touBands: [makeBand({ startTime: '22:00', endTime: '08:00' })],
+    };
+    const getResult = renderHook(electricity, onElectricityChange);
+    const result = getResult();
+
+    let error: string | null = null;
+    act(() => {
+      // Peak 17:00-23:00 overlaps 22:00-23:00 (the review's WR-07 example).
+      error = result.upsertBand(makeBand({ id: 'b2', name: 'Peak', startTime: '17:00', endTime: '23:00' }));
+    });
+
+    expect(onElectricityChange).not.toHaveBeenCalled();
+    expect(error).toMatch(/overlap/i);
+    expect(error).toContain('Off-Peak');
+  });
+
+  it('accepts adjacent, non-overlapping bands (half-open windows) and returns null', () => {
+    const onElectricityChange = vi.fn();
+    const electricity: ElectricityConfig = {
+      costPerKwh: 0.15,
+      touBands: [makeBand({ startTime: '09:00', endTime: '17:00' })],
+    };
+    const getResult = renderHook(electricity, onElectricityChange);
+    const result = getResult();
+
+    let error: string | null = 'unset';
+    act(() => {
+      error = result.upsertBand(makeBand({ id: 'b2', name: 'Evening', startTime: '17:00', endTime: '21:00' }));
+    });
+
+    expect(error).toBeNull();
+    expect(onElectricityChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an update that makes a band overlap ANOTHER band', () => {
+    const onElectricityChange = vi.fn();
+    const electricity: ElectricityConfig = {
+      costPerKwh: 0.15,
+      touBands: [
+        makeBand({ id: 'b1', name: 'Morning', startTime: '06:00', endTime: '09:00' }),
+        makeBand({ id: 'b2', name: 'Evening', startTime: '18:00', endTime: '22:00' }),
+      ],
+    };
+    const getResult = renderHook(electricity, onElectricityChange);
+    const result = getResult();
+
+    let error: string | null = null;
+    act(() => {
+      error = result.upsertBand(makeBand({ id: 'b2', name: 'Evening', startTime: '08:00', endTime: '22:00' }));
+    });
+
+    expect(onElectricityChange).not.toHaveBeenCalled();
+    expect(error).toMatch(/overlap/i);
+  });
+
+  it('allows updating a band within (or equal to) its own current window — no self-overlap', () => {
+    const onElectricityChange = vi.fn();
+    const electricity: ElectricityConfig = {
+      costPerKwh: 0.15,
+      touBands: [makeBand({ id: 'b1', startTime: '06:00', endTime: '09:00' })],
+    };
+    const getResult = renderHook(electricity, onElectricityChange);
+    const result = getResult();
+
+    let error: string | null = 'unset';
+    act(() => {
+      error = result.upsertBand(makeBand({ id: 'b1', startTime: '06:00', endTime: '10:00' }));
+    });
+
+    expect(error).toBeNull();
+    expect(onElectricityChange).toHaveBeenCalledTimes(1);
   });
 });
 

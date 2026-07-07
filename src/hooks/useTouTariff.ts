@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { ElectricityConfig, TouBand } from '../types';
-import { parseHHMM } from '../utils/touElectricity';
+import { bandsOverlap, parseHHMM } from '../utils/touElectricity';
 
 // Phase 39 TOU-01 (D-09). Max 3 named TOU bands beside the flat default rate.
 // This hook is the read/write + validation boundary for ElectricityConfig.touBands —
@@ -17,10 +17,13 @@ interface UseTouTariffResult {
   setFlatRate: (rate: number) => void;
   /**
    * Insert a new band or update an existing one (matched by `id`). Rejects
-   * (no-op) when: adding a 4th band beyond MAX_TOU_BANDS (D-09), the rate is
-   * not finite, or either window fails strict HH:MM validation (parseHHMM).
+   * (no write) when: adding a 4th band beyond MAX_TOU_BANDS (D-09), the rate
+   * is not finite, either window fails strict HH:MM validation (parseHHMM),
+   * or the band's window overlaps another configured band (WR-07 — overlap
+   * would make electricity pricing silently first-match-wins by array order).
+   * Returns a user-facing error message on rejection, null on success.
    */
-  upsertBand: (band: TouBand) => void;
+  upsertBand: (band: TouBand) => string | null;
   /** Remove a band by id. No-op if the id doesn't match any existing band. */
   removeBand: (id: string) => void;
 }
@@ -53,18 +56,31 @@ export function useTouTariff(
   );
 
   const upsertBand = useCallback(
-    (band: TouBand) => {
-      if (!isValidBand(band)) return;
+    (band: TouBand): string | null => {
+      if (!isValidBand(band)) {
+        return 'Enter a valid rate and HH:MM start/end times.';
+      }
+      // WR-07: reject a window that overlaps any OTHER configured band —
+      // overlapping bands would price the shared minutes by whichever band
+      // happens to sit first in the array, silently and permanently (the
+      // resolved rate is snapshotted onto saved jobs).
+      const clash = bands.find(b => b.id !== band.id && bandsOverlap(b, band));
+      if (clash) {
+        return `Overlaps the "${clash.name}" band (${clash.startTime}–${clash.endTime}) — bands must not overlap.`;
+      }
       const existingIdx = bands.findIndex(b => b.id === band.id);
       if (existingIdx === -1) {
         // Adding a new band — enforce the D-09 max-3 clamp.
-        if (bands.length >= MAX_TOU_BANDS) return;
+        if (bands.length >= MAX_TOU_BANDS) {
+          return `You can configure at most ${MAX_TOU_BANDS} time-of-use bands.`;
+        }
         onElectricityChange({ ...electricity, touBands: [...bands, band] });
-        return;
+        return null;
       }
       const nextBands = bands.slice();
       nextBands[existingIdx] = band;
       onElectricityChange({ ...electricity, touBands: nextBands });
+      return null;
     },
     [bands, electricity, onElectricityChange]
   );

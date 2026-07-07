@@ -55,6 +55,9 @@ export function SettingsModal({
   const [newBandRate, setNewBandRate] = useState('');
   const [newBandStart, setNewBandStart] = useState('');
   const [newBandEnd, setNewBandEnd] = useState('');
+  // WR-07: rejection message from useTouTariff's validation boundary (overlap /
+  // malformed window / max-3), surfaced inline below the band editor.
+  const [bandError, setBandError] = useState<string | null>(null);
 
   const handleAddTouBand = () => {
     if (!newBandName.trim() || !newBandRate || !newBandStart || !newBandEnd) return;
@@ -67,7 +70,9 @@ export function SettingsModal({
       startTime: newBandStart,
       endTime: newBandEnd,
     };
-    upsertTouBand(band);
+    const error = upsertTouBand(band);
+    setBandError(error);
+    if (error) return; // keep the user's inputs so they can correct the window
     setNewBandName('');
     setNewBandRate('');
     setNewBandStart('');
@@ -75,7 +80,7 @@ export function SettingsModal({
   };
 
   const handleUpdateTouBand = (band: TouBand, field: keyof TouBand, value: string | number) => {
-    upsertTouBand({ ...band, [field]: value });
+    setBandError(upsertTouBand({ ...band, [field]: value }));
   };
 
   // One-time, non-destructive nudge for USD users whose fuel price predates the
@@ -411,6 +416,11 @@ export function SettingsModal({
                         + Add band
                       </Button>
                     </div>
+                  )}
+
+                  {/* WR-07: overlap / validation rejection from useTouTariff */}
+                  {bandError && (
+                    <p role="alert" className="text-xs text-red-400 mt-2">{bandError}</p>
                   )}
                 </div>
               </div>

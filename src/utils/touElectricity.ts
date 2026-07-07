@@ -43,6 +43,34 @@ function bandCoversMinute(band: { startMin: number; endMin: number }, clockMinut
 }
 
 /**
+ * Wrap-aware overlap check between two bands' [start, end) minute windows
+ * (WR-07). Two circular half-open arcs intersect iff one contains the other's
+ * start minute. Malformed HH:MM values and zero-width bands (start === end,
+ * which bandCoversMinute treats as never applying) report no overlap —
+ * upsertBand's own HH:MM validation rejects malformed input separately.
+ *
+ * Examples:
+ *   bandsOverlap({startTime:'22:00',endTime:'08:00'}, {startTime:'17:00',endTime:'23:00'}) → true (wraps midnight)
+ *   bandsOverlap({startTime:'09:00',endTime:'17:00'}, {startTime:'17:00',endTime:'21:00'}) → false (half-open: 17:00 belongs to the second band only)
+ *   bandsOverlap({startTime:'09:00',endTime:'17:00'}, {startTime:'12:00',endTime:'13:00'}) → true (containment)
+ */
+export function bandsOverlap(
+  a: Pick<TouBand, 'startTime' | 'endTime'>,
+  b: Pick<TouBand, 'startTime' | 'endTime'>,
+): boolean {
+  const aStart = parseHHMM(a.startTime);
+  const aEnd = parseHHMM(a.endTime);
+  const bStart = parseHHMM(b.startTime);
+  const bEnd = parseHHMM(b.endTime);
+  if (aStart === null || aEnd === null || bStart === null || bEnd === null) return false;
+  if (aStart === aEnd || bStart === bEnd) return false; // zero-width: covers no minutes
+  return (
+    bandCoversMinute({ startMin: aStart, endMin: aEnd }, bStart) ||
+    bandCoversMinute({ startMin: bStart, endMin: bEnd }, aStart)
+  );
+}
+
+/**
  * Resolves the duration-weighted average $/kWh rate for a print that starts
  * at `startTime` ("HH:MM") and runs for `durationHours`, given a set of TOU
  * bands. Falls back to `flatRate` unchanged when bands are absent/empty or
