@@ -5,7 +5,7 @@ import type { SeedState } from '../db/database';
 import type { Asset, AssetCategory, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, JobCustomer, RuntimeQuoteStatus } from '../types';
 import { defaultMaterials, defaultPrinter, defaultPrinterAssets, assetToPrinterConfig, bambuFilamentAssets } from '../data/defaultMaterials';
 import { DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
-import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency } from '../db/backfill';
+import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency, reconcileTouSnapshot } from '../db/backfill';
 import { upsertJobStockEvents, removeJobStockEvents } from '../db/stockEventsWriter';
 import { isPreservedOnMaterialReset, isCustomCategory } from '../utils/assetCategories';
 
@@ -29,6 +29,15 @@ let tagsNormalizeRan = false;
 // because reconcileFixedCostsAtSave is idempotent at the job level. No Dexie meta
 // table is touched (none exists in this schema; module flag is the only mechanism).
 let fixedCostsReconcileRan = false;
+
+// Phase 39 TOU-01/02 D-12 — process-lifetime flag for the TOU snapshot
+// reconcile. Mirrors fixedCostsReconcileRan's one-per-page-load pattern.
+// reconcileTouSnapshot never actually writes a patch for legacy jobs (per
+// Pitfall 5, touStartTime/touRateUsedPerKwh correctly stay undefined = flat
+// rate), so this reconcile is effectively a documented no-write pass — it
+// exists to satisfy the locked milestone rule that every derived-money schema
+// change ships with a reconcile helper wired at boot.
+let touSnapshotReconcileRan = false;
 
 // Phase 23 D-02 — process-lifetime flag for the email-lowercase reconcile.
 // Same one-per-page-load pattern as the 4 existing reconciles above. Runs
@@ -798,6 +807,42 @@ export function useJobs() {
         // against legacy jobs (their pills will read zero fixed costs until
         // a successful retry). Flag stays false — next mount retries.
         console.error('fixedCosts reconcile failed:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobs === undefined]);
+
+  // Phase 39 TOU-01/02 D-12: reconcile the touStartTime/touRateUsedPerKwh
+  // snapshot contract on legacy PrintJob records. Runs ONCE per page load
+  // behind touSnapshotReconcileRan, same Path B shape as the fixedCosts
+  // reconcile above (read jobs, apply patches only when non-empty, no
+  // updatedAt bump). Per Pitfall 5, reconcileTouSnapshot never actually
+  // produces a patch for legacy jobs — both fields correctly stay undefined
+  // (meaning "flat rate was used"), so `updated` is always empty here. The
+  // effect still runs the read+reconcile pass (rather than skipping wiring
+  // entirely) so the reconcile helper is genuinely invoked at boot, satisfying
+  // the locked milestone rule that every derived-money schema change ships
+  // with a reconcile helper wired into the app's startup path.
+  useEffect(() => {
+    if (touSnapshotReconcileRan) return;
+    if (jobs === undefined) return;  // wait for the first liveQuery emission
+    let cancelled = false;
+    (async () => {
+      try {
+        const updated = reconcileTouSnapshot(jobs);
+        if (cancelled) return;  // do NOT set flag — never completed the pass
+        if (updated.length > 0) {
+          // WR-03: no updatedAt bump — mirrors fixedCosts reconcile's rationale.
+          await db.transaction('rw', db.jobs, async () => {
+            for (const updatedJob of updated) {
+              await db.jobs.put(updatedJob);
+            }
+          });
+        }
+        touSnapshotReconcileRan = true;
+      } catch (err) {
+        console.error('touSnapshot reconcile failed:', err);
       }
     })();
     return () => { cancelled = true; };

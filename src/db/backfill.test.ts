@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency, stampRecordCurrency } from './backfill';
+import { backfillTagsOnJob, normalizeTagsOnJob, parseTagsInput, backfillQuotesFromJobs, backfillCustomersFromSales, reconcileCopiesSoldFromSales, reconcileQuoteCurrency, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency, stampRecordCurrency, reconcileTouSnapshot } from './backfill';
 import type { PrintJob, Sale, Customer, Quote, PrinterInstance, PrinterConfig, Material } from '../types';
 
 describe('backfillTagsOnJob', () => {
@@ -879,5 +879,78 @@ describe('stampRecordCurrency (v10 jobs/sales backfill)', () => {
     const rec: Record<string, unknown> = { currency: null, costPerUnit: 5 };
     stampRecordCurrency(rec, 'USD');
     expect(rec.currency).toBe('USD');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reconcileTouSnapshot — Phase 39 TOU-01/02 (D-12) reconcile helper.
+//
+// Unlike every other reconcile helper in this file, the correct backfill here
+// is to leave the new fields ABSENT on legacy jobs (Pitfall 5) — never guess a
+// numeric rate. Cases:
+//   1. Legacy job (both fields undefined) → BOTH fields stay explicitly absent,
+//      no patch written (empty result)
+//   2. Idempotency — a job with EITHER field already set is skipped
+//   3. Never mutates input (spread-copy discipline, even though there's no
+//      actual field to write for legacy jobs)
+// ---------------------------------------------------------------------------
+
+describe('reconcileTouSnapshot (Phase 39 TOU-01/02 D-12)', () => {
+  function makeJob(overrides: Partial<PrintJob>): PrintJob {
+    return {
+      id: 'job-1',
+      name: 'Test Job',
+      createdAt: new Date('2026-04-01'),
+      updatedAt: new Date('2026-04-01'),
+      filaments: [],
+      printTimeHours: 1,
+      printerInstanceId: 'inst-1',
+      modelCost: 0,
+      prepTimeMinutes: 0,
+      postProcessingMinutes: 0,
+      materialsUsed: [],
+      failureRate: 0,
+      costPerUnit: 1,
+      sellingPrice: 10,
+      copiesSold: 0,
+      ...overrides,
+    } as PrintJob;
+  }
+
+  it('leaves touStartTime and touRateUsedPerKwh explicitly absent on a legacy job (does NOT backfill a guessed rate)', () => {
+    const job = makeJob({ touStartTime: undefined, touRateUsedPerKwh: undefined });
+    const result = reconcileTouSnapshot([job]);
+
+    // No patch is written for a legacy job — the fields stay undefined,
+    // signifying "flat rate was used," never a fabricated number.
+    expect(result).toEqual([]);
+    expect(job.touStartTime).toBeUndefined();
+    expect(job.touRateUsedPerKwh).toBeUndefined();
+  });
+
+  it('is idempotent — skips a job that already has touStartTime set', () => {
+    const job = makeJob({ touStartTime: '20:00', touRateUsedPerKwh: undefined });
+    const result = reconcileTouSnapshot([job]);
+    expect(result).toEqual([]);
+  });
+
+  it('is idempotent — skips a job that already has touRateUsedPerKwh set', () => {
+    const job = makeJob({ touStartTime: undefined, touRateUsedPerKwh: 0.08 });
+    const result = reconcileTouSnapshot([job]);
+    expect(result).toEqual([]);
+  });
+
+  it('never mutates its input jobs', () => {
+    const job = makeJob({ touStartTime: undefined, touRateUsedPerKwh: undefined });
+    const jobCopy = { ...job };
+    reconcileTouSnapshot([job]);
+    expect(job).toEqual(jobCopy);
+  });
+
+  it('returns an empty array for a mixed batch of legacy jobs', () => {
+    const job1 = makeJob({ id: 'job-1' });
+    const job2 = makeJob({ id: 'job-2' });
+    const result = reconcileTouSnapshot([job1, job2]);
+    expect(result).toEqual([]);
   });
 });
