@@ -571,4 +571,108 @@ describe('SettingsModal — TOU-01: tariff band editor', () => {
     expect(alert?.textContent).toMatch(/Overlaps the "Existing" band/);
     expect(onElectricityChange).not.toHaveBeenCalled();
   });
+
+  // -------------------------------------------------------------------------
+  // CR-04 (delta review) regression tests: the EDIT path. The edit-row inputs
+  // must be driven by local draft state so partial HH:MM values survive each
+  // keystroke — validation fires only on the Done commit, never per-keystroke.
+  // The pre-fix component routed every keystroke through upsertTouBand, whose
+  // strict parseHHMM validation rejected intermediate values and made the
+  // controlled inputs snap back (effectively read-only).
+  // -------------------------------------------------------------------------
+
+  const editBand = { id: 'b1', name: 'Off-Peak', ratePerKwh: 0.08, startTime: '22:00', endTime: '06:00' };
+
+  function bandErrorAlerts() {
+    return Array.from(document.body.querySelectorAll('[role="alert"]')).filter(a =>
+      /Enter a valid rate and HH:MM/.test(a.textContent || '')
+    );
+  }
+
+  it('edit path: start-time field accepts per-keystroke edits (partial values persist, no per-keystroke error, no write)', async () => {
+    const onElectricityChange = renderModalWithElectricity({ costPerKwh: 0.15, touBands: [editBand] });
+
+    const editButton = document.body.querySelector('button[aria-label="Edit Off-Peak"]') as HTMLButtonElement;
+    expect(editButton).toBeTruthy();
+    await act(async () => {
+      editButton.click();
+    });
+
+    const startInput = document.body.querySelector(
+      'input[aria-label="Band start time (HH:MM) for Off-Peak"]'
+    ) as HTMLInputElement;
+    expect(startInput).toBeTruthy();
+    // Draft is seeded from the band's persisted value
+    expect(startInput.value).toBe('22:00');
+
+    // One backspace: "22:00" -> "22:0" — the pre-fix component swallowed this
+    // keystroke (value snapped back to "22:00") and fired the role="alert" error.
+    await act(async () => {
+      typeIntoInput(startInput, '22:0');
+    });
+    expect(startInput.value).toBe('22:0');
+    expect(bandErrorAlerts()).toHaveLength(0);
+    expect(onElectricityChange).not.toHaveBeenCalled();
+
+    // Retype to a new valid time per-keystroke: every intermediate value must
+    // persist in the input, with no validation error and no write.
+    await act(async () => {
+      typeIntoInput(startInput, '');
+    });
+    const target = '23:30';
+    for (let i = 1; i <= target.length; i++) {
+      const partial = target.slice(0, i);
+      await act(async () => {
+        typeIntoInput(startInput, partial);
+      });
+      expect(startInput.value).toBe(partial);
+      expect(bandErrorAlerts()).toHaveLength(0);
+      expect(onElectricityChange).not.toHaveBeenCalled();
+    }
+
+    // Commit via Done — NOW validation runs and the updated band is written.
+    const doneButton = document.body.querySelector('button[aria-label="Done editing Off-Peak"]') as HTMLButtonElement;
+    await act(async () => {
+      doneButton.click();
+    });
+
+    expect(onElectricityChange).toHaveBeenCalledTimes(1);
+    expect(onElectricityChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        touBands: [
+          expect.objectContaining({ id: 'b1', name: 'Off-Peak', ratePerKwh: 0.08, startTime: '23:30', endTime: '06:00' }),
+        ],
+      })
+    );
+  });
+
+  it('edit path: committing an invalid window via Done surfaces the validation message, keeps edit mode open, and does not write', async () => {
+    const onElectricityChange = renderModalWithElectricity({ costPerKwh: 0.15, touBands: [editBand] });
+
+    const editButton = document.body.querySelector('button[aria-label="Edit Off-Peak"]') as HTMLButtonElement;
+    await act(async () => {
+      editButton.click();
+    });
+
+    const startInput = document.body.querySelector(
+      'input[aria-label="Band start time (HH:MM) for Off-Peak"]'
+    ) as HTMLInputElement;
+    await act(async () => {
+      typeIntoInput(startInput, '22:0'); // invalid partial left in the field
+    });
+
+    const doneButton = document.body.querySelector('button[aria-label="Done editing Off-Peak"]') as HTMLButtonElement;
+    await act(async () => {
+      doneButton.click();
+    });
+
+    expect(bandErrorAlerts()).toHaveLength(1);
+    expect(onElectricityChange).not.toHaveBeenCalled();
+    // Edit mode stays open (draft intact) so the user can correct the value.
+    const stillEditing = document.body.querySelector(
+      'input[aria-label="Band start time (HH:MM) for Off-Peak"]'
+    ) as HTMLInputElement;
+    expect(stillEditing).toBeTruthy();
+    expect(stillEditing.value).toBe('22:0');
+  });
 });
