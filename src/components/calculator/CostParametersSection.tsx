@@ -1,8 +1,12 @@
 import type { Material, MaterialUsage } from '../../types';
-import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
+import { Button, FieldWarning, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import type { MaterialRow } from '../../hooks/useCostForm';
 import type { CalculatorFieldIds } from './fieldIds';
 import type { DerivedFailureRate } from '../../db/failureRate';
+// WR-09: parseHHMM is a pure string parser (no IO, no Dexie, no business math)
+// — importing it here stays within the D-11 props-in/callbacks-out contract.
+// It powers the inline warning when the typed start time isn't valid HH:MM.
+import { parseHHMM } from '../../utils/touElectricity';
 
 // Phase 39 WEAR-01/02 (D-14): amortized-maintenance suggestion shape, mirroring
 // the orchestrator's maintenance-amortization derivation result — kept as a
@@ -200,6 +204,16 @@ export function CostParametersSection({
               compact
               value={touStartTime ?? ''}
               onChange={e => onTouStartTimeChange?.(e.target.value || undefined)}
+            />
+            {/* WR-09: without this, an invalid time (e.g. "9:30" — the strict
+                parser requires zero-padded HH:MM) silently prices the job at
+                the flat rate and persists onto the saved job. */}
+            <FieldWarning
+              message={
+                touStartTime && parseHHMM(touStartTime) === null
+                  ? 'Enter time as HH:MM (e.g. 09:30) — the flat rate is used until this is valid.'
+                  : null
+              }
             />
             {touSavingsHint && (
               <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400">

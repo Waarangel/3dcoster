@@ -132,6 +132,23 @@ describe('CostParametersSection — Phase 39 hint rows', () => {
     unmount();
   });
 
+  it('WR-09: shows an inline HH:MM warning for an invalid start time, and none when valid or empty', () => {
+    // "9:30" is rejected by the strict zero-padded parser — the exact string
+    // the Settings band editor errors on; the calculator must warn too instead
+    // of silently pricing at the flat rate.
+    mount(<CostParametersSection {...baseProps()} touBandsConfigured={true} touStartTime="9:30" />);
+    expect(container!.textContent).toContain('Enter time as HH:MM');
+    unmount();
+
+    mount(<CostParametersSection {...baseProps()} touBandsConfigured={true} touStartTime="09:30" />);
+    expect(container!.textContent).not.toContain('Enter time as HH:MM');
+    unmount();
+
+    mount(<CostParametersSection {...baseProps()} touBandsConfigured={true} touStartTime={undefined} />);
+    expect(container!.textContent).not.toContain('Enter time as HH:MM');
+    unmount();
+  });
+
   it('renders a savings hint when touSavingsHint is provided', () => {
     mount(
       <CostParametersSection
