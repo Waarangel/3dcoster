@@ -92,15 +92,24 @@ export function LogMaintenanceModal({
     }
     setSaveError(null);
 
-    const id = await onLogMaintenanceEvent({
-      printerInstanceId: instance.id,
-      partType,
-      cost,
-      occurredAt: new Date(occurredAt),
-      printerHoursAtEvent,
-      nozzleType: partType === 'nozzle' ? nozzleType : undefined,
-      notes: notes.trim() || undefined,
-    });
+    // WR-03: the Dexie write can reject (quota, closed DB) — surface it as a
+    // visible form error instead of an unhandled promise rejection with the
+    // modal silently stuck open. Mirrors LogFailureModal's submit try/catch.
+    let id: string | undefined;
+    try {
+      id = await onLogMaintenanceEvent({
+        printerInstanceId: instance.id,
+        partType,
+        cost,
+        occurredAt: new Date(occurredAt),
+        printerHoursAtEvent,
+        nozzleType: partType === 'nozzle' ? nozzleType : undefined,
+        notes: notes.trim() || undefined,
+      });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save this maintenance event — please try again.');
+      return;
+    }
 
     if (id === undefined) {
       setSaveError('Could not save this maintenance event — please check the values and try again.');
@@ -195,7 +204,7 @@ export function LogMaintenanceModal({
         )}
 
         <div className="flex gap-2 pt-2">
-          <Button variant="success" onClick={handleSave} disabled={!canSave}>
+          <Button variant="success" onClick={() => { void handleSave(); }} disabled={!canSave}>
             Save
           </Button>
           <Button variant="secondary" onClick={handleClose}>

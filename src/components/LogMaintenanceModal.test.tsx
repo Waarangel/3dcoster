@@ -124,6 +124,19 @@ describe('LogMaintenanceModal', () => {
     expect(onUpdateInstanceNozzleType).toHaveBeenCalledWith('inst-1', 'hardened');
   });
 
+  it('surfaces a rejected save as a visible error and keeps the modal open (WR-03)', async () => {
+    const failing = vi.fn().mockRejectedValue(new Error('QuotaExceededError: disk full'));
+    const { onClose } = renderModal(failing);
+
+    const saveBtn = [...document.body.querySelectorAll('button')].find(b => /save/i.test(b.textContent || ''))!;
+    await act(async () => { saveBtn.click(); });
+
+    const alert = document.body.querySelector('[role="alert"]');
+    expect(alert, 'expected a role="alert" error after a rejected save').not.toBeNull();
+    expect(alert!.textContent).toContain('QuotaExceededError');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('re-seeds printer-hours-at-event from the LIVE instance on each open (WR-02)', () => {
     const onLogMaintenanceEvent = vi.fn().mockResolvedValue('maint-1');
     const onUpdateInstanceNozzleType = vi.fn();

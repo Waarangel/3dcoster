@@ -616,6 +616,7 @@ interface MaintenanceSectionProps {
 function MaintenanceSection({ instance, userCurrency, onUpdateInstance }: MaintenanceSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const { events, logMaintenanceEvent, deleteMaintenanceEvent } = useMaintenanceEvents();
   const { amortization, nextSwap } = useMaintenanceAmortization(instance);
   const sectionBodyId = useId();
@@ -628,6 +629,17 @@ function MaintenanceSection({ instance, userCurrency, onUpdateInstance }: Mainte
   const handleUpdateNozzleType = (instanceId: string, nozzleType: 'brass' | 'hardened' | 'ruby') => {
     if (instanceId !== instance.id) return;
     onUpdateInstance({ ...instance, nozzleType });
+  };
+
+  // WR-03: the Dexie delete can reject — surface it instead of a
+  // fire-and-forget unhandled rejection with zero user feedback.
+  const handleDeleteEvent = async (id: string) => {
+    setActionError(null);
+    try {
+      await deleteMaintenanceEvent(id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete this maintenance event — please try again.');
+    }
   };
 
   const resolvedNozzleType = resolveNozzleType(instance);
@@ -664,6 +676,9 @@ function MaintenanceSection({ instance, userCurrency, onUpdateInstance }: Mainte
       </div>
 
       <div id={sectionBodyId} hidden={!isOpen} className="mt-3 space-y-3">
+        {actionError && (
+          <p role="alert" className="text-sm text-red-400">{actionError}</p>
+        )}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <Button btnSize="sm" onClick={() => setShowLogModal(true)}>
             Log Maintenance
@@ -718,7 +733,7 @@ function MaintenanceSection({ instance, userCurrency, onUpdateInstance }: Mainte
                 </div>
                 <DeleteButton
                   label={`${PART_TYPE_LABELS[event.partType] ?? event.partType} maintenance event`}
-                  onClick={() => deleteMaintenanceEvent(event.id)}
+                  onClick={() => { void handleDeleteEvent(event.id); }}
                 />
               </div>
             ))}
