@@ -108,10 +108,13 @@ function dominantFilamentAsset(job: PrintJob, assetsById: ReadonlyMap<string, As
  * derivable interval and returns null (App.tsx's existing 500h alert is the
  * fallback — D-15, this plan does not remove it).
  *
- * Brass-nozzle abrasive-hours (WEAR-01) accelerate the 'nozzle' projection
- * only: the effective remaining-hours-until-swap is scaled down in
- * proportion to the fraction of recent print time spent on abrasive
- * filament, modeling faster wear. Non-nozzle part types are unaffected.
+ * NOTE (WR-04): abrasive-hours do NOT accelerate the nozzle projection.
+ * Every part type — nozzle included — is projected purely from its own
+ * logged swap intervals. Because swaps are logged at real printer-hours,
+ * abrasive wear is already reflected empirically in shorter observed
+ * intervals; an explicit acceleration factor was considered and descoped
+ * (recorded in the Phase 39 review fix pass). abrasiveHours (WEAR-01) is
+ * surfaced as an informational figure via deriveMaintenanceAmortization.
  *
  * Examples:
  *   predictNextSwap(events, jobs, instance) with 3 nozzle swaps at 100h
