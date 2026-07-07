@@ -60,7 +60,12 @@ findings:
   warning: 8
   info: 8
   total: 19
-status: issues_found
+status: fixes_applied
+fix_pass:
+  fixed_at: 2026-07-07
+  scope: critical_warning
+  fixed: 11
+  skipped: 0
 ---
 
 # Phase 39: Code Review Report
@@ -266,6 +271,30 @@ Apply the same rounding to `onApplyAmortizedMaintenance` (`Math.round(x * 100) /
 
 ---
 
+## Fix Pass
+
+**Fixed:** 2026-07-07 · **Scope:** Critical + Warning (Info findings deliberately not addressed) · **Outcome:** 11/11 fixed, 0 skipped
+
+| Finding | Outcome | Commit | Notes |
+|---------|---------|--------|-------|
+| CR-01 | FIXED | `6520319` | `validateBackupFile` defaults absent `failureEvents`/`maintenanceEvents` to `[]` (PRESENT-but-non-array still rejects). Legacy v1.9-shaped regression tests added. |
+| CR-02 | FIXED | `76d651d` | Deduction condition no longer requires `jobId` — standalone failures with user-entered grams now deduct stock, matching the D-03 contract. Test that locked the skip behavior flipped; types.ts + hook doc comments corrected. |
+| CR-03 | FIXED | `95889ba` | Chose the **override-UI approach** (per-finding guidance: pick ONE): Asset Library filament editor now has an "Abrasive (wears brass nozzles)" select (Auto-detect / Abrasive / Not abrasive) persisting `Asset.isAbrasive`, which `resolveIsAbrasive` already honors. The auto-detect regex was deliberately left unchanged — narrowing it would risk repricing the CF-on-brass golden scenario baseline. Tradeoff: names like "Carbon Black" still auto-detect abrasive by default, but the select shows what auto-detect resolves and the user now has an in-app remedy. 4 regression tests added. |
+| WR-01 | FIXED | `058f5ac` | `logFailure` (add + deduction) and `deleteFailure` (delete + reversal) each wrapped in `db.transaction('rw', failureEvents, stockEvents, ...)`. |
+| WR-02 | FIXED | `4399154` | Reset-on-open effect keyed on `[isOpen, instance.id]` re-seeds `printerHoursAtEvent`/`nozzleType` from the live instance (mirrors LogFailureModal). Regression test added. |
+| WR-03 | FIXED | `4aae335` | `handleSave` wraps the Dexie write in try/catch → `setSaveError` (role=alert); MaintenanceSection's delete is now an async handler with its own visible `actionError`. Regression test added. |
+| WR-04 | FIXED (doc) | `6732025` | The fabricated abrasive-hours-acceleration paragraph was replaced with an honest NOTE: no acceleration is implemented; nozzle projections use logged swap intervals only (which already reflect abrasive wear empirically). Implementing the scaling was judged NOT trivially safe (new data plumbing into `predictForPartType` + changed prediction outputs) — **descope recorded here** per the finding's fallback option. |
+| WR-05 | FIXED | `eceb69f` | Apply now writes `Math.min(99, Math.round(rate))` for the empirical failure rate (honors the field's 0-99 contract + whole-percent display) and rounds the amortized maintenance rate to 2 decimals. |
+| WR-06 | FIXED | `6059cd2` | CostSummaryPanel itemizes `Maintenance ({h}h print)` and `Abrasive nozzle wear (brass)` as conditional rows mirroring the `costs.materials > 0` pattern — listed rows sum to Subtotal again. Output-equivalence snapshot verified untouched (oracle captures True Cost/Sell Price/etc., not row layout). |
+| WR-07 | FIXED | `b61500f` | New pure `bandsOverlap` helper (wrap-aware, half-open windows) in touElectricity.ts; `upsertBand` now returns `string \| null` and rejects overlapping windows (also messages for malformed/max-3); SettingsModal surfaces the message inline (role=alert) and keeps the user's inputs on rejection. Pre-existing max-3 test fixtures updated to disjoint windows (they used three identical windows, invalid under the new rule). 4 overlap tests added. |
+| WR-08 | FIXED | `bbe7f43` | The job DOES carry per-material grams (`job.filaments`), so the full fix shipped: JobsManager passes `jobFilaments` in the prefill; LogFailureModal computes a per-material `materialBreakdown` (each row's grams × %completion); `logFailure` writes one stockEvent per material (`failure-{id}__{assetId}` ids, shared `failure-{id}` refId, NOT persisted on the FailureEvent row); `deleteFailure` reverses the whole set via the indexed `refId`. 5 regression tests added. |
+| IN-01..IN-08 | NOT ADDRESSED | — | Info findings out of fix scope (`critical_warning`). |
+
+**Verification at end of fix pass:** `npx tsc -b` clean · `npx vitest run` 1016 passed / 1 todo (84 files; was 997 pre-fix — 19 regression tests added) · output-equivalence / renderCount / pricingSequence tripwires green · `__snapshots__/outputEquivalence.test.tsx.snap` byte-identical · goldenScenarios.ts untouched · eslint 0 errors on all touched files (7 pre-existing warnings incl. IN-06's touBands memo note).
+
+---
+
 _Reviewed: 2026-07-07_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+_Fix pass: 2026-07-07 — Claude (gsd-code-fixer)_
