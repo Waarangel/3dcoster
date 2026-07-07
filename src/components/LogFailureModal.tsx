@@ -22,6 +22,12 @@ export interface LogFailureModalPrefill {
   jobId?: string;
   /** Total filament grams for the linked job (all filament rows summed) — used to compute gramsWasted = jobFilamentGrams × (%completion/100). */
   jobFilamentGrams?: number;
+  /**
+   * WR-08: the linked job's per-filament rows. When present, the stock
+   * deduction is written per material (each row's grams × %completion) so a
+   * multi-material job never dumps its TOTAL grams onto one material.
+   */
+  jobFilaments?: { filamentId: string; grams: number }[];
 }
 
 export interface LogFailureModalProps {
@@ -82,6 +88,15 @@ export function LogFailureModal({ isOpen, onClose, printerInstances, filamentAss
     ? (prefill?.jobFilamentGrams ?? 0) * (clampPercent(percentComplete) / 100)
     : (standaloneGrams > 0 ? standaloneGrams : undefined);
 
+  // WR-08: per-material waste for multi-material jobs — each filament row's
+  // own grams scaled by %completion, so PLA and PVA (etc.) each deduct their
+  // real share instead of the dominant material absorbing the job total.
+  const materialBreakdown = isJobLinked && prefill?.jobFilaments && prefill.jobFilaments.length > 0
+    ? prefill.jobFilaments
+        .filter(f => f.filamentId && f.grams > 0)
+        .map(f => ({ materialId: f.filamentId, grams: f.grams * (clampPercent(percentComplete) / 100) }))
+    : undefined;
+
   const handleSubmit = async () => {
     if (!printerInstanceId || !materialId) {
       setError('Select a printer and a material.');
@@ -99,6 +114,7 @@ export function LogFailureModal({ isOpen, onClose, printerInstances, filamentAss
         failedAt: new Date(),
         jobId: prefill?.jobId,
         gramsWasted,
+        materialBreakdown,
       };
       await logFailure(input);
       onClose();

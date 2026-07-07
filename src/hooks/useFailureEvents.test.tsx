@@ -159,6 +159,86 @@ describe('useFailureEvents — logFailure', () => {
   });
 });
 
+describe('useFailureEvents — per-material breakdown (WR-08)', () => {
+  const BREAKDOWN_INPUT: LogFailureInput = {
+    ...BASE_INPUT,
+    jobId: 'job-1',
+    gramsWasted: 250, // 500g job total × 50%
+    materialBreakdown: [
+      { materialId: 'mat-pla', grams: 150 }, // 300g × 50%
+      { materialId: 'mat-pva', grams: 100 }, // 200g × 50%
+    ],
+  };
+
+  it('writes one stockEvent per material instead of the job total against one material', async () => {
+    render();
+    let id: string | undefined;
+    await act(async () => {
+      id = await api().logFailure(BREAKDOWN_INPUT);
+    });
+
+    const stockRows = (await db.stockEvents.toArray()).sort((a, b) => a.assetId.localeCompare(b.assetId));
+    expect(stockRows).toHaveLength(2);
+    expect(stockRows[0]).toMatchObject({
+      id: `failure-${id}__mat-pla`,
+      refId: `failure-${id}`,
+      assetId: 'mat-pla',
+      delta: -150,
+    });
+    expect(stockRows[1]).toMatchObject({
+      id: `failure-${id}__mat-pva`,
+      refId: `failure-${id}`,
+      assetId: 'mat-pva',
+      delta: -100,
+    });
+  });
+
+  it('does NOT persist materialBreakdown on the failureEvents row', async () => {
+    render();
+    await act(async () => {
+      await api().logFailure(BREAKDOWN_INPUT);
+    });
+
+    const rows = await db.failureEvents.toArray();
+    expect(rows).toHaveLength(1);
+    expect('materialBreakdown' in rows[0]).toBe(false);
+    expect(rows[0].gramsWasted).toBe(250); // ledger keeps the D-08 total
+  });
+
+  it('deleteFailure reverses EVERY per-material stockEvent by refId', async () => {
+    render();
+    let id: string | undefined;
+    await act(async () => {
+      id = await api().logFailure(BREAKDOWN_INPUT);
+    });
+    expect(await db.stockEvents.count()).toBe(2);
+
+    await act(async () => {
+      await api().deleteFailure(id!);
+    });
+
+    expect(await db.failureEvents.count()).toBe(0);
+    expect(await db.stockEvents.count()).toBe(0);
+  });
+
+  it('rejects a breakdown containing non-finite grams and writes nothing', async () => {
+    render();
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let id: string | undefined;
+    await act(async () => {
+      id = await api().logFailure({
+        ...BREAKDOWN_INPUT,
+        materialBreakdown: [{ materialId: 'mat-pla', grams: NaN }],
+      });
+    });
+
+    expect(id).toBeUndefined();
+    expect(await db.failureEvents.count()).toBe(0);
+    expect(await db.stockEvents.count()).toBe(0);
+    errSpy.mockRestore();
+  });
+});
+
 describe('useFailureEvents — deleteFailure', () => {
   it('deletes the failure row and its paired stockEvent by the deterministic refId', async () => {
     render();

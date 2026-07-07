@@ -1280,6 +1280,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
       materialId: dominantMaterialId(job),
       jobId: job.id,
       jobFilamentGrams: totalGrams,
+      // WR-08: per-filament rows so the modal deducts each material's own
+      // share (grams × %completion) instead of the job total from one material.
+      jobFilaments: (job.filaments ?? [])
+        .filter(f => f.filamentId && (f.grams || 0) > 0)
+        .map(f => ({ filamentId: f.filamentId, grams: f.grams })),
     });
     setShowLogFailureModal(true);
   }, []);

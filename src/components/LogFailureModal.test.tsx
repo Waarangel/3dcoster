@@ -170,4 +170,31 @@ describe('LogFailureModal', () => {
     expect(stockRows).toHaveLength(1);
     expect(stockRows[0]).toMatchObject({ assetId: 'mat-pla', delta: -40 });
   });
+
+  it('a multi-material job failure deducts each filament by its OWN grams × %completion (WR-08)', async () => {
+    await renderModal({
+      prefill: {
+        printerInstanceId: 'printer-1',
+        materialId: 'mat-pla', // dominant, per D-08
+        jobId: 'job-1',
+        jobFilamentGrams: 500, // 300 PLA + 200 PETG
+        jobFilaments: [
+          { filamentId: 'mat-pla', grams: 300 },
+          { filamentId: 'mat-petg', grams: 200 },
+        ],
+      },
+    });
+
+    const percentInput = inputByLabelText('% completion')!;
+    await act(async () => { setValue(percentInput, '50'); });
+
+    const submitBtn = buttonByText('Log failure')!;
+    await act(async () => { submitBtn.click(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+
+    const stockRows = (await db.stockEvents.toArray()).sort((a, b) => a.assetId.localeCompare(b.assetId));
+    expect(stockRows).toHaveLength(2);
+    expect(stockRows[0]).toMatchObject({ assetId: 'mat-petg', delta: -100 }); // 200 × 50%
+    expect(stockRows[1]).toMatchObject({ assetId: 'mat-pla', delta: -150 }); // 300 × 50%
+  });
 });
