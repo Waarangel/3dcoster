@@ -7,7 +7,9 @@ import {
   calculateNozzleWear,
   calculateLabor,
   calculateAmortization,
+  calculateAbrasiveSurcharge,
   calculateTax,
+  resolveElectricityRatePerKwh,
 } from './costCalc';
 import { getMaterialDensity } from './gcodeParser';
 import type {
@@ -17,6 +19,7 @@ import type {
   ElectricityConfig,
   MaterialUsage,
   FilamentType,
+  TouBand,
 } from '../types';
 import type { CalcInput, CalcInputFilamentRow } from './costCalc';
 
@@ -485,5 +488,179 @@ describe('calculateTax', () => {
     expect(taxOnSellingPrice).toBe(5);
     expect(taxOnSubtotal).toBe(2);
     expect(taxOnSellingPrice).not.toBe(taxOnSubtotal);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 39 (39-05): TOU-aware electricity, maintenance-cost line, abrasive
+// surcharge. All new CalcInput fields are optional and must be byte-identical
+// to pre-Phase-39 behavior at their defaults.
+// ---------------------------------------------------------------------------
+
+function makeTouBand(overrides: Partial<TouBand> = {}): TouBand {
+  return {
+    id: 'off-peak',
+    name: 'Off-Peak',
+    ratePerKwh: 0.08,
+    startTime: '23:00',
+    endTime: '07:00',
+    ...overrides,
+  };
+}
+
+describe('calculateElectricityCost (TOU-aware, Phase 39 TOU-02)', () => {
+  it('with no touBands configured, result is byte-identical to the pre-TOU flat-rate calculation', () => {
+    const printer = makePrinter({ wattage: 100 });
+    const flat = makeElectricity(0.12);
+    // Same math as the pre-Phase-39 test above: (100/1000) * 2 * 0.12 = 0.024
+    expect(calculateElectricityCost(2, printer, flat, '20:00')).toBeCloseTo(0.024, 4);
+    expect(calculateElectricityCost(2, printer, flat, undefined)).toBeCloseTo(0.024, 4);
+  });
+
+  it('with touBands configured but no touStartTime, falls back to the flat rate (byte-identical)', () => {
+    const printer = makePrinter({ wattage: 100 });
+    const electricity: ElectricityConfig = { costPerKwh: 0.12, touBands: [makeTouBand()] };
+    expect(calculateElectricityCost(2, printer, electricity, undefined)).toBeCloseTo(0.024, 4);
+  });
+
+  it('with touBands + a startTime fully inside an off-peak band, uses the weighted TOU rate (not the flat rate)', () => {
+    const printer = makePrinter({ wattage: 100 });
+    const electricity: ElectricityConfig = { costPerKwh: 0.12, touBands: [makeTouBand({ ratePerKwh: 0.08 })] };
+    // Fully inside 23:00-07:00 off-peak band → weighted rate resolves to 0.08, not 0.12.
+    // (100/1000) * 2 * 0.08 = 0.016
+    const result = calculateElectricityCost(2, printer, electricity, '23:30');
+    expect(result).toBeCloseTo(0.016, 4);
+    expect(result).not.toBeCloseTo(0.024, 4);
+  });
+
+  it('returns 0 when no printer is selected, regardless of TOU config', () => {
+    const electricity: ElectricityConfig = { costPerKwh: 0.12, touBands: [makeTouBand()] };
+    expect(calculateElectricityCost(2, undefined, electricity, '23:30')).toBe(0);
+  });
+});
+
+describe('resolveElectricityRatePerKwh (Phase 39 D-12 snapshot helper)', () => {
+  it('resolves the flat rate when no TOU bands/startTime apply', () => {
+    const electricity = makeElectricity(0.12);
+    expect(resolveElectricityRatePerKwh(2, electricity, undefined)).toBe(0.12);
+  });
+
+  it('resolves the weighted TOU rate when bands + startTime apply', () => {
+    const electricity: ElectricityConfig = { costPerKwh: 0.12, touBands: [makeTouBand({ ratePerKwh: 0.08 })] };
+    expect(resolveElectricityRatePerKwh(2, electricity, '23:30')).toBeCloseTo(0.08, 4);
+  });
+});
+
+describe('calculateAbrasiveSurcharge (Phase 39 WEAR-01, D-13)', () => {
+  const abrasiveMaterial: Material = {
+    id: 'mat-cf',
+    name: 'PLA-CF Spool',
+    category: 'filament',
+    filamentType: 'PLA-CF',
+    unit: 'g',
+    costPerUnit: 0.03,
+    currency: 'USD',
+  };
+  const plainMaterial = makeMaterial('mat-pla', 'PLA');
+
+  it('is 0 when the dominant material is not abrasive', () => {
+    const rows = [makeRow({ filamentId: 'mat-pla', grams: 500 })];
+    const printer = makePrinter();
+    const instance = makeInstance();
+    expect(calculateAbrasiveSurcharge(rows, [plainMaterial], printer, instance)).toBe(0);
+  });
+
+  it('applies when the dominant material is abrasive AND the instance nozzle is undefined (defaults to brass)', () => {
+    const rows = [makeRow({ filamentId: 'mat-cf', grams: 124 })];
+    const printer = makePrinter({ nozzleLifespanCm3: 1000, nozzleCost: 20 });
+    const instance = makeInstance({ nozzleType: undefined });
+    const expectedWear = calculateNozzleWear(rows, [abrasiveMaterial], printer);
+    const surcharge = calculateAbrasiveSurcharge(rows, [abrasiveMaterial], printer, instance);
+    expect(surcharge).toBeCloseTo(expectedWear, 4);
+    expect(surcharge).toBeGreaterThan(0);
+  });
+
+  it('applies when the dominant material is abrasive AND the instance nozzle is explicitly brass', () => {
+    const rows = [makeRow({ filamentId: 'mat-cf', grams: 124 })];
+    const printer = makePrinter({ nozzleLifespanCm3: 1000, nozzleCost: 20 });
+    const instance = makeInstance({ nozzleType: 'brass' });
+    const surcharge = calculateAbrasiveSurcharge(rows, [abrasiveMaterial], printer, instance);
+    expect(surcharge).toBeGreaterThan(0);
+  });
+
+  it('is 0 when the instance nozzle is hardened (non-brass), even with an abrasive dominant material', () => {
+    const rows = [makeRow({ filamentId: 'mat-cf', grams: 124 })];
+    const printer = makePrinter({ nozzleLifespanCm3: 1000, nozzleCost: 20 });
+    const instance = makeInstance({ nozzleType: 'hardened' });
+    expect(calculateAbrasiveSurcharge(rows, [abrasiveMaterial], printer, instance)).toBe(0);
+  });
+
+  it('is 0 when there is no selected instance', () => {
+    const rows = [makeRow({ filamentId: 'mat-cf', grams: 124 })];
+    const printer = makePrinter();
+    expect(calculateAbrasiveSurcharge(rows, [abrasiveMaterial], printer, undefined)).toBe(0);
+  });
+
+  it('never mutates calculateNozzleWear itself — same inputs return the same nozzleWear regardless of abrasive gating', () => {
+    const rows = [makeRow({ filamentId: 'mat-cf', grams: 124 })];
+    const printer = makePrinter({ nozzleLifespanCm3: 1000, nozzleCost: 20 });
+    const wearBrass = calculateNozzleWear(rows, [abrasiveMaterial], printer);
+    const wearHardened = calculateNozzleWear(rows, [abrasiveMaterial], printer);
+    expect(wearBrass).toBe(wearHardened);
+  });
+});
+
+describe('calculateCost (Phase 39 integration — byte-identical defaults + new lines)', () => {
+  it('with all Phase 39 fields at their defaults (undefined touStartTime/maintenanceCostPerHour, non-abrasive material), subtotal/failureAdjusted are byte-identical to pre-Phase-39', () => {
+    const baseline = calculateCost(makeCalcInput());
+    const withDefaults = calculateCost(makeCalcInput({ touStartTime: undefined, maintenanceCostPerHour: undefined }));
+    expect(withDefaults.subtotal).toBe(baseline.subtotal);
+    expect(withDefaults.failureAdjusted).toBe(baseline.failureAdjusted);
+    expect(withDefaults.maintenanceCost).toBe(0);
+    expect(withDefaults.abrasiveSurcharge).toBe(0);
+  });
+
+  it('maintenanceCostPerHour adds its own labeled line: maintenanceCostPerHour × printTimeHours', () => {
+    const input = makeCalcInput({ maintenanceCostPerHour: 2, printTimeHours: 3 });
+    const result = calculateCost(input);
+    expect(result.maintenanceCost).toBeCloseTo(6, 4);
+    // Subtotal includes the maintenance line additively.
+    const withoutMaintenance = calculateCost(makeCalcInput({ printTimeHours: 3 }));
+    expect(result.subtotal).toBeCloseTo(withoutMaintenance.subtotal + 6, 4);
+  });
+
+  it('abrasive surcharge is a NEW additive line on top of subtotal, not a replacement of nozzleWear', () => {
+    const abrasiveMaterial: Material = {
+      id: 'mat-cf', name: 'PLA-CF', category: 'filament', filamentType: 'PLA-CF', unit: 'g', costPerUnit: 0.03, currency: 'USD',
+    };
+    const input = makeCalcInput({
+      filamentRows: [makeRow({ filamentId: 'mat-cf', grams: 124, editedPrice: 0.03 })],
+      materials: [abrasiveMaterial],
+      selectedInstance: makeInstance({ nozzleType: undefined }),
+    });
+    const result = calculateCost(input);
+    expect(result.abrasiveSurcharge).toBeGreaterThan(0);
+    expect(result.nozzleWear).toBeGreaterThan(0);
+    // Subtotal reflects filament + electricity + labor + surcharge (no materialsUsed/model cost here).
+    expect(result.subtotal).toBeCloseTo(
+      result.filament + result.electricity + result.labor + result.abrasiveSurcharge,
+      4,
+    );
+  });
+
+  it('touRateUsedPerKwh reflects the flat rate for a non-TOU job', () => {
+    const input = makeCalcInput();
+    const result = calculateCost(input);
+    expect(result.touRateUsedPerKwh).toBe(0.12);
+  });
+
+  it('touRateUsedPerKwh reflects the weighted TOU rate when bands + startTime are supplied', () => {
+    const input = makeCalcInput({
+      electricity: { costPerKwh: 0.12, touBands: [makeTouBand({ ratePerKwh: 0.08 })] },
+      touStartTime: '23:30',
+      printTimeHours: 2,
+    });
+    const result = calculateCost(input);
+    expect(result.touRateUsedPerKwh).toBeCloseTo(0.08, 4);
   });
 });
