@@ -8,6 +8,7 @@ import { CsvImportModal } from './CsvImportModal';
 import { NewBadge } from './NewBadge';
 import { ResetAssetsModal } from './ResetAssetsModal';
 import { isCustomCategory } from '../utils/assetCategories';
+import { detectIsAbrasive } from '../utils/abrasive';
 import { StockBadge } from './inventory/StockBadge';
 import { LowStockBar } from './inventory/LowStockBar';
 import { useStockEvents } from '../hooks/useStockEvents';
@@ -547,6 +548,7 @@ export function AssetLibrary({
   const tagsId = useId();
   const stockOnHandId = useId();
   const lowStockThresholdId = useId();
+  const abrasiveOverrideId = useId();
   const formErrorId = useId();
 
   const [isAdding, setIsAdding] = useState(false);
@@ -774,6 +776,9 @@ export function AssetLibrary({
         notes: formData.notes,
         brand: formData.brand,
         filamentType: formData.filamentType,
+        // Phase 39 D-13: explicit user override for the abrasive auto-detect;
+        // undefined = keep auto-detecting from filamentType/name.
+        isAbrasive: formData.isAbrasive,
         currency: formData.currency ?? userCurrency,
         tags: formData.tags,
       };
@@ -1337,6 +1342,31 @@ export function AssetLibrary({
                     placeholder=""
                   />
                 </div>
+                {/* Phase 39 D-13 (CR-03): user override for the abrasive
+                    auto-detect. Filament-only — the wear surcharge in the
+                    calculator applies to filament on brass nozzles. */}
+                {formData.category === 'filament' && (
+                  <div>
+                    <label htmlFor={abrasiveOverrideId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                      <span>Abrasive (wears brass nozzles)</span>
+                      <InfoTooltip text="Abrasive filaments (carbon/glass fiber, glow, metal-fill) on a brass nozzle add a wear surcharge in the calculator. Auto-detect guesses from the name and type — if it's wrong for this filament (e.g. a 'Metallic' colorway on plain PLA), override it here." />
+                    </label>
+                    <Select
+                      id={abrasiveOverrideId}
+                      value={formData.isAbrasive === undefined ? 'auto' : formData.isAbrasive ? 'yes' : 'no'}
+                      onChange={e => setFormData({
+                        ...formData,
+                        isAbrasive: e.target.value === 'auto' ? undefined : e.target.value === 'yes',
+                      })}
+                    >
+                      <option value="auto">
+                        Auto-detect ({detectIsAbrasive(formData.filamentType, formData.name ?? '') ? 'abrasive' : 'not abrasive'})
+                      </option>
+                      <option value="yes">Abrasive</option>
+                      <option value="no">Not abrasive</option>
+                    </Select>
+                  </div>
+                )}
               </>
             )}
           </div>

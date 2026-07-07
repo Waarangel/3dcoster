@@ -267,3 +267,74 @@ describe('AssetLibrary — A11Y-15: category filter group and SortIndicator', ()
     expect(sortSpan, 'Expected SortIndicator span with aria-hidden="true"').not.toBeNull();
   });
 });
+
+// ===========================================================================
+// CR-03 (Phase 39 D-13): abrasive-override control in the filament edit form
+// ===========================================================================
+
+function setSelectValue(el: HTMLSelectElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!;
+  setter.call(el, value);
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+describe('AssetLibrary — abrasive override (Phase 39 D-13 / CR-03)', () => {
+  async function openEditForFilament(): Promise<HTMLSelectElement> {
+    await act(async () => {
+      root!.render(<AssetLibrary {...defaultProps} />);
+    });
+    const editButton = container!.querySelector('[aria-label="Edit Test Filament"]');
+    expect(editButton, 'Edit button for the filament asset not found').not.toBeNull();
+    await act(async () => {
+      editButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const label = Array.from(container!.querySelectorAll('label')).find(
+      l => l.textContent?.includes('Abrasive (wears brass nozzles)')
+    );
+    expect(label, 'Abrasive override label not found in the filament edit form').toBeTruthy();
+    const select = document.getElementById(label!.htmlFor) as HTMLSelectElement | null;
+    expect(select, 'Abrasive override select not found').not.toBeNull();
+    return select!;
+  }
+
+  async function submitForm(): Promise<void> {
+    const form = container!.querySelector('form');
+    expect(form).not.toBeNull();
+    await act(async () => {
+      form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+  }
+
+  it('renders the override select for a filament asset, defaulting to auto-detect', async () => {
+    const select = await openEditForFilament();
+    expect(select.value).toBe('auto');
+  });
+
+  it('persists isAbrasive: false when the user overrides to "Not abrasive"', async () => {
+    const select = await openEditForFilament();
+    await act(async () => { setSelectValue(select, 'no'); });
+    await submitForm();
+
+    expect(defaultProps.onUpdateAsset).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'asset-1', isAbrasive: false })
+    );
+  });
+
+  it('persists isAbrasive: true when the user overrides to "Abrasive"', async () => {
+    const select = await openEditForFilament();
+    await act(async () => { setSelectValue(select, 'yes'); });
+    await submitForm();
+
+    expect(defaultProps.onUpdateAsset).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'asset-1', isAbrasive: true })
+    );
+  });
+
+  it('keeps isAbrasive undefined when left on auto-detect', async () => {
+    await openEditForFilament();
+    await submitForm();
+
+    const updated = (defaultProps.onUpdateAsset as ReturnType<typeof vi.fn>).mock.calls[0][0] as Asset;
+    expect(updated.isAbrasive).toBeUndefined();
+  });
+});
