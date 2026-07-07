@@ -396,6 +396,7 @@ export function SettingsModal({
                                 aria-label={`Band start time (HH:MM) for ${band.name}`}
                                 value={editDraft?.start ?? band.startTime}
                                 onChange={e => setEditDraft(d => d && { ...d, start: e.target.value })}
+                                className="max-w-[5.5rem] shrink-0"
                               />
                               <Input
                                 type="text"
@@ -404,6 +405,7 @@ export function SettingsModal({
                                 aria-label={`Band end time (HH:MM) for ${band.name}`}
                                 value={editDraft?.end ?? band.endTime}
                                 onChange={e => setEditDraft(d => d && { ...d, end: e.target.value })}
+                                className="max-w-[5.5rem] shrink-0"
                               />
                               <IconButton
                                 label={`Done editing ${band.name}`}
