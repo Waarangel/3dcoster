@@ -43,32 +43,44 @@ export function useFailureEvents() {
     }
 
     const id = makeId('failure');
-    await db.failureEvents.add({ ...input, id });
 
-    // D-03: deduct stock whenever a gramsWasted amount was computed (job-linked)
-    // or explicitly entered (standalone) — materialId is always present, so a
-    // standalone failure with grams deducts against the selected material too.
-    if (input.gramsWasted !== undefined && input.gramsWasted > 0) {
-      await db.stockEvents.add({
-        id: failureStockRefId(id),
-        assetId: input.materialId,
-        delta: -input.gramsWasted,
-        kind: 'manual',
-        refId: failureStockRefId(id),
-        timestamp: input.failedAt,
-        note: 'Failed print — filament waste',
-      });
-    }
+    // WR-01: the failure row and its paired stock deduction commit atomically —
+    // a quota error / tab close / versionchange reload mid-write can no longer
+    // leave a failure event without its deduction (which a retry would then
+    // double-count under a fresh random id). Mirrors the v1.9 stock-atomicity
+    // convention for job save/delete paths.
+    await db.transaction('rw', db.failureEvents, db.stockEvents, async () => {
+      await db.failureEvents.add({ ...input, id });
+
+      // D-03: deduct stock whenever a gramsWasted amount was computed (job-linked)
+      // or explicitly entered (standalone) — materialId is always present, so a
+      // standalone failure with grams deducts against the selected material too.
+      if (input.gramsWasted !== undefined && input.gramsWasted > 0) {
+        await db.stockEvents.add({
+          id: failureStockRefId(id),
+          assetId: input.materialId,
+          delta: -input.gramsWasted,
+          kind: 'manual',
+          refId: failureStockRefId(id),
+          timestamp: input.failedAt,
+          note: 'Failed print — filament waste',
+        });
+      }
+    });
 
     return id;
   }, []);
 
   const deleteFailure = useCallback(async (id: string): Promise<void> => {
-    await db.failureEvents.delete(id);
-    // Self-correcting reversal: delete the paired stockEvent (if any) by its
-    // deterministic refId. No-op (Dexie delete on a missing key is a no-op)
-    // for standalone failures that never wrote one.
-    await db.stockEvents.delete(failureStockRefId(id));
+    // WR-01: delete + reversal are atomic — a failed reversal rolls the whole
+    // delete back instead of orphaning the deduction forever.
+    await db.transaction('rw', db.failureEvents, db.stockEvents, async () => {
+      await db.failureEvents.delete(id);
+      // Self-correcting reversal: delete the paired stockEvent (if any) by its
+      // deterministic refId. No-op (Dexie delete on a missing key is a no-op)
+      // for standalone failures that never wrote one.
+      await db.stockEvents.delete(failureStockRefId(id));
+    });
   }, []);
 
   return { events, logFailure, deleteFailure };
