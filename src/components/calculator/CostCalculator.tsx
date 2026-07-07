@@ -1,8 +1,12 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, MarketplaceFees, FilamentUsage, UserProfile } from '../../types';
 import { useStockEvents } from '../../hooks/useStockEvents';
 import { useCostForm, nextRowKey, FORM_STORAGE_KEY } from '../../hooks/useCostForm';
 import { useCostDerivedValues } from '../../hooks/useCostDerivedValues';
+import { useFailureRate } from '../../hooks/useFailureRate';
+import { useMaintenanceAmortization } from '../../hooks/useMaintenanceAmortization';
+import { dominantMaterialId } from '../../db/failureRate';
+import { resolveWeightedCostPerKwh } from '../../utils/touElectricity';
 import { Button, useToast } from '../ui';
 import { getCurrencySymbol, getDistanceUnit } from '../../utils/currency';
 import type { FxRateTable } from '../../utils/fxConvert';
@@ -108,6 +112,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     packagingMaterials, setPackagingMaterials,
     marketplace, setMarketplace,
     etsyChecks, setEtsyChecks,
+    touStartTime, setTouStartTime,
+    maintenanceCostPerHour, setMaintenanceCostPerHour,
     toMaterialRow,
     stripRowKey,
     clearForm,
@@ -130,6 +136,39 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   const packagingItems = materials.filter(m => m.category === 'packaging');
   const consumableItems = materials.filter(m => m.category === 'consumable');
   const consumables = [...packagingItems, ...consumableItems];
+
+  // Phase 39 — Cost Realism suggestion hooks, called HERE in the orchestrator
+  // (Pitfall 2: never inside CostParametersSection, which stays props-in /
+  // callbacks-out / Dexie-free). Each hook is read-only; the manual inputs on
+  // the form remain authoritative — Apply always routes through the EXISTING
+  // setter, never an auto-write.
+  const dominantFilamentId = useMemo(
+    () => dominantMaterialId({ filaments: filamentRows.filter(r => r.filamentId).map(r => ({ filamentId: r.filamentId, grams: r.grams })) }),
+    [filamentRows],
+  );
+  const empiricalFailureRate = useFailureRate(selectedInstanceId, dominantFilamentId);
+  const { amortization: maintenanceAmortization } = useMaintenanceAmortization(selectedInstance);
+
+  // TOU-02 (D-10/D-11): whether any TOU bands are configured (gates the
+  // start-time picker's visibility) and a one-line savings hint comparing the
+  // CURRENTLY selected start time's weighted rate against the cheapest
+  // available band start, given the same print duration.
+  const touBands = electricity.touBands ?? [];
+  const touBandsConfigured = touBands.length > 0;
+  const touSavingsHint = useMemo(() => {
+    if (!touBandsConfigured || !touStartTime || printTimeHours <= 0) return null;
+    const currentRate = resolveWeightedCostPerKwh(touBands, electricity.costPerKwh, touStartTime, printTimeHours);
+    let cheapest: { start: string; rate: number } | null = null;
+    for (const band of touBands) {
+      const rate = resolveWeightedCostPerKwh(touBands, electricity.costPerKwh, band.startTime, printTimeHours);
+      if (!cheapest || rate < cheapest.rate) cheapest = { start: band.startTime, rate };
+    }
+    if (!cheapest || cheapest.rate >= currentRate) return null;
+    const wattage = selectedPrinter?.wattage ?? 0;
+    const saving = (wattage / 1000) * printTimeHours * (currentRate - cheapest.rate);
+    if (saving <= 0) return null;
+    return { cheapestStart: cheapest.start, saving };
+  }, [touBandsConfigured, touStartTime, printTimeHours, touBands, electricity.costPerKwh, selectedPrinter]);
 
   // availableMarketplaces / availableShippingMethods (A1) now live LOCALLY in
   // ShippingSection, derived from userCurrency/shippingConfig.customCarriers —
@@ -162,8 +201,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     marketplaceFees,
     taxRateOverride,
     userProfile,
+    touStartTime,
+    maintenanceCostPerHour,
   });
-  const { trueCost, fixedCosts, tax, pricing, dispatchPricing } = derived;
+  const { trueCost, fixedCosts, tax, pricing, dispatchPricing, costs } = derived;
   const { profitMarginPercent, targetProfit, sellingPrice, lastEdited } = pricing;
 
   // Persist the FULL form-state blob (useCostForm's non-pricing fields +
@@ -281,6 +322,15 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       marketplace,
       fixedCostsAtSave: { depreciation: fixedCosts.depreciation, nozzleWear: fixedCosts.nozzleWear },
       currency: userCurrency,
+      // Phase 39 TOU-02/WEAR-02 (D-12/D-14): snapshot-at-save pattern — reads
+      // the RESOLVED rate off `costs` (the real CostBreakdown, already computed
+      // with this exact touStartTime), never recomputed later from a live
+      // tariff. touStartTime itself is undefined when no TOU bands are
+      // configured (flat rate was used) — both fields stay undefined for
+      // non-TOU jobs, matching legacy jobs exactly.
+      touStartTime: touStartTime || undefined,
+      touRateUsedPerKwh: touStartTime ? costs.touRateUsedPerKwh : undefined,
+      maintenanceCostAtSave: maintenanceCostPerHour > 0 ? maintenanceCostPerHour : undefined,
     };
 
     if (editingJob) {
@@ -384,6 +434,16 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         onUpdateMaterialUsage={updateMaterialUsage}
         onRemoveMaterialUsage={removeMaterialUsage}
         ids={ids}
+        empiricalFailureRate={empiricalFailureRate}
+        onApplyEmpiricalFailureRate={() => empiricalFailureRate && setFailureRate(empiricalFailureRate.rate)}
+        touStartTime={touStartTime}
+        onTouStartTimeChange={setTouStartTime}
+        touBandsConfigured={touBandsConfigured}
+        touSavingsHint={touSavingsHint}
+        maintenanceCostPerHour={maintenanceCostPerHour}
+        onMaintenanceCostPerHourChange={setMaintenanceCostPerHour}
+        amortizedMaintenancePerHour={maintenanceAmortization}
+        onApplyAmortizedMaintenance={() => maintenanceAmortization && setMaintenanceCostPerHour(maintenanceAmortization.amortizedPerHour)}
       />
 
       <ShippingSection

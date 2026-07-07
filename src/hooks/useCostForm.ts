@@ -131,6 +131,15 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
   const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
   const [materialsUsed, setMaterialsUsed] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('materialsUsed', []).map(toMaterialRow));
 
+  // Phase 39 TOU-02/WEAR-02: touStartTime ("HH:MM", undefined = flat rate) and
+  // maintenanceCostPerHour (D-14, the NEW manual maintenance-cost input) are
+  // ordinary form fields — both flow into useCostDerivedValues' CalcInput and
+  // both are Apply-gated suggestions (never auto-written) per the plan's D-10/D-14.
+  const [touStartTime, setTouStartTime] = useState<string | undefined>(
+    () => editingJob?.touStartTime ?? getStoredValue<string | undefined>('touStartTime', undefined)
+  );
+  const [maintenanceCostPerHour, setMaintenanceCostPerHour] = useState(() => getStoredValue('maintenanceCostPerHour', 0));
+
   // Per-job Tax Rate override (Phase 13). Undefined ⇒ chain falls back to Settings default → region → manual.
   // editingJob takes precedence over sessionStorage (resumed-job-edit case).
   const [taxRateOverride, setTaxRateOverride] = useState<number | undefined>(
@@ -183,12 +192,14 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     packagingMaterials,
     marketplace,
     etsyChecks,
+    touStartTime,
+    maintenanceCostPerHour,
   }), [
     printName, filamentRows, selectedInstanceId, printTimeHours, modelCost,
     modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes,
     postProcessingMinutes, failureRate, materialsUsed, taxRateOverride,
     shippingMethod, shippingDistanceKm, shippingOverrideCost,
-    packagingMaterials, marketplace, etsyChecks,
+    packagingMaterials, marketplace, etsyChecks, touStartTime, maintenanceCostPerHour,
   ]);
 
   // Populate fields when editing an existing job
@@ -207,6 +218,12 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
       setMaterialsUsed(editingJob.materialsUsed.map(toMaterialRow));
       setTaxRateOverride(editingJob.taxRate);
       setEtsyChecks(editingJob.etsyChecks ?? {});
+      // Phase 39 TOU-02/WEAR-02: restore the snapshotted start time (undefined =
+      // flat rate was used) and the D-14 manual maintenance-cost input. Neither
+      // field is re-derived from live tariff/amortization data on resume — the
+      // saved job's own values are authoritative (no silent reprice of history).
+      setTouStartTime(editingJob.touStartTime);
+      setMaintenanceCostPerHour(editingJob.maintenanceCostAtSave ?? 0);
       // Cost-input snapshot restore (Phase 14 fix-up). Fields are optional on PrintJob —
       // pre-fix-up records have these undefined, in which case we leave form state alone
       // (it falls back to sessionStorage / defaults from the initial useState).
@@ -273,6 +290,8 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     setPackagingMaterials([]);
     setMarketplace('none');
     setEtsyChecks({});
+    setTouStartTime(undefined);
+    setMaintenanceCostPerHour(0);
     // Clear sessionStorage when form is cleared
     sessionStorage.removeItem(FORM_STORAGE_KEY);
   };
@@ -298,6 +317,8 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     packagingMaterials, setPackagingMaterials,
     marketplace, setMarketplace,
     etsyChecks, setEtsyChecks,
+    touStartTime, setTouStartTime,
+    maintenanceCostPerHour, setMaintenanceCostPerHour,
     makeDefaultRow,
     toMaterialRow,
     stripRowKey,

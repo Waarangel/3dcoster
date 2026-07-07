@@ -2,6 +2,22 @@ import type { Material, MaterialUsage } from '../../types';
 import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import type { MaterialRow } from '../../hooks/useCostForm';
 import type { CalculatorFieldIds } from './fieldIds';
+import type { DerivedFailureRate } from '../../db/failureRate';
+
+// Phase 39 WEAR-01/02 (D-14): amortized-maintenance suggestion shape, mirroring
+// the orchestrator's maintenance-amortization derivation result — kept as a
+// small local shape so this props-in/callbacks-out section never imports the
+// Dexie-backed derivation hook itself (contract preserved).
+export interface AmortizedMaintenanceSuggestion {
+  amortizedPerHour: number;
+}
+
+// Phase 39 TOU-02 (D-10/D-11): a savings hint surfaced when the CURRENT start
+// time is not the cheapest available option.
+export interface TouSavingsHint {
+  cheapestStart: string;
+  saving: number;
+}
 
 interface CostParametersSectionProps {
   printTimeHours: number;
@@ -20,6 +36,30 @@ interface CostParametersSectionProps {
   onUpdateMaterialUsage: (index: number, field: keyof MaterialUsage, value: string | number) => void;
   onRemoveMaterialUsage: (index: number) => void;
   ids: CalculatorFieldIds;
+
+  // --- Phase 39 additions (all optional-by-shape via explicit null, never
+  // speculative — every prop here is consumed by a concrete hint row below) ---
+
+  /** FAIL-02: the empirical failure-rate suggestion for the current printer×material combo, or null below the sample-size threshold / before a printer+material are selected. */
+  empiricalFailureRate?: DerivedFailureRate | null;
+  /** Apply the suggested rate — routes through the EXISTING onFailureRateChange setter (never a silent auto-write). */
+  onApplyEmpiricalFailureRate?: () => void;
+
+  /** TOU-02: the print's "HH:MM" start time. Undefined = flat rate is used. */
+  touStartTime?: string;
+  onTouStartTimeChange?: (value: string | undefined) => void;
+  /** Whether the user has configured any TOU bands in Settings — gates whether the start-time picker renders at all. */
+  touBandsConfigured?: boolean;
+  /** A one-line savings hint when the current start time isn't the cheapest available band. */
+  touSavingsHint?: TouSavingsHint | null;
+
+  /** WEAR-02 (D-14): the manual maintenance-cost $/hr input — a NEW field, since no prior maintenance-cost input existed. */
+  maintenanceCostPerHour?: number;
+  onMaintenanceCostPerHourChange?: (value: number) => void;
+  /** The amortized $/hr suggestion derived from logged maintenance history, or null with insufficient history. */
+  amortizedMaintenancePerHour?: AmortizedMaintenanceSuggestion | null;
+  /** Apply the suggested amortized rate — routes through onMaintenanceCostPerHourChange. */
+  onApplyAmortizedMaintenance?: () => void;
 }
 
 /**
@@ -46,6 +86,16 @@ export function CostParametersSection({
   onUpdateMaterialUsage,
   onRemoveMaterialUsage,
   ids,
+  empiricalFailureRate,
+  onApplyEmpiricalFailureRate,
+  touStartTime,
+  onTouStartTimeChange,
+  touBandsConfigured,
+  touSavingsHint,
+  maintenanceCostPerHour,
+  onMaintenanceCostPerHourChange,
+  amortizedMaintenancePerHour,
+  onApplyAmortizedMaintenance,
 }: CostParametersSectionProps) {
   return (
     <>
@@ -77,6 +127,29 @@ export function CostParametersSection({
             onChange={e => onFailureRateChange(Math.min(parseFloat(e.target.value) || 0, 99))}
             placeholder="5"
           />
+          {/* Phase 39 FAIL-02: empirical failure-rate suggestion. The manual
+              input above stays authoritative — Apply routes through the SAME
+              onFailureRateChange setter the input itself uses; nothing here
+              ever auto-writes the field. */}
+          {empiricalFailureRate && (
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400">
+              <span>
+                Logged: {empiricalFailureRate.rate.toFixed(0)}%
+                {empiricalFailureRate.provenance === 'printer-fallback' ? ' (printer avg)' : ''}
+              </span>
+              <InfoTooltip
+                text={`Based on ${empiricalFailureRate.sampleSize} logged attempts${empiricalFailureRate.provenance === 'printer-fallback' ? ' across all materials on this printer' : ' for this printer + material'}. Applying replaces the manual rate above — it stays editable.`}
+              />
+              <Button
+                variant="ghost"
+                btnSize="sm"
+                className="!px-2 !py-0.5 underline"
+                onClick={onApplyEmpiricalFailureRate}
+              >
+                Apply
+              </Button>
+            </div>
+          )}
         </div>
 
         <div>
@@ -109,6 +182,66 @@ export function CostParametersSection({
             onChange={e => onPostProcessingMinutesChange(Math.max(parseInt(e.target.value) || 0, 0))}
             placeholder="0"
           />
+        </div>
+
+        {/* Phase 39 TOU-02: print-start-time picker — renders ONLY when the
+            user has configured TOU bands in Settings. Empty value = flat rate. */}
+        {touBandsConfigured && (
+          <div>
+            <label htmlFor="tou-start-time" className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+              <span>Print Start Time</span>
+              <InfoTooltip text="Used to price electricity against your configured time-of-use rate bands. Leave blank to use the flat rate." />
+            </label>
+            <Input
+              id="tou-start-time"
+              type="time"
+              compact
+              value={touStartTime ?? ''}
+              onChange={e => onTouStartTimeChange?.(e.target.value || undefined)}
+            />
+            {touSavingsHint && (
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400">
+                <span>
+                  Cheapest start: {touSavingsHint.cheapestStart} (save {currencySymbol}{touSavingsHint.saving.toFixed(2)})
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Phase 39 WEAR-02 (D-14): manual maintenance-cost input — a NEW
+            field (no prior maintenance-cost input existed on this form). */}
+        <div>
+          <label htmlFor="maintenance-cost-per-hour" className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+            <span>Maintenance ({currencySymbol}/hr)</span>
+            <InfoTooltip text="An optional manual maintenance cost per print hour, added as its own labeled cost line." />
+          </label>
+          <Input
+            id="maintenance-cost-per-hour"
+            type="number"
+            step="0.01"
+            min="0"
+            compact
+            value={maintenanceCostPerHour || ''}
+            onChange={e => onMaintenanceCostPerHourChange?.(Math.max(parseFloat(e.target.value) || 0, 0))}
+            placeholder="0.00"
+          />
+          {amortizedMaintenancePerHour && (
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400">
+              <span>
+                Amortized: {currencySymbol}{amortizedMaintenancePerHour.amortizedPerHour.toFixed(2)}/hr
+              </span>
+              <InfoTooltip text="Derived from this printer's logged maintenance history and cumulative print hours. Applying replaces the manual value above — it stays editable." />
+              <Button
+                variant="ghost"
+                btnSize="sm"
+                className="!px-2 !py-0.5 underline"
+                onClick={onApplyAmortizedMaintenance}
+              >
+                Apply
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
