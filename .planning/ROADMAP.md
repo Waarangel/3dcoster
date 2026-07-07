@@ -210,7 +210,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
-| 39. Cost Realism | 6/6 | Complete   | 2026-07-07 |
+| 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 0/TBD | Not started | - |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
