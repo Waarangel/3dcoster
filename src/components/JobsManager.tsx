@@ -1,16 +1,18 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus, MarketplaceFees } from '../types';
+import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus, MarketplaceFees, PrinterInstance } from '../types';
 import { useSales, useAllSales, useQuotes } from '../hooks/useDatabase';
 import { db } from '../db/database';
-import { Button, EditButton, DeleteButton, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
+import { Button, EditButton, DeleteButton, IconButton, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { SearchIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
 import { DeclineQuoteModal } from './DeclineQuoteModal';
 import { RecordSaleModal } from './RecordSaleModal';
+import { LogFailureModal, type LogFailureModalPrefill } from './LogFailureModal';
+import { dominantMaterialId } from '../db/failureRate';
 import { SaleRow } from './SaleRow';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency } from '../utils/currency';
@@ -34,6 +36,8 @@ interface JobsManagerProps {
   userProfile: UserProfile;
   /** Cached USD-based FX table for display-time conversion of the summary totals (null until first fetch). */
   fxTable: FxRateTable | null;
+  /** Phase 39 FAIL-01: printer instances, used by the per-row "Log Failure" action to populate LogFailureModal's printer Select. */
+  printerInstances: PrinterInstance[];
   onDeleteJob: (id: string) => Promise<void>;
   onEditJob: (job: PrintJob) => void;
   onSwitchTab: (tab: 'calculator' | 'jobs' | 'materials' | 'settings') => void;
@@ -125,6 +129,8 @@ type JobCardProps = {
   onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
+  /** Phase 39 FAIL-01: opens LogFailureModal pre-filled with this job's printer + dominant material + total filament grams. */
+  onLogFailure: (job: PrintJob) => void;
   /** PERF-09: returns the lifted quotes slice for this job (replaces per-row useQuotes() call). */
   getQuotesForJob: (jobId: string) => Quote[];
   /** PERF-09: updateQuote from the single parent useQuotes() call, threaded down for the Reopen action. */
@@ -491,6 +497,7 @@ export const JobCard = memo(function JobCard({
   onGeneratePdf,
   onEditSale,
   onDeleteSale,
+  onLogFailure,
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
@@ -813,6 +820,20 @@ export const JobCard = memo(function JobCard({
               label={job.name}
               onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}
             />
+            {/* Phase 39 FAIL-01: one-tap failure log from a saved job row — icon
+                action per the UI Conventions (never a raw button/svg). The
+                'log-failure' NewBadge key was registered in Plan 01's
+                features.ts; this plan only references it. */}
+            <div className="relative inline-flex">
+              <IconButton
+                label={`Log Failure ${job.name}`}
+                icon={<WarningTriangleIcon className="w-4 h-4" />}
+                variant="ghost"
+                className="text-amber-400 hover:text-amber-300"
+                onClick={(e) => { e.stopPropagation(); onLogFailure(job); }}
+              />
+              <NewBadge feature="log-failure" className="absolute -top-1 -right-1 pointer-events-none" />
+            </div>
           </div>
 
           {/* D-23: Unified "Orders" section per job. OrdersSection internally
@@ -874,6 +895,8 @@ type JobRowProps = {
   onGeneratePdf: (job: PrintJob) => void;
   onEditSale: (sale: Sale) => void;
   onDeleteSale: (sale: Sale) => void;
+  /** Phase 39 FAIL-01: opens LogFailureModal pre-filled with this job's printer + dominant material + total filament grams. */
+  onLogFailure: (job: PrintJob) => void;
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
@@ -907,6 +930,7 @@ const JobRow = ({
   onGeneratePdf,
   onEditSale,
   onDeleteSale,
+  onLogFailure,
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
@@ -939,6 +963,7 @@ const JobRow = ({
       onGeneratePdf={onGeneratePdf}
       onEditSale={onEditSale}
       onDeleteSale={onDeleteSale}
+      onLogFailure={onLogFailure}
       onStartConversion={onStartConversion}
       onEditQuote={onEditQuote}
       onDeclineQuote={onDeclineQuote}
@@ -999,6 +1024,27 @@ function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+// Phase 39 FAIL-01 — WarningTriangleIcon. Used on the per-row "Log Failure"
+// icon action (mirrors the ChevronRightIcon/TagIcon module-scope pattern).
+function WarningTriangleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 // Phase 15 plan 10 (Gap B) — TagIcon. Lucide-style tag shape; used as the
 // hover affordance on the title row for opening the inline edit panel.
 function TagIcon(props: SVGProps<SVGSVGElement>) {
@@ -1030,7 +1076,7 @@ function TagIcon(props: SVGProps<SVGSVGElement>) {
 // onto the inline add-tag field without duplicating the literal string.
 export const ADD_TAG_PLACEHOLDER = 'trending, popular, out of date';
 
-export function JobsManager({ jobs, isLoading, materials, shippingConfig, marketplaceFees, userCurrency, userProfile, fxTable, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
+export function JobsManager({ jobs, isLoading, materials, shippingConfig, marketplaceFees, userCurrency, userProfile, fxTable, printerInstances, onDeleteJob, onEditJob, onSwitchTab }: JobsManagerProps) {
   const toast = useToast();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   // Print Quote modal state (plan 16-10 + D-27). Either:
@@ -1044,6 +1090,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
   >(null);
   // Decline modal state (D-28). The Quote being declined, or null when closed.
   const [decliningQuote, setDecliningQuote] = useState<Quote | null>(null);
+  // Phase 39 FAIL-01: LogFailureModal open state. null = closed. When opened
+  // from a job row, prefill carries the row's printer/dominant material/total
+  // filament grams; opened standalone (Reports Failures section, Plan 02
+  // Task 3) prefill is undefined.
+  const [logFailurePrefill, setLogFailurePrefill] = useState<LogFailureModalPrefill | null>(null);
+  const [showLogFailureModal, setShowLogFailureModal] = useState(false);
   // Convert to Sale state (plan 16-12, D-20). When non-null, the Record Sale modal
   // opens in "conversion" mode pre-populated from this Quote's snapshot; on save
   // the Sale write + Quote 'converted' patch run in one Dexie transaction.
@@ -1161,6 +1213,12 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     [jobs, salesByJob, userCurrency, fxTable],
   );
 
+  // Phase 39 FAIL-01: filament-category assets for LogFailureModal's material Select.
+  const filamentAssets = useMemo(
+    () => materials.filter(m => m.category === 'filament'),
+    [materials],
+  );
+
   // Close the Record Sale modal and clear mode-selecting state. The modal's
   // own form state is reset by Modal.tsx:67 unmount (children unmount on
   // close per Phase 19 D-19); we just clear the mode flags here so the next
@@ -1209,6 +1267,26 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
   // this component never touches db directly.
   const handleGeneratePdf = useCallback((job: PrintJob) => {
     setPrintQuoteModalState({ job, mode: 'create' });
+  }, []);
+
+  // Phase 39 FAIL-01: one-tap failure log from a saved job row. Pre-fills the
+  // row's printerInstanceId + dominant material (D-08) + total filament grams
+  // (summed across all filament rows) so LogFailureModal can compute
+  // gramsWasted = totalGrams × (%completion / 100) on submit.
+  const handleLogFailure = useCallback((job: PrintJob) => {
+    const totalGrams = (job.filaments ?? []).reduce((sum, f) => sum + (f.grams || 0), 0);
+    setLogFailurePrefill({
+      printerInstanceId: job.printerInstanceId,
+      materialId: dominantMaterialId(job),
+      jobId: job.id,
+      jobFilamentGrams: totalGrams,
+    });
+    setShowLogFailureModal(true);
+  }, []);
+
+  const handleCloseLogFailureModal = useCallback(() => {
+    setShowLogFailureModal(false);
+    setLogFailurePrefill(null);
   }, []);
 
   // D-27: Edit Quote — opens PrintQuoteModal in edit mode for the given Pending Quote.
@@ -1400,6 +1478,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     onGeneratePdf: handleGeneratePdf,
     onEditSale: handleEditSaleStable,
     onDeleteSale: handleDeleteSaleStable,
+    onLogFailure: handleLogFailure,
     onStartConversion: handleStartConversion,
     onEditQuote: handleStartEditQuote,
     onDeclineQuote: handleStartDecline,
@@ -1412,7 +1491,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     onCancelAddTag: handleCancelAddTag,
     onSubmitAddTag: handleSubmitAddTag,
     onRemoveTag: handleRemoveTag,
-  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, getQuotesForJob, updateQuoteFromHook, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
+  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, getQuotesForJob, updateQuoteFromHook, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleLogFailure, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1616,6 +1695,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
                       onGeneratePdf={handleGeneratePdf}
                       onEditSale={handleEditSaleStable}
                       onDeleteSale={handleDeleteSaleStable}
+                      onLogFailure={handleLogFailure}
                       onStartConversion={handleStartConversion}
                       onEditQuote={handleStartEditQuote}
                       onDeclineQuote={handleStartDecline}
@@ -1730,6 +1810,16 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
         quote={decliningQuote}
         onConfirm={handleConfirmDecline}
         onClose={() => setDecliningQuote(null)}
+      />
+
+      {/* Phase 39 FAIL-01: LogFailureModal — one-tap job-row log (prefilled) or
+          standalone (Reports Failures section, Plan 02 Task 3, prefill=undefined). */}
+      <LogFailureModal
+        isOpen={showLogFailureModal}
+        onClose={handleCloseLogFailureModal}
+        printerInstances={printerInstances}
+        filamentAssets={filamentAssets}
+        prefill={logFailurePrefill ?? undefined}
       />
 
     </div>
