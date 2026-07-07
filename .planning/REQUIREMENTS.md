@@ -21,17 +21,17 @@
 
 ### Cost Realism — failure engine
 
-- [ ] **FAIL-01**: User can log a print failure in one tap from a job (or standalone) with % completion, printer, and material — creating a `failureEvents` ledger entry (new Dexie store, migration + backup/restore inclusion)
-- [ ] **FAIL-02**: App derives an empirical failure rate per printer × material from the ledger and shows it alongside the user's manual failure-rate input as a suggestion with one-click "Apply" (manual input stays authoritative; `costCalc.ts` pure function untouched)
-- [ ] **FAIL-03**: Applied failure rates fold real scrap cost (partial filament + time + electricity by % completion) into true cost; saved jobs/quotes are untouched until re-edited (no silent reprice of history)
-- [ ] **FAIL-04**: User can view a failure history/diagnostic ledger (per printer, per material, over time)
+- [x] **FAIL-01**: User can log a print failure in one tap from a job (or standalone) with % completion, printer, and material — creating a `failureEvents` ledger entry (new Dexie store, migration + backup/restore inclusion)
+- [x] **FAIL-02**: App derives an empirical failure rate per printer × material from the ledger and shows it alongside the user's manual failure-rate input as a suggestion with one-click "Apply" (manual input stays authoritative; `costCalc.ts` pure function untouched)
+- [x] **FAIL-03**: Applied failure rates fold real scrap cost (partial filament + time + electricity by % completion) into true cost; saved jobs/quotes are untouched until re-edited (no silent reprice of history)
+- [x] **FAIL-04**: User can view a failure history/diagnostic ledger (per printer, per material, over time)
 
 ### Cost Realism — energy & wear
 
-- [ ] **TOU-01**: User can define time-of-use electricity tariffs (peak/off-peak rates + hour windows) in Settings — user-entered, no API
-- [ ] **TOU-02**: Job electricity cost can use the TOU tariff based on when the print runs (start time + duration), with the flat rate as default
-- [ ] **WEAR-01**: User can log maintenance events (nozzle/belt/bed swaps, cost, date, printer-hours) and track cumulative abrasive-hours for CF/GF filaments on brass nozzles
-- [ ] **WEAR-02**: Maintenance history amortizes into a real cost-per-hour per printer and predicts the next likely swap
+- [x] **TOU-01**: User can define time-of-use electricity tariffs (peak/off-peak rates + hour windows) in Settings — user-entered, no API
+- [x] **TOU-02**: Job electricity cost can use the TOU tariff based on when the print runs (start time + duration), with the flat rate as default
+- [x] **WEAR-01**: User can log maintenance events (nozzle/belt/bed swaps, cost, date, printer-hours) and track cumulative abrasive-hours for CF/GF filaments on brass nozzles
+- [x] **WEAR-02**: Maintenance history amortizes into a real cost-per-hour per printer and predicts the next likely swap
 
 ### Insight & Decisions
 
@@ -106,14 +106,14 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | FOUND-01 | Phase 38 | Complete |
 | FOUND-02 | Phase 38 | Complete |
 | FOUND-03 | Phase 38 | Complete |
-| FAIL-01 | Phase 39 | Pending |
-| FAIL-02 | Phase 39 | Pending |
-| FAIL-03 | Phase 39 | Pending |
-| FAIL-04 | Phase 39 | Pending |
-| TOU-01 | Phase 39 | Pending |
-| TOU-02 | Phase 39 | Pending |
-| WEAR-01 | Phase 39 | Pending |
-| WEAR-02 | Phase 39 | Pending |
+| FAIL-01 | Phase 39 | Complete |
+| FAIL-02 | Phase 39 | Complete |
+| FAIL-03 | Phase 39 | Complete |
+| FAIL-04 | Phase 39 | Complete |
+| TOU-01 | Phase 39 | Complete |
+| TOU-02 | Phase 39 | Complete |
+| WEAR-01 | Phase 39 | Complete |
+| WEAR-02 | Phase 39 | Complete |
 | INS-01 | Phase 40 | Pending |
 | INS-02 | Phase 40 | Pending |
 | INS-03 | Phase 40 | Pending |
