@@ -51,6 +51,13 @@ export function SettingsModal({
   // Phase 39 TOU-01 — TOU tariff band editor (flat rate + up to 3 named bands).
   const { bands: touBands, upsertBand: upsertTouBand, removeBand: removeTouBand } = useTouTariff(electricity, onElectricityChange);
   const [editingBandId, setEditingBandId] = useState<string | null>(null);
+  // CR-04: draft copies of the band being edited. The edit-row inputs are driven
+  // by this LOCAL state (mirroring the add row's newBand* pattern) so partial
+  // HH:MM values survive each keystroke — validation runs only when the user
+  // commits via the Done button. Routing keystrokes straight through
+  // upsertTouBand froze the inputs: the strict parseHHMM validation rejected
+  // every intermediate value, so the controlled inputs snapped back on re-render.
+  const [editDraft, setEditDraft] = useState<{ name: string; rate: string; start: string; end: string } | null>(null);
   const [newBandName, setNewBandName] = useState('');
   const [newBandRate, setNewBandRate] = useState('');
   const [newBandStart, setNewBandStart] = useState('');
@@ -80,8 +87,42 @@ export function SettingsModal({
     setNewBandEnd('');
   };
 
-  const handleUpdateTouBand = (band: TouBand, field: keyof TouBand, value: string | number) => {
-    setBandError(upsertTouBand({ ...band, [field]: value }));
+  // CR-04: enter edit mode by seeding the draft from the band's persisted values.
+  const handleStartEditTouBand = (band: TouBand) => {
+    setEditingBandId(band.id);
+    setEditDraft({
+      name: band.name,
+      rate: String(band.ratePerKwh),
+      start: band.startTime,
+      end: band.endTime,
+    });
+    setBandError(null);
+  };
+
+  // CR-04: commit the draft through the useTouTariff validation boundary on
+  // Done. Rejection keeps edit mode open (and the user's draft intact) so the
+  // value can be corrected; success clears the draft and exits edit mode.
+  const handleCommitTouBandEdit = (band: TouBand) => {
+    if (!editDraft) {
+      setEditingBandId(null);
+      return;
+    }
+    const trimmedName = editDraft.name.trim();
+    if (!trimmedName) {
+      setBandError('Enter a band name.');
+      return;
+    }
+    const error = upsertTouBand({
+      ...band,
+      name: trimmedName,
+      ratePerKwh: parseFloat(editDraft.rate),
+      startTime: editDraft.start,
+      endTime: editDraft.end,
+    });
+    setBandError(error);
+    if (error) return;
+    setEditingBandId(null);
+    setEditDraft(null);
   };
 
   // One-time, non-destructive nudge for USD users whose fuel price predates the
@@ -329,39 +370,45 @@ export function SettingsModal({
                         <div key={band.id} className="flex items-center gap-2 bg-slate-700/50 p-2 rounded-lg flex-wrap">
                           {editingBandId === band.id ? (
                             <>
+                              {/* CR-04: all four edit-row inputs are driven by the LOCAL
+                                  editDraft (seeded on Edit click), never by persisted band
+                                  state — so partial values survive keystrokes. Validation
+                                  runs only on the Done commit. */}
                               <Input
                                 type="text"
-                                value={band.name}
-                                onChange={e => handleUpdateTouBand(band, 'name', e.target.value)}
+                                aria-label={`Band name for ${band.name}`}
+                                value={editDraft?.name ?? band.name}
+                                onChange={e => setEditDraft(d => d && { ...d, name: e.target.value })}
                                 className="flex-1 min-w-[6rem]"
                               />
                               <Input
                                 type="number"
                                 step="0.01"
                                 compact
-                                value={band.ratePerKwh}
-                                onChange={e => handleUpdateTouBand(band, 'ratePerKwh', parseFloat(e.target.value) || 0)}
+                                aria-label={`Rate per kWh for ${band.name}`}
+                                value={editDraft?.rate ?? band.ratePerKwh}
+                                onChange={e => setEditDraft(d => d && { ...d, rate: e.target.value })}
                               />
                               <Input
                                 type="text"
                                 placeholder="22:00"
                                 maxLength={5}
                                 aria-label={`Band start time (HH:MM) for ${band.name}`}
-                                value={band.startTime}
-                                onChange={e => handleUpdateTouBand(band, 'startTime', e.target.value)}
+                                value={editDraft?.start ?? band.startTime}
+                                onChange={e => setEditDraft(d => d && { ...d, start: e.target.value })}
                               />
                               <Input
                                 type="text"
                                 placeholder="22:00"
                                 maxLength={5}
                                 aria-label={`Band end time (HH:MM) for ${band.name}`}
-                                value={band.endTime}
-                                onChange={e => handleUpdateTouBand(band, 'endTime', e.target.value)}
+                                value={editDraft?.end ?? band.endTime}
+                                onChange={e => setEditDraft(d => d && { ...d, end: e.target.value })}
                               />
                               <IconButton
                                 label={`Done editing ${band.name}`}
                                 icon={<CheckIcon className="w-4 h-4" />}
-                                onClick={() => setEditingBandId(null)}
+                                onClick={() => handleCommitTouBandEdit(band)}
                                 className="text-green-400 hover:text-green-300"
                               />
                             </>
@@ -373,7 +420,7 @@ export function SettingsModal({
                               </span>
                               <EditButton
                                 label={band.name}
-                                onClick={() => setEditingBandId(band.id)}
+                                onClick={() => handleStartEditTouBand(band)}
                               />
                               <RemoveButton
                                 label={band.name}
