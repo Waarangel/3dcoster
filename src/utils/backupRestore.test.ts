@@ -186,6 +186,55 @@ describe('restore round-trip fidelity', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Legacy backup compatibility (CR-01) — a v1.8/v1.9 export (format-version 1)
+// predates the Phase-39 failureEvents/maintenanceEvents stores. Absent keys
+// must default to empty stores, not reject the whole file.
+// ---------------------------------------------------------------------------
+describe('legacy backup compatibility (pre-Phase-39 files)', () => {
+  async function legacyFixture(): Promise<{ meta: unknown; data: Record<string, unknown> }> {
+    const source = makeTestDb();
+    await seedFullDb(source);
+    const parsed = (await exportViaJson(source)) as BackupFile;
+    // Simulate a v1.9 export: the two Phase-39 stores don't exist in the file.
+    const legacyData = { ...parsed.data } as Record<string, unknown>;
+    delete legacyData.failureEvents;
+    delete legacyData.maintenanceEvents;
+    return { meta: parsed.meta, data: legacyData };
+  }
+
+  it('validates and restores a backup missing failureEvents/maintenanceEvents', async () => {
+    const legacy = await legacyFixture();
+
+    const result = validateBackupFile(legacy);
+    expect(result.ok).toBe(true);
+
+    const target = makeTestDb();
+    await restoreBackup(target, legacy);
+    expect(await target.table('jobs').count()).toBe(1);
+    expect((await target.table('jobs').get('job-1')).name).toBe('Benchy');
+    expect(await target.table('failureEvents').count()).toBe(0);
+    expect(await target.table('maintenanceEvents').count()).toBe(0);
+  });
+
+  it('still rejects a PRESENT failureEvents section that is not an array', async () => {
+    const legacy = await legacyFixture();
+    const broken = { ...legacy, data: { ...legacy.data, failureEvents: { not: 'an array' } } };
+    const result = validateBackupFile(broken);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toMatch(/failureEvents/);
+  });
+
+  it('still rejects when a pre-Phase-39 store (jobs) is absent', async () => {
+    const legacy = await legacyFixture();
+    const legacyData = { ...legacy.data };
+    delete legacyData.jobs;
+    const result = validateBackupFile({ meta: legacy.meta, data: legacyData });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toMatch(/jobs/);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Validation — whole-file rejection, no writes
 // ---------------------------------------------------------------------------
 describe('validateBackupFile — structural rejection', () => {

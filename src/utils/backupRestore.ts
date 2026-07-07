@@ -38,6 +38,18 @@ import {
 
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
+/**
+ * Stores appended to BACKUP_STORES after format-version 1 first shipped —
+ * backups exported by v1.8/v1.9 (still legitimately format-version 1) do not
+ * contain these keys. An ABSENT key defaults to an empty array so every
+ * pre-Phase-39 backup file stays restorable; a PRESENT key that is not an
+ * array is still a whole-file rejection (same strictness as every store).
+ */
+const STORES_ABSENT_IN_LEGACY_BACKUPS: ReadonlySet<BackupStoreName> = new Set([
+  'failureEvents',
+  'maintenanceEvents',
+]);
+
 export type ValidationResult =
   | { ok: true; file: ValidatedBackup }
   | { ok: false; error: string };
@@ -105,7 +117,10 @@ export function validateBackupFile(parsed: unknown): ValidationResult {
   const counts = {} as ValidatedBackup['counts'];
 
   for (const store of BACKUP_STORES) {
-    const rows = data[store];
+    const raw = data[store];
+    // Back-compat default: stores that post-date format-version 1 may be
+    // absent from older files — treat "missing entirely" as an empty store.
+    const rows = raw === undefined && STORES_ABSENT_IN_LEGACY_BACKUPS.has(store) ? [] : raw;
     if (!Array.isArray(rows)) {
       return { ok: false, error: `Backup is missing the "${store}" section or it is not a list` };
     }
