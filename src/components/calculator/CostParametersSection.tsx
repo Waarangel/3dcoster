@@ -194,7 +194,9 @@ export function CostParametersSection({
             </label>
             <Input
               id="tou-start-time"
-              type="time"
+              type="text"
+              placeholder="22:00"
+              maxLength={5}
               compact
               value={touStartTime ?? ''}
               onChange={e => onTouStartTimeChange?.(e.target.value || undefined)}
