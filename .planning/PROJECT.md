@@ -265,4 +265,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-05 — Phase 38 (Foundation) complete: CostCalculator split + PERF-11 fixed via useReducer + tab-in-URL routing; FOUND-01..03 validated. Note: PROJECT.md doc-reconciliation for v1.4–v1.7 remains deferred (post-v1.3 GSD lapse) — Context section captures the shipped summary.*
+*Last updated: 2026-07-07 — Phase 39 (Cost Realism) complete: failure-cost engine (empirical rate + LogFailureModal + Reports ledger), TOU electricity (tariff bands + overnight-wrap math + legacy reconcile), maintenance amortization (abrasive detection + next-swap prediction + per-printer drill-in), all wired Apply-gated into the calculator with Phase 38 tripwires intact; FAIL-01..04, TOU-01..02, WEAR-01..02 validated. Post-execution review fix pass closed 3 Critical + 8 Warning findings. Note: PROJECT.md doc-reconciliation for v1.4–v1.7 remains deferred (post-v1.3 GSD lapse) — Context section captures the shipped summary.*
