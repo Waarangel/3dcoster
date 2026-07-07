@@ -220,6 +220,18 @@ export interface CostBreakdown {
   profitMargin: number;
   targetProfit: number;
   sellingPrice: number;
+  // Phase 39 TOU-02 (D-12): the $/kWh rate actually used for `electricity` above —
+  // the flat electricity.costPerKwh when no TOU bands/startTime apply, or the
+  // duration-weighted TOU rate otherwise. Snapshotted onto PrintJob.touRateUsedPerKwh
+  // at save time so saved jobs never silently reprice against a later tariff change.
+  touRateUsedPerKwh: number;
+  // Phase 39 WEAR-02 (D-14): NEW additive maintenance-cost line (maintenanceCostPerHour
+  // × printTimeHours). 0 when no manual maintenance-cost input is set.
+  maintenanceCost: number;
+  // Phase 39 WEAR-01 (D-13): NEW additive abrasive-wear surcharge, gated on the
+  // dominant filament resolving abrasive AND the instance's nozzle resolving to
+  // 'brass'. 0 otherwise — never a modification to nozzleWear itself.
+  abrasiveSurcharge: number;
 }
 
 export interface FilamentUsage {

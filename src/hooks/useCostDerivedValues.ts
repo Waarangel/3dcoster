@@ -191,6 +191,10 @@ export interface UseCostDerivedValuesProps {
   marketplaceFees: MarketplaceFees;
   taxRateOverride: number | undefined;
   userProfile: UserProfile;
+  // Phase 39 TOU-02/WEAR-02: ordinary CalcInput pass-throughs, both optional/
+  // defaulted so omitting them is byte-identical to pre-Phase-39 behavior.
+  touStartTime?: string;
+  maintenanceCostPerHour?: number;
 }
 
 export function useCostDerivedValues({
@@ -220,6 +224,8 @@ export function useCostDerivedValues({
   marketplaceFees,
   taxRateOverride,
   userProfile,
+  touStartTime,
+  maintenanceCostPerHour,
 }: UseCostDerivedValuesProps) {
   // Convert a stored price from its native currency into the user's currency for
   // display and cost math. Falls back to the raw amount only when no rate table
@@ -345,10 +351,13 @@ export function useCostDerivedValues({
     sellingPrice: 0,
     modelCost,
     modelCostPerUnit,
+    touStartTime,
+    maintenanceCostPerHour,
   }), [
     materialsInProfile, filamentRowsForCalc, printTimeHours, selectedPrinter, electricity,
     selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
-    postProcessingMinutes, failureRate, modelCost, modelCostPerUnit
+    postProcessingMinutes, failureRate, modelCost, modelCostPerUnit,
+    touStartTime, maintenanceCostPerHour,
   ]);
 
   const trueCostForReducer = costsForTrueCost.failureAdjusted + totalShippingCost;
@@ -461,11 +470,13 @@ export function useCostDerivedValues({
     sellingPrice: pricing.sellingPrice,
     modelCost,
     modelCostPerUnit,
+    touStartTime,
+    maintenanceCostPerHour,
   }), [
     materialsInProfile, filamentRowsForCalc, printTimeHours, selectedPrinter, electricity,
     selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
     postProcessingMinutes, failureRate, pricing.profitMarginPercent, pricing.targetProfit, pricing.sellingPrice,
-    modelCost, modelCostPerUnit
+    modelCost, modelCostPerUnit, touStartTime, maintenanceCostPerHour,
   ]);
 
   // True cost = failure adjusted cost + shipping
