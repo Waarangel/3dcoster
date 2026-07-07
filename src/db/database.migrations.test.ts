@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Dexie } from 'dexie';
 import { backfillQuotesFromJobs, reconcileQuoteCurrency } from './backfill';
-import type { PrintJob, Sale, Quote } from '../types';
+import type { PrintJob, Sale, Quote, Material, FailureEvent, MaintenanceEvent } from '../types';
 
 // ---------------------------------------------------------------------------
 // Dexie v7 → v8 quotes backfill — REAL-DEXIE integration test (Phase 23 TEST-04
@@ -215,5 +215,198 @@ describe('v8→v9 currency reconcile (DATA-03 v9 reconcile) — pure-helper laye
     const after = [firstPass[0]];
     const secondPass = reconcileQuoteCurrency(after, 'CAD');
     expect(secondPass.length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v11→v12 additive-store migration (Phase 39 WAVE-0 gap closure) — REAL-DEXIE
+// integration test.
+//
+// v12 adds the `failureEvents` and `maintenanceEvents` ledgers (FAIL-01..04,
+// WEAR-01/02) as brand-new EMPTY stores — database.ts's .version(12).stores()
+// call carries NO .upgrade() callback (identical precedent to v11's
+// `stockEvents` addition). The behavioral contract under test is NOT "does
+// the upgrade callback transform data correctly" (there is none) but the
+// sharper, actually-riskier claim: does Dexie's additive schema bump preserve
+// every pre-existing row in jobs/materials/settings untouched, AND do the two
+// new stores come up immediately writable with the exact index strings from
+// database.ts (id, printerInstanceId, materialId, jobId, failedAt /
+// id, printerInstanceId, partType, occurredAt)? A copy-paste error in either
+// index string (e.g. transposing materialId/jobId) would still let Dexie
+// open the DB — it only fails at query/put time — so this test exercises
+// actual reads/writes against the new stores, not just a successful open().
+// ---------------------------------------------------------------------------
+
+function makeMaterial(overrides: Partial<Material>): Material {
+  return {
+    id: 'mat-x',
+    name: 'Generic PLA',
+    category: 'filament',
+    currency: 'USD',
+    unit: 'g',
+    costPerUnit: 0.02,
+    ...overrides,
+  } as Material;
+}
+
+describe('v11→v12 additive stores (failureEvents/maintenanceEvents) — real Dexie via fake-indexeddb', () => {
+  let dbName: string;
+  let db: Dexie | undefined;
+
+  beforeEach(() => {
+    dbName = `test-3DCosterDB-v12-${crypto.randomUUID()}`;
+    db = undefined;
+  });
+
+  afterEach(async () => {
+    if (db && db.isOpen()) {
+      db.close();
+    }
+    await Dexie.delete(dbName);
+  });
+
+  // v11 store strings copy-pasted verbatim from database.ts's .version(11).stores() call.
+  function v11Stores(d: Dexie) {
+    d.version(11).stores({
+      materials: 'id, category, brand, filamentType, currency',
+      printers: 'id, name',
+      printerInstances: 'id, printerConfigId, nickname',
+      jobs: 'id, name, createdAt, printerInstanceId',
+      sales: 'id, jobId, soldAt',
+      settings: 'key',
+      customers: 'id, name, email, lastUsedAt',
+      quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+      stockEvents: 'id, assetId, refId, timestamp',
+    });
+  }
+
+  // v12 store strings copy-pasted verbatim from database.ts's .version(12).stores() call
+  // (NO .upgrade() — additive-only, matching production).
+  function v12Stores(d: Dexie) {
+    d.version(12).stores({
+      materials: 'id, category, brand, filamentType, currency',
+      printers: 'id, name',
+      printerInstances: 'id, printerConfigId, nickname',
+      jobs: 'id, name, createdAt, printerInstanceId',
+      sales: 'id, jobId, soldAt',
+      settings: 'key',
+      customers: 'id, name, email, lastUsedAt',
+      quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+      stockEvents: 'id, assetId, refId, timestamp',
+      failureEvents: 'id, printerInstanceId, materialId, jobId, failedAt',
+      maintenanceEvents: 'id, printerInstanceId, partType, occurredAt',
+    });
+  }
+
+  const existingJob = {
+    id: 'job-legacy-1',
+    name: 'Legacy Job',
+    createdAt: new Date('2026-01-01'),
+    updatedAt: new Date('2026-01-01'),
+    filaments: [{ filamentId: 'mat-legacy', grams: 120 }],
+    printTimeHours: 3,
+    printerInstanceId: 'printer-legacy-1',
+    modelCost: 0,
+    prepTimeMinutes: 10,
+    postProcessingMinutes: 5,
+    materialsUsed: [],
+    failureRate: 5,
+    costPerUnit: 4.5,
+    sellingPrice: 20,
+    copiesSold: 2,
+  } as unknown as PrintJob;
+
+  const existingMaterial = makeMaterial({ id: 'mat-legacy', name: 'Legacy PLA Black' });
+  const existingSettingsRow = { key: 'userProfile', value: JSON.stringify({ currency: 'CAD', laborHourlyRate: 25 }) };
+
+  it('preserves all pre-existing jobs/materials/settings rows and makes both new v12 stores immediately writable/readable, with no upgrade error', async () => {
+    // Step A: open at v11 schema; seed representative pre-existing data; close.
+    const v11Db = new Dexie(dbName);
+    v11Stores(v11Db);
+    await v11Db.open();
+    await v11Db.table('jobs').bulkAdd([existingJob]);
+    await v11Db.table('materials').bulkAdd([existingMaterial]);
+    await v11Db.table('settings').bulkAdd([existingSettingsRow]);
+    v11Db.close();
+
+    // Step B: reopen at v12 (additive-only bump, chained through v11 exactly
+    // like database.ts's real version chain). This is the operation under
+    // test — it must not throw.
+    db = new Dexie(dbName);
+    v11Stores(db);
+    v12Stores(db);
+
+    await expect(db.open()).resolves.not.toThrow();
+
+    // Assertion (a): every pre-existing row is intact and readable.
+    const jobsAfter = await db.table('jobs').toArray();
+    expect(jobsAfter).toHaveLength(1);
+    expect(jobsAfter[0]).toMatchObject({
+      id: 'job-legacy-1',
+      name: 'Legacy Job',
+      printerInstanceId: 'printer-legacy-1',
+      costPerUnit: 4.5,
+      sellingPrice: 20,
+    });
+    expect(jobsAfter[0].filaments).toEqual([{ filamentId: 'mat-legacy', grams: 120 }]);
+
+    const materialsAfter = await db.table('materials').toArray();
+    expect(materialsAfter).toHaveLength(1);
+    expect(materialsAfter[0]).toMatchObject({ id: 'mat-legacy', name: 'Legacy PLA Black', category: 'filament' });
+
+    const settingsAfter = await db.table('settings').toArray();
+    expect(settingsAfter).toHaveLength(1);
+    expect(JSON.parse(settingsAfter[0].value)).toMatchObject({ currency: 'CAD', laborHourlyRate: 25 });
+
+    // Assertion (b): both new stores are usable — add + read back a row each,
+    // exercising the exact index fields from database.ts's v12 store strings.
+    const failureRow: FailureEvent = {
+      id: 'fail-1',
+      printerInstanceId: 'printer-legacy-1',
+      materialId: 'mat-legacy',
+      jobId: 'job-legacy-1',
+      percentComplete: 60,
+      reason: 'adhesion',
+      failedAt: new Date('2026-07-01T00:00:00.000Z'),
+      gramsWasted: 30,
+    };
+    await db.table('failureEvents').add(failureRow);
+    const failuresAfter = await db.table('failureEvents').toArray();
+    expect(failuresAfter).toHaveLength(1);
+    expect(failuresAfter[0]).toMatchObject({
+      id: 'fail-1',
+      printerInstanceId: 'printer-legacy-1',
+      materialId: 'mat-legacy',
+      jobId: 'job-legacy-1',
+      reason: 'adhesion',
+    });
+    // Index usability check — query by an actually-indexed field, not just toArray().
+    const byPrinter = await db.table('failureEvents').where('printerInstanceId').equals('printer-legacy-1').toArray();
+    expect(byPrinter).toHaveLength(1);
+
+    const maintenanceRow: MaintenanceEvent = {
+      id: 'maint-1',
+      printerInstanceId: 'printer-legacy-1',
+      partType: 'nozzle',
+      cost: 12.5,
+      occurredAt: new Date('2026-07-02T00:00:00.000Z'),
+      printerHoursAtEvent: 340,
+      nozzleType: 'hardened',
+    };
+    await db.table('maintenanceEvents').add(maintenanceRow);
+    const maintenanceAfter = await db.table('maintenanceEvents').toArray();
+    expect(maintenanceAfter).toHaveLength(1);
+    expect(maintenanceAfter[0]).toMatchObject({
+      id: 'maint-1',
+      printerInstanceId: 'printer-legacy-1',
+      partType: 'nozzle',
+      printerHoursAtEvent: 340,
+    });
+    const byPartType = await db.table('maintenanceEvents').where('partType').equals('nozzle').toArray();
+    expect(byPartType).toHaveLength(1);
+
+    // Assertion (c) (no upgrade error) is implicitly proven by reaching this
+    // point — db.open() above resolved rather than rejecting/throwing.
+    expect(db.verno).toBe(12);
   });
 });
