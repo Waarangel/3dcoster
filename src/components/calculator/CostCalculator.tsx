@@ -435,7 +435,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         onRemoveMaterialUsage={removeMaterialUsage}
         ids={ids}
         empiricalFailureRate={empiricalFailureRate}
-        onApplyEmpiricalFailureRate={() => empiricalFailureRate && setFailureRate(empiricalFailureRate.rate)}
+        // WR-05: honor the field's own 0-99 contract (max="99" + onChange clamp)
+        // and round to the whole percent the hint displays — deriveFailureRate
+        // can return 100 (5 failures, 0 saves) or repeating decimals.
+        onApplyEmpiricalFailureRate={() => empiricalFailureRate && setFailureRate(Math.min(99, Math.round(empiricalFailureRate.rate)))}
         touStartTime={touStartTime}
         onTouStartTimeChange={setTouStartTime}
         touBandsConfigured={touBandsConfigured}
@@ -443,7 +446,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         maintenanceCostPerHour={maintenanceCostPerHour}
         onMaintenanceCostPerHourChange={setMaintenanceCostPerHour}
         amortizedMaintenancePerHour={maintenanceAmortization}
-        onApplyAmortizedMaintenance={() => maintenanceAmortization && setMaintenanceCostPerHour(maintenanceAmortization.amortizedPerHour)}
+        // WR-05: round to the 2-decimal currency amount the hint displays, so
+        // the input never receives a long repeating-decimal division result.
+        onApplyAmortizedMaintenance={() => maintenanceAmortization && setMaintenanceCostPerHour(Math.round(maintenanceAmortization.amortizedPerHour * 100) / 100)}
       />
 
       <ShippingSection
