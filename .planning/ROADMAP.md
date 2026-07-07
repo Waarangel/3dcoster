@@ -126,7 +126,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 - [x] 39-02-PLAN.md — Failure engine: empirical rate derivation, LogFailureModal, JobsManager log action, Reports Failures ledger (FAIL-01/FAIL-02/FAIL-04)
 - [x] 39-03-PLAN.md — TOU config: Settings tariff-band editor + reconcile helper (TOU-01)
 - [x] 39-04-PLAN.md — Maintenance/wear: abrasive detection, amortization/prediction, LogMaintenanceModal, Printer Settings drill-in (WEAR-01/WEAR-02)
-- [ ] 39-05-PLAN.md — Calculator convergence: TOU-weighted electricity, maintenance $/hr + abrasive surcharge, 3 Apply-gated hints, extended golden fixtures (FAIL-02/FAIL-03/TOU-02/WEAR-02)
+- [x] 39-05-PLAN.md — Calculator convergence: TOU-weighted electricity, maintenance $/hr + abrasive surcharge, 3 Apply-gated hints, extended golden fixtures (FAIL-02/FAIL-03/TOU-02/WEAR-02)
 
 ### Phase 40: Insight Layer
 **Goal**: Users can see decision-grade analytics derived from their existing jobs and sales data — without entering anything new
@@ -209,7 +209,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
-| 39. Cost Realism | 4/5 | In Progress|  |
+| 39. Cost Realism | 5/5 | Complete   | 2026-07-07 |
 | 40. Insight Layer | 0/TBD | Not started | - |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
