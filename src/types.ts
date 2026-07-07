@@ -147,10 +147,11 @@ export interface StockEvent {
  * Phase 39 FAIL-01..04 (D-01/D-02/D-03/D-08). Append-only failure ledger — one
  * row per logged failed print, standalone or tied to a saved job. `jobId` is
  * undefined for a standalone failure log (D-01); `materialId` is the dominant
- * filament (by weight) for multi-material jobs (D-08). `gramsWasted` drives an
- * optional paired stockEvent deduction (useFailureEvents, D-03) when present
- * alongside a jobId — standalone failures skip stock deduction unless the user
- * also supplies gramsWasted directly.
+ * filament (by weight) for multi-material jobs (D-08). `gramsWasted` drives a
+ * paired stockEvent deduction (useFailureEvents, D-03) whenever it is present
+ * and > 0 — computed from %completion for job-linked failures, or supplied
+ * directly by the user for standalone ones. Standalone failures without
+ * gramsWasted skip stock deduction (nothing to deduct).
  */
 export interface FailureEvent {
   id: string;

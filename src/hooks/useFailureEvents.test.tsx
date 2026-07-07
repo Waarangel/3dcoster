@@ -133,10 +133,26 @@ describe('useFailureEvents — logFailure', () => {
     });
   });
 
-  it('skips stock deduction for a standalone failure (no jobId), even with gramsWasted', async () => {
+  it('deducts stock for a standalone failure (no jobId) when gramsWasted is supplied (D-03)', async () => {
+    render();
+    let id: string | undefined;
+    await act(async () => {
+      id = await api().logFailure({ ...BASE_INPUT, gramsWasted: 20 });
+    });
+
+    const stockRows = await db.stockEvents.toArray();
+    expect(stockRows).toHaveLength(1);
+    expect(stockRows[0]).toMatchObject({
+      refId: `failure-${id}`,
+      assetId: 'mat-pla',
+      delta: -20,
+    });
+  });
+
+  it('skips stock deduction for a standalone failure with no gramsWasted', async () => {
     render();
     await act(async () => {
-      await api().logFailure({ ...BASE_INPUT, gramsWasted: 20 });
+      await api().logFailure(BASE_INPUT);
     });
 
     expect(await db.stockEvents.count()).toBe(0);

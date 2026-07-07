@@ -25,9 +25,9 @@ export type LogFailureInput = Omit<FailureEvent, 'id'>;
  * Live failureEvents ledger (Phase 39 FAIL-01..04). Read side is a plain
  * useLiveQuery; write side guards every numeric field with Number.isFinite
  * before the Dexie write (v1.9 DATA-06 convention from useStockEvents), and
- * additionally writes a paired stockEvent deduction when a jobId + gramsWasted
- * are both present (D-03) — standalone failures (no jobId) skip stock
- * deduction unless gramsWasted is explicitly supplied.
+ * additionally writes a paired stockEvent deduction whenever gramsWasted > 0
+ * is supplied (D-03) — job-linked (computed from %completion) or standalone
+ * (user-entered). Standalone failures without gramsWasted skip deduction.
  */
 export function useFailureEvents() {
   const events = useLiveQuery(() => db.failureEvents.toArray(), [], EMPTY);
@@ -45,10 +45,10 @@ export function useFailureEvents() {
     const id = makeId('failure');
     await db.failureEvents.add({ ...input, id });
 
-    // D-03: only deduct stock when this failure is tied to a saved job AND a
-    // gramsWasted amount was computed/entered. Standalone failures (no jobId)
-    // have no asset to deduct against unless the user also supplies one.
-    if (input.jobId && input.gramsWasted !== undefined && input.gramsWasted > 0) {
+    // D-03: deduct stock whenever a gramsWasted amount was computed (job-linked)
+    // or explicitly entered (standalone) — materialId is always present, so a
+    // standalone failure with grams deducts against the selected material too.
+    if (input.gramsWasted !== undefined && input.gramsWasted > 0) {
       await db.stockEvents.add({
         id: failureStockRefId(id),
         assetId: input.materialId,
