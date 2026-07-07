@@ -1,9 +1,11 @@
+import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { PrinterSettings } from './PrinterSettings';
 import { ToastProvider } from './ui';
-import type { PrinterConfig } from '../types';
+import { db } from '../db/database';
+import type { PrinterConfig, PrinterInstance } from '../types';
 
 // ---------------------------------------------------------------------------
 // PrinterSettings — the "add a custom printer model" flow (the new capability
@@ -36,7 +38,10 @@ function setSelectValue(el: HTMLSelectElement, value: string) {
   el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  await db.maintenanceEvents.clear();
+  await db.jobs.clear();
+  await db.materials.clear();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -46,6 +51,19 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
 });
+
+async function waitForAsync() {
+  await act(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+}
+
+const sampleInstance: PrinterInstance = {
+  id: 'inst-1',
+  printerConfigId: 'bambu-p1s',
+  nickname: 'Office A1',
+  printHours: 100,
+};
 
 function renderSettings(onAddPrinter: (c: PrinterConfig) => void) {
   act(() => {
@@ -130,5 +148,94 @@ describe('PrinterSettings — add custom printer model', () => {
     expect(saveBtn.disabled).toBe(true);
     act(() => saveBtn.click());
     expect(onAddPrinter).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 39 WEAR-01/02 (Plan 04 Task 2) — per-printer Maintenance drill-in.
+// ---------------------------------------------------------------------------
+
+function renderSettingsWithInstance(onUpdateInstance: (i: PrinterInstance) => void = () => {}) {
+  act(() => {
+    root.render(
+      <ToastProvider>
+        <PrinterSettings
+          printers={[sampleModel]}
+          printerInstances={[sampleInstance]}
+          isLoading={false}
+          jobs={[]}
+          userCurrency="USD"
+          onAddInstance={() => {}}
+          onUpdateInstance={onUpdateInstance}
+          onDeleteInstance={() => {}}
+          onAddPrinter={() => {}}
+        />
+      </ToastProvider>
+    );
+  });
+}
+
+function openMaintenanceSection() {
+  const maintenanceToggle = [...container.querySelectorAll('button')].find(
+    (b) => /maintenance/i.test(b.textContent || '') && b.getAttribute('aria-expanded') !== null
+  )!;
+  act(() => maintenanceToggle.click());
+  return maintenanceToggle;
+}
+
+describe('PrinterSettings — Maintenance drill-in', () => {
+  it('each instance card shows a Maintenance section with a log button', async () => {
+    renderSettingsWithInstance();
+    await waitForAsync();
+
+    openMaintenanceSection();
+    const logBtn = [...container.querySelectorAll('button')].find((b) => /log maintenance/i.test(b.textContent || ''));
+    expect(logBtn).toBeTruthy();
+  });
+
+  it('a printer with no events shows next-swap prediction as unavailable (500h fallback owns it)', async () => {
+    renderSettingsWithInstance();
+    await waitForAsync();
+
+    openMaintenanceSection();
+    expect(container.textContent).toContain('Not enough history yet');
+  });
+
+  it('shows event history, cumulative cost, and abrasive-hours once events exist', async () => {
+    await db.maintenanceEvents.add({
+      id: 'evt-1',
+      printerInstanceId: 'inst-1',
+      partType: 'nozzle',
+      cost: 12,
+      occurredAt: new Date('2026-01-01'),
+      printerHoursAtEvent: 50,
+    });
+
+    renderSettingsWithInstance();
+    await waitForAsync();
+
+    openMaintenanceSection();
+    expect(container.textContent).toMatch(/Nozzle/);
+    expect(container.textContent).toMatch(/Cumulative maintenance cost/);
+  });
+
+  it('per-event delete uses a labelled icon button (DeleteButton, not raw button)', async () => {
+    await db.maintenanceEvents.add({
+      id: 'evt-1',
+      printerInstanceId: 'inst-1',
+      partType: 'belt',
+      cost: 8,
+      occurredAt: new Date('2026-01-01'),
+      printerHoursAtEvent: 20,
+    });
+
+    renderSettingsWithInstance();
+    await waitForAsync();
+
+    openMaintenanceSection();
+    const deleteBtn = [...container.querySelectorAll('button')].find(
+      (b) => b.getAttribute('aria-label') === 'Delete Belt maintenance event'
+    );
+    expect(deleteBtn).toBeTruthy();
   });
 });

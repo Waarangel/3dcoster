@@ -6,6 +6,10 @@ import { InfoTooltip } from './ui/InfoTooltip';
 import { printerLifespanWarning } from '../utils/inputSanity';
 import { PrinterIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
+import { LogMaintenanceModal } from './LogMaintenanceModal';
+import { useMaintenanceEvents } from '../hooks/useMaintenanceEvents';
+import { useMaintenanceAmortization } from '../hooks/useMaintenanceAmortization';
+import { resolveNozzleType } from '../utils/abrasive';
 
 // Sentinel option value in the Printer Model dropdown that opens the
 // custom-model form instead of selecting an existing model.
@@ -561,6 +565,12 @@ export function PrinterSettings({
                       </div>
                     </div>
                   )}
+
+                  {/* Phase 39 WEAR-01/02 (D-16): per-printer Maintenance drill-in.
+                      Additive collapsible sub-block — does not restructure the
+                      existing card above. The 500h alert in App.tsx (D-15
+                      fallback) is untouched by this section. */}
+                  <MaintenanceSection instance={instance} userCurrency={userCurrency} onUpdateInstance={onUpdateInstance} />
                 </div>
               );
             })}
@@ -576,6 +586,152 @@ export function PrinterSettings({
         confirmLabel="Delete"
         onConfirm={confirmDeleteInstance}
         onClose={() => setPendingDeleteId(null)}
+      />
+    </div>
+  );
+}
+
+const PART_TYPE_LABELS: Record<string, string> = {
+  nozzle: 'Nozzle',
+  belt: 'Belt',
+  bed: 'Bed',
+  other: 'Other',
+};
+
+interface MaintenanceSectionProps {
+  instance: PrinterInstance;
+  userCurrency: Currency;
+  onUpdateInstance: (instance: PrinterInstance) => void;
+}
+
+/**
+ * Phase 39 WEAR-01/02 (D-16) per-printer Maintenance drill-in. Calls
+ * useMaintenanceEvents/useMaintenanceAmortization directly (these are the
+ * already-abstracted hooks, not a raw `useLiveQuery`/`db` import — the
+ * Dexie-in-orchestrator discipline is satisfied one layer up inside those
+ * hooks). Log button + event history + cumulative cost + abrasive-hours +
+ * per-part next-swap prediction. Does NOT touch the existing App.tsx 500h
+ * alert (D-15 fallback stays as-is for printers/parts with no prediction).
+ */
+function MaintenanceSection({ instance, userCurrency, onUpdateInstance }: MaintenanceSectionProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const { events, logMaintenanceEvent, deleteMaintenanceEvent } = useMaintenanceEvents();
+  const { amortization, nextSwap } = useMaintenanceAmortization(instance);
+  const sectionBodyId = useId();
+
+  const instanceEvents = events
+    .filter(e => e.printerInstanceId === instance.id)
+    .slice()
+    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+
+  const handleUpdateNozzleType = (instanceId: string, nozzleType: 'brass' | 'hardened' | 'ruby') => {
+    if (instanceId !== instance.id) return;
+    onUpdateInstance({ ...instance, nozzleType });
+  };
+
+  const resolvedNozzleType = resolveNozzleType(instance);
+
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-600">
+      <div className="relative">
+        <Button
+          type="button"
+          variant="ghost"
+          fullWidth
+          onClick={() => setIsOpen(o => !o)}
+          aria-expanded={isOpen}
+          aria-controls={sectionBodyId}
+          className="!justify-between !px-0 text-left"
+        >
+          <span className="text-sm font-medium text-slate-200">Maintenance</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">
+              {instanceEvents.length === 0 ? 'No events logged' : `${instanceEvents.length} event${instanceEvents.length === 1 ? '' : 's'}`}
+            </span>
+            <svg
+              className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </Button>
+        <NewBadge feature="maintenance-log" className="absolute -top-1.5 -right-4 pointer-events-none" />
+      </div>
+
+      <div id={sectionBodyId} hidden={!isOpen} className="mt-3 space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <Button btnSize="sm" onClick={() => setShowLogModal(true)}>
+            Log Maintenance
+          </Button>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span>Nozzle: {resolvedNozzleType}</span>
+            <InfoTooltip text="What's currently installed. Set by logging a nozzle-swap maintenance event, or defaults to brass if never logged." />
+          </div>
+        </div>
+
+        {amortization && (
+          <div className="p-3 bg-slate-800 rounded-lg text-xs text-slate-300 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Cumulative maintenance cost:</span>
+              <span className="font-medium text-white">{formatCurrency(amortization.cumulativeCost, userCurrency)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Amortized rate:</span>
+              <span className="font-medium text-blue-400">{formatCurrency(amortization.amortizedPerHour, userCurrency)}/hr</span>
+            </div>
+            {amortization.abrasiveHours > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Abrasive-material hours:</span>
+                <span className="font-medium text-white">{amortization.abrasiveHours.toFixed(1)}h</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-1">
+          {Object.entries(nextSwap).map(([partType, prediction]) => (
+            <div key={partType} className="flex items-center justify-between text-xs">
+              <span className="text-slate-400">{PART_TYPE_LABELS[partType] ?? partType} next swap:</span>
+              <span className="text-slate-300">
+                {prediction
+                  ? `~${prediction.intervalHours.toFixed(0)}h interval · ${prediction.nextSwapDate.toLocaleDateString()}`
+                  : 'Not enough history yet'}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {instanceEvents.length > 0 && (
+          <div className="space-y-1.5">
+            {instanceEvents.map(event => (
+              <div key={event.id} className="flex items-center justify-between p-2 bg-slate-800 rounded text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-200 font-medium">{PART_TYPE_LABELS[event.partType] ?? event.partType}</span>
+                  <span className="text-slate-400">{formatCurrency(event.cost, userCurrency)}</span>
+                  <span className="text-slate-500">{event.occurredAt.toLocaleDateString()}</span>
+                  <span className="text-slate-500">{event.printerHoursAtEvent.toFixed(0)}h</span>
+                </div>
+                <DeleteButton
+                  label={`${PART_TYPE_LABELS[event.partType] ?? event.partType} maintenance event`}
+                  onClick={() => deleteMaintenanceEvent(event.id)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <LogMaintenanceModal
+        isOpen={showLogModal}
+        onClose={() => setShowLogModal(false)}
+        instance={instance}
+        onLogMaintenanceEvent={logMaintenanceEvent}
+        onUpdateInstanceNozzleType={handleUpdateNozzleType}
       />
     </div>
   );
