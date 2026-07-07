@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { MaintenanceEvent, PrinterInstance } from '../types';
 import { Button, Input, Modal, Select } from './ui';
 import type { LogMaintenanceEventInput } from '../hooks/useMaintenanceEvents';
@@ -65,6 +65,20 @@ export function LogMaintenanceModal({
     setNotes('');
     setSaveError(null);
   };
+
+  // WR-02: re-seed from the LIVE instance whenever the modal transitions
+  // closed -> open. The component stays permanently mounted inside
+  // MaintenanceSection, so mount-time useState initializers alone would show
+  // stale printHours/nozzleType after the instance changes (edited hours,
+  // saved jobs bumping printHours) — and printerHoursAtEvent feeds the
+  // next-swap interval math. Mirrors LogFailureModal's reset-on-open effect.
+  useEffect(() => {
+    if (!isOpen) return;
+    resetForm();
+    // Only re-seed on open (or when the target instance changes while open) —
+    // not on every parent re-render while the user is typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, instance.id]);
 
   const handleClose = () => {
     resetForm();

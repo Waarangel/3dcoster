@@ -124,6 +124,37 @@ describe('LogMaintenanceModal', () => {
     expect(onUpdateInstanceNozzleType).toHaveBeenCalledWith('inst-1', 'hardened');
   });
 
+  it('re-seeds printer-hours-at-event from the LIVE instance on each open (WR-02)', () => {
+    const onLogMaintenanceEvent = vi.fn().mockResolvedValue('maint-1');
+    const onUpdateInstanceNozzleType = vi.fn();
+    const onClose = vi.fn();
+    const renderWith = (instance: PrinterInstance, isOpen: boolean) => {
+      act(() => {
+        root.render(
+          <LogMaintenanceModal
+            isOpen={isOpen}
+            onClose={onClose}
+            instance={instance}
+            onLogMaintenanceEvent={onLogMaintenanceEvent}
+            onUpdateInstanceNozzleType={onUpdateInstanceNozzleType}
+          />
+        );
+      });
+    };
+
+    // Mount open at 250h, close, then the instance's hours change to 400h
+    // BEFORE the next open — the first re-open must show 400, not the
+    // mount-time 250.
+    renderWith(INSTANCE, true);
+    renderWith(INSTANCE, false);
+    renderWith({ ...INSTANCE, printHours: 400 }, true);
+
+    const hoursInput = [...document.body.querySelectorAll('input')].find(
+      i => i.type === 'number' && Number(i.value) === 400
+    );
+    expect(hoursInput, 'hours field should re-seed from the live instance on open').toBeTruthy();
+  });
+
   it('does not update instance nozzleType for a non-nozzle part swap', async () => {
     const { onUpdateInstanceNozzleType } = renderModal();
 
