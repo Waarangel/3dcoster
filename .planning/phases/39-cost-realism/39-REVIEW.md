@@ -60,7 +60,7 @@ findings:
   warning: 10
   info: 11
   total: 25
-status: needs_fixes
+status: fixes_applied
 fix_pass:
   fixed_at: 2026-07-07
   scope: critical_warning
@@ -77,6 +77,11 @@ delta_review:
     critical: 1
     warning: 2
     info: 3
+  fix_pass:
+    fixed_at: 2026-07-07
+    scope: critical_warning
+    fixed: 3
+    skipped: 0
 ---
 
 # Phase 39: Code Review Report
@@ -311,6 +316,14 @@ Apply the same rounding to `onApplyAmortizedMaintenance` (`Math.round(x * 100) /
 
 **Verdict: needs_fixes** — the ADD path is genuinely fixed and well-tested, but the same swap **broke the EDIT path** (empirically verified below) and left the calculator-side input with no validation feedback. Delta findings: 1 Critical, 2 Warning, 3 Info.
 
+**Delta fix pass (2026-07-07):** all 3 Critical/Warning findings FIXED (scope: critical_warning — IN-09/IN-10/IN-11 not addressed, except IN-11's edit-path test gap, which the CR-04 regression tests close). Verification: full `npm run build` gate green — `lint:no-raw-html` · vitest 84 files, 1023 passed / 1 todo (+3 regression tests: 2 edit-path, 1 WR-09) · `tsc -b` clean · vite build + bundle asserts pass.
+
+| Finding | Disposition | Commit(s) | Notes |
+|---------|-------------|-----------|-------|
+| CR-04 | FIXED | `998a6be` (fix), `1e84785` (tests) | Edit rows now mirror the add row's draft-then-commit pattern: all four fields driven by local `editDraft` state (seeded on Edit click); validation runs only on the Done commit; rejection keeps edit mode open with the draft intact. Edit-path regression tests type per-keystroke and assert partial values persist with no per-keystroke alert. |
+| WR-09 | FIXED | `705e30a` | Calculator Print Start Time surfaces the existing `FieldWarning` when the typed value fails `parseHHMM` ("the flat rate is used until this is valid"). `parseHHMM` is a pure parser — D-11 contract test still green. Save-time snapshot gating deferred with IN-08 (Info, out of scope). |
+| WR-10 | FIXED | `610d9a9` | Both edit-row time inputs capped at `max-w-[5.5rem] shrink-0` — matches the add grid's 5.5rem time columns and the max-width technique `compact` uses (reliably clamps the base `w-full`). |
+
 **Verified clean (no findings):**
 - Add path works end-to-end: local draft state (`newBandStart`/`newBandEnd`) drives the inputs, validation happens only on "+ Add band" click, rejection keeps the user's inputs and surfaces via `role="alert"`, success clears both inputs and `bandError` (`setBandError(error)` with `null`). The 3 new regression tests exercise the real typing+click interaction and pass (21/21 suite green).
 - All four new/changed time inputs carry descriptive `aria-label`s (edit rows interpolate the band name); all use the shared `Input` component — `lint:no-raw-html` convention respected.
@@ -319,6 +332,8 @@ Apply the same rounding to `onApplyAmortizedMaintenance` (`Math.round(x * 100) /
 - CostParametersSection: clearing the field maps `''` → `undefined` → flat rate, per the documented contract.
 
 ### CR-04: Edit-row HH:MM inputs are keystroke-frozen — bands' time windows can no longer be edited by typing
+
+**Disposition: FIXED** — `998a6be` (draft-then-commit edit rows) + `1e84785` (edit-path regression tests).
 
 **File:** `src/components/SettingsModal.tsx:345-360` (edit-row time inputs), `:83-85` (`handleUpdateTouBand`); rejection at `src/hooks/useTouTariff.ts:59-62`
 **Issue:** The edit rows are controlled by **persisted** state (`value={band.startTime}`), but every keystroke routes through `handleUpdateTouBand` → `upsertTouBand`, which rejects any partial HH:MM value (`isValidBand` → `parseHHMM` is strict) and performs **no write**. So the controlled value never changes and React reverts the input on re-render: backspacing `"22:00"` → `"22:0"` is swallowed and the field snaps back to `"22:00"`; select-all-and-retype is swallowed at the first character. **Empirically verified** with a throwaway probe test against the live component: after one simulated backspace the input value was still `"22:00"` and the `role="alert"` error "Enter a valid rate and HH:MM start/end times." had fired. Practical consequences:
@@ -330,6 +345,8 @@ The name field is unaffected (rate/times of the existing band stay valid, so nam
 **Fix:** Mirror the add row's draft-then-commit pattern: when `editingBandId` is set, hold `editDraftStart`/`editDraftEnd` (seeded from the band) in local state, let them drive the inputs freely, and call `upsertTouBand` on the Done (CheckIcon) click — surfacing rejection via `bandError` and keeping edit mode open on failure. A minimal alternative (keystroke-commit preserved for valid values) is a local draft that always drives the input while `onChange` only calls `upsertTouBand` when `parseHHMM(e.target.value) !== null`, clearing `bandError` on partials — but the draft-then-commit form is simpler and matches the add row. Add an edit-path regression test that types per-keystroke (or at least backspaces once) and asserts the field accepts the intermediate value.
 
 ### WR-09: Calculator "Print Start Time" accepts any text with zero validation feedback — invalid input silently prices at flat rate and is persisted onto saved jobs
+
+**Disposition: FIXED** — `705e30a` (inline FieldWarning on invalid HH:MM + regression test).
 
 **File:** `src/components/calculator/CostParametersSection.tsx:195-203`; silent fallback at `src/utils/touElectricity.ts:99-100`; persistence at `src/components/calculator/CostCalculator.tsx:331-332`
 **Issue:** The swap from `type="time"` to free text removed the browser's guarantee that the value is a valid time, and nothing replaced it: `onChange` forwards `e.target.value` verbatim, `resolveWeightedCostPerKwh` returns the **flat rate silently** when `parseHHMM` yields null, and the malformed string is snapshotted onto the saved job (`touStartTime`). Concretely: a user types `9:30` (rejected by the strict zero-padded parser — an extremely likely entry, and the exact string the Settings side now shows an explicit error for) or stops at `22:0` — the field looks set, the savings hint disappears without explanation, TOU pricing is silently skipped, and the job is saved with `touStartTime: "9:30"` plus a flat-rate snapshot the user believes is band-priced. This is the same "typed input silently ignored" trap class that plan 39-06 fixed on the Settings side, minus the error surfacing. It also collides with the project rule "fail fast with clear error messages / never trust user input at boundaries."
@@ -346,6 +363,8 @@ import { parseHHMM } from '../../utils/touElectricity'; // pure, no IO — or pa
 Also gate the save-time snapshot so a malformed `touStartTime` is not persisted (ties into the still-open IN-08).
 
 ### WR-10: Edit-row time inputs lost their width constraint — `w-full` inputs blow up the band row layout
+
+**Disposition: FIXED** — `610d9a9` (`max-w-[5.5rem] shrink-0` on both edit-row time inputs).
 
 **File:** `src/components/SettingsModal.tsx:345-360`; base style at `src/components/ui/Input.tsx:24` (`w-full`)
 **Issue:** The delta removed `compact` (which capped the inputs at `max-w-28`) from the edit-row time inputs and added no replacement sizing. Unlike the add row — whose grid template (`grid-cols-[1fr_4rem_5.5rem_5.5rem_auto]`) sizes its cells — the edit rows are a `flex flex-wrap` container, so each time input's base `w-full` makes it demand the full row width and wrap onto its own line. A 5-character field now renders as two stacked full-width inputs, visibly breaking the band-row layout that the rest of the row (name `flex-1 min-w-[6rem]`, rate `compact`) was tuned for.
@@ -376,3 +395,4 @@ _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
 _Fix pass: 2026-07-07 — Claude (gsd-code-fixer)_
 _Delta review (39-06): 2026-07-07 — Claude (gsd-code-reviewer) — 1 Critical / 2 Warning / 3 Info → status: needs_fixes_
+_Delta fix pass (39-06): 2026-07-07 — Claude (gsd-code-fixer) — CR-04/WR-09/WR-10 FIXED (3/3, 0 skipped) → status: fixes_applied_
