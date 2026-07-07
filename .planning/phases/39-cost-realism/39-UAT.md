@@ -3,7 +3,7 @@ status: complete
 phase: 39-cost-realism
 source: [39-01-SUMMARY.md, 39-02-SUMMARY.md, 39-03-SUMMARY.md, 39-04-SUMMARY.md, 39-05-SUMMARY.md]
 started: 2026-07-07T17:05:00Z
-updated: 2026-07-07T17:40:00Z
+updated: 2026-07-07T18:10:00Z
 ---
 
 ## Current Test
@@ -59,17 +59,38 @@ skipped: 0
 ## Gaps
 
 - truth: "TOU band editor fields (HH:MM windows) are easy to use and info icons match the app's icon color conventions"
-  status: failed
+  status: resolved
   reason: "User reported: yes but fields are hard to use and colours are off for i icons — band time inputs render as cramped segmented '0 --'/'PM' controls; InfoTooltip icon color inconsistent with surrounding UI"
   severity: minor
   test: 5
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "Native <input type='time'> renders as a segmented hh:mm AM/PM control with an embedded clock picker icon. (a) Width: the add-band grid gives each time input a 5rem (80px) column (SettingsModal.tsx:385) while the Input's md size eats 24px in px-3 padding (Input.tsx:16) — Chrome's 12h-locale time control needs ~90-110px, so the minute/AM-PM segments and picker icon clip into the '0 --' / 'PM' fragments in the screenshot. Edit-mode rows (SettingsModal.tsx:344-355) use compact (max-w-28 = 112px), still cramped. (b) Colors: no color-scheme:dark is declared anywhere in the app (index.html has only meta theme-color; no CSS targets ::-webkit-calendar-picker-indicator), so Chrome paints the input's internal clock icon and placeholder segments in default LIGHT-scheme colors — a near-black glyph on bg-slate-700, which reads as 'colours are off' for the in-field icons. The ⓘ InfoTooltip itself (InfoTooltip.tsx:33, text-slate-400) is the shared convention used by every other Settings field — the off-color icons are the native clock glyphs beside it."
+  artifacts:
+    - "src/components/SettingsModal.tsx:385 — grid-cols-[1fr_4rem_5rem_5rem_auto] gives time inputs only 5rem columns"
+    - "src/components/SettingsModal.tsx:400-411 — new-band window inputs use native type='time' with compact"
+    - "src/components/SettingsModal.tsx:344-355 — edit-mode band rows, same type='time' compact pattern"
+    - "src/components/ui/Input.tsx:16,25 — md px-3 py-2 padding + compact max-w-28; no time-specific styling"
+    - "index.html:8 — only meta theme-color; no color-scheme:dark anywhere in src (verified by grep)"
+    - "src/components/calculator/CostParametersSection.tsx:195-201 — calculator start-time picker uses the identical type='time' compact pattern and inherits the dark-icon problem"
+  missing:
+    - "Time window inputs need adequate width (widen grid columns to fit the full segmented control, or drop compact/reduce padding for type='time')"
+    - "Declare color-scheme: dark for time inputs (e.g. global input[type='time'] { color-scheme: dark } or Tailwind [color-scheme:dark]) so segments and the picker icon render for the dark UI — apply app-wide so CostParametersSection's picker is fixed too"
+    - "Alternatively (fixes gap 2 as well): replace native time inputs with plain text inputs (placeholder '22:00') validated by the already-strict parseHHMM in upsertBand"
 
 - truth: "User can enter a band's HH:MM time window and Add Band activates, enabling TOU bands to be configured and used by the calculator"
-  status: failed
+  status: resolved
   reason: "User reported: cannot use the time entry to make Add Band functional — time input never reaches a state that enables the Add Band button, so TOU bands cannot be created and the calculator TOU path (test 6) is unverifiable"
   severity: major
   test: 6
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "Three-link chain: (1) a native <input type='time'> exposes .value === '' until EVERY segment (hour, minute, AND AM/PM in 12h locales) is complete — partial entry fires no change event carrying a value, so newBandStart/newBandEnd stay ''. (2) The 5rem grid column (SettingsModal.tsx:385) clips the minute/AM-PM segments and picker icon out of the visible/clickable area (gap 1), so the user cannot complete the segments they cannot see or reach. (3) The '+ Add band' button is hard-gated on non-empty state — disabled={!newBandName.trim() || !newBandRate || !newBandStart || !newBandEnd} (SettingsModal.tsx:414) — so it stays permanently disabled. There is no feedback loop: bandError (SettingsModal.tsx:422) is only set inside handleAddTouBand (SettingsModal.tsx:62-80), which can never run because the button never enables — the user gets a dead button with zero explanation. The validation layer itself is NOT at fault: a completed native time input yields 24h 'HH:MM' which parseHHMM (touElectricity.ts:23-31) accepts, and useTouTariff.upsertBand (useTouTariff.ts:58-86) would pass it — the blocker is purely the widget/gating UX. Because no band can be created, the calculator's start-time picker (CostParametersSection.tsx:189, rendered only when touBandsConfigured) never appears and the whole TOU pricing path is unverifiable."
+  artifacts:
+    - "src/components/SettingsModal.tsx:414 — disabled gate requires all four fields non-empty with no explanation when unmet"
+    - "src/components/SettingsModal.tsx:400-411 — native type='time' inputs whose value is all-or-nothing"
+    - "src/components/SettingsModal.tsx:385 — 5rem grid columns clip the segments the gate depends on"
+    - "src/components/SettingsModal.tsx:62-80 — handleAddTouBand is the only place bandError is set; unreachable while the button is disabled"
+    - "src/components/SettingsModal.test.tsx:412-464 — TOU tests only cover render/hide-at-3/remove; nothing types into the time inputs or clicks '+ Add band', and JSDOM has no segmented time control or layout, so neither the empty-value trap nor the 5rem clipping could ever surface in tests"
+  missing:
+    - "Make the time window entry completable: widen the inputs (gap 1) AND/OR replace native type='time' with plain text HH:MM inputs (placeholder '22:00') so entry is atomic and validated by the existing strict parseHHMM/upsertBand path"
+    - "Replace the silent disabled gate with feedback: either keep the button enabled and surface upsertBand's validation message via bandError, or show an inline hint explaining what is still required while disabled"
+    - "Add a browser-level (Playwright) or userEvent-driven test that actually completes the add-band flow — the current component tests structurally cannot catch this failure class"
+
+# Both gaps resolved by gap-closure plan 39-06 (commits 51fce5d..8acc0cf) + delta review fixes CR-04/WR-09/WR-10 (998a6be, 705e30a, 610d9a9). Re-verified: 39-VERIFICATION.md status passed 2026-07-07.
