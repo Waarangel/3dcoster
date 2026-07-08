@@ -1,18 +1,21 @@
 import { useMemo, useState } from 'react';
 import type { PrintJob } from '../../types';
-import { useJobs, useAllSales, usePrinterInstances, useUserProfile } from '../../hooks/useDatabase';
+import { useJobs, useAllSales, usePrinterInstances, usePrinters, useMaterials, useUserProfile } from '../../hooks/useDatabase';
+import { useFailureEvents } from '../../hooks/useFailureEvents';
+import { useMaintenanceEvents } from '../../hooks/useMaintenanceEvents';
 import { useFxRates } from '../../hooks/useFxRates';
 import type { SalesReportRange } from '../../utils/salesReportAggregates';
 import { resolveDateRange } from '../../utils/periodRange';
-import { computeProductRanking, computeWageHeadline } from '../../utils/insights';
+import { computeProductRanking, computeWageHeadline, computePrinterPayback } from '../../utils/insights';
 import { EmptyState, PeriodPicker } from '../ui';
 import { TrendingUpIcon } from '../ui/icons';
 import { WageInsight } from './WageInsight';
 import { ProductRanking } from './ProductRanking';
+import { PrinterROI } from './PrinterROI';
 
 interface InsightsPanelProps {
-  /** Only 'jobs' is used by this plan's empty-state CTA — widen as later plans add CTAs. */
-  onSwitchTab: (tab: 'jobs') => void;
+  /** 'jobs' for the empty-state CTA (40-03); 'settings' for the printer-payback missing-price CTA (40-04). */
+  onSwitchTab: (tab: 'jobs' | 'settings') => void;
   onEditJob: (job: PrintJob) => void;
 }
 
@@ -29,7 +32,11 @@ const ALL_TIME_PARTS = { year: 0, month: 0, quarter: 0, customStart: '', customE
 export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
   const { jobs } = useJobs();
   const allSales = useAllSales();
-  usePrinterInstances(); // subscription reserved for 40-04's printer payback section
+  const { instances: printerInstances } = usePrinterInstances();
+  const { printers: printerConfigs } = usePrinters();
+  const { materials } = useMaterials();
+  const { events: failureEvents } = useFailureEvents();
+  const { events: maintenanceEvents } = useMaintenanceEvents();
   const { profile: userProfile } = useUserProfile();
   const fxTable = useFxRates();
 
@@ -58,6 +65,25 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
   const productRanking = useMemo(
     () => computeProductRanking(jobs, salesInRange, userProfile.currency, fxTable),
     [jobs, salesInRange, userProfile.currency, fxTable],
+  );
+
+  // D-05/D-06/D-07: printer payback is a LIFETIME cumulative metric — it
+  // deliberately ignores the PeriodPicker's `range` (which only scopes the
+  // wage headline + product ranking above) and always uses the full sales
+  // history, or "this month" would reset every printer's payback progress.
+  const printerPayback = useMemo(
+    () => computePrinterPayback(
+      jobs,
+      allSales,
+      printerInstances,
+      printerConfigs,
+      failureEvents,
+      maintenanceEvents,
+      materials,
+      userProfile.currency,
+      fxTable,
+    ),
+    [jobs, allSales, printerInstances, printerConfigs, failureEvents, maintenanceEvents, materials, userProfile.currency, fxTable],
   );
 
   const hasAnyData = jobs.length > 0 || allSales.length > 0;
@@ -91,7 +117,9 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
         <ProductRanking ranking={productRanking} userCurrency={userProfile.currency} />
       </div>
 
-      {/* Task 2/40-04: printer payback / ROI section extends this orchestrator here. */}
+      <PrinterROI payback={printerPayback} userCurrency={userProfile.currency} onSwitchTab={onSwitchTab} />
+
+      {/* 40-05: what-if simulator section extends this orchestrator here. */}
     </div>
   );
 }
