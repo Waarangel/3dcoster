@@ -12,5 +12,7 @@ export { CollapsibleSection } from './CollapsibleSection';
 export { Modal } from './Modal';
 export { ConfirmModal } from './ConfirmModal';
 export { SidePanel } from './SidePanel';
+export { PeriodPicker } from './PeriodPicker';
+export type { PeriodPickerProps } from './PeriodPicker';
 export { ToastProvider, useToast } from './toast';
 export type { ToastApi, ToastOptions, ToastVariant } from './toast';

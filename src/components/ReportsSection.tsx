@@ -1,12 +1,13 @@
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Sale, PrintJob, Currency, FailureEvent, PrinterInstance, Material } from '../types';
 import type { FxRateTable } from '../utils/fxConvert';
 import { formatCurrency } from '../utils/currency';
 import { computeSalesReport, type SalesReportRange } from '../utils/salesReportAggregates';
+import { nowParts, resolveDateRange } from '../utils/periodRange';
 import { generateSalesExportCsv, buildExportFilename } from '../utils/jobsExport';
 import { downloadCsv } from '../utils/csvHelpers';
 import { formatRelativeDate } from '../utils/formatRelativeDate';
-import { Button, DeleteButton, Select, Input, ConfirmModal, useToast } from './ui';
+import { Button, DeleteButton, ConfirmModal, PeriodPicker, useToast } from './ui';
 import { LogFailureModal } from './LogFailureModal';
 import { useFailureEvents } from '../hooks/useFailureEvents';
 
@@ -22,23 +23,6 @@ interface ReportsSectionProps {
   filamentAssets: Material[];
 }
 
-type RangeMode = 'month' | 'quarter' | 'year' | 'ytd' | 'custom';
-
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-// Module-scope so the "today" default isn't an impure call during render.
-function nowParts(): { year: number; month: number } {
-  const d = new Date();
-  return { year: d.getFullYear(), month: d.getMonth() };
-}
-function isoDay(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-function endOfToday(): Date {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-}
-
 export function ReportsSection({ allSales, jobs, userCurrency, fxTable, failureEvents, printerInstances, filamentAssets }: ReportsSectionProps) {
   const toast = useToast();
   const { deleteFailure } = useFailureEvents();
@@ -47,27 +31,16 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable, failureE
   // Selects default to the first available option instead of a specific row.
   const [showLogFailureModal, setShowLogFailureModal] = useState(false);
   const [deletingFailureId, setDeletingFailureId] = useState<string | null>(null);
-  const [mode, setMode] = useState<RangeMode>('month');
-  // One clock read at mount so year/month/quarter can't straddle a second boundary.
-  const [initialNow] = useState(() => nowParts());
-  const [year, setYear] = useState(initialNow.year);
-  const [month, setMonth] = useState(initialNow.month);
-  const [quarter, setQuarter] = useState(() => Math.floor(initialNow.month / 3));
-  const [customStart, setCustomStart] = useState(() => isoDay(new Date(initialNow.year, initialNow.month, 1)));
-  const [customEnd, setCustomEnd] = useState(() => isoDay(new Date()));
+  // PeriodPicker (Phase 40 40-02) owns the mode/year/month/quarter/custom
+  // state internally and reports the resolved range + validity back here.
+  // Seed with today's month so the first paint (before PeriodPicker's mount
+  // effect fires) shows the same default the picker will settle on.
+  const [range, setRange] = useState<SalesReportRange>(() => {
+    const { year, month } = nowParts();
+    return resolveDateRange('month', { year, month, quarter: 0, customStart: '', customEnd: '' });
+  });
+  const [customRangeInvalid, setCustomRangeInvalid] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  // Associate each range control with its visible label for screen readers.
-  const periodId = useId();
-  const monthId = useId();
-  const yearId = useId();
-  const quarterId = useId();
-  const fromId = useId();
-  const toId = useId();
-
-  // Guard a backwards custom range (From after To) — otherwise the report just
-  // shows zero with no explanation.
-  const customRangeInvalid = mode === 'custom' && customEnd < customStart;
 
   const yearOptions = useMemo(() => {
     const cur = nowParts().year;
@@ -75,38 +48,6 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable, failureE
     for (const s of allSales) years.add(s.soldAt.getFullYear());
     return [...years].sort((a, b) => b - a);
   }, [allSales]);
-
-  const range = useMemo<SalesReportRange>(() => {
-    if (mode === 'quarter') {
-      const sm = quarter * 3;
-      return {
-        start: new Date(year, sm, 1, 0, 0, 0, 0),
-        end: new Date(year, sm + 3, 0, 23, 59, 59, 999),
-        label: `Q${quarter + 1} ${year}`,
-      };
-    }
-    if (mode === 'year') {
-      return {
-        start: new Date(year, 0, 1, 0, 0, 0, 0),
-        end: new Date(year, 11, 31, 23, 59, 59, 999),
-        label: String(year),
-      };
-    }
-    if (mode === 'ytd') {
-      const y = nowParts().year;
-      return { start: new Date(y, 0, 1, 0, 0, 0, 0), end: endOfToday(), label: `${y} YTD` };
-    }
-    if (mode === 'custom') {
-      const start = new Date(`${customStart}T00:00:00`);
-      const end = new Date(`${customEnd}T23:59:59.999`);
-      return { start, end, label: `${start.toLocaleDateString()} – ${end.toLocaleDateString()}` };
-    }
-    return {
-      start: new Date(year, month, 1, 0, 0, 0, 0),
-      end: new Date(year, month + 1, 0, 23, 59, 59, 999),
-      label: `${MONTHS[month]} ${year}`,
-    };
-  }, [mode, year, month, quarter, customStart, customEnd]);
 
   const jobsById = useMemo(() => new Map(jobs.map(j => [j.id, j])), [jobs]);
   const data = useMemo(() => computeSalesReport(allSales, jobsById, range, userCurrency, fxTable), [allSales, jobsById, range, userCurrency, fxTable]);
@@ -183,71 +124,8 @@ export function ReportsSection({ allSales, jobs, userCurrency, fxTable, failureE
       <h3 className="text-base font-semibold text-white mb-1">Sales report</h3>
       <p className="text-sm text-slate-400 mb-4">A tidy summary of revenue, fees and profit for any period — for tax records or a loan application.</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        <div>
-          <label htmlFor={periodId} className="block text-xs text-slate-400 mb-1">Period</label>
-          <Select id={periodId} selectSize="sm" value={mode} onChange={e => setMode(e.target.value as RangeMode)}>
-            <option value="month">Month</option>
-            <option value="quarter">Quarter</option>
-            <option value="year">Year</option>
-            <option value="ytd">Year to date</option>
-            <option value="custom">Custom range</option>
-          </Select>
-        </div>
-        {mode === 'month' && (
-          <>
-            <div>
-              <label htmlFor={monthId} className="block text-xs text-slate-400 mb-1">Month</label>
-              <Select id={monthId} selectSize="sm" value={month} onChange={e => setMonth(Number(e.target.value))}>
-                {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-              </Select>
-            </div>
-            <div>
-              <label htmlFor={yearId} className="block text-xs text-slate-400 mb-1">Year</label>
-              <Select id={yearId} selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
-                {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-              </Select>
-            </div>
-          </>
-        )}
-        {mode === 'quarter' && (
-          <>
-            <div>
-              <label htmlFor={quarterId} className="block text-xs text-slate-400 mb-1">Quarter</label>
-              <Select id={quarterId} selectSize="sm" value={quarter} onChange={e => setQuarter(Number(e.target.value))}>
-                {[0, 1, 2, 3].map(q => (
-                  <option key={q} value={q}>Q{q + 1} ({MONTHS[q * 3].slice(0, 3)}–{MONTHS[q * 3 + 2].slice(0, 3)})</option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <label htmlFor={yearId} className="block text-xs text-slate-400 mb-1">Year</label>
-              <Select id={yearId} selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
-                {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-              </Select>
-            </div>
-          </>
-        )}
-        {mode === 'year' && (
-          <div>
-            <label htmlFor={yearId} className="block text-xs text-slate-400 mb-1">Year</label>
-            <Select id={yearId} selectSize="sm" value={year} onChange={e => setYear(Number(e.target.value))}>
-              {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-            </Select>
-          </div>
-        )}
-        {mode === 'custom' && (
-          <>
-            <div>
-              <label htmlFor={fromId} className="block text-xs text-slate-400 mb-1">From</label>
-              <Input id={fromId} inputSize="sm" type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor={toId} className="block text-xs text-slate-400 mb-1">To</label>
-              <Input id={toId} inputSize="sm" type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
-            </div>
-          </>
-        )}
+      <div className="mb-4">
+        <PeriodPicker saleYears={yearOptions} onRangeChange={setRange} onCustomRangeInvalidChange={setCustomRangeInvalid} />
       </div>
 
       {/* Live preview — M-06: announce recomputed totals when the range changes */}
