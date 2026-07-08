@@ -9,8 +9,10 @@
 import type {
   Asset,
   Currency,
+  ElectricityConfig,
   FailureEvent,
   MaintenanceEvent,
+  Material,
   PrintJob,
   PrinterConfig,
   PrinterInstance,
@@ -20,6 +22,7 @@ import type { FxRateTable } from './fxConvert';
 import { computePerSaleProfit } from './salesReportAggregates';
 import { computePrintHourProfit, type PrintHourTone } from './printHourProfit';
 import { deriveMaintenanceAmortization } from '../db/maintenanceAmortization';
+import { calculateCost, type CalcInput, type CalcInputFilamentRow } from './costCalc';
 
 /** Never a real printerInstanceId — the D-08 bucket for sales whose job has no printer assignment. */
 const UNASSIGNED_KEY = 'unassigned';
@@ -457,4 +460,167 @@ function recentDailyProfitPace(
     sum += computePerSaleProfit(sale, job, userCurrency, fxTable) ?? 0;
   }
   return sum / windowDays;
+}
+
+// ---------------------------------------------------------------------------
+// INS-03: What-if scenario simulator
+// ---------------------------------------------------------------------------
+
+/** Never a real number when non-finite — the last line of defense before a NaN/Infinity reaches a caller. */
+function safeNumber(n: number): number | null {
+  return Number.isFinite(n) ? n : null;
+}
+
+export interface ScenarioDeps {
+  printerInstances: readonly PrinterInstance[];
+  printerConfigs: readonly PrinterConfig[];
+  electricity: ElectricityConfig;
+  materials: readonly Material[];
+  /** Current Settings labor rate — NOT snapshotted on PrintJob, unlike touStartTime/maintenanceCostAtSave. */
+  laborHourlyRate: number;
+}
+
+/**
+ * Reconstructs a CalcInput from a saved job snapshot, mirroring the mapping
+ * useCostForm.ts uses to hydrate its form state on Edit (filamentRows,
+ * printerInstanceId → selectedInstance/selectedPrinter, prep/post time,
+ * failureRate, modelCost, touStartTime, maintenanceCostAtSave). Every field
+ * not itself snapshotted on the job (electricity, materials, laborHourlyRate)
+ * comes from the CURRENT live config passed via `deps` — the what-if
+ * simulator answers "what if I changed X today", not "replay history".
+ *
+ * Examples:
+ *   buildCalcInputFromJob(job, { printerInstances, printerConfigs, electricity, materials, laborHourlyRate: 20 })
+ *     → { filamentRows: [...], printTimeHours: 2, selectedInstance, selectedPrinter, ... }
+ */
+export function buildCalcInputFromJob(job: PrintJob, deps: ScenarioDeps): CalcInput {
+  const selectedInstance = deps.printerInstances.find(pi => pi.id === job.printerInstanceId);
+  const selectedPrinter = selectedInstance
+    ? deps.printerConfigs.find(pc => pc.id === selectedInstance.printerConfigId)
+    : undefined;
+
+  const filamentRows: CalcInputFilamentRow[] = job.filaments.map(fu => {
+    const asset = deps.materials.find(m => m.id === fu.filamentId);
+    return {
+      filamentId: fu.filamentId,
+      grams: fu.grams,
+      editedPrice: fu.pricePerGram ?? asset?.costPerUnit ?? 0,
+      editedCurrency: fu.currency ?? job.currency ?? asset?.currency ?? 'USD',
+    };
+  });
+
+  return {
+    filamentRows,
+    printTimeHours: job.printTimeHours,
+    selectedPrinter,
+    selectedInstance,
+    electricity: deps.electricity,
+    materials: deps.materials as Material[],
+    materialsUsed: job.materialsUsed,
+    prepTimeMinutes: job.prepTimeMinutes,
+    postProcessingMinutes: job.postProcessingMinutes,
+    laborHourlyRate: deps.laborHourlyRate,
+    failureRate: job.failureRate,
+    // Pass-through display fields (costCalc.ts never reads these to derive
+    // failureAdjusted) — computeScenario derives margin/profit itself below.
+    profitMarginPercent: 0,
+    targetProfit: 0,
+    sellingPrice: job.sellingPrice,
+    modelCost: job.modelCost,
+    modelCostPerUnit: job.modelCostPerUnit ?? false,
+    touStartTime: job.touStartTime,
+    maintenanceCostPerHour: job.maintenanceCostAtSave,
+  };
+}
+
+/** D-11: the exactly-three INS-03 sliders — no selling-price or labor override keys. */
+export interface ScenarioOverrides {
+  filamentPricePerGram?: number;
+  electricityRatePerKwh?: number;
+  failureRate?: number;
+}
+
+export interface WhatIfScenarioResult {
+  margin: number | null;
+  profit: number | null;
+  /** Copies needed to break even on fixed costs; null when it never will (no positive profit per unit). */
+  breakEven: number | null;
+  deltas: {
+    marginPts: number | null;
+    profit: number | null;
+    breakEven: number | null;
+  };
+}
+
+/** copies = ceil(fixedCosts / profitPerUnit); null when profitPerUnit <= 0 and there ARE fixed costs to recover, 0 when there's nothing to recover. */
+function breakEvenCopies(fixedCosts: number, profitPerUnit: number): number | null {
+  if (profitPerUnit > 0) return Math.ceil(fixedCosts / profitPerUnit);
+  return fixedCosts > 0 ? null : 0;
+}
+
+/**
+ * D-10/D-11: recomputes margin, profit, and break-even for a saved job with
+ * the INS-03 slider overrides applied — filament $/g overrides every
+ * filament row's editedPrice, electricity $/kWh replaces
+ * electricity.costPerKwh, failureRate replaces the job's own rate. Routes
+ * EXCLUSIVELY through calculateCost (costCalc.ts) — no forked cost formula
+ * (PITFALLS C-03). Baseline margin/profit come from the job's OWN stored
+ * sellingPrice/costPerUnit/fixedCostsAtSave (never recomputed), so "deltas"
+ * always compares against exactly what the user saved.
+ *
+ * Examples:
+ *   computeScenario(job, {}, deps) at the job's own saved values
+ *     → live margin ≈ stored margin (±0.5pt reconstruction-fidelity guard)
+ *   computeScenario(job, { filamentPricePerGram: 0.10 }, deps) // higher than saved
+ *     → margin lower than baseline, deltas.marginPts < 0
+ */
+export function computeScenario(
+  job: PrintJob,
+  overrides: ScenarioOverrides,
+  deps: ScenarioDeps,
+): WhatIfScenarioResult {
+  const baseInput = buildCalcInputFromJob(job, deps);
+
+  const liveInput: CalcInput = {
+    ...baseInput,
+    filamentRows: typeof overrides.filamentPricePerGram === 'number'
+      ? baseInput.filamentRows.map(row => ({ ...row, editedPrice: overrides.filamentPricePerGram as number }))
+      : baseInput.filamentRows,
+    electricity: typeof overrides.electricityRatePerKwh === 'number'
+      ? { ...baseInput.electricity, costPerKwh: overrides.electricityRatePerKwh }
+      : baseInput.electricity,
+    // calculateCost clamps failureRate to 0..99 internally (costCalc.ts D-02) — no separate clamp needed here.
+    failureRate: typeof overrides.failureRate === 'number' ? overrides.failureRate : baseInput.failureRate,
+  };
+
+  const liveBreakdown = calculateCost(liveInput);
+  const liveCostPerUnit = liveBreakdown.failureAdjusted;
+  const liveProfit = job.sellingPrice - liveCostPerUnit;
+  const liveMargin = job.sellingPrice > 0 ? (liveProfit / job.sellingPrice) * 100 : null;
+  const liveFixedCosts = liveBreakdown.printerDepreciation + liveBreakdown.nozzleWear
+    + (job.modelCostPerUnit ? 0 : job.modelCost);
+  const liveBreakEven = breakEvenCopies(liveFixedCosts, liveProfit);
+
+  const baselineProfit = job.sellingPrice - job.costPerUnit;
+  const baselineMargin = job.sellingPrice > 0 ? (baselineProfit / job.sellingPrice) * 100 : null;
+  const baselineFixedCosts = (job.fixedCostsAtSave?.depreciation ?? 0) + (job.fixedCostsAtSave?.nozzleWear ?? 0)
+    + (job.modelCostPerUnit ? 0 : job.modelCost);
+  const baselineBreakEven = breakEvenCopies(baselineFixedCosts, baselineProfit);
+
+  const marginPts = liveMargin !== null && baselineMargin !== null ? liveMargin - baselineMargin : null;
+  const profitDelta = liveProfit - baselineProfit;
+  const breakEvenDelta = liveBreakEven !== null && baselineBreakEven !== null
+    ? liveBreakEven - baselineBreakEven
+    : null;
+
+  return {
+    margin: liveMargin !== null ? safeNumber(liveMargin) : null,
+    profit: safeNumber(liveProfit),
+    breakEven: liveBreakEven !== null ? safeNumber(liveBreakEven) : null,
+    deltas: {
+      marginPts: marginPts !== null ? safeNumber(marginPts) : null,
+      profit: safeNumber(profitDelta),
+      breakEven: breakEvenDelta !== null ? safeNumber(breakEvenDelta) : null,
+    },
+  };
 }

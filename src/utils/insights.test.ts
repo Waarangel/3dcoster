@@ -4,9 +4,13 @@ import {
   computeProductRanking,
   computeWageHeadline,
   computePrinterPayback,
+  buildCalcInputFromJob,
+  computeScenario,
+  type ScenarioDeps,
 } from './insights';
 import type {
   Asset,
+  ElectricityConfig,
   FailureEvent,
   MaintenanceEvent,
   PrintJob,
@@ -374,5 +378,138 @@ describe('computePrinterPayback', () => {
   it('handles empty data (no printers)', () => {
     const r = computePrinterPayback([], [], [], [], [], [], [], 'USD', null, now);
     expect(r).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildCalcInputFromJob / computeScenario (INS-03, D-10, D-11)
+// ---------------------------------------------------------------------------
+
+function makeElectricity(overrides: Partial<ElectricityConfig> = {}): ElectricityConfig {
+  return { costPerKwh: 0.1, ...overrides };
+}
+
+// Deliberately no printer instance match (printerInstanceId: '') so
+// depreciation/nozzleWear/electricity cost are all 0 — isolates the
+// fidelity check to filament + labor cost, computed exactly (no FX rounding).
+function makeScenarioJob(overrides: Partial<PrintJob> = {}): PrintJob {
+  return makeJob({
+    printerInstanceId: '',
+    filaments: [{ filamentId: 'mat1', grams: 100, pricePerGram: 0.02 }], // 100 * 0.02 = 2
+    printTimeHours: 2,
+    prepTimeMinutes: 30,
+    postProcessingMinutes: 30, // 1 labor hr
+    failureRate: 0,
+    modelCost: 0,
+    sellingPrice: 10,
+    costPerUnit: 4, // filament 2 + labor (1hr * $2/hr) = 4, matches deps.laborHourlyRate below
+    ...overrides,
+  });
+}
+
+function makeScenarioDeps(overrides: Partial<ScenarioDeps> = {}): ScenarioDeps {
+  return {
+    printerInstances: [],
+    printerConfigs: [],
+    electricity: makeElectricity(),
+    materials: [makeMaterial({ id: 'mat1', costPerUnit: 0.02 })],
+    laborHourlyRate: 2,
+    ...overrides,
+  };
+}
+
+describe('buildCalcInputFromJob', () => {
+  it('maps filament rows, printer, and job fields into a CalcInput', () => {
+    const instance = makeInstance({ id: 'p1', printerConfigId: 'c1' });
+    const config = makeConfig({ id: 'c1' });
+    const job = makeScenarioJob({ printerInstanceId: 'p1' });
+    const deps = makeScenarioDeps({ printerInstances: [instance], printerConfigs: [config] });
+
+    const input = buildCalcInputFromJob(job, deps);
+    expect(input.selectedInstance).toBe(instance);
+    expect(input.selectedPrinter).toBe(config);
+    expect(input.filamentRows).toEqual([{ filamentId: 'mat1', grams: 100, editedPrice: 0.02, editedCurrency: 'USD' }]);
+    expect(input.printTimeHours).toBe(2);
+    expect(input.laborHourlyRate).toBe(2);
+  });
+
+  it('falls back editedPrice to the material costPerUnit when pricePerGram is unset', () => {
+    const job = makeScenarioJob({ filaments: [{ filamentId: 'mat1', grams: 50 }] });
+    const deps = makeScenarioDeps();
+    const input = buildCalcInputFromJob(job, deps);
+    expect(input.filamentRows[0].editedPrice).toBe(0.02);
+  });
+});
+
+describe('computeScenario', () => {
+  it('reconstruction fidelity: live margin ≈ stored margin at zero overrides (±0.5pt)', () => {
+    const job = makeScenarioJob();
+    const deps = makeScenarioDeps();
+    const r = computeScenario(job, {}, deps);
+
+    const storedMargin = ((job.sellingPrice - job.costPerUnit) / job.sellingPrice) * 100;
+    expect(r.margin).not.toBeNull();
+    expect(Math.abs((r.margin as number) - storedMargin)).toBeLessThanOrEqual(0.5);
+    expect(r.deltas.marginPts).not.toBeNull();
+    expect(Math.abs(r.deltas.marginPts as number)).toBeLessThanOrEqual(0.5);
+  });
+
+  it('a higher filament price than saved lowers live margin (directional effect)', () => {
+    const job = makeScenarioJob();
+    const deps = makeScenarioDeps();
+    const r = computeScenario(job, { filamentPricePerGram: 0.10 }, deps); // saved price was 0.02
+
+    expect(r.margin).not.toBeNull();
+    const baselineMargin = ((job.sellingPrice - job.costPerUnit) / job.sellingPrice) * 100;
+    expect(r.margin as number).toBeLessThan(baselineMargin);
+    expect(r.deltas.marginPts as number).toBeLessThan(0);
+  });
+
+  it('a higher failure rate than saved lowers live margin (directional effect)', () => {
+    const job = makeScenarioJob({ failureRate: 0 });
+    const deps = makeScenarioDeps();
+    const r = computeScenario(job, { failureRate: 50 }, deps);
+
+    const baselineMargin = ((job.sellingPrice - job.costPerUnit) / job.sellingPrice) * 100;
+    expect(r.margin as number).toBeLessThan(baselineMargin);
+    expect(r.deltas.marginPts as number).toBeLessThan(0);
+  });
+
+  it('a higher electricity rate than saved lowers live margin when a printer is selected', () => {
+    const instance = makeInstance({ id: 'p1', printerConfigId: 'c1' });
+    const config = makeConfig({ id: 'c1', wattage: 200 });
+    const job = makeScenarioJob({ printerInstanceId: 'p1', costPerUnit: 4 + (200 / 1000) * 2 * 0.1 }); // + electricity at baseline rate
+    const deps = makeScenarioDeps({ printerInstances: [instance], printerConfigs: [config] });
+
+    const baseline = computeScenario(job, {}, deps);
+    const r = computeScenario(job, { electricityRatePerKwh: 1.0 }, deps); // much higher than the saved 0.1
+
+    expect(r.margin as number).toBeLessThan(baseline.margin as number);
+  });
+
+  it('accepts exactly the three override keys (filamentPricePerGram, electricityRatePerKwh, failureRate)', () => {
+    const job = makeScenarioJob();
+    const deps = makeScenarioDeps();
+    const r = computeScenario(job, { filamentPricePerGram: 0.05, electricityRatePerKwh: 0.2, failureRate: 10 }, deps);
+    expect(r.margin).not.toBeNull();
+  });
+
+  it('never returns NaN/Infinity for extreme filament/electricity overrides — finite numbers or null', () => {
+    const job = makeScenarioJob();
+    const deps = makeScenarioDeps();
+    const r = computeScenario(job, { filamentPricePerGram: 1e10, electricityRatePerKwh: 1e10 }, deps);
+
+    if (r.margin !== null) expect(Number.isFinite(r.margin)).toBe(true);
+    if (r.profit !== null) expect(Number.isFinite(r.profit)).toBe(true);
+    if (r.breakEven !== null) expect(Number.isFinite(r.breakEven)).toBe(true);
+    if (r.deltas.marginPts !== null) expect(Number.isFinite(r.deltas.marginPts)).toBe(true);
+  });
+
+  it('clamps an out-of-range failureRate override the same way calculateCost does internally', () => {
+    const job = makeScenarioJob();
+    const deps = makeScenarioDeps();
+    const r = computeScenario(job, { failureRate: 500 }, deps); // calculateCost clamps to 99
+    expect(r.margin).not.toBeNull();
+    expect(Number.isFinite(r.margin as number)).toBe(true);
   });
 });
