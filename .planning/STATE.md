@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 40
 current_phase_name: insight-layer
 status: executing
-stopped_at: Completed 40-01-PLAN.md
-last_updated: "2026-07-08T20:20:50.689Z"
+stopped_at: Completed 40-02-PLAN.md
+last_updated: "2026-07-08T20:33:08.964Z"
 last_activity: 2026-07-08
 last_activity_desc: Phase 40 execution started
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 15
-  completed_plans: 11
+  completed_plans: 12
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 40 (insight-layer) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-07-08 — Phase 40 execution started
 
@@ -90,6 +90,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [v2.0 Roadmap 2026-07-03]: Free-floor guarantee: every cost-model improvement (failure rate, TOU, maintenance amortization) ships to the free tier. No insight or cost feature requires an account.
 - [Phase ?]: 40-01: Insight Layer money math has exactly two homes — computePerSaleProfit (historical sale profit) and calculateCost (scenario/live cost). 40-02..40-05 must never add a third.
 - [Phase ?]: 40-01: computePrinterPayback's Unassigned bucket has no payoff concept (paidOff always false, missingPurchasePrice always false) — it exists only so unlinked sale totals stay honest, never to imply a phantom payable printer.
+- [Phase ?]: 40-02: PeriodPicker exposes an onCustomRangeInvalidChange callback (beyond the plan's onRangeChange) so ReportsSection preserves the T-40-03 backwards-custom-range guard without re-deriving picker state — Lifting mode/year/month/quarter/custom state into PeriodPicker without a validity callback would have broken the Download-button disable + warning message, or forced ReportsSection to redeclare the same state machine the plan exists to eliminate
 
 ### Pending Todos
 
@@ -105,8 +106,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-08T20:20:50.681Z
-Stopped at: Completed 40-01-PLAN.md
+Last session: 2026-07-08T20:33:08.958Z
+Stopped at: Completed 40-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -133,3 +134,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | v1.3-carryover | VoiceOver UAT (Phase 19) | Still pending — no v2.0 requirement |
 | v1.3-carryover | TAGS-F4 tag colors, DUP-F1 duplicate UI | Still pending — no v2.0 requirement |
 | Phase 40 P01 | 20min | 3 tasks | 9 files |
+| Phase 40-insight-layer P02 | 3min | 2 tasks | 5 files |
