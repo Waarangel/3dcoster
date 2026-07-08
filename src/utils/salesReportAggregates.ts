@@ -144,3 +144,42 @@ export function computeSalesReport(
     hasPartialData: !moneyAvailable || !costAvailable,
   };
 }
+
+/**
+ * Phase 40 (INS-01/02) — the SAME net-of-fees, FX-null-safe per-sale profit
+ * contract already used inside computeSalesReport above (gross − fee − cost,
+ * via convert()), factored out into a single reusable function so every
+ * insight derivation (ranking, wage headline, printer payback) shares ONE
+ * home for "how much profit did this sale actually make" (PITFALLS C-03 —
+ * no forked profit math). Purely additive: computeSalesReport's own
+ * accumulation loop is untouched.
+ *
+ * Returns null — never a guessed number — when any in-scope FX conversion
+ * (revenue, fee, or cost) has no rate, mirroring computeSalesReport's
+ * hasPartialData contract at the single-sale level.
+ *
+ * Examples:
+ *   computePerSaleProfit({totalRevenue:50, marketplaceFee:5, quantity:2, currency:'CAD',...}, {costPerUnit:8, currency:'CAD',...}, 'CAD', null)
+ *     → 29   // (50 - 5) - (8 * 2)
+ *   computePerSaleProfit(sale, undefined, 'CAD', null) → -5   // no job on record → cost treated as 0
+ *   computePerSaleProfit({...sale, currency:'USD'}, job, 'CAD', null) → null   // no USD→CAD rate
+ *
+ * Returns: number (net-of-fees profit in userCurrency) or null (no FX data)
+ */
+export function computePerSaleProfit(
+  sale: Sale,
+  job: PrintJob | undefined,
+  userCurrency: Currency,
+  fxTable: FxRateTable | null,
+): number | null {
+  const from = sale.currency ?? userCurrency;
+  const gross = convert(sale.totalRevenue, from, userCurrency, fxTable);
+  const fee = convert(sale.marketplaceFee ?? 0, from, userCurrency, fxTable);
+  if (gross === null || fee === null) return null;
+
+  const costNative = (job?.costPerUnit ?? 0) * sale.quantity;
+  const cost = convert(costNative, job?.currency ?? userCurrency, userCurrency, fxTable);
+  if (cost === null) return null;
+
+  return gross - fee - cost;
+}
