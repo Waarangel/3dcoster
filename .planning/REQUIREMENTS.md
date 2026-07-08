@@ -6,6 +6,7 @@
 **Milestone goal:** Turn 3DCoster from a calculator into a cost-truth engine and launch the business — deeper cost realism, decision-grade insights, the hosted/Pro tier with a GDPR-compliant legal foundation, the new brand, and a guided first-run.
 
 **Locked decisions (2026-07-03):**
+
 - Backend = **Supabase, eu-central-1 (Frankfurt)**, new project on the existing "How to Project" Pro org (~$10/mo marginal). GDPR posture via EU region + DPA/SCCs.
 - Free floor is a first-class "no account" state — no free feature may ever require a backend call or account.
 - GDPR legal layer is a **hard gate** before any backend call ships to production.
@@ -35,9 +36,9 @@
 
 ### Insight & Decisions
 
-- [ ] **INS-01**: User can see true hourly wage + product profitability ranking ("phone stands earn $8.10/printer-hour; dragons $1.50/hr") derived from existing job/sale data — pure derivations in `src/utils/insights.ts`, own panel/tab (NOT more props through App.tsx)
-- [ ] **INS-02**: User can see per-printer payback/ROI ("this X1C earned back its purchase price; net +$340") from existing depreciation + sales data
-- [ ] **INS-03**: User can play what-if margin sensitivity — sliders for filament price / electricity / failure rate with live margin response
+- [x] **INS-01**: User can see true hourly wage + product profitability ranking ("phone stands earn $8.10/printer-hour; dragons $1.50/hr") derived from existing job/sale data — pure derivations in `src/utils/insights.ts`, own panel/tab (NOT more props through App.tsx)
+- [x] **INS-02**: User can see per-printer payback/ROI ("this X1C earned back its purchase price; net +$340") from existing depreciation + sales data
+- [x] **INS-03**: User can play what-if margin sensitivity — sliders for filament price / electricity / failure rate with live margin response
 
 ### Connected Cost
 
@@ -75,12 +76,15 @@
 ## v2 Requirements (deferred)
 
 ### Energy & environment
+
 - **TOU-03**: Grid-carbon "green print" nudge via Electricity Maps free API ("run at 2am, save $X and cut carbon")
 
 ### Sync
+
 - **SYNC-02**: Real-time/hosted sync ceiling (Dexie Cloud or Supabase custom sync) — blocked on EU-residency confirmation for Dexie Cloud; CRDTs explicitly deferred (wrong model for single-user multi-device)
 
 ### Quick wins not selected for v2.0 (founder call 2026-07-03)
+
 - **CURR-01**: Currency expansion 18 → 50+ labels (FX API already covers 200+)
 - **MISC-01**: `etsy_offsite_ad` in RecordSaleModal marketplace picker
 - **MISC-02**: TAGS-F4 tag colors; DUP-F1 duplicate-job row UI; customer CSV export
@@ -114,9 +118,9 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | TOU-02 | Phase 39 | Complete |
 | WEAR-01 | Phase 39 | Complete |
 | WEAR-02 | Phase 39 | Complete |
-| INS-01 | Phase 40 | Pending |
-| INS-02 | Phase 40 | Pending |
-| INS-03 | Phase 40 | Pending |
+| INS-01 | Phase 40 | Complete |
+| INS-02 | Phase 40 | Complete |
+| INS-03 | Phase 40 | Complete |
 | CONN-01 | Phase 41 | Pending |
 | CONN-03 | Phase 41 | Pending |
 | LIFE-01 | Phase 41 | Pending |
@@ -134,6 +138,7 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | BRAND-01 | Phase 45 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 29 total
 - Mapped to phases: 29
 - Unmapped: 0 ✓

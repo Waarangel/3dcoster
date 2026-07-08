@@ -3,16 +3,17 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 40
+current_phase_name: insight-layer
 status: executing
-stopped_at: Phase 40 context gathered
-last_updated: "2026-07-08T20:01:00.440Z"
+stopped_at: Completed 40-01-PLAN.md
+last_updated: "2026-07-08T20:20:50.689Z"
 last_activity: 2026-07-08
-last_activity_desc: Phase 40 planning complete
+last_activity_desc: Phase 40 execution started
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 15
+  completed_plans: 11
   percent: 25
 ---
 
@@ -23,14 +24,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–45). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 40 — insight layer
+**Current focus:** Phase 40 — insight-layer
 
 ## Current Position
 
-Phase: 40
-Plan: Not started
+Phase: 40 (insight-layer) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-07-08 — Phase 40 planning complete
+Last activity: 2026-07-08 — Phase 40 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -87,6 +88,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [v2.0 Roadmap 2026-07-03]: CONN-03 (Quote Variants PDF) placed in Phase 41 (Quick Wins), not Phase 39 or 43 — it rides the existing jsPDF engine, requires no new Dexie stores, and is independent of both the backend and the cost realism features.
 - [v2.0 Roadmap 2026-07-03]: Phases 39, 40, and 41 all depend on Phase 38 but are otherwise independent of each other and can begin planning in parallel once Phase 38 is complete.
 - [v2.0 Roadmap 2026-07-03]: Free-floor guarantee: every cost-model improvement (failure rate, TOU, maintenance amortization) ships to the free tier. No insight or cost feature requires an account.
+- [Phase ?]: 40-01: Insight Layer money math has exactly two homes — computePerSaleProfit (historical sale profit) and calculateCost (scenario/live cost). 40-02..40-05 must never add a third.
+- [Phase ?]: 40-01: computePrinterPayback's Unassigned bucket has no payoff concept (paidOff always false, missingPurchasePrice always false) — it exists only so unlinked sale totals stay honest, never to imply a phantom payable printer.
 
 ### Pending Todos
 
@@ -102,9 +105,9 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-08T18:31:12.353Z
-Stopped at: Phase 40 context gathered
-Resume file: .planning/phases/40-insight-layer/40-CONTEXT.md
+Last session: 2026-07-08T20:20:50.681Z
+Stopped at: Completed 40-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
@@ -129,3 +132,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | v1.3-carryover | Customer CSV export | Still pending — no v2.0 requirement |
 | v1.3-carryover | VoiceOver UAT (Phase 19) | Still pending — no v2.0 requirement |
 | v1.3-carryover | TAGS-F4 tag colors, DUP-F1 duplicate UI | Still pending — no v2.0 requirement |
+| Phase 40 P01 | 20min | 3 tasks | 9 files |

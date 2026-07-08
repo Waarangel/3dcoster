@@ -152,7 +152,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 **Plans**: 5 plans in 4 waves
 **Wave 1**
 
-- [ ] 40-01-PLAN.md — Foundation math: port Phase 33 utils, insights.ts ranking/wage/payback/what-if derivations (INS-01/02/03)
+- [x] 40-01-PLAN.md — Foundation math: port Phase 33 utils, insights.ts ranking/wage/payback/what-if derivations (INS-01/02/03)
 - [ ] 40-02-PLAN.md — Extract shared PeriodPicker + resolveDateRange from ReportsSection (INS-01, D-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -256,7 +256,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
-| 40. Insight Layer | 0/5 | Planned | - |
+| 40. Insight Layer | 1/5 | In Progress|  |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
