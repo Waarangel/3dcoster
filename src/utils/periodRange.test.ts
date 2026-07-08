@@ -14,6 +14,20 @@ function parts(overrides: Partial<PeriodParts> = {}): PeriodParts {
 }
 
 describe('resolveDateRange', () => {
+  it('all-time: resolves epoch start through end of today, ignoring year/month/quarter/custom parts', () => {
+    const range = resolveDateRange('all-time', parts());
+    expect(range.start).toEqual(new Date(0));
+    const now = new Date();
+    expect(range.end.getFullYear()).toBe(now.getFullYear());
+    expect(range.end.getMonth()).toBe(now.getMonth());
+    expect(range.end.getDate()).toBe(now.getDate());
+    expect(range.end.getHours()).toBe(23);
+    expect(range.end.getMinutes()).toBe(59);
+    expect(range.end.getSeconds()).toBe(59);
+    expect(range.end.getMilliseconds()).toBe(999);
+    expect(range.label).toBe('All time');
+  });
+
   it('month: resolves start/end/label for a mid-year month', () => {
     const range = resolveDateRange('month', parts({ year: 2026, month: 5 }));
     expect(range.start).toEqual(new Date(2026, 5, 1, 0, 0, 0, 0));

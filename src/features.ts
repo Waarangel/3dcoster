@@ -26,6 +26,8 @@ export const featureReleases: Record<string, Date> = {
   // parallel-write conflict; Plans 02/04 reference these keys via NewBadge)
   'log-failure': new Date('2026-07-06'),
   'maintenance-log': new Date('2026-07-06'),
+  // v2.0 Phase 40 — Insight Layer (INS-01): Insights tab + target-wage Setting
+  'insights-tab': new Date('2026-07-08'),
   // Add new features here with their release date
 };
 

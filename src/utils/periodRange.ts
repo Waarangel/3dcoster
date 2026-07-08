@@ -7,7 +7,10 @@
 // ---------------------------------------------------------------------------
 import type { SalesReportRange } from './salesReportAggregates';
 
-export type RangeMode = 'month' | 'quarter' | 'year' | 'ytd' | 'custom';
+// 'all-time' added by Phase 40 Plan 03 (D-04: Insights tab defaults to
+// all-time, then narrows via this same shared picker). Purely additive —
+// ReportsSection's existing 5 modes are untouched.
+export type RangeMode = 'all-time' | 'month' | 'quarter' | 'year' | 'ytd' | 'custom';
 
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -43,6 +46,8 @@ export function endOfToday(): Date {
  * Byte-identical to ReportsSection's pre-extraction inline `range` useMemo.
  *
  * Examples:
+ *   resolveDateRange('all-time', { year: 0, month: 0, quarter: 0, customStart: '', customEnd: '' })
+ *     → { start: 1970-01-01T00:00:00.000, end: <end of today>, label: 'All time' }
  *   resolveDateRange('month', { year: 2026, month: 5, quarter: 0, customStart: '', customEnd: '' })
  *     → { start: 2026-06-01T00:00:00.000, end: 2026-06-30T23:59:59.999, label: 'June 2026' }
  *   resolveDateRange('quarter', { year: 2026, month: 0, quarter: 1, customStart: '', customEnd: '' })
@@ -55,6 +60,11 @@ export function endOfToday(): Date {
 export function resolveDateRange(mode: RangeMode, parts: PeriodParts): SalesReportRange {
   const { year, month, quarter, customStart, customEnd } = parts;
 
+  if (mode === 'all-time') {
+    // Epoch start is a deliberate "everything ever recorded" sentinel — never
+    // fed through arithmetic, only used as an inclusive lower bound.
+    return { start: new Date(0), end: endOfToday(), label: 'All time' };
+  }
   if (mode === 'quarter') {
     const sm = quarter * 3;
     return {

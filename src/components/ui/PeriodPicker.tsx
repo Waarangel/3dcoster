@@ -11,6 +11,8 @@ export interface PeriodPickerProps {
   onRangeChange: (range: SalesReportRange) => void;
   /** Called whenever the custom "From" > "To" guard flips, so the parent can disable actions and surface its own message (T-40-03 mitigation). Pass a stable identity for the same reason as onRangeChange. */
   onCustomRangeInvalidChange?: (isInvalid: boolean) => void;
+  /** Initial mode Select value. Defaults to 'month' (ReportsSection's original behavior). The Insights tab (40-03, D-04) passes 'all-time'. */
+  defaultMode?: RangeMode;
 }
 
 /**
@@ -19,8 +21,8 @@ export interface PeriodPickerProps {
  * ReportsSection (Phase 40 40-02) and the Insights tab (40-03) so RangeMode
  * and its range-resolution logic exist in exactly one place (periodRange.ts).
  */
-export function PeriodPicker({ saleYears, onRangeChange, onCustomRangeInvalidChange }: PeriodPickerProps) {
-  const [mode, setMode] = useState<RangeMode>('month');
+export function PeriodPicker({ saleYears, onRangeChange, onCustomRangeInvalidChange, defaultMode = 'month' }: PeriodPickerProps) {
+  const [mode, setMode] = useState<RangeMode>(defaultMode);
   // One clock read at mount so year/month/quarter can't straddle a second boundary.
   const [initialNow] = useState(() => nowParts());
   const [year, setYear] = useState(initialNow.year);
@@ -59,6 +61,7 @@ export function PeriodPicker({ saleYears, onRangeChange, onCustomRangeInvalidCha
       <div>
         <label htmlFor={periodId} className="block text-xs text-slate-400 mb-1">Period</label>
         <Select id={periodId} selectSize="sm" value={mode} onChange={e => setMode(e.target.value as RangeMode)}>
+          <option value="all-time">All time</option>
           <option value="month">Month</option>
           <option value="quarter">Quarter</option>
           <option value="year">Year</option>

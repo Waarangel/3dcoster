@@ -9,6 +9,7 @@ import { PrinterSettings } from './components/PrinterSettings';
 import { CostCalculator } from './components/calculator/CostCalculator';
 import { CustomerLibrary } from './components/CustomerLibrary';
 import { ReportsSection } from './components/ReportsSection';
+import { InsightsPanel } from './components/insights/InsightsPanel';
 import { JobsManager } from './components/JobsManager';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -20,13 +21,13 @@ import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { ToastProvider } from './components/ui';
 import { isMaintenanceDismissed, markMaintenanceDismissed, MAINTENANCE_INTERVAL } from './utils/maintenanceDismissed';
 
-type Tab = 'calculator' | 'jobs' | 'materials' | 'customers' | 'reports' | 'settings';
+type Tab = 'calculator' | 'jobs' | 'materials' | 'customers' | 'reports' | 'insights' | 'settings';
 
 // FOUND-03: single source of truth for which ?tab= values are valid. Any
 // value read from the URL must pass this whitelist (T-38-03) before it is
 // ever used to select a tab — untrusted URL input (typed, bookmarked, or
 // pasted) crosses a trust boundary here.
-const VALID_TABS: Tab[] = ['calculator', 'jobs', 'materials', 'customers', 'reports', 'settings'];
+const VALID_TABS: Tab[] = ['calculator', 'jobs', 'materials', 'customers', 'reports', 'insights', 'settings'];
 
 // Detect if running in standalone mode (PWA installed or Tauri desktop app)
 function useIsStandalone(): boolean {
@@ -233,6 +234,7 @@ function App() {
     { id: 'materials', label: 'Asset Library', shortLabel: 'Assets' },
     { id: 'customers', label: 'Customers', shortLabel: 'Customers' },
     { id: 'reports', label: 'Reports', shortLabel: 'Reports' },
+    { id: 'insights', label: 'Insights', shortLabel: 'Insights' },
     { id: 'settings', label: 'Printers', shortLabel: 'Printers' },
   ];
 
@@ -391,6 +393,9 @@ function App() {
                 {tab.id === 'reports' && (
                   <NewBadge feature="sales-report" className="absolute -top-1 -right-1 pointer-events-none" />
                 )}
+                {tab.id === 'insights' && (
+                  <NewBadge feature="insights-tab" className="absolute -top-1 -right-1 pointer-events-none" />
+                )}
               </button>
             ))}
           </div>
@@ -497,6 +502,10 @@ function App() {
               filamentAssets={filamentAssets}
             />
           </div>
+        )}
+
+        {activeTab === 'insights' && (
+          <InsightsPanel onSwitchTab={setActiveTab} onEditJob={handleEditJob} />
         )}
       </main>
 
