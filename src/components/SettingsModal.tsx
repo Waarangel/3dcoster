@@ -499,6 +499,32 @@ export function SettingsModal({
                     placeholder="20"
                   />
                 </div>
+                <div className="mt-3">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span className="relative inline-block">
+                      Target Hourly Wage ({currencySymbol})
+                      <NewBadge feature="insights-tab" className="absolute top-0 left-full ml-1.5 pointer-events-none" />
+                    </span>
+                    <InfoTooltip text="Optional goal. Used only to show the gap on the Insights tab (e.g. 'earning $14/hr vs your $20 target') — it doesn't change any cost math." />
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    compact
+                    value={userProfile.targetHourlyRate ?? ''}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '') {
+                        onUserProfileChange({ ...userProfile, targetHourlyRate: undefined });
+                      } else {
+                        const parsed = parseFloat(v);
+                        onUserProfileChange({ ...userProfile, targetHourlyRate: Number.isFinite(parsed) ? Math.max(parsed, 0) : undefined });
+                      }
+                    }}
+                    placeholder="e.g., 20"
+                  />
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-700">

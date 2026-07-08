@@ -4,8 +4,11 @@ import { useJobs, useAllSales, usePrinterInstances, useUserProfile } from '../..
 import { useFxRates } from '../../hooks/useFxRates';
 import type { SalesReportRange } from '../../utils/salesReportAggregates';
 import { resolveDateRange } from '../../utils/periodRange';
+import { computeProductRanking, computeWageHeadline } from '../../utils/insights';
 import { EmptyState, PeriodPicker } from '../ui';
 import { TrendingUpIcon } from '../ui/icons';
+import { WageInsight } from './WageInsight';
+import { ProductRanking } from './ProductRanking';
 
 interface InsightsPanelProps {
   /** Only 'jobs' is used by this plan's empty-state CTA — widen as later plans add CTAs. */
@@ -27,8 +30,8 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
   const { jobs } = useJobs();
   const allSales = useAllSales();
   usePrinterInstances(); // subscription reserved for 40-04's printer payback section
-  useUserProfile(); // subscription reserved for the target-wage gap wired in Task 2
-  useFxRates(); // subscription reserved for the money math wired in Task 2
+  const { profile: userProfile } = useUserProfile();
+  const fxTable = useFxRates();
 
   // D-04: all-time is the default scope; the shared PeriodPicker (40-02) narrows it.
   const [range, setRange] = useState<SalesReportRange>(() => resolveDateRange('all-time', ALL_TIME_PARTS));
@@ -38,6 +41,24 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
     for (const s of allSales) years.add(s.soldAt.getFullYear());
     return [...years].sort((a, b) => b - a);
   }, [allSales]);
+
+  // insights.ts's compute* functions (40-01) take a plain sales array with no
+  // range parameter — the same filter-before-call pattern ReportsSection uses
+  // for its CSV export narrows scope to the selected period.
+  const salesInRange = useMemo(
+    () => allSales.filter(s => s.soldAt >= range.start && s.soldAt <= range.end),
+    [allSales, range],
+  );
+
+  const wageHeadline = useMemo(
+    () => computeWageHeadline(jobs, salesInRange, userProfile.currency, fxTable, userProfile.targetHourlyRate),
+    [jobs, salesInRange, userProfile.currency, fxTable, userProfile.targetHourlyRate],
+  );
+
+  const productRanking = useMemo(
+    () => computeProductRanking(jobs, salesInRange, userProfile.currency, fxTable),
+    [jobs, salesInRange, userProfile.currency, fxTable],
+  );
 
   const hasAnyData = jobs.length > 0 || allSales.length > 0;
 
@@ -65,7 +86,12 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
         <div aria-live="polite" className="text-xs text-slate-500 mt-2">{range.label}</div>
       </div>
 
-      {/* Task 2 wires WageInsight + ProductRanking here, driven by `range`, `jobs`, `allSales`. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <WageInsight headline={wageHeadline} userCurrency={userProfile.currency} />
+        <ProductRanking ranking={productRanking} userCurrency={userProfile.currency} />
+      </div>
+
+      {/* Task 2/40-04: printer payback / ROI section extends this orchestrator here. */}
     </div>
   );
 }

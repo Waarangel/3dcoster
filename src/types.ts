@@ -536,6 +536,10 @@ export interface UserProfile {
   laborHourlyRate: number;
   // Default profit margin (%) applied to new jobs and on clear/save
   defaultProfitMargin?: number;
+  // Phase 40 INS-01 (D-03): optional goal used ONLY for the Insights tab's
+  // wage-gap line ("earning $14/hr vs your $20 target"). Undefined = no gap
+  // shown. Non-indexed, no migration needed (mirrors defaultProfitMargin).
+  targetHourlyRate?: number;
   // Address for shipping calculations
   address?: {
     street?: string;
