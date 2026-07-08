@@ -340,17 +340,19 @@ const handleLogFailure = useCallback((job: PrintJob) => {
 
 **If this table is empty:** N/A — see above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `PrinterSettings.tsx`'s existing recovery bar be refactored in this phase, or left as a known-divergent legacy display?**
    - What we know: The existing bar computes payback with different (less accurate) math than D-05/D-07 specify (Pitfall P-01).
    - What's unclear: CONTEXT.md doesn't mention `PrinterSettings.tsx` at all in its canonical_refs or decisions — this may be an oversight in phase scoping, or a deliberate "leave it alone, it's out of scope" choice.
    - Recommendation: Surface this to the user/planner explicitly before planning — the cheapest fix (swap `PrinterSettings.tsx`'s existing calculation to call the new `computePrinterPayback` util) is low-cost and prevents a confusing UX regression; recommend including it as an in-scope task unless the user says otherwise.
+   - **RESOLVED (2026-07-08):** User decided to reconcile in this phase — captured as CONTEXT.md **D-16**. One shared `computePrinterPayback()` is consumed by both the Insights ROI cards and the PrinterSettings bar; implemented in plan 40-04 Task 2.
 
 2. **Exact projection formula for the break-even date (D-06 "recent profit pace window choice")**
    - What we know: CONTEXT.md explicitly defers this to Claude's Discretion, requiring only that it be "explainable in a tooltip, no black-box smoothing."
    - What's unclear: No existing precedent in the codebase for a trailing-window profit-pace projection (the closest analog, WEAR-02's "next likely swap" prediction, projects from *hours*, not *time*, and lives in Phase 39 code not yet fully explored in this research pass).
    - Recommendation: A simple, explainable choice — e.g. "average net profit per sold unit over the last 90 days (or all-time if <90 days of sales history) × recent sales pace" — should be specified precisely in the plan, with the exact window named in code comments and the InfoTooltip, per the no-black-box-smoothing constraint.
+   - **RESOLVED (2026-07-08):** Plan 40-01 Task 2 adopts the recommended formula — 90-day trailing average of net profit pace (all-time fallback when <90 days of sales history), with the window named in code comments and the InfoTooltip.
 
 ## Environment Availability
 
