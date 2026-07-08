@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { PrinterConfig, PrinterInstance, PrintJob, Currency } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast, FieldWarning, ConfirmModal } from './ui';
@@ -7,9 +7,13 @@ import { printerLifespanWarning } from '../utils/inputSanity';
 import { PrinterIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { LogMaintenanceModal } from './LogMaintenanceModal';
+import { useAllSales, useMaterials } from '../hooks/useDatabase';
+import { useFailureEvents } from '../hooks/useFailureEvents';
 import { useMaintenanceEvents } from '../hooks/useMaintenanceEvents';
 import { useMaintenanceAmortization } from '../hooks/useMaintenanceAmortization';
+import { useFxRates } from '../hooks/useFxRates';
 import { resolveNozzleType } from '../utils/abrasive';
+import { computePrinterPayback } from '../utils/insights';
 
 // Sentinel option value in the Printer Model dropdown that opens the
 // custom-model form instead of selecting an existing model.
@@ -97,6 +101,50 @@ export function PrinterSettings({
   const [customModelLifespan, setCustomModelLifespan] = useState<number>(5000);
 
   const toast = useToast();
+
+  // D-16/RESEARCH P-01: the recovery bar below reads from the SAME
+  // computePrinterPayback (40-01) that drives the Insights ROI card
+  // (PrinterROI.tsx, 40-04) — never a second, disagreeing payback formula.
+  // Pulled via this component's own hooks (matching the MaintenanceSection
+  // sub-component's existing useMaintenanceEvents() precedent) rather than
+  // threading three more props through App.tsx.
+  const allSales = useAllSales();
+  const { events: failureEvents } = useFailureEvents();
+  const { events: maintenanceEvents } = useMaintenanceEvents();
+  const { materials } = useMaterials();
+  const fxTable = useFxRates();
+
+  const printerPayback = useMemo(
+    () => computePrinterPayback(
+      jobs,
+      allSales,
+      printerInstances,
+      printers,
+      failureEvents,
+      maintenanceEvents,
+      materials,
+      userCurrency,
+      fxTable,
+    ),
+    [jobs, allSales, printerInstances, printers, failureEvents, maintenanceEvents, materials, userCurrency, fxTable],
+  );
+  const paybackByInstanceId = useMemo(
+    () => new Map(printerPayback.map(result => [result.printerInstanceId, result])),
+    [printerPayback],
+  );
+  // Real Sale-record count per printer (not the legacy job.copiesSold field)
+  // — drives the recovery bar's "No sales yet" state so it agrees with the
+  // same Sale data computePrinterPayback used for the $ amount above it.
+  const saleCountByInstanceId = useMemo(() => {
+    const jobsById = new Map(jobs.map(j => [j.id, j]));
+    const counts = new Map<string, number>();
+    for (const sale of allSales) {
+      const printerInstanceId = jobsById.get(sale.jobId)?.printerInstanceId;
+      if (!printerInstanceId) continue;
+      counts.set(printerInstanceId, (counts.get(printerInstanceId) ?? 0) + 1);
+    }
+    return counts;
+  }, [jobs, allSales]);
 
   // ─── Stable ids for label/input pairing (A11Y H-03) ───────────────────────
   // Add-form fields (single instance of the form).
@@ -435,19 +483,24 @@ export function PrinterSettings({
               const totalRecoveryHours = recoveryMonths * monthlyHours;
               const depreciation = totalRecoveryHours > 0 ? purchasePrice / totalRecoveryHours : 0;
 
-              // Calculate ACTUAL recovery from sales of jobs on this printer
+              // D-16/D-05/D-07: recovery progress from computePrinterPayback's
+              // cumulative NET profit (sale profit net of fees, minus this
+              // printer's logged maintenance + failure scrap cost) — never the
+              // old gross job.sellingPrice × copiesSold asking-price math.
               const printerJobs = jobs.filter(j => j.printerInstanceId === instance.id);
-              const totalProfitFromSales = printerJobs.reduce((total, job) => {
-                const profitPerUnit = job.sellingPrice - job.costPerUnit;
-                return total + (profitPerUnit * job.copiesSold);
-              }, 0);
               const totalUnitsSold = printerJobs.reduce((total, job) => total + job.copiesSold, 0);
 
-              // Recovery progress based on actual profit from sales
-              const recoveryPercent = purchasePrice > 0
-                ? (totalProfitFromSales / purchasePrice) * 100
+              const payback = paybackByInstanceId.get(instance.id);
+              const netProfitFromSales = payback?.cumulativeNetProfit ?? null;
+              const paidOff = payback?.paidOff ?? false;
+              const realSaleCount = saleCountByInstanceId.get(instance.id) ?? 0;
+
+              const recoveryPercent = netProfitFromSales !== null && purchasePrice > 0
+                ? (netProfitFromSales / purchasePrice) * 100
                 : 0;
-              const remainingToRecover = Math.max(0, purchasePrice - totalProfitFromSales);
+              const remainingToRecover = netProfitFromSales !== null
+                ? Math.max(0, purchasePrice - netProfitFromSales)
+                : purchasePrice;
 
               return (
                 <div
@@ -534,21 +587,23 @@ export function PrinterSettings({
                           <span className="text-blue-400">${depreciation.toFixed(3)}/hr cost</span>
                           <span>{printerJobs.length} jobs · {totalUnitsSold} units sold</span>
                         </div>
-                        {/* Recovery progress bar - based on actual sales profit */}
+                        {/* Recovery progress bar — driven by computePrinterPayback's cumulative NET profit (D-16) */}
                         <div className="mt-2 w-full max-w-md">
                           <div className="h-1.5 bg-slate-600 rounded-full overflow-hidden">
                             <div
-                              className={`h-full transition-all ${recoveryPercent >= 100 ? 'bg-green-500' : recoveryPercent > 50 ? 'bg-blue-500' : 'bg-yellow-500'}`}
-                              style={{ width: `${Math.min(100, recoveryPercent)}%` }}
+                              className={`h-full transition-all ${paidOff ? 'bg-green-500' : recoveryPercent > 50 ? 'bg-blue-500' : 'bg-yellow-500'}`}
+                              style={{ width: `${Math.max(0, Math.min(100, recoveryPercent))}%` }}
                             />
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            {totalUnitsSold === 0 ? (
+                            {netProfitFromSales === null ? (
+                              'Some sales are missing an exchange rate, so this number may be incomplete.'
+                            ) : realSaleCount === 0 ? (
                               `No sales yet · ${formatCurrency(purchasePrice, userCurrency)} to recover`
-                            ) : recoveryPercent >= 100 ? (
-                              `✓ Fully recovered! ${formatCurrency(totalProfitFromSales, userCurrency)} profit from ${totalUnitsSold} sales`
+                            ) : paidOff ? (
+                              `✓ Fully recovered! ${formatCurrency(netProfitFromSales, userCurrency)} net profit from ${realSaleCount} sale${realSaleCount === 1 ? '' : 's'}`
                             ) : (
-                              `${formatCurrency(totalProfitFromSales, userCurrency)} profit from sales · ${formatCurrency(remainingToRecover, userCurrency)} remaining to recover`
+                              `${formatCurrency(netProfitFromSales, userCurrency)} net profit from sales · ${formatCurrency(remainingToRecover, userCurrency)} remaining to recover`
                             )}
                           </p>
                         </div>
