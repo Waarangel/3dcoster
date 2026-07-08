@@ -137,8 +137,14 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   1. User can open an Insights tab (visible in the app's tab bar, behind the URL-based routing from Phase 38) and see a ranked list of their products by profit per printer-hour, with the top and bottom earners clearly distinguished
   2. User can see a per-printer payback tracker showing how much revenue that printer has generated against its purchase cost, expressed as "paid off" or "net +/- $X"
   3. User can open a what-if simulator for a saved job and move sliders for filament price, electricity rate, and failure rate to see live margin response — without overwriting the saved job
-**Plans**: TBD
+**Plans**: 5 plans in 4 waves
+- [ ] 40-01-PLAN.md — Foundation math: port Phase 33 utils, insights.ts ranking/wage/payback/what-if derivations (INS-01/02/03)
+- [ ] 40-02-PLAN.md — Extract shared PeriodPicker + resolveDateRange from ReportsSection (INS-01, D-04)
+- [ ] 40-03-PLAN.md — Insights tab + true-hourly-wage headline + product ranking + target-wage setting (INS-01)
+- [ ] 40-04-PLAN.md — Per-printer payback/ROI cards + PrinterSettings recovery-bar reconciliation (INS-02, D-16)
+- [ ] 40-05-PLAN.md — What-if simulator (3 sliders, 2 entry points) + Phase 33 branch retirement + ROADMAP D-05 fix (INS-03)
 **UI hint**: yes
+**Note**: Success criterion 2 wording corrected to cumulative NET PROFIT (per D-05) as a task inside 40-05.
 
 ### Phase 41: Quick-Win Features
 **Goal**: Users get four high-value free-floor features that each deliver value in under a minute of interaction, all local, all without a backend
@@ -211,7 +217,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
-| 40. Insight Layer | 0/TBD | Not started | - |
+| 40. Insight Layer | 0/5 | Planned | - |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
