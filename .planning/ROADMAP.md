@@ -157,7 +157,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 40-03-PLAN.md — Insights tab + true-hourly-wage headline + product ranking + target-wage setting (INS-01)
+- [x] 40-03-PLAN.md — Insights tab + true-hourly-wage headline + product ranking + target-wage setting (INS-01)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -256,7 +256,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
-| 40. Insight Layer | 2/5 | In Progress|  |
+| 40. Insight Layer | 3/5 | In Progress|  |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
