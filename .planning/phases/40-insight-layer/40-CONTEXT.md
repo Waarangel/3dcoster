@@ -33,6 +33,9 @@ All math lives as pure derivations in `src/utils/insights.ts` (+ ported Phase 33
 - **D-11: Exactly 3 sliders, ephemeral.** Filament price, electricity rate, failure rate (the INS-03 trio). Closing the simulator discards the scenario — no "save as scenario", no extra sliders (deferred).
 - **D-12: Container = shared Modal primitive** (Phase 19) — focus trap, Escape, aria wiring free; identical behavior from both entry points.
 
+### Payback surface reconciliation (INS-02)
+- **D-16: Reconcile the existing PrinterSettings.tsx cost-recovery bar with the new payback math.** Research found PrinterSettings.tsx (~lines 427–554) already ships a payback display using gross asking-price × copies-sold — different math than D-05/D-07. One shared `computePrinterPayback()` lives in the insights module and is consumed by BOTH the Insights tab and the PrinterSettings bar, so the app never shows two disagreeing payback numbers for the same printer. (User decision 2026-07-08, post-research; C-03 no-second-pricing-implementation rule.)
+
 ### Phase 33 branch absorption
 - **D-13: Port the three pure utils + tests from `feat/insight-pricing-coach`** — `printHourProfit.ts`, `pricingCoach.ts`, `costAllocation.ts` (+ their `.test.ts` files) — as foundation math for insights. The ~113 lines of old-CostCalculator UI wiring are NOT re-attached (the component they targeted was dissolved in Phase 38). `pricingCoach`/`costAllocation` calculator-UI ideas are logged as deferred for Phase 45 launch polish.
 - **D-14: Benchmark grading ships with provenance.** INS-01's top/bottom earner distinction uses printHourProfit's researched $1–5/hr community benchmark ("$8.10/hr — above the $1–5/hr community range") with an InfoTooltip citing the source. Planner verifies the benchmark's sourcing in the Phase 33 SPEC/plans before reuse (no-arbitrary-numbers rule).
