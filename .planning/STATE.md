@@ -6,14 +6,14 @@ current_phase: 41
 current_phase_name: quick-win-features
 status: executing
 stopped_at: Phase 41 context gathered
-last_updated: "2026-07-09T17:21:04.549Z"
+last_updated: "2026-07-09T17:35:09.208Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 41 execution started
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 20
-  completed_plans: 17
+  completed_plans: 18
   percent: 38
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 41 (quick-win-features) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-07-09 — Phase 41 execution started
 
@@ -102,6 +102,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 41]: 41-02: scanAffectedJobs mirrors computeScenario's RECONCILIATION RESIDUAL pattern exactly (old-price reconstruction minus job.costPerUnit = residual, carried into the new-price reconstruction) so it never drifts from the what-if simulator's cost math.
 - [Phase 41]: 41-02: AssetLibrary gained its own useJobs/useUserProfile/usePrinterInstances/useElectricitySettings subscriptions scoped to the reprice scan, instead of threading five new props through App.tsx.
 - [Phase 41]: 41-02: The reprice alert (banner + modal) lives in AssetLibrary's own component state, re-openable after toast dismissal (D-03); Apply writes exclusively through the existing updateJob hook, one job at a time (T-41-02b).
+- [Phase ?]: 41-04: renderTotals gains an informational 'Variant options total' line (Sum qty x unitPrice) instead of replacing Subtotal — keeps D-22 tax-base lock and Subtotal/Tax/Total math untouched while the tier table above still reads as complete.
+- [Phase ?]: 41-04: Quantity-variants discount defaults persist via localStorage (useLocalStorage hook), not a new UserProfile/Dexie field — quantities and the toggle reset per quote, only discount % carries over.
+- [Phase ?]: 41-04: Convert-to-Sale tier picker implemented in RecordSaleModal.tsx (not JobsManager.tsx as the plan named) — RecordSaleModal owns the quantity/price form state and the Convert-from-Quote atomic transaction; JobsManager only controls open/close.
 
 ### Pending Todos
 
@@ -117,7 +120,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-09T17:18:46.319Z
+Last session: 2026-07-09T17:32:50.480Z
 Stopped at: Phase 41 context gathered
 Resume file: .planning/phases/41-quick-win-features/41-CONTEXT.md
 
@@ -151,3 +154,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 40 P05 | ~25min | 5 tasks | 8 files |
 | Phase 41 P01 | 15min | 2 tasks | 4 files |
 | Phase 41 P02 | 25min | 3 tasks | 5 files |
+| Phase 41 P04 | 35min | 3 tasks | 7 files |
