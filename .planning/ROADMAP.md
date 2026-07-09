@@ -16,7 +16,7 @@
 - ✅ **v1.9 Hardening** — Phases 34–37 (shipped 2026-07-03, desktop tag `v1.9.0`) — [milestones/v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md). 14/15 requirements (PERF-11 deferred to v2.0). Data-loss + marketplace-fee/FX + net-margin fixes, A11Y Tier 4, perf, 0 CVEs.
 - 🔨 **v2.0 Cost-Truth & Insight** — Phases 38–45 (in progress, started 2026-07-03). Cost-Truth engine + hosted/Pro backend + GDPR + marketing redesign.
 
-> **Phase-numbering note:** v1.9 used Phases 34–37. Phase 33 is reserved on the in-flight `feat/insight-pricing-coach` branch. v2.0 starts at **Phase 38** to avoid collision.
+> **Phase-numbering note:** v1.9 used Phases 34–37. Phase 33 was originally scoped on the standalone `feat/insight-pricing-coach` branch and has since been **absorbed into Phase 40** (Insight Layer, 2026-07-08) — its pure math utils were ported into Phase 40 Plan 01 and its records archived at [phases/33-insight-pricing-coach/](phases/33-insight-pricing-coach/); the branch is retired. v2.0 starts at **Phase 38** to avoid collision with the old Phase 33 number.
 
 ---
 
@@ -146,7 +146,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 **Success Criteria** (what must be TRUE):
 
   1. User can open an Insights tab (visible in the app's tab bar, behind the URL-based routing from Phase 38) and see a ranked list of their products by profit per printer-hour, with the top and bottom earners clearly distinguished
-  2. User can see a per-printer payback tracker showing how much revenue that printer has generated against its purchase cost, expressed as "paid off" or "net +/- $X"
+  2. User can see a per-printer payback tracker showing cumulative NET PROFIT against its purchase cost, expressed as "paid off" or "net +/- $X"
   3. User can open a what-if simulator for a saved job and move sliders for filament price, electricity rate, and failure rate to see live margin response — without overwriting the saved job
 
 **Plans**: 5 plans in 4 waves
