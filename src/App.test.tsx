@@ -58,6 +58,26 @@ vi.mock('./hooks/useDatabase', () => ({
     deletePrinter: vi.fn(),
     resetToDefaults: vi.fn(),
   }),
+  // useMaterials: derived Material[] view over useAssets + CRUD wrappers.
+  // Phase 40 Plan 05: WhatIfSimulator (mounted inside JobsManager's jobs tab)
+  // calls this directly, mirroring usePrinters above.
+  useMaterials: () => ({
+    materials: [],
+    isLoading: false,
+    addMaterial: vi.fn(),
+    updateMaterial: vi.fn(),
+    deleteMaterial: vi.fn(),
+    resetToDefaults: vi.fn(),
+  }),
+  // useElectricitySettings: standalone electricity config + updater + isLoading.
+  // Phase 40 Plan 05: WhatIfSimulator calls this directly (App.tsx itself uses
+  // the combined useAllSettings above; this is a separate hook with its own
+  // internal state, so it needs its own mock entry).
+  useElectricitySettings: () => ({
+    electricity: { costPerKwh: 0.15, wattage: 200 },
+    updateElectricity: vi.fn(),
+    isLoading: false,
+  }),
   // usePrinterInstances: live-query-backed instances[] + CRUD.
   usePrinterInstances: () => ({
     instances: [],
