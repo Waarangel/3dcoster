@@ -84,7 +84,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 - [ ] **Phase 38: Foundation** - CostCalculator split + PERF-11 fix + tab-in-URL routing
 - [ ] **Phase 39: Cost Realism** - Failure-cost engine, TOU electricity, maintenance amortization
-- [ ] **Phase 40: Insight Layer** - Insights tab with hourly wage, printer ROI, what-if simulator
+- [x] **Phase 40: Insight Layer** - Insights tab with hourly wage, printer ROI, what-if simulator (completed 2026-07-09)
 - [ ] **Phase 41: Quick-Win Features** - Reprice alerts, spool lifecycle, tax threshold tracker, Quote Variants PDF
 - [ ] **Phase 42: GDPR & Onboarding** - Consent banner, privacy policy, terms, guided first-run wizard
 - [ ] **Phase 43: Pro Backend** - Supabase auth, hosted quote pages, Pro subscription billing
@@ -256,7 +256,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
-| 40. Insight Layer | 5/5 | Complete   | 2026-07-09 |
+| 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
