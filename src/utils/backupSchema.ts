@@ -77,7 +77,10 @@ export type BackupStoreName = (typeof BACKUP_STORES)[number];
  * valid Date fails validation for the whole file.
  */
 export const DATE_FIELDS: Record<BackupStoreName, readonly string[]> = {
-  materials: [],
+  // Phase 41 LIFE-01 (D-09): Asset.openedAt is a Date field — rehydrate it
+  // on restore. dryingLog is intentionally NOT listed here: it's an array of
+  // ISO date-only STRINGS by design (D-10) and must stay strings.
+  materials: ['openedAt'],
   printers: [],
   printerInstances: ['purchaseDate'],
   jobs: ['createdAt', 'updatedAt'],

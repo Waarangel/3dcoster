@@ -15,6 +15,7 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach } from 'vitest';
 import Dexie from 'dexie';
 import { buildBackupFile, serializeBackup, buildBackupFilename } from './backupExport';
+import { restoreBackup } from './backupRestore';
 import { BACKUP_FORMAT_VERSION, BACKUP_STORES } from './backupSchema';
 
 // Fresh v10-shaped Dexie per test — unique name isolates fake-indexeddb state
@@ -130,5 +131,90 @@ describe('serializeBackup', () => {
 describe('buildBackupFilename', () => {
   it('matches 3dcoster-backup-YYYY-MM-DD.json', () => {
     expect(buildBackupFilename()).toMatch(/^3dcoster-backup-\d{4}-\d{2}-\d{2}\.json$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 41 new fields — export → restore round-trip (closes RESEARCH.md
+// Pitfall 4: DATE_FIELDS.materials was [], so Asset.openedAt was previously
+// invisible to restore).
+// ---------------------------------------------------------------------------
+describe('Phase 41 fields survive export → restore round-trip', () => {
+  it('materials: openedAt rehydrates to a Date; storageLocation/dryingLog/hygroscopicityOverride survive by value', async () => {
+    const source = makeTestDb();
+    await source.table('materials').put({
+      id: 'mat-1',
+      name: 'Nylon-CF',
+      category: 'filament',
+      openedAt: new Date('2026-07-01T09:00:00.000Z'),
+      storageLocation: 'Dry box A',
+      dryingLog: ['2026-07-02', '2026-07-05'],
+      hygroscopicityOverride: 'HIGH',
+    });
+
+    const parsed = JSON.parse(serializeBackup(await buildBackupFile(source)));
+    const target = makeTestDb();
+    await restoreBackup(target, parsed);
+
+    const material = await target.table('materials').get('mat-1');
+    expect(material.openedAt).toBeInstanceOf(Date);
+    expect(material.openedAt.getTime()).toBe(new Date('2026-07-01T09:00:00.000Z').getTime());
+    expect(material.storageLocation).toBe('Dry box A');
+    expect(Array.isArray(material.dryingLog)).toBe(true);
+    for (const entry of material.dryingLog) {
+      expect(typeof entry).toBe('string');
+    }
+    expect(material.dryingLog).toEqual(['2026-07-02', '2026-07-05']);
+    expect(material.hygroscopicityOverride).toBe('HIGH');
+  });
+
+  it('quotes: variantsSnapshot number arrays survive by value', async () => {
+    const source = makeTestDb();
+    await source.table('quotes').put({
+      id: 'q-variants',
+      quoteNumber: 7,
+      printJobId: 'job-x',
+      customerSnapshot: {},
+      lineItemsSnapshot: {
+        jobTitle: 'Benchy', sellingPrice: 20, shippingCost: 0,
+        resolvedTaxRate: 0, taxAmount: 0, currency: 'USD', notes: '', terms: '',
+      },
+      status: 'sent',
+      createdAt: new Date('2026-06-03T12:00:00.000Z'),
+      sentAt: new Date('2026-06-03T12:00:00.000Z'),
+      variantsSnapshot: {
+        quantities: [1, 10, 50],
+        discountsPercent: [0, 10, 20],
+        unitPrices: [20, 18, 16],
+        currency: 'USD',
+      },
+    });
+
+    const parsed = JSON.parse(serializeBackup(await buildBackupFile(source)));
+    const target = makeTestDb();
+    await restoreBackup(target, parsed);
+
+    const quote = await target.table('quotes').get('q-variants');
+    expect(quote.variantsSnapshot).toEqual({
+      quantities: [1, 10, 50],
+      discountsPercent: [0, 10, 20],
+      unitPrices: [20, 18, 16],
+      currency: 'USD',
+    });
+  });
+
+  it('settings: a UserProfile value carrying taxJurisdiction survives as an opaque JSON string', async () => {
+    const source = makeTestDb();
+    const profileJson = '{"currency":"CAD","laborHourlyRate":25,"taxJurisdiction":"UK"}';
+    await source.table('settings').put({ key: 'userProfile', value: profileJson });
+
+    const parsed = JSON.parse(serializeBackup(await buildBackupFile(source)));
+    const target = makeTestDb();
+    await restoreBackup(target, parsed);
+
+    const row = await target.table('settings').get('userProfile');
+    expect(typeof row.value).toBe('string');
+    expect(row.value).toBe(profileJson);
+    expect(JSON.parse(row.value).taxJurisdiction).toBe('UK');
   });
 });
