@@ -1260,6 +1260,13 @@ export interface CreateQuoteInput {
   resolvedTaxRate: number;
   /** D-22 computed from sellingPrice × (resolvedTaxRate/100). */
   taxAmount: number;
+  /**
+   * Phase 41 CONN-03 (D-08): by-value Quantity-variants snapshot computed at
+   * Generate time by PrintQuoteModal. Undefined = single-tier quote (no
+   * variants section enabled). Passed straight onto the Quote payload below —
+   * this hook does not recompute or validate the tier math.
+   */
+  variantsSnapshot?: Quote['variantsSnapshot'];
 }
 
 export function useQuotes() {
@@ -1314,7 +1321,7 @@ export function useQuotes() {
    * PrintQuoteModal (plan 16-10) calls `await createQuote(...)` and NEVER imports `db` directly.
    */
   const createQuote = useCallback(async (input: CreateQuoteInput): Promise<Quote> => {
-    const { job, userProfile, customerSnapshot, existingCustomerId, shippingCost, resolvedTaxRate, taxAmount } = input;
+    const { job, userProfile, customerSnapshot, existingCustomerId, shippingCost, resolvedTaxRate, taxAmount, variantsSnapshot } = input;
 
     // Auto-create customer candidate: only if no existing link AND at least name OR email present.
     const shouldAutoCreate = !existingCustomerId &&
@@ -1392,6 +1399,7 @@ export function useQuotes() {
         status: 'sent',  // RuntimeQuoteStatus — 'draft' refused here at compile time
         createdAt: sentAt,
         sentAt,
+        variantsSnapshot,
       };
 
       if (existingCustomerId) {

@@ -2,12 +2,26 @@ import { useEffect, useId, useMemo, useState, useCallback } from 'react';
 import type { PrintJob, UserProfile, Quote, Customer, ShippingConfig } from '../types';
 import { useQuotes, useCustomers } from '../hooks/useDatabase';
 import { useCustomerPicker, PICKER_VISIBLE_LIMIT } from '../hooks/useCustomerPicker';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { resolveTaxRate, taxLabelFor } from '../utils/taxResolution';
 import { formatCurrency } from '../utils/currency';
 import { calculateTax } from '../utils/costCalc';
 import { computeJobShipping } from '../utils/jobShipping';
 import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
 import { formatQuoteNumber } from '../utils/format';
+
+// ---------------------------------------------------------------------------
+// CONN-03 Quantity variants (D-05..D-08). Three fixed tier slots, defaulting
+// 1/10/50 quantity and 0% discount. Tier math is maker-controlled per-tier
+// discount % — explicitly NOT cost-amortization-at-quantity (D-06).
+// ---------------------------------------------------------------------------
+const DEFAULT_VARIANT_QUANTITIES = [1, 10, 50];
+const DEFAULT_VARIANT_DISCOUNTS = [0, 0, 0];
+const VARIANT_DISCOUNT_DEFAULTS_KEY = 'printQuoteModal.variantDiscountDefaults';
+
+function clampDiscountPercent(v: number): number {
+  return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 0;
+}
 
 // ---------------------------------------------------------------------------
 // PrintQuoteModal — Phase 16 gap closure (D-16 + D-18).
@@ -80,11 +94,23 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ─── Quantity variants state (CONN-03 D-05..D-08) ────────────────────────
+  // variantsEnabled + quantities reset per quote (create) or hydrate from the
+  // Quote snapshot (edit). discountsPercent persists as the maker's last-used
+  // default across quotes via localStorage (D-06) — no new Dexie store.
+  const [variantsEnabled, setVariantsEnabled] = useState(false);
+  const [variantQuantities, setVariantQuantities] = useState<number[]>(DEFAULT_VARIANT_QUANTITIES);
+  const [variantDiscountsPercent, setVariantDiscountsPercent] = useLocalStorage<number[]>(
+    VARIANT_DISCOUNT_DEFAULTS_KEY,
+    DEFAULT_VARIANT_DISCOUNTS,
+  );
+
   // ─── Stable ids for label/input pairing (A11Y C-02) ───────────────────────
   const quoteCustomerNameId = useId();
   const quoteCustomerEmailId = useId();
   const quoteCustomerCompanyId = useId();
   const quoteCustomerAddressId = useId();
+  const variantsToggleId = useId();
 
   // ─── Picker integration (plan 22-03 / HYG-08) ────────────────────────────
   // handlePickCustomer fills the 4 quote-customer form fields AND captures
@@ -116,6 +142,17 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
         // so the next Save re-bumps lastUsedAt on that record (and email-typed-over
         // re-runs through dedup).
         setPickedExistingCustomerId(editingQuote.customerId ?? null);
+        // CONN-03 D-08: hydrate the variants section from the Quote's own
+        // by-value snapshot (not the persisted discount defaults) so editing
+        // an existing variant quote shows its actual saved quantities/discounts.
+        if (editingQuote.variantsSnapshot) {
+          setVariantsEnabled(true);
+          setVariantQuantities(editingQuote.variantsSnapshot.quantities);
+          setVariantDiscountsPercent(editingQuote.variantsSnapshot.discountsPercent);
+        } else {
+          setVariantsEnabled(false);
+          setVariantQuantities(DEFAULT_VARIANT_QUANTITIES);
+        }
       } else {
         setQuoteCustomerName('');
         setQuoteCustomerEmail('');
@@ -126,13 +163,18 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
         // User can still edit the field manually if they want a different quoted price.
         setQuoteShippingCost(computeJobShipping(job, shippingConfig));
         setPickedExistingCustomerId(null);
+        // CONN-03: fresh quote starts with variants off and default quantities;
+        // discount defaults intentionally carry over from the last quote (D-06).
+        setVariantsEnabled(false);
+        setVariantQuantities(DEFAULT_VARIANT_QUANTITIES);
       }
       picker.reset();
       setIsGenerating(false);
       setError(null);
     }
-    // picker.reset is stable per useCallback in useCustomerPicker; exclude
-    // from deps to avoid re-running on every render.
+    // picker.reset is stable per useCallback in useCustomerPicker; setVariantDiscountsPercent
+    // is stable per useLocalStorage's setState identity; exclude both from deps to avoid
+    // re-running on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, editingQuote, job, shippingConfig]);
 
@@ -155,6 +197,28 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
     () => calculateTax(subtotal, resolvedTax.rate).taxAmount,
     [subtotal, resolvedTax.rate]
   );
+
+  // ─── Quantity variants derivation (CONN-03 D-06) ─────────────────────────
+  // unitPrice[i] = job.sellingPrice × (1 − clamp(discount%, 0, 100)/100).
+  // Maker-controlled discount — explicitly NOT cost-amortization-at-quantity;
+  // never touches calculateCost/priceFromMargin.
+  const variantUnitPrices = useMemo(
+    () => variantQuantities.map((_, i) =>
+      job.sellingPrice * (1 - clampDiscountPercent(variantDiscountsPercent[i] ?? 0) / 100)
+    ),
+    [variantQuantities, variantDiscountsPercent, job.sellingPrice]
+  );
+
+  const handleVariantQuantityChange = useCallback((index: number, raw: string) => {
+    const v = parseInt(raw, 10);
+    setVariantQuantities(prev => prev.map((q, i) => (i === index ? (Number.isFinite(v) && v >= 0 ? v : q) : q)));
+  }, []);
+
+  const handleVariantDiscountChange = useCallback((index: number, raw: string) => {
+    const v = parseFloat(raw);
+    const clamped = clampDiscountPercent(Number.isFinite(v) ? v : 0);
+    setVariantDiscountsPercent(prev => prev.map((d, i) => (i === index ? clamped : d)));
+  }, [setVariantDiscountsPercent]);
   const total = subtotal + quoteShippingCost + taxAmount;
 
   const taxLabel = useMemo(
@@ -192,6 +256,18 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
       const existingByEmail = trimmedEmail ? customersByEmail.get(trimmedEmail) : undefined;
       const existingCustomerId = pickedExistingCustomerId ?? existingByEmail?.id;
 
+      // CONN-03 D-08: by-value snapshot computed HERE at Generate time — never
+      // recomputed at render time. Absent (undefined) when the section is
+      // disabled, so a single-tier quote carries no variantsSnapshot at all.
+      const variantsSnapshot: Quote['variantsSnapshot'] = variantsEnabled
+        ? {
+            quantities: [...variantQuantities],
+            discountsPercent: [...variantDiscountsPercent],
+            unitPrices: [...variantUnitPrices],
+            currency: userProfile.currency,
+          }
+        : undefined;
+
       let quote: Quote;
       if (editingQuote) {
         // EDIT mode (D-27): mutate the existing Quote in place. NO counter
@@ -214,6 +290,7 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
             terms: userProfile.defaultTerms ?? '',
             countryAtSendTime: userProfile.address?.country,
           },
+          variantsSnapshot,
         };
         await updateQuote(quote);
       } else {
@@ -227,6 +304,7 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
           shippingCost: quoteShippingCost,
           resolvedTaxRate: resolvedTax.rate,
           taxAmount,
+          variantsSnapshot,
         });
       }
 
@@ -401,6 +479,68 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
               />
               <span className="text-xs text-slate-400">{userProfile.currency}</span>
             </div>
+          </div>
+
+          {/* Quantity variants — CONN-03 (D-05..D-08) */}
+          <div className="pt-3 border-t border-slate-700">
+            <div className="flex items-center justify-between mb-2">
+              <span className="inline-flex items-center gap-1 text-xs text-slate-400 uppercase tracking-wide">
+                <label htmlFor={variantsToggleId}>Quantity variants</label>
+                <InfoTooltip text="You set the discount per tier — the app does the arithmetic and remembers your defaults for next time. This is maker-controlled pricing, not a cost calculation." />
+              </span>
+              {/* allow-raw-html: WAI-ARIA switch — the shared Button primitive's min-h-[44px] would break the toggle-pill visual; no shared Toggle component exists yet */}
+              <button
+                id={variantsToggleId}
+                type="button"
+                role="switch"
+                aria-checked={variantsEnabled}
+                onClick={() => setVariantsEnabled(v => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${variantsEnabled ? 'bg-blue-500' : 'bg-slate-600'}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${variantsEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                />
+              </button>
+            </div>
+
+            {variantsEnabled && (
+              <div className="space-y-2 bg-slate-900/40 border border-slate-700 rounded-lg p-3">
+                <div className="grid grid-cols-4 gap-2 text-xs text-slate-500 uppercase tracking-wide">
+                  <span>Qty</span>
+                  <span>Discount %</span>
+                  <span className="col-span-2 text-right">Unit price</span>
+                </div>
+                {variantQuantities.map((qty, i) => (
+                  <div key={i} className="grid grid-cols-4 gap-2 items-center">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputSize="sm"
+                      compact
+                      value={qty === 0 ? '' : String(qty)}
+                      onChange={(e) => handleVariantQuantityChange(i, e.target.value)}
+                      aria-label={`Tier ${i + 1} quantity`}
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      inputSize="sm"
+                      compact
+                      value={variantDiscountsPercent[i] === 0 ? '' : String(variantDiscountsPercent[i])}
+                      onChange={(e) => handleVariantDiscountChange(i, e.target.value)}
+                      aria-label={`Tier ${i + 1} discount percent`}
+                      placeholder="0"
+                    />
+                    <span className="col-span-2 text-right text-sm text-slate-100 font-mono">
+                      {formatCurrency(variantUnitPrices[i], userProfile.currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Live totals preview */}

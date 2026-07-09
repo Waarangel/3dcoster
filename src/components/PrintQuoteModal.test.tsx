@@ -160,6 +160,10 @@ beforeEach(() => {
   createQuoteSpy.mockImplementation((input: CreateQuoteInput) => Promise.resolve(makeQuoteFromInput(input)));
   generateQuotePdfSpy.mockReset();
   generateQuotePdfSpy.mockImplementation(() => Promise.resolve());
+  // CONN-03: the Quantity-variants discount defaults persist via localStorage
+  // (D-06) — clear between tests so one test's discount edits don't leak into
+  // the next test's default-quantities/discounts assertions.
+  localStorage.clear();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -405,6 +409,81 @@ describe('PrintQuoteModal — edit mode (D-27)', () => {
 
     // Restore original mock for sibling tests
     (useDb as { useQuotes: typeof original }).useQuotes = original;
+  });
+});
+
+describe('PrintQuoteModal — CONN-03 Quantity variants (D-05..D-08)', () => {
+  it('derives unitPrices[i] from discount %: sellingPrice 20 @ 10% discount → 18', async () => {
+    await renderModal({ job: makeJob({ sellingPrice: 20 }) });
+
+    const toggle = document.body.querySelector('button[role="switch"]') as HTMLButtonElement;
+    expect(toggle).toBeTruthy();
+    await act(async () => { toggle.click(); });
+
+    const discountInput = document.body.querySelector(
+      'input[aria-label="Tier 1 discount percent"]',
+    ) as HTMLInputElement;
+    expect(discountInput).toBeTruthy();
+    await act(async () => { typeIntoInput(discountInput, '10'); });
+
+    expect(document.body.textContent ?? '').toContain('$18.00');
+  });
+
+  it('createQuote payload includes variantsSnapshot when the section is enabled', async () => {
+    await renderModal({ job: makeJob({ sellingPrice: 20 }) });
+
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    await act(async () => { typeIntoInput(nameInput, 'Variant Test'); });
+
+    const toggle = document.body.querySelector('button[role="switch"]') as HTMLButtonElement;
+    await act(async () => { toggle.click(); });
+
+    const discountInput = document.body.querySelector(
+      'input[aria-label="Tier 1 discount percent"]',
+    ) as HTMLInputElement;
+    await act(async () => { typeIntoInput(discountInput, '10'); });
+
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
+    ) as HTMLButtonElement;
+    await act(async () => { generateBtn.click(); });
+
+    expect(createQuoteSpy).toHaveBeenCalledTimes(1);
+    const input = createQuoteSpy.mock.calls[0][0];
+    expect(input.variantsSnapshot).toBeDefined();
+    expect(input.variantsSnapshot!.quantities).toEqual([1, 10, 50]);
+    expect(input.variantsSnapshot!.discountsPercent[0]).toBe(10);
+    expect(input.variantsSnapshot!.unitPrices[0]).toBeCloseTo(18, 5);
+    expect(input.variantsSnapshot!.currency).toBe('USD');
+  });
+
+  it('createQuote payload has no variantsSnapshot when the section is disabled (default)', async () => {
+    await renderModal();
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    await act(async () => { typeIntoInput(nameInput, 'No Variant Test'); });
+
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
+    ) as HTMLButtonElement;
+    await act(async () => { generateBtn.click(); });
+
+    expect(createQuoteSpy).toHaveBeenCalledTimes(1);
+    const input = createQuoteSpy.mock.calls[0][0];
+    expect(input.variantsSnapshot).toBeUndefined();
+  });
+
+  it('discount % input clamps to 0..100 and rejects non-finite input', async () => {
+    await renderModal({ job: makeJob({ sellingPrice: 20 }) });
+
+    const toggle = document.body.querySelector('button[role="switch"]') as HTMLButtonElement;
+    await act(async () => { toggle.click(); });
+
+    const discountInput = document.body.querySelector(
+      'input[aria-label="Tier 1 discount percent"]',
+    ) as HTMLInputElement;
+    await act(async () => { typeIntoInput(discountInput, '250'); });
+    // Clamped to 100% discount → unit price 0.00
+    expect(document.body.textContent ?? '').toContain('$0.00');
   });
 });
 
