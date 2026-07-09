@@ -149,3 +149,16 @@ None - no external service configuration required.
 ---
 *Phase: 41-quick-win-features*
 *Completed: 2026-07-09*
+
+## Self-Check: PASSED
+
+- FOUND: src/utils/taxThreshold.ts
+- FOUND: src/utils/taxThreshold.test.ts
+- FOUND: src/components/insights/TaxThresholdCard.tsx
+- FOUND: src/components/insights/InsightsPanel.tsx
+- FOUND: src/components/SettingsModal.tsx
+- FOUND: .planning/phases/41-quick-win-features/41-05-SUMMARY.md
+- FOUND: 99342c3
+- FOUND: 7e4a98e
+- FOUND: 7b585f9
+- FOUND: c9a767a

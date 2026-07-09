@@ -49,7 +49,7 @@
 ### Maker-Life
 
 - [ ] **LIFE-01**: User can track spool lifecycle — opened date, drying sessions, storage location — and see a moisture-risk indicator derived from material hygroscopicity class (Nylon HIGH, PETG MEDIUM, PLA LOW) + exposure time
-- [ ] **LIFE-02**: User can set their jurisdiction and see cumulative-revenue progress toward its hobby→business tax threshold (UK £1k trading allowance, DE Kleinunternehmer, AU GST, US badges-of-trade note) with an alert on crossing — all local, with a clear "not tax advice" disclaimer
+- [x] **LIFE-02**: User can set their jurisdiction and see cumulative-revenue progress toward its hobby→business tax threshold (UK £1k trading allowance, DE Kleinunternehmer, AU GST, US badges-of-trade note) with an alert on crossing — all local, with a clear "not tax advice" disclaimer
 
 ### Sync & Onboarding
 
@@ -124,7 +124,7 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | CONN-01 | Phase 41 | Complete |
 | CONN-03 | Phase 41 | Complete |
 | LIFE-01 | Phase 41 | Pending |
-| LIFE-02 | Phase 41 | Pending |
+| LIFE-02 | Phase 41 | Complete |
 | GDPR-01 | Phase 42 | Pending |
 | GDPR-02 | Phase 42 | Pending |
 | GDPR-03 | Phase 42 | Pending |

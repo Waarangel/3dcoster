@@ -192,7 +192,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 - [x] 41-02-PLAN.md — Reprice alerts: pure scan (reuses buildCalcInputFromJob + priceFromMargin), RepriceReviewModal, Asset-Library save-handler toast→modal→Apply (CONN-01)
 - [x] 41-04-PLAN.md — Quote Variants: PDF tier-table branch, PrintQuoteModal variants section, Convert-to-Sale tier picker (CONN-03)
-- [ ] 41-05-PLAN.md — Tax-threshold tracker: jurisdiction-aware year window + gross-revenue sum, Insights card, Settings jurisdiction picker (LIFE-02)
+- [x] 41-05-PLAN.md — Tax-threshold tracker: jurisdiction-aware year window + gross-revenue sum, Insights card, Settings jurisdiction picker (LIFE-02)
 
 **Wave 3** *(serialized after 41-02 — both edit AssetLibrary.tsx)*
 
@@ -272,7 +272,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
-| 41. Quick-Win Features | 3/5 | In Progress|  |
+| 41. Quick-Win Features | 4/5 | In Progress|  |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
