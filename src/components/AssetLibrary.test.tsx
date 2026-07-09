@@ -1,7 +1,9 @@
+import 'fake-indexeddb/auto';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AssetLibrary } from './AssetLibrary';
+import { ToastProvider } from './ui';
 import type { Asset, Currency } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -76,7 +78,7 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 async function renderWithFormOpen(props = defaultProps): Promise<void> {
   await act(async () => {
-    root!.render(<AssetLibrary {...props} />);
+    root!.render(<ToastProvider><AssetLibrary {...props} /></ToastProvider>);
   });
 
   // Click the "+ Add Asset" button to open the form
@@ -196,7 +198,7 @@ describe('AssetLibrary — A11Y-11: form validation error association', () => {
 describe('AssetLibrary — A11Y-12: Asset-row icon button accessible labels', () => {
   it('EditButton on asset row has aria-label containing the asset name', async () => {
     await act(async () => {
-      root!.render(<AssetLibrary {...defaultProps} />);
+      root!.render(<ToastProvider><AssetLibrary {...defaultProps} /></ToastProvider>);
     });
 
     const editButton = container!.querySelector('[aria-label="Edit Test Filament"]');
@@ -205,7 +207,7 @@ describe('AssetLibrary — A11Y-12: Asset-row icon button accessible labels', ()
 
   it('DeleteButton on asset row has aria-label containing the asset name', async () => {
     await act(async () => {
-      root!.render(<AssetLibrary {...defaultProps} />);
+      root!.render(<ToastProvider><AssetLibrary {...defaultProps} /></ToastProvider>);
     });
 
     const deleteButton = container!.querySelector('[aria-label="Delete Test Filament"]');
@@ -220,7 +222,7 @@ describe('AssetLibrary — A11Y-12: Asset-row icon button accessible labels', ()
 describe('AssetLibrary — A11Y-15: category filter group and SortIndicator', () => {
   it('category filter buttons are wrapped in role="group"', async () => {
     await act(async () => {
-      root!.render(<AssetLibrary {...defaultProps} />);
+      root!.render(<ToastProvider><AssetLibrary {...defaultProps} /></ToastProvider>);
     });
 
     const group = container!.querySelector('[role="group"]');
@@ -229,7 +231,7 @@ describe('AssetLibrary — A11Y-15: category filter group and SortIndicator', ()
 
   it('the category filter role="group" has a non-empty aria-label', async () => {
     await act(async () => {
-      root!.render(<AssetLibrary {...defaultProps} />);
+      root!.render(<ToastProvider><AssetLibrary {...defaultProps} /></ToastProvider>);
     });
 
     const group = container!.querySelector('[role="group"]');
@@ -241,7 +243,7 @@ describe('AssetLibrary — A11Y-15: category filter group and SortIndicator', ()
 
   it('the search input is NOT inside the category filter role="group"', async () => {
     await act(async () => {
-      root!.render(<AssetLibrary {...defaultProps} />);
+      root!.render(<ToastProvider><AssetLibrary {...defaultProps} /></ToastProvider>);
     });
 
     const group = container!.querySelector('[role="group"]');
@@ -253,7 +255,7 @@ describe('AssetLibrary — A11Y-15: category filter group and SortIndicator', ()
 
   it('SortIndicator span has aria-hidden="true"', async () => {
     await act(async () => {
-      root!.render(<AssetLibrary {...defaultProps} />);
+      root!.render(<ToastProvider><AssetLibrary {...defaultProps} /></ToastProvider>);
     });
 
     // Trigger a sort by clicking a sortable column header (if rendered)
@@ -281,7 +283,7 @@ function setSelectValue(el: HTMLSelectElement, value: string) {
 describe('AssetLibrary — abrasive override (Phase 39 D-13 / CR-03)', () => {
   async function openEditForFilament(): Promise<HTMLSelectElement> {
     await act(async () => {
-      root!.render(<AssetLibrary {...defaultProps} />);
+      root!.render(<ToastProvider><AssetLibrary {...defaultProps} /></ToastProvider>);
     });
     const editButton = container!.querySelector('[aria-label="Edit Test Filament"]');
     expect(editButton, 'Edit button for the filament asset not found').not.toBeNull();

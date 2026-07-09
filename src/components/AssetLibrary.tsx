@@ -1,18 +1,22 @@
 import { memo, useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
-import type { Asset, AssetCategory, BuiltInCategory, Currency } from '../types';
+import type { Asset, AssetCategory, BuiltInCategory, Currency, PrinterConfig } from '../types';
 import { convert, type FxRateTable } from '../utils/fxConvert';
 import { downloadCsv, generateExportCsv } from '../utils/csvHelpers';
 import { buildExportFilename } from '../utils/jobsExport';
 import { CsvImportModal } from './CsvImportModal';
 import { NewBadge } from './NewBadge';
 import { ResetAssetsModal } from './ResetAssetsModal';
+import { RepriceReviewModal } from './RepriceReviewModal';
 import { isCustomCategory } from '../utils/assetCategories';
 import { detectIsAbrasive } from '../utils/abrasive';
 import { StockBadge } from './inventory/StockBadge';
 import { LowStockBar } from './inventory/LowStockBar';
 import { useStockEvents } from '../hooks/useStockEvents';
-import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState } from './ui';
+import { useJobs, useUserProfile, usePrinterInstances, useElectricitySettings } from '../hooks/useDatabase';
+import { assetToPrinterConfig } from '../data/defaultMaterials';
+import { scanAffectedJobs, type AffectedJob } from '../utils/repriceAlert';
+import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PackageIcon } from './ui/icons';
 
@@ -573,6 +577,21 @@ export function AssetLibrary({
   // Live inventory (v1.8): current stock per asset, shown as a StockBadge on each
   // material row. The threshold + manual stock level are set in the edit form.
   const { stockByAssetId, logManualAdjustment } = useStockEvents();
+
+  // CONN-01 (Phase 41 Plan 02): reprice-alert subscriptions. Extends AssetLibrary's
+  // own subscriptions (per the plan) rather than threading five new props through
+  // App.tsx — jobs/userProfile/printerInstances/electricity are read here only to
+  // feed scanAffectedJobs when a material's price changes on save.
+  const { jobs, updateJob } = useJobs();
+  const { profile: userProfile } = useUserProfile();
+  const { instances: printerInstances } = usePrinterInstances();
+  const { electricity } = useElectricitySettings();
+  const toast = useToast();
+  // Held across toast dismissal so the alert is RE-OPENABLE (D-03) via the banner
+  // below, not just the toast's own Review action. Cleared only by starting a new
+  // scan (a later save may find a different set of affected jobs).
+  const [repriceAlert, setRepriceAlert] = useState<{ affected: AffectedJob[]; targetMargin: number } | null>(null);
+  const [showRepriceModal, setShowRepriceModal] = useState(false);
   // "Stock on hand" form field (transient — stock lives in the ledger, not the
   // asset). Pre-filled with the current derived stock when an edit opens; only
   // depends on editingId so it doesn't fight the user when the ledger updates.
@@ -715,6 +734,64 @@ export function AssetLibrary({
 
   const isPrinterForm = formData.category === 'printer';
 
+  // CONN-01: runs ONLY from the material-update path in handleSubmit, and only
+  // when the just-built material's costPerUnit actually differs from the
+  // pre-save asset (D-01). Read-only — scanAffectedJobs never writes; every
+  // reprice is a separate, explicit updateJob call from the modal's Apply
+  // action (T-41-02b).
+  const runRepriceScan = useCallback((preSaveAsset: Asset, newAsset: Asset) => {
+    const materialsOnly = assets.filter(a => a.category !== 'printer');
+    const oldMaterials = materialsOnly.map(m => (m.id === newAsset.id ? preSaveAsset : m));
+    const newMaterials = materialsOnly.map(m => (m.id === newAsset.id ? newAsset : m));
+    const printerConfigs = assets
+      .filter(a => a.category === 'printer')
+      .map(assetToPrinterConfig)
+      .filter((p): p is PrinterConfig => p !== null);
+
+    // D-02: no default margin set yet — scan against a sensible 30% fallback
+    // rather than silently skipping the alert, but say so in the toast.
+    const hasDefaultMargin = typeof userProfile.defaultProfitMargin === 'number';
+    const targetMargin = userProfile.defaultProfitMargin ?? 30;
+
+    const affected = scanAffectedJobs({
+      changedAssetId: newAsset.id,
+      jobs,
+      oldMaterials,
+      newMaterials,
+      printerInstances,
+      printerConfigs,
+      electricity,
+      laborHourlyRate: userProfile.laborHourlyRate,
+      targetMargin,
+    });
+
+    if (affected.length === 0) return;
+
+    setRepriceAlert({ affected, targetMargin });
+
+    const message = hasDefaultMargin
+      ? `${affected.length} job${affected.length === 1 ? '' : 's'} now under your ${targetMargin}% target — review?`
+      : `${affected.length} job${affected.length === 1 ? '' : 's'} now under the default ${targetMargin}% target — set your own target margin in Settings, or review below.`;
+
+    // D-03: the toast's Review action is one way in; the re-openable banner
+    // rendered below (while repriceAlert is set) is the other, so dismissing
+    // this toast never loses the alert.
+    const id = toast.info(
+      <span className="flex flex-wrap items-center gap-2">
+        <span>{message}</span>
+        <Button
+          variant="ghost"
+          btnSize="sm"
+          className="!px-2 !py-0.5 underline"
+          onClick={() => { setShowRepriceModal(true); toast.dismiss(id); }}
+        >
+          Review
+        </Button>
+      </span>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setRepriceAlert/setShowRepriceModal are stable setState identities
+  }, [assets, jobs, printerInstances, electricity, userProfile, toast]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -784,6 +861,14 @@ export function AssetLibrary({
       };
 
       if (editingId) {
+        // CONN-01: detect a live-material price change BEFORE writing the
+        // update, so the scan compares the pre-save asset against the
+        // just-built one (D-01). onUpdateAsset still runs exactly once either
+        // way — the scan is read-only and purely additive to this save path.
+        const preSaveAsset = assets.find(a => a.id === editingId);
+        if (preSaveAsset && preSaveAsset.costPerUnit !== material.costPerUnit) {
+          runRepriceScan(preSaveAsset, material);
+        }
         onUpdateAsset(material);
         setEditingId(null);
       } else {
@@ -819,6 +904,14 @@ export function AssetLibrary({
       setCustomCategoryInput(asset.category);
     }
   }, []);
+
+  // T-41-02b: the ONLY write path for a reprice — one job, one updateJob call,
+  // never a bulk mutation. scanAffectedJobs itself never touches db.jobs.
+  const handleApplyRepricedJob = useCallback((jobId: string, suggestedPrice: number) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
+    void updateJob({ ...job, sellingPrice: suggestedPrice });
+  }, [jobs, updateJob]);
 
   const addTag = () => {
     if (!tagInput.trim()) return;
@@ -982,6 +1075,18 @@ export function AssetLibrary({
             <strong className="text-blue-100">Track your material stock.</strong> Add a “Stock on hand” amount when you edit a filament or supply — 3DCoster deducts it as you log jobs and flags anything running low.
           </div>
           <Button variant="ghost" btnSize="sm" onClick={dismissStockPrompt} aria-label="Dismiss" className="shrink-0 text-blue-300 hover:text-blue-100">✕</Button>
+        </div>
+      )}
+      {/* CONN-01 D-03: re-openable after the toast is dismissed — persists until a
+          later save produces a new scan result. */}
+      {repriceAlert && repriceAlert.affected.length > 0 && !showRepriceModal && (
+        <div role="status" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-200">
+          <span>
+            {repriceAlert.affected.length} job{repriceAlert.affected.length === 1 ? '' : 's'} under your {repriceAlert.targetMargin}% target — review pricing.
+          </span>
+          <Button variant="ghost" btnSize="sm" onClick={() => setShowRepriceModal(true)} className="shrink-0 text-amber-200 hover:text-amber-50">
+            Review
+          </Button>
         </div>
       )}
       <LowStockBar lowAssets={lowStockAssets} />
@@ -1707,6 +1812,17 @@ export function AssetLibrary({
         confirmLabel={resetDescriptor.confirmLabel}
         onConfirm={handleResetConfirm}
         onClose={() => setResetScope(null)}
+      />
+
+      {/* CONN-01: reprice-alert review modal, reachable from the toast's Review
+          action or the re-openable banner above. */}
+      <RepriceReviewModal
+        isOpen={showRepriceModal}
+        onClose={() => setShowRepriceModal(false)}
+        affected={repriceAlert?.affected ?? []}
+        targetMargin={repriceAlert?.targetMargin ?? userProfile.defaultProfitMargin ?? 30}
+        currency={userCurrency}
+        onApply={handleApplyRepricedJob}
       />
     </div>
   );
