@@ -568,9 +568,25 @@ function breakEvenCopies(fixedCosts: number, profitPerUnit: number): number | nu
  * sellingPrice/costPerUnit/fixedCostsAtSave (never recomputed), so "deltas"
  * always compares against exactly what the user saved.
  *
+ * RECONCILIATION RESIDUAL (bug fix, 40-05 Task 4 checkpoint feedback):
+ * buildCalcInputFromJob cannot perfectly replay every input that produced
+ * job.costPerUnit/fixedCostsAtSave at save time — shipping + packaging cost
+ * (computed entirely outside calculateCost, in useCostDerivedValues.ts, and
+ * never snapshotted as a standalone field) is the biggest example, but a
+ * live-only dependency drifting since save (current labor rate, a since-
+ * edited TOU band, a since-repriced material with no per-row override) has
+ * the same effect. None of those are covered by the three what-if sliders,
+ * so instead of enumerating every source of drift, the gap between "what
+ * buildCalcInputFromJob reconstructs at the job's OWN saved slider values"
+ * and "what was actually saved" is captured ONCE as a residual and held
+ * CONSTANT while sliders move. This guarantees the simulator opens showing
+ * the job's exact saved numbers (zero-override deltas === 0), regardless of
+ * what created the gap — a job that is profitable in the calculator can
+ * never open the simulator showing a negative baseline.
+ *
  * Examples:
  *   computeScenario(job, {}, deps) at the job's own saved values
- *     → live margin ≈ stored margin (±0.5pt reconstruction-fidelity guard)
+ *     → live margin === stored margin, deltas === 0 (exact, not approximate)
  *   computeScenario(job, { filamentPricePerGram: 0.10 }, deps) // higher than saved
  *     → margin lower than baseline, deltas.marginPts < 0
  */
@@ -580,6 +596,15 @@ export function computeScenario(
   deps: ScenarioDeps,
 ): WhatIfScenarioResult {
   const baseInput = buildCalcInputFromJob(job, deps);
+
+  // Reconstructed cost/fixed-cost breakdown at the job's OWN saved slider
+  // values (zero overrides) — used only to derive the reconciliation
+  // residuals below, never returned directly.
+  const savedBreakdown = calculateCost(baseInput);
+  const costResidual = job.costPerUnit - savedBreakdown.failureAdjusted;
+  const savedFixedCosts = savedBreakdown.printerDepreciation + savedBreakdown.nozzleWear;
+  const targetFixedCosts = (job.fixedCostsAtSave?.depreciation ?? 0) + (job.fixedCostsAtSave?.nozzleWear ?? 0);
+  const fixedCostResidual = targetFixedCosts - savedFixedCosts;
 
   const liveInput: CalcInput = {
     ...baseInput,
@@ -594,17 +619,16 @@ export function computeScenario(
   };
 
   const liveBreakdown = calculateCost(liveInput);
-  const liveCostPerUnit = liveBreakdown.failureAdjusted;
+  const liveCostPerUnit = liveBreakdown.failureAdjusted + costResidual;
   const liveProfit = job.sellingPrice - liveCostPerUnit;
   const liveMargin = job.sellingPrice > 0 ? (liveProfit / job.sellingPrice) * 100 : null;
-  const liveFixedCosts = liveBreakdown.printerDepreciation + liveBreakdown.nozzleWear
+  const liveFixedCosts = liveBreakdown.printerDepreciation + liveBreakdown.nozzleWear + fixedCostResidual
     + (job.modelCostPerUnit ? 0 : job.modelCost);
   const liveBreakEven = breakEvenCopies(liveFixedCosts, liveProfit);
 
   const baselineProfit = job.sellingPrice - job.costPerUnit;
   const baselineMargin = job.sellingPrice > 0 ? (baselineProfit / job.sellingPrice) * 100 : null;
-  const baselineFixedCosts = (job.fixedCostsAtSave?.depreciation ?? 0) + (job.fixedCostsAtSave?.nozzleWear ?? 0)
-    + (job.modelCostPerUnit ? 0 : job.modelCost);
+  const baselineFixedCosts = targetFixedCosts + (job.modelCostPerUnit ? 0 : job.modelCost);
   const baselineBreakEven = breakEvenCopies(baselineFixedCosts, baselineProfit);
 
   const marginPts = liveMargin !== null && baselineMargin !== null ? liveMargin - baselineMargin : null;

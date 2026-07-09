@@ -442,16 +442,80 @@ describe('buildCalcInputFromJob', () => {
 });
 
 describe('computeScenario', () => {
-  it('reconstruction fidelity: live margin ≈ stored margin at zero overrides (±0.5pt)', () => {
+  it('reconstruction fidelity: live margin === stored margin at zero overrides (exact)', () => {
     const job = makeScenarioJob();
     const deps = makeScenarioDeps();
     const r = computeScenario(job, {}, deps);
 
     const storedMargin = ((job.sellingPrice - job.costPerUnit) / job.sellingPrice) * 100;
     expect(r.margin).not.toBeNull();
-    expect(Math.abs((r.margin as number) - storedMargin)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs((r.margin as number) - storedMargin)).toBeLessThan(1e-9);
     expect(r.deltas.marginPts).not.toBeNull();
-    expect(Math.abs(r.deltas.marginPts as number)).toBeLessThanOrEqual(0.5);
+    expect(r.deltas.marginPts).toBe(0);
+    expect(r.deltas.profit).toBe(0);
+  });
+
+  // 40-05 Task 4 checkpoint feedback: "Why does every option show my profit
+  // in the negative?" — buildCalcInputFromJob can never perfectly replay
+  // every input that produced job.costPerUnit (shipping + packaging cost is
+  // computed entirely OUTSIDE calculateCost, in useCostDerivedValues.ts, and
+  // is never snapshotted as its own field; a live-only input — labor rate,
+  // TOU bands, a since-repriced material — can also drift after save). The
+  // reconciliation residual must absorb ALL of that gap so a job that is
+  // genuinely profitable in the calculator can never open the simulator
+  // showing a negative baseline.
+  it('reconciles a cost-basis gap the reconstruction cannot see (e.g. shipping/packaging) — baseline stays exact and positive', () => {
+    // costPerUnit bakes in $3 of cost buildCalcInputFromJob has no way to
+    // reconstruct (stand-in for shipping + packaging, which CostCalculator.tsx
+    // adds on top of calculateCost's failureAdjusted but which PrintJob never
+    // snapshots as a standalone, replayable field).
+    const reconstructableCost = 4; // filament 2 + labor (1hr * $2/hr), matches makeScenarioDeps
+    const unreconstructableGap = 3;
+    const job = makeScenarioJob({ sellingPrice: 10, costPerUnit: reconstructableCost + unreconstructableGap });
+    const deps = makeScenarioDeps();
+
+    const r = computeScenario(job, {}, deps);
+
+    const storedProfit = job.sellingPrice - job.costPerUnit; // 10 - 7 = 3, genuinely profitable
+    expect(storedProfit).toBeGreaterThan(0);
+    expect(r.profit).not.toBeNull();
+    expect(r.profit as number).toBeCloseTo(storedProfit, 9);
+    expect(r.margin as number).toBeGreaterThan(0);
+    expect(r.deltas.profit).toBe(0);
+    expect(r.deltas.marginPts).toBe(0);
+  });
+
+  it('reconciles a live-only input drifting since save (labor rate changed) — baseline stays exact', () => {
+    // Job was saved when labor cost was $2/hr (costPerUnit: 4 = filament 2 + labor 2).
+    // The CURRENT (live) labor rate has since changed to $10/hr — computeScenario must
+    // still reproduce the job's saved numbers exactly at zero overrides.
+    const job = makeScenarioJob();
+    const deps = makeScenarioDeps({ laborHourlyRate: 10 });
+
+    const r = computeScenario(job, {}, deps);
+
+    const storedMargin = ((job.sellingPrice - job.costPerUnit) / job.sellingPrice) * 100;
+    expect(r.margin as number).toBeCloseTo(storedMargin, 9);
+    expect(r.deltas.marginPts).toBe(0);
+    expect(r.deltas.profit).toBe(0);
+  });
+
+  it('reconciles a fixed-cost basis gap (e.g. depreciation inputs changed since save) — break-even stays exact at rest', () => {
+    const instance = makeInstance({ id: 'p1', printerConfigId: 'c1' });
+    const config = makeConfig({ id: 'c1', wattage: 200, purchasePrice: 500 });
+    const job = makeScenarioJob({
+      printerInstanceId: 'p1',
+      costPerUnit: 4 + (200 / 1000) * 2 * 0.1,
+      // Saved fixed costs reflect a DIFFERENT purchase price / recovery window than
+      // the live printer config now resolves to (e.g. actualPurchasePrice was edited
+      // after this job was saved).
+      fixedCostsAtSave: { depreciation: 50, nozzleWear: 1 },
+    });
+    const deps = makeScenarioDeps({ printerInstances: [instance], printerConfigs: [config] });
+
+    const r = computeScenario(job, {}, deps);
+
+    expect(r.deltas.breakEven).toBe(0);
   });
 
   it('a higher filament price than saved lowers live margin (directional effect)', () => {
