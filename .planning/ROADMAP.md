@@ -196,7 +196,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 **Wave 3** *(serialized after 41-02 — both edit AssetLibrary.tsx)*
 
-- [ ] 41-03-PLAN.md — Spool lifecycle: hygroscopicity resolver + moisture-risk table, filament-card badge + one-tap drying, edit-modal Spool section (LIFE-01)
+- [x] 41-03-PLAN.md — Spool lifecycle: hygroscopicity resolver + moisture-risk table, filament-card badge + one-tap drying, edit-modal Spool section (LIFE-01)
 
 **UI hint**: yes
 
@@ -272,7 +272,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
-| 41. Quick-Win Features | 4/5 | In Progress|  |
+| 41. Quick-Win Features | 5/5 | Complete   | 2026-07-09 |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |

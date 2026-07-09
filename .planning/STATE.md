@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 41
 current_phase_name: quick-win-features
-status: executing
+status: verifying
 stopped_at: Completed 41-05-PLAN.md
-last_updated: "2026-07-09T17:44:16.897Z"
+last_updated: "2026-07-09T17:59:57.340Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 41 execution started
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 20
-  completed_plans: 19
-  percent: 38
+  completed_plans: 20
+  percent: 50
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 Phase: 41 (quick-win-features) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-09 — Phase 41 execution started
 
 ## v2.0 Phase Order Reference
@@ -107,6 +107,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 41-04: Convert-to-Sale tier picker implemented in RecordSaleModal.tsx (not JobsManager.tsx as the plan named) — RecordSaleModal owns the quantity/price form state and the Convert-from-Quote atomic transaction; JobsManager only controls open/close.
 - [Phase 41]: 41-05: computeTaxThresholdProgress converts both the gross-revenue sum AND the fixed GBP/EUR/AUD threshold into userCurrency before comparing — a raw fixed-currency threshold cannot be validly divided against revenue summed in a different currency
 - [Phase 41]: 41-05: crossing-alert once-only guard uses a single localStorage key (jurisdiction:taxYearLabel), not a UserProfile field, so it self-resets at the next tax-year boundary
+- [Phase 41]: 41-03: detectHygroscopicityClass matches nylon by name (nylon|pa6|pa11|pa12|polyamide) in addition to the two CF-nylon FilamentTypes, mirroring abrasive.ts's dual match — closes the FilamentType nylon gap (Pitfall 1).
+- [Phase 41]: 41-03: RISK_THRESHOLDS (HIGH 1/3, MEDIUM 3/7, LOW 14/30 days) shipped verbatim as the user-confirmed values locked at plan-phase — not re-derived.
+- [Phase 41]: 41-03: MoistureRiskBadge and log-drying were added to both the desktop MaterialRow and the mobile MobileCardItem (plan named MaterialRow only) for feature parity with StockBadge/EditButton/DeleteButton, which already exist in both rows.
 
 ### Pending Todos
 
@@ -122,7 +125,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-09T17:44:16.890Z
+Last session: 2026-07-09T17:59:41.439Z
 Stopped at: Completed 41-05-PLAN.md
 Resume file: None
 
@@ -158,3 +161,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 41 P02 | 25min | 3 tasks | 5 files |
 | Phase 41 P04 | 35min | 3 tasks | 7 files |
 | Phase 41 P05 | ~20min | 3 tasks | 5 files |
+| Phase 41 P03 | 6min | 3 tasks | 3 files |
