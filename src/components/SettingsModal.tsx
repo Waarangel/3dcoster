@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile, TouBand } from '../types';
+import type { Currency, ElectricityConfig, ShippingConfig, CustomCarrier, MarketplaceFees, CustomMarketplace, UserProfile, TouBand, TaxJurisdiction } from '../types';
 import { CURRENCY_CONFIG, getDistanceUnit, getFuelUnit, kmToMiles, milesToKm, litersPer100KmToMpg, mpgToLitersPer100Km, pricePerLiterToPerGallon, pricePerGallonToPerLiter, DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { BackupRestoreSection } from './BackupRestoreSection';
-import { Button, IconButton, EditButton, DeleteButton, RemoveButton, Input, SidePanel, FieldWarning } from './ui';
+import { Button, IconButton, EditButton, DeleteButton, RemoveButton, Input, Select, SidePanel, FieldWarning } from './ui';
 import { CheckIcon } from './ui/icons';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { electricityRateWarning, fuelPriceWarning } from '../utils/inputSanity';
@@ -595,6 +595,78 @@ export function SettingsModal({
                       : 'No region default for your currency. Enter manually (or fill your address for province-specific rates).'}
                   </p>
                 </div>
+              </div>
+
+              {/* Phase 41 LIFE-02 (D-13/D-16): jurisdiction picker feeds the
+                  Insights tab's tax-threshold progress card. Optional —
+                  undefined means the card shows a "set your jurisdiction" prompt. */}
+              <div className="pt-4 border-t border-slate-700">
+                <h3 className="text-sm font-medium text-slate-300 mb-3 relative inline-block">
+                  Tax Threshold Tracking
+                  <NewBadge feature="tax-threshold" className="absolute top-0 left-full ml-2 pointer-events-none" />
+                </h3>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <span>Jurisdiction</span>
+                    <InfoTooltip text="Drives an informational hobby-to-business tax-threshold tracker on the Insights tab. Not tax advice — consult a qualified accountant. Threshold figures are data current as of 2026-07-09." />
+                  </label>
+                  <Select
+                    selectSize="sm"
+                    value={userProfile.taxJurisdiction ?? ''}
+                    onChange={e => {
+                      const v = e.target.value;
+                      onUserProfileChange({
+                        ...userProfile,
+                        taxJurisdiction: v === '' ? undefined : (v as TaxJurisdiction),
+                      });
+                    }}
+                    aria-label="Tax jurisdiction"
+                  >
+                    <option value="">None</option>
+                    <option value="UK">United Kingdom (UK)</option>
+                    <option value="DE">Germany (DE)</option>
+                    <option value="AU">Australia (AU)</option>
+                    <option value="US">United States (US)</option>
+                    <option value="OTHER">Other</option>
+                  </Select>
+                </div>
+                {userProfile.taxJurisdiction === 'OTHER' && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Custom threshold amount ({currencySymbol})</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        compact
+                        value={userProfile.customTaxThresholdAmount ?? ''}
+                        onChange={e => {
+                          const v = e.target.value;
+                          if (v === '') {
+                            onUserProfileChange({ ...userProfile, customTaxThresholdAmount: undefined });
+                          } else {
+                            const parsed = parseFloat(v);
+                            onUserProfileChange({
+                              ...userProfile,
+                              customTaxThresholdAmount: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
+                            });
+                          }
+                        }}
+                        placeholder="e.g., 5000"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Threshold label</label>
+                      <Input
+                        type="text"
+                        compact
+                        value={userProfile.customTaxThresholdLabel ?? ''}
+                        onChange={e => onUserProfileChange({ ...userProfile, customTaxThresholdLabel: e.target.value })}
+                        placeholder="e.g., My province threshold"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
