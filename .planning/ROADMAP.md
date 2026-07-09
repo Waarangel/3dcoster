@@ -186,7 +186,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 **Wave 1**
 
-- [ ] 41-01-PLAN.md — Shared spine: Asset/Quote/UserProfile optional fields + HygroscopicityClass/TaxJurisdiction unions, 4 NEW-badge keys, backup DATE_FIELDS gap (no Dexie bump) (CONN-01/CONN-03/LIFE-01/LIFE-02)
+- [x] 41-01-PLAN.md — Shared spine: Asset/Quote/UserProfile optional fields + HygroscopicityClass/TaxJurisdiction unions, 4 NEW-badge keys, backup DATE_FIELDS gap (no Dexie bump) (CONN-01/CONN-03/LIFE-01/LIFE-02)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -272,7 +272,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
-| 41. Quick-Win Features | 0/5 | Planned | - |
+| 41. Quick-Win Features | 1/5 | In Progress|  |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |

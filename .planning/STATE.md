@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 41
-current_phase_name: Quick-Win Features
+current_phase_name: quick-win-features
 status: executing
 stopped_at: Phase 41 context gathered
-last_updated: "2026-07-09T16:52:26.464Z"
+last_updated: "2026-07-09T17:03:07.464Z"
 last_activity: 2026-07-09
-last_activity_desc: Phase 40 complete, transitioned to Phase 41
+last_activity_desc: Phase 41 execution started
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 20
+  completed_plans: 16
   percent: 38
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–45). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 40 — insight-layer
+**Current focus:** Phase 41 — quick-win-features
 
 ## Current Position
 
-Phase: 41 — Quick-Win Features
-Plan: Not started
+Phase: 41 (quick-win-features) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-07-09 — Phase 40 complete, transitioned to Phase 41
+Last activity: 2026-07-09 — Phase 41 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -97,6 +97,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 40-04]: PrinterSettings reads sales/failureEvents/maintenanceEvents/materials/fxTable via its own hooks instead of threading five new props through App.tsx; old gross asking-price recovery math removed so both payback surfaces agree (D-16/P-01 closed)
 - [Phase 40]: 40-05: WhatIfSimulator holds only ephemeral local state seeded from the saved job (filament price, TOU/electricity rate, failure rate) and reconciles computeScenario's cost/fixed-cost basis to the saved job so an untouched slider reports a true zero delta
 - [Phase 40]: 40-05: Phase 33 branch (feat/insight-pricing-coach) retired — archive tag archive/phase-33-ui created at bcea107 before deletion so all 9 unmerged UI commits stay reachable; branch deliberately not merged since its UI is superseded by the Phase 40 Insights tab (D-15), only pure utils were ported in 40-01
+- [Phase 41]: 41-01: Asset.hygroscopicityOverride uses the 3-value HygroscopicityClass union (not boolean) since hygroscopicity is inherently a 3-class enum per D-11, mirroring isAbrasive's undefined=auto-detect semantic but not its boolean shape
+- [Phase 41]: 41-01: Asset.dryingLog is excluded from backupSchema DATE_FIELDS by design — it is an array of ISO date-only strings (D-10), not Date[], so the moisture-risk reader can parse the last entry without the field being coerced to a Date object
 
 ### Pending Todos
 
@@ -112,7 +114,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-09T15:42:40.855Z
+Last session: 2026-07-09T17:02:44.724Z
 Stopped at: Phase 41 context gathered
 Resume file: .planning/phases/41-quick-win-features/41-CONTEXT.md
 
@@ -144,3 +146,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 40 P03 | 5min | 3 tasks | 12 files |
 | Phase 40 P04 | ~5min | 3 tasks | 3 files |
 | Phase 40 P05 | ~25min | 5 tasks | 8 files |
+| Phase 41 P01 | 15min | 2 tasks | 4 files |
