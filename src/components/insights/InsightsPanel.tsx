@@ -14,6 +14,7 @@ import { WageInsight } from './WageInsight';
 import { ProductRanking } from './ProductRanking';
 import { PrinterROI } from './PrinterROI';
 import { WhatIfSimulator } from './WhatIfSimulator';
+import { TaxThresholdCard } from './TaxThresholdCard';
 
 interface InsightsPanelProps {
   /** 'jobs' for the empty-state CTA (40-03); 'settings' for the printer-payback missing-price CTA (40-04). */
@@ -127,6 +128,20 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
       </div>
 
       <PrinterROI payback={printerPayback} userCurrency={userProfile.currency} onSwitchTab={onSwitchTab} />
+
+      {/* Phase 41 LIFE-02 (D-13): lifetime allSales (not the PeriodPicker-scoped
+          salesInRange) — a tax-year threshold is a lifetime-clock concept,
+          same reasoning as printer payback above. */}
+      <div className="mt-4">
+        <TaxThresholdCard
+          sales={allSales}
+          jurisdiction={userProfile.taxJurisdiction}
+          userCurrency={userProfile.currency}
+          fxTable={fxTable}
+          customAmount={userProfile.customTaxThresholdAmount}
+          customLabel={userProfile.customTaxThresholdLabel}
+        />
+      </div>
 
       {/* Phase 40 Plan 05 (INS-03/D-09): what-if simulator job picker — opens the
           SAME shared WhatIfSimulator the JobsManager job-row action opens. */}
