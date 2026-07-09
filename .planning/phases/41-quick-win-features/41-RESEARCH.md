@@ -426,17 +426,19 @@ const THRESHOLDS: Record<Exclude<Jurisdiction, 'US' | 'OTHER'>, { amount: number
 | A3 | Proposed `Asset.hygroscopicityOverride` field name/shape | Pattern 1 | Naming only — the plan should confirm the exact field name against `types.ts` conventions (mirrors `isAbrasive`'s boolean shape but hygroscopicity is a 3-value enum, so the override field is necessarily a different shape — `'HIGH' | 'MEDIUM' | 'LOW' | undefined'`, not a boolean) |
 | A4 | Proposed `Quote.variantsSnapshot` field shape (quantities/discountsPercent/unitPrices arrays) | Pitfall 3 / Architecture Diagram | Exact shape is Claude's Discretion per CONTEXT.md D-08; the plan should finalize field names before implementation, but the by-value-snapshot principle (not a live recompute) is locked |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact hygroscopicity day-thresholds (A1 above)**
    - What we know: directional consensus (Nylon fastest, PETG/TPU middle, PLA slowest) across all sources; the numeric thresholds vary 2-3x between sources.
    - What's unclear: whether the project wants a conservative (alarms early) or lenient (alarms late) default.
    - Recommendation: ship the proposed table above with an `InfoTooltip` disclaiming "general guidance, not measured for your environment," and treat as `checkpoint:human-verify`-worthy before final lock — this mirrors how the tax card already carries a similar disclaimer for a similar reason (published-data variance, not app-measured fact).
+   - **RESOLUTION (2026-07-09, plan-phase human-verify checkpoint):** The user was shown the exact proposed `RISK_THRESHOLDS` table — HIGH class (Nylon/PA): `mediumAtDays: 1` / `highAtDays: 3`; MEDIUM class (PETG/TPU): `mediumAtDays: 3` / `highAtDays: 7`; LOW class (PLA): `mediumAtDays: 14` / `highAtDays: 30` — and **confirmed it verbatim** ("Confirm proposed table", conservative-middle default). No execution-time `checkpoint:human-verify` is needed; plan 41-03 Task 1 ships these numbers as an autonomous task. The InfoTooltip "general guidance, not measured for your environment" disclaimer requirement stands unchanged (D-11). These values are now user-confirmed and locked — the executor must ship them as-is, not re-derive or invent them.
 
 2. **Does the reprice scan need to run on FX-rate-adjacent currency changes to non-native-currency assets?**
    - What we know: D-01 locks the scope to "material price save only," explicitly deferring FX-rate-drift scans.
    - What's unclear: whether a material whose `currency` differs from the user's profile currency, and whose *converted* price moves solely due to a currency mismatch at read time (not a stored price edit), should be in scope. CONTEXT.md's D-01 wording implies no — only an explicit price-field edit in the save handler triggers the scan.
    - Recommendation: scope strictly to `packageCost`/`costPerUnit` field changes detected in `handleSubmit` (old material vs new material comparison), not to any FX-driven display delta. This matches D-01's locked wording.
+   - **RESOLUTION (2026-07-09):** Confirmed — the reprice scan stays strictly on explicit price-field edits per D-01's locked wording (FX-rate-drift scans deferred). This is already how plans 41-01/41-02 are written (41-02 Task 3 guards the scan behind a `costPerUnit`-changed check in `handleSubmit`). No plan change required.
 
 ## Environment Availability
 
