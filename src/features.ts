@@ -31,6 +31,11 @@ export const featureReleases: Record<string, Date> = {
   // v2.0 Phase 40 — Insight Layer (INS-03): what-if margin simulator, reachable
   // from a JobsManager job row and from the Insights tab job picker (D-09)
   'what-if-simulator': new Date('2026-07-08'),
+  // v2.0 Phase 41 — Quick-Win Features
+  'reprice-alerts': new Date('2026-07-09'),
+  'quote-variants': new Date('2026-07-09'),
+  'spool-lifecycle': new Date('2026-07-09'),
+  'tax-threshold': new Date('2026-07-09'),
   // Add new features here with their release date
 };
 

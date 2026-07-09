@@ -35,6 +35,15 @@ export type BuiltInCategory = 'filament' | 'consumable' | 'finishing' | 'tool' |
 // Asset category - can be built-in or custom string
 export type AssetCategory = BuiltInCategory | string;
 
+// Phase 41 LIFE-01 (D-11): moisture-risk class for a material. Auto-derived
+// from filamentType by default; Asset.hygroscopicityOverride lets the user
+// force a class (mirrors the isAbrasive override pattern).
+export type HygroscopicityClass = 'HIGH' | 'MEDIUM' | 'LOW';
+
+// Phase 41 LIFE-02 (D-16): tax-threshold jurisdiction. 'OTHER' unlocks the
+// user-entered customTaxThresholdAmount/Label fields on UserProfile.
+export type TaxJurisdiction = 'UK' | 'DE' | 'AU' | 'US' | 'OTHER';
+
 // Unified Asset type (formerly Material + PrinterConfig)
 export interface Asset {
   id: string;
@@ -59,6 +68,23 @@ export interface Asset {
   // filamentType (e.g. *-CF/*-GF matchers in src/utils/abrasive.ts, Plan 04);
   // explicit true/false = user override wins over the auto-detect matcher.
   isAbrasive?: boolean;
+  // Phase 41 LIFE-01 (D-09): the active spool's open date — "opening a fresh
+  // spool resets the clock". Optional, non-indexed, no Dexie version bump
+  // (DB is at v12).
+  openedAt?: Date;
+  // Phase 41 LIFE-01 (D-09): free-text storage location for the spool.
+  // Optional, non-indexed, no Dexie version bump.
+  storageLocation?: string;
+  // Phase 41 LIFE-01 (D-10): date-only ISO (yyyy-mm-dd) drying-session log,
+  // newest entry last. Stored as strings (NOT Date[]) by design — the
+  // moisture-risk clock reads max(openedAt, last dried) by parsing the last
+  // entry at read time. Optional, non-indexed, no Dexie version bump.
+  dryingLog?: string[];
+  // Phase 41 LIFE-01 (D-11): undefined = auto-detect hygroscopicity class
+  // from filamentType (mirrors isAbrasive's override semantic); explicit
+  // value = user override wins over the auto-detect matcher. Optional,
+  // non-indexed, no Dexie version bump.
+  hygroscopicityOverride?: HygroscopicityClass;
 
   // Printer-specific fields
   purchasePrice?: number;
@@ -378,6 +404,18 @@ export interface Quote {
    * Future tags integration may migrate this into a structured tag.
    */
   declineReason?: string;
+  /**
+   * Phase 41 CONN-03 (D-08): by-value snapshot of the Quote Variants tiers
+   * computed at Generate time (v1.2 D-17 snapshot rule applies — never a
+   * live recompute). Parallel arrays index-aligned by tier. Optional,
+   * non-indexed, no Dexie version bump (DB is at v12).
+   */
+  variantsSnapshot?: {
+    quantities: number[];
+    discountsPercent: number[];
+    unitPrices: number[];
+    currency: Currency;
+  };
 }
 
 // A saved print job with break-even tracking
@@ -559,6 +597,16 @@ export interface UserProfile {
   defaultTerms?: string;
   // Quote numbering (Phase 16) — first quote is #1 (D-06); read via `?? 1`
   nextQuoteNumber?: number;
+
+  // Phase 41 LIFE-02 (D-16): tax-threshold jurisdiction. Optional,
+  // non-indexed, no Dexie version bump (DB is at v12).
+  taxJurisdiction?: TaxJurisdiction;
+  // Phase 41 LIFE-02 (D-16): user-entered threshold amount, used only when
+  // taxJurisdiction === 'OTHER'. Optional, non-indexed.
+  customTaxThresholdAmount?: number;
+  // Phase 41 LIFE-02 (D-16): user-entered threshold label, used only when
+  // taxJurisdiction === 'OTHER'. Optional, non-indexed.
+  customTaxThresholdLabel?: string;
 }
 
 // Built-in shipping carriers
