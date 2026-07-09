@@ -182,7 +182,22 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   3. User can record an opened date, drying sessions, and storage location for a spool and see a moisture-risk indicator (HIGH/MEDIUM/LOW) derived from the material's hygroscopicity class and time since opening
   4. User can set their jurisdiction and see a progress bar toward their local hobby-to-business tax threshold (UK £1k, DE Kleinunternehmer, AU GST, US badge note), with an alert when cumulative revenue crosses it — marked "not tax advice" throughout
 
-**Plans**: TBD
+**Plans**: 5 plans in 3 waves
+
+**Wave 1**
+
+- [ ] 41-01-PLAN.md — Shared spine: Asset/Quote/UserProfile optional fields + HygroscopicityClass/TaxJurisdiction unions, 4 NEW-badge keys, backup DATE_FIELDS gap (no Dexie bump) (CONN-01/CONN-03/LIFE-01/LIFE-02)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 41-02-PLAN.md — Reprice alerts: pure scan (reuses buildCalcInputFromJob + priceFromMargin), RepriceReviewModal, Asset-Library save-handler toast→modal→Apply (CONN-01)
+- [ ] 41-04-PLAN.md — Quote Variants: PDF tier-table branch, PrintQuoteModal variants section, Convert-to-Sale tier picker (CONN-03)
+- [ ] 41-05-PLAN.md — Tax-threshold tracker: jurisdiction-aware year window + gross-revenue sum, Insights card, Settings jurisdiction picker (LIFE-02)
+
+**Wave 3** *(serialized after 41-02 — both edit AssetLibrary.tsx)*
+
+- [ ] 41-03-PLAN.md — Spool lifecycle: hygroscopicity resolver + moisture-risk table, filament-card badge + one-tap drying, edit-modal Spool section (LIFE-01)
+
 **UI hint**: yes
 
 ### Phase 42: GDPR & Onboarding
@@ -257,7 +272,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
-| 41. Quick-Win Features | 0/TBD | Not started | - |
+| 41. Quick-Win Features | 0/5 | Planned | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
