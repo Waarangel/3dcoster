@@ -10,15 +10,73 @@ import { ResetAssetsModal } from './ResetAssetsModal';
 import { RepriceReviewModal } from './RepriceReviewModal';
 import { isCustomCategory } from '../utils/assetCategories';
 import { detectIsAbrasive } from '../utils/abrasive';
+import { resolveHygroscopicityClass, resolveMoistureRisk, daysSinceOpened } from '../utils/hygroscopicity';
+import type { HygroscopicityClass } from '../types';
 import { StockBadge } from './inventory/StockBadge';
 import { LowStockBar } from './inventory/LowStockBar';
 import { useStockEvents } from '../hooks/useStockEvents';
 import { useJobs, useUserProfile, usePrinterInstances, useElectricitySettings } from '../hooks/useDatabase';
 import { assetToPrinterConfig } from '../data/defaultMaterials';
 import { scanAffectedJobs, type AffectedJob } from '../utils/repriceAlert';
-import { Button, EditButton, DeleteButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast } from './ui';
+import { Button, EditButton, DeleteButton, IconButton, Input, Select, EmptyState, Skeleton, shouldShowEmptyState, useToast } from './ui';
 import { InfoTooltip } from './ui/InfoTooltip';
 import { PackageIcon } from './ui/icons';
+
+// Phase 41 LIFE-01 (D-11): human-readable label for a hygroscopicity CLASS
+// (not the current risk tier — a HIGH-class nylon spool freshly opened is
+// still LOW/MEDIUM *risk* until enough days pass). Used only for the badge's
+// "class label" copy, mirroring the objective's "HIGH — Nylon, open 12
+// days" example.
+const HYGRO_CLASS_LABELS: Record<HygroscopicityClass, string> = {
+  HIGH: 'Nylon/PA',
+  MEDIUM: 'PETG/TPU',
+  LOW: 'PLA',
+};
+
+// Small droplet icon for the "log drying" action — no dedicated icon exists
+// in ui/icons yet, so this mirrors the inline-SVG pattern already used
+// elsewhere in this file (e.g. the CSV import/export button icons).
+function DropletIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0L12 2.69z" />
+    </svg>
+  );
+}
+
+/**
+ * Moisture-risk badge for a filament-category asset (Phase 41 LIFE-01, D-11).
+ * Renders nothing for non-filament assets. An unopened spool (daysSinceOpened
+ * === null) shows a muted "Not opened" state rather than a false LOW — LOW
+ * is a real risk tier, "never tracked" is not the same thing.
+ */
+function MoistureRiskBadge({ asset }: { asset: Asset }) {
+  if (asset.category !== 'filament') return null;
+
+  const days = daysSinceOpened(asset);
+  if (days === null) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium bg-slate-700/50 text-slate-400 border-slate-600/50">
+        Not opened
+      </span>
+    );
+  }
+
+  const hygroClass = resolveHygroscopicityClass(asset);
+  const risk = resolveMoistureRisk(hygroClass, days);
+  const tone = risk === 'HIGH'
+    ? 'bg-red-500/15 text-red-300 border-red-500/30'
+    : risk === 'MEDIUM'
+      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+      : 'bg-green-500/15 text-green-300 border-green-500/30';
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium ${tone}`}>
+      {risk} — {HYGRO_CLASS_LABELS[hygroClass]}, open {days}d
+      <InfoTooltip text="General guidance from the material's hygroscopicity class and time since it was opened or last dried — not measured for your ambient humidity. Logging a drying session resets this clock." />
+    </span>
+  );
+}
 
 interface AssetLibraryProps {
   assets: Asset[];
@@ -210,6 +268,9 @@ type AssetRowCallbacks = {
   // v1.8 inventory: derived current stock per asset id. Optional so the printer
   // row path (which never shows stock) needs no threading.
   stockByAssetId?: ReadonlyMap<string, number>;
+  // Phase 41 LIFE-01 (D-12): one-tap "log drying" from the card/row itself.
+  // Optional so the printer row path (no moisture-risk UI) needs no threading.
+  onLogDrying?: (asset: Asset) => void;
 };
 
 // Convert a stored price into the user's currency for display. Returns the
@@ -272,6 +333,7 @@ const MobileCardItem = memo(function MobileCardItem({
   userCurrency,
   fxTable,
   stockByAssetId,
+  onLogDrying,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   const stock = stockByAssetId?.get(asset.id) ?? null;
   const su = stockUnit(asset);
@@ -371,10 +433,24 @@ const MobileCardItem = memo(function MobileCardItem({
               <StockBadge stock={stock == null ? null : stock / su.perUnit} threshold={asset.lowStockThreshold == null ? undefined : asset.lowStockThreshold / su.perUnit} unit={su.unit} />
             </div>
           )}
+          {asset.category === 'filament' && (
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="text-sm text-slate-400">Moisture</span>
+              <MoistureRiskBadge asset={asset} />
+            </div>
+          )}
         </div>
       )}
 
       <div className="flex gap-2 pt-2 border-t border-slate-700/50 justify-end">
+        {asset.category === 'filament' && onLogDrying && (
+          <IconButton
+            label={`Log drying for ${asset.name}`}
+            icon={<DropletIcon className="w-4 h-4" />}
+            onClick={() => onLogDrying(asset)}
+            className="text-cyan-400 hover:text-cyan-300"
+          />
+        )}
         <EditButton label={asset.name} onClick={() => onEdit(asset)} />
         <DeleteButton label={asset.name} onClick={() => onDelete(asset.id)} />
       </div>
@@ -382,8 +458,8 @@ const MobileCardItem = memo(function MobileCardItem({
   );
 });
 
-const MobileCardRow = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable, stockByAssetId }: RowComponentProps<AssetRowPropsForList>) => (
-  <MobileCardItem asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
+const MobileCardRow = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable, stockByAssetId, onLogDrying }: RowComponentProps<AssetRowPropsForList>) => (
+  <MobileCardItem asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} onLogDrying={onLogDrying} />
 );
 
 // --- Printer row (div-grid; 7 columns) ---
@@ -454,6 +530,7 @@ const MaterialRow = memo(function MaterialRow({
   userCurrency,
   fxTable,
   stockByAssetId,
+  onLogDrying,
 }: { asset: Asset; style?: React.CSSProperties } & AssetRowCallbacks) {
   const stock = stockByAssetId?.get(asset.id) ?? null;
   const su = stockUnit(asset);
@@ -480,6 +557,9 @@ const MaterialRow = memo(function MaterialRow({
         {stock != null && (
           <div className="mt-1"><StockBadge stock={stock == null ? null : stock / su.perUnit} threshold={asset.lowStockThreshold == null ? undefined : asset.lowStockThreshold / su.perUnit} unit={su.unit} /></div>
         )}
+        {asset.category === 'filament' && (
+          <div className="mt-1"><MoistureRiskBadge asset={asset} /></div>
+        )}
       </div>
       <div role="cell" className="text-slate-400">
         {asset.brand || '-'}
@@ -502,6 +582,14 @@ const MaterialRow = memo(function MaterialRow({
         <PriceCell amount={asset.packageCost ?? 0} native={asset.currency} userCurrency={userCurrency} fxTable={fxTable} decimals={2} />
       </div>
       <div role="cell" className="text-right">
+        {asset.category === 'filament' && onLogDrying && (
+          <IconButton
+            label={`Log drying for ${asset.name}`}
+            icon={<DropletIcon className="w-4 h-4" />}
+            onClick={() => onLogDrying(asset)}
+            className="text-cyan-400 hover:text-cyan-300 mr-1"
+          />
+        )}
         <EditButton label={asset.name} onClick={() => onEdit(asset)} className="mr-1" />
         <DeleteButton label={asset.name} onClick={() => onDelete(asset.id)} />
       </div>
@@ -509,8 +597,8 @@ const MaterialRow = memo(function MaterialRow({
   );
 });
 
-const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable, stockByAssetId }: RowComponentProps<AssetRowPropsForList>) => (
-  <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
+const MaterialRowAdapter = ({ index, style, assets, onEdit, onDelete, userCurrency, fxTable, stockByAssetId, onLogDrying }: RowComponentProps<AssetRowPropsForList>) => (
+  <MaterialRow asset={assets[index]} style={style} onEdit={onEdit} onDelete={onDelete} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} onLogDrying={onLogDrying} />
 );
 
 const SortIndicator = ({ field, sortField, sortDirection }: { field: string; sortField: string; sortDirection: 'asc' | 'desc' }) => {
@@ -913,6 +1001,15 @@ export function AssetLibrary({
     void updateJob({ ...job, sellingPrice: suggestedPrice });
   }, [jobs, updateJob]);
 
+  // Phase 41 LIFE-01 (D-09/D-12): one-tap "log drying" from the card/row —
+  // appends today's ISO (yyyy-mm-dd) date to the asset's dryingLog
+  // immutably and persists via the existing onUpdateAsset prop. This resets
+  // the moisture-risk clock (daysSinceOpened reads the LATEST drying entry).
+  const handleLogDrying = useCallback((asset: Asset) => {
+    const today = new Date().toISOString().slice(0, 10);
+    onUpdateAsset({ ...asset, dryingLog: [...(asset.dryingLog ?? []), today] });
+  }, [onUpdateAsset]);
+
   const addTag = () => {
     if (!tagInput.trim()) return;
     const newTag = tagInput.trim().toLowerCase();
@@ -1058,8 +1155,8 @@ export function AssetLibrary({
   // skip unchanged rows. Same object shape feeds all three lists; only the
   // identity changes when paginatedAssets/startEdit/onDeleteAsset rotate.
   const listRowProps = useMemo<AssetRowPropsForList>(
-    () => ({ assets: paginatedAssets, onEdit: startEdit, onDelete: onDeleteAsset, userCurrency, fxTable, stockByAssetId }),
-    [paginatedAssets, startEdit, onDeleteAsset, userCurrency, fxTable, stockByAssetId]
+    () => ({ assets: paginatedAssets, onEdit: startEdit, onDelete: onDeleteAsset, userCurrency, fxTable, stockByAssetId, onLogDrying: handleLogDrying }),
+    [paginatedAssets, startEdit, onDeleteAsset, userCurrency, fxTable, stockByAssetId, handleLogDrying]
   );
 
   return (
@@ -1630,7 +1727,7 @@ export function AssetLibrary({
           ) : (
             <div className="flex flex-col gap-3">
               {paginatedAssets.map(asset => (
-                <MobileCardItem key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
+                <MobileCardItem key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} onLogDrying={handleLogDrying} />
               ))}
             </div>
           )
@@ -1710,7 +1807,7 @@ export function AssetLibrary({
             ) : (
               <div>
                 {paginatedAssets.map(asset => (
-                  <MaterialRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} />
+                  <MaterialRow key={asset.id} asset={asset} onEdit={startEdit} onDelete={onDeleteAsset} userCurrency={userCurrency} fxTable={fxTable} stockByAssetId={stockByAssetId} onLogDrying={handleLogDrying} />
                 ))}
               </div>
             )}
