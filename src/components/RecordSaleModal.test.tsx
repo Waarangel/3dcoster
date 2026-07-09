@@ -430,6 +430,65 @@ describe('RecordSaleModal — convert-from-quote mode (Test 3 — Pitfall 2 lock
   });
 });
 
+describe('RecordSaleModal — CONN-03 tier picker (D-08)', () => {
+  it('does not render a tier picker for a Quote without variantsSnapshot', async () => {
+    await renderModal({ convertingFromQuote: makeQuote({ quoteNumber: 42 }) });
+    expect(document.body.textContent ?? '').not.toContain('Which tier did the customer take?');
+  });
+
+  it('renders a tier picker for a Quote with variantsSnapshot and seeds Quantity/Price from tier 0 by default', async () => {
+    const quote = makeQuote({
+      quoteNumber: 55,
+      variantsSnapshot: {
+        quantities: [1, 10, 50],
+        discountsPercent: [0, 10, 20],
+        unitPrices: [150, 135, 120],
+        currency: 'USD',
+      },
+    });
+    await renderModal({ convertingFromQuote: quote });
+
+    expect(document.body.textContent ?? '').toContain('Which tier did the customer take?');
+    const numberInputs = document.body.querySelectorAll('input[type="number"]');
+    const qtyInput = numberInputs[0] as HTMLInputElement;
+    const priceInput = numberInputs[1] as HTMLInputElement;
+    expect(qtyInput.value).toBe('1');
+    expect(priceInput.value).toBe('150');
+  });
+
+  it('selecting a tier seeds Quantity/Price, and Record Sale records that tier as quantity/unitPrice/totalRevenue', async () => {
+    dbJobsGetSpy.mockResolvedValue(makeJob({ copiesSold: 0 }));
+    const quote = makeQuote({
+      quoteNumber: 55,
+      variantsSnapshot: {
+        quantities: [1, 10, 50],
+        discountsPercent: [0, 10, 20],
+        unitPrices: [150, 135, 120],
+        currency: 'USD',
+      },
+    });
+    await renderModal({ convertingFromQuote: quote });
+
+    const tier10Btn = findButton('10 @ $135.00');
+    expect(tier10Btn).toBeDefined();
+    await act(async () => { tier10Btn!.click(); });
+
+    const numberInputs = document.body.querySelectorAll('input[type="number"]');
+    expect((numberInputs[0] as HTMLInputElement).value).toBe('10');
+    expect((numberInputs[1] as HTMLInputElement).value).toBe('135');
+
+    const recordBtn = findButton('Record Sale');
+    await act(async () => { recordBtn!.click(); });
+
+    // Convert-from-quote path — atomic tx, sale carries the chosen tier.
+    expect(dbSalesAddSpy).toHaveBeenCalledTimes(1);
+    const sale = dbSalesAddSpy.mock.calls[0][0];
+    expect(sale.quantity).toBe(10);
+    expect(sale.unitPrice).toBe(135);
+    expect(sale.totalRevenue).toBe(1350);
+  });
+});
+
 describe('RecordSaleModal — picker integration (Test 4 — D-05 lock)', () => {
   it('clicking a customer in the listbox fills Name/Email/Company/Address but NOT Notes', async () => {
     await renderModal();

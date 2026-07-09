@@ -78,6 +78,12 @@ export function RecordSaleModal({
   // ─── Form state (mirror of JobsManager) ────────────────────────────────────
   const [saleQuantity, setSaleQuantity] = useState(1);
   const [salePrice, setSalePrice] = useState(0);
+  // CONN-03 (D-08): which variants tier the customer took, when converting a
+  // Quote that carries a variantsSnapshot. null = not a variant conversion
+  // (or no tier picked yet). Selecting a tier seeds saleQuantity/salePrice
+  // below — the existing Quantity/Price inputs stay the single source of
+  // truth for what gets recorded, so no separate persistence path is needed.
+  const [selectedTierIndex, setSelectedTierIndex] = useState<number | null>(null);
   const [saleCustomerName, setSaleCustomerName] = useState('');
   const [saleCustomerEmail, setSaleCustomerEmail] = useState('');
   const [saleCustomerCompany, setSaleCustomerCompany] = useState('');
@@ -121,11 +127,24 @@ export function RecordSaleModal({
       setSaleShippingMethod(editingSale.shippingMethod ?? 'local_pickup');
       setSaleShippingCost(editingSale.shippingCost ?? 0);
       setSaleMarketplace(editingSale.marketplace ?? 'facebook_local');
+      setSelectedTierIndex(null);
     } else if (convertingFromQuote) {
       // Convert-from-Quote mode — hydrate from the Quote snapshot (mirror of
       // handleStartConversion at JobsManager.tsx:1130-1151)
-      setSaleQuantity(1);
-      setSalePrice(convertingFromQuote.lineItemsSnapshot.sellingPrice);
+      // CONN-03 (D-08): when the Quote carries a variantsSnapshot, seed
+      // quantity/price from its first tier (1pc by roadmap default) and let
+      // the tier picker below re-seed on selection; a non-variant Quote keeps
+      // the original qty=1 / sellingPrice behavior unchanged.
+      const variants = convertingFromQuote.variantsSnapshot;
+      if (variants && variants.quantities.length > 0) {
+        setSaleQuantity(variants.quantities[0]);
+        setSalePrice(variants.unitPrices[0]);
+        setSelectedTierIndex(0);
+      } else {
+        setSaleQuantity(1);
+        setSalePrice(convertingFromQuote.lineItemsSnapshot.sellingPrice);
+        setSelectedTierIndex(null);
+      }
       setSaleCustomerName(convertingFromQuote.customerSnapshot.name ?? '');
       setSaleCustomerEmail(convertingFromQuote.customerSnapshot.email ?? '');
       setSaleCustomerCompany(convertingFromQuote.customerSnapshot.company ?? '');
@@ -147,6 +166,7 @@ export function RecordSaleModal({
       setSaleShippingMethod('local_pickup');
       setSaleShippingCost(0);
       setSaleMarketplace('facebook_local');
+      setSelectedTierIndex(null);
     }
     // Pitfall 3: DO NOT add job.sellingPrice — a concurrent useLiveQuery emission
     // that updates the job's selling price while the modal is open must NOT clobber
@@ -391,6 +411,20 @@ export function RecordSaleModal({
   }
   };
 
+  // CONN-03 (D-08): selecting a tier seeds the existing Quantity/Price inputs
+  // above — those stay the single source of truth for what gets recorded on
+  // the Sale (quantity, unitPrice, and totalRevenue = quantity × unitPrice
+  // in handleRecordSale). Only runs when converting a variant Quote.
+  const handleSelectTier = useCallback((index: number) => {
+    if (!convertingFromQuote?.variantsSnapshot) return;
+    const { quantities, unitPrices } = convertingFromQuote.variantsSnapshot;
+    setSaleQuantity(quantities[index]);
+    setSalePrice(unitPrices[index]);
+    setSelectedTierIndex(index);
+  }, [convertingFromQuote]);
+
+  const variantTiers = convertingFromQuote?.variantsSnapshot;
+
   // ─── JSX ─────────────────────────────────────────────────────────────────
   return (
     <Modal
@@ -403,6 +437,29 @@ export function RecordSaleModal({
         {convertingFromQuote && (
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs text-blue-300 mb-3">
             Converting {formatQuoteNumber(convertingFromQuote.quoteNumber)} — review and adjust if needed.
+          </div>
+        )}
+
+        {/* CONN-03 (D-08): tier picker — only rendered when the source Quote
+            carries a variantsSnapshot. Selecting a tier seeds Quantity/Price
+            below; a non-variant Quote converts exactly as before (no picker). */}
+        {variantTiers && variantTiers.quantities.length > 0 && (
+          <div className="mb-3">
+            <div className="text-xs text-slate-400 mb-1.5">Which tier did the customer take?</div>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Quantity variant tier">
+              {variantTiers.quantities.map((qty, i) => (
+                <Button
+                  key={i}
+                  type="button"
+                  variant={selectedTierIndex === i ? 'primary' : 'secondary'}
+                  btnSize="sm"
+                  aria-pressed={selectedTierIndex === i}
+                  onClick={() => handleSelectTier(i)}
+                >
+                  {qty} @ {formatCurrency(variantTiers.unitPrices[i], variantTiers.currency)}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
 
