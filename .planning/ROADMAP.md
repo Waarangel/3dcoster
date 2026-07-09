@@ -165,7 +165,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 40-05-PLAN.md — What-if simulator (3 sliders, 2 entry points) + Phase 33 branch retirement + ROADMAP D-05 fix (INS-03)
+- [x] 40-05-PLAN.md — What-if simulator (3 sliders, 2 entry points) + Phase 33 branch retirement + ROADMAP D-05 fix (INS-03)
 
 **UI hint**: yes
 **Note**: Success criterion 2 wording corrected to cumulative NET PROFIT (per D-05) as a task inside 40-05.
@@ -256,7 +256,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
-| 40. Insight Layer | 4/5 | In Progress|  |
+| 40. Insight Layer | 5/5 | Complete   | 2026-07-09 |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |

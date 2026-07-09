@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 40
 current_phase_name: insight-layer
-status: executing
-stopped_at: Completed 40-04-PLAN.md
-last_updated: "2026-07-09T12:37:20.402Z"
+status: verifying
+stopped_at: Completed 40-05-PLAN.md — Phase 40 (Insight Layer) fully complete, all 5 plans
+last_updated: "2026-07-09T13:55:33.604Z"
 last_activity: 2026-07-08
 last_activity_desc: Phase 40 execution started
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 14
-  percent: 25
+  completed_plans: 15
+  percent: 38
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 Phase: 40 (insight-layer) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-08 — Phase 40 execution started
 
 ## v2.0 Phase Order Reference
@@ -95,6 +95,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 40-03: InsightsPanel filters sales into the selected PeriodPicker range itself before calling computeWageHeadline/computeProductRanking, since insights.ts derivations have no built-in range parameter
 - [Phase 40-04]: PrinterROI computes payback from the full sales history, not the PeriodPicker-scoped range used for wage/ranking — payback is a lifetime cumulative metric
 - [Phase 40-04]: PrinterSettings reads sales/failureEvents/maintenanceEvents/materials/fxTable via its own hooks instead of threading five new props through App.tsx; old gross asking-price recovery math removed so both payback surfaces agree (D-16/P-01 closed)
+- [Phase 40]: 40-05: WhatIfSimulator holds only ephemeral local state seeded from the saved job (filament price, TOU/electricity rate, failure rate) and reconciles computeScenario's cost/fixed-cost basis to the saved job so an untouched slider reports a true zero delta
+- [Phase 40]: 40-05: Phase 33 branch (feat/insight-pricing-coach) retired — archive tag archive/phase-33-ui created at bcea107 before deletion so all 9 unmerged UI commits stay reachable; branch deliberately not merged since its UI is superseded by the Phase 40 Insights tab (D-15), only pure utils were ported in 40-01
 
 ### Pending Todos
 
@@ -110,8 +112,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-09T12:37:20.395Z
-Stopped at: Completed 40-04-PLAN.md
+Last session: 2026-07-09T13:55:33.597Z
+Stopped at: Completed 40-05-PLAN.md — Phase 40 (Insight Layer) fully complete, all 5 plans
 Resume file: None
 
 ## Operator Next Steps
@@ -141,3 +143,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 40-insight-layer P02 | 3min | 2 tasks | 5 files |
 | Phase 40 P03 | 5min | 3 tasks | 12 files |
 | Phase 40 P04 | ~5min | 3 tasks | 3 files |
+| Phase 40 P05 | ~25min | 5 tasks | 8 files |
