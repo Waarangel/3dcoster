@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Currency, Material, PrintJob } from '../../types';
 import {
   useElectricitySettings,
@@ -151,25 +151,52 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
   const { materials } = useMaterials();
   const { profile: userProfile } = useUserProfile();
 
-  const [filamentPricePerGram, setFilamentPricePerGram] = useState(0);
-  const [electricityRatePerKwh, setElectricityRatePerKwh] = useState(0);
-  const [failureRate, setFailureRate] = useState(0);
+  // Initial focus lands on the first slider, never on the InfoTooltip trigger
+  // that would otherwise be the first focusable element in the dialog (see
+  // Modal's auto-detected initialFocusTarget) — focusing that button fires
+  // its onFocus handler and pops the tooltip open, which reads as "the
+  // filament tooltip is open by default" (40-05 Task 4 checkpoint feedback).
+  const firstSliderRef = useRef<HTMLInputElement>(null);
 
-  const resetToSaved = useMemo(() => {
-    return () => {
-      if (!job) return;
-      setFilamentPricePerGram(resolveBaselineFilamentPrice(job, materials));
-      setElectricityRatePerKwh(resolveBaselineElectricityRate(job, electricity.costPerKwh));
-      setFailureRate(job.failureRate);
-    };
-    // Rebuilt only when the seed inputs change; called imperatively (open effect + Reset button).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id]);
+  // D-11: each slider holds an OVERRIDE, not a committed value — null means
+  // "use this job's saved value". Deriving the displayed/computed value as
+  // `override ?? baseline` (below) means there is no render where a slider
+  // reads a placeholder 0 before a reset effect catches up: on mount, and
+  // immediately after Reset/Close, the override is already null, so the very
+  // first render already shows the job's real saved numbers. The PREVIOUS
+  // implementation seeded committed useState(0) and re-seeded via an effect —
+  // that 0 was fed into computeScenario as an EXPLICIT override (typeof 0 ===
+  // 'number'), zeroing out filament + electricity cost for one paint on every
+  // open (40-05 Task 4 checkpoint feedback: root-cause hunt for the
+  // negative-profit report).
+  const [filamentOverride, setFilamentOverride] = useState<number | null>(null);
+  const [electricityOverride, setElectricityOverride] = useState<number | null>(null);
+  const [failureOverride, setFailureOverride] = useState<number | null>(null);
 
-  // Re-seed every time the modal transitions closed -> open for a (possibly new)
-  // job — mirrors LogFailureModal's reset-on-open pattern. Not re-run on every
-  // materials/electricity re-render so mid-session live-config changes don't
-  // yank the sliders out from under the user while they're mid-drag.
+  const baselineFilamentPrice = job ? resolveBaselineFilamentPrice(job, materials) : 0;
+  const baselineElectricityRate = job ? resolveBaselineElectricityRate(job, electricity.costPerKwh) : 0;
+  const baselineFailureRate = job?.failureRate ?? 0;
+
+  const filamentPricePerGram = filamentOverride ?? baselineFilamentPrice;
+  const electricityRatePerKwh = electricityOverride ?? baselineElectricityRate;
+  const failureRate = failureOverride ?? baselineFailureRate;
+
+  const resetToSaved = () => {
+    setFilamentOverride(null);
+    setElectricityOverride(null);
+    setFailureOverride(null);
+  };
+
+  // Discard the scenario the instant the dialog closes (D-11) — clearing
+  // overrides here (rather than only on the next open) means a reopen of the
+  // SAME job never has to wait on an effect to catch up.
+  const handleClose = () => {
+    resetToSaved();
+    onClose();
+  };
+
+  // Belt-and-suspenders: also clears if a future entry point ever swaps `job`
+  // while the dialog stays open without going through handleClose first.
   useEffect(() => {
     if (!isOpen || !job) return;
     resetToSaved();
@@ -185,8 +212,8 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
     );
   }, [job, filamentPricePerGram, electricityRatePerKwh, failureRate, printerInstances, printerConfigs, electricity, materials, userProfile.laborHourlyRate]);
 
-  const filamentPriceMax = job ? widenMax(FILAMENT_PRICE_MAX_FLOOR, resolveBaselineFilamentPrice(job, materials)) : FILAMENT_PRICE_MAX_FLOOR;
-  const electricityRateMax = job ? widenMax(ELECTRICITY_RATE_MAX_FLOOR, resolveBaselineElectricityRate(job, electricity.costPerKwh)) : ELECTRICITY_RATE_MAX_FLOOR;
+  const filamentPriceMax = job ? widenMax(FILAMENT_PRICE_MAX_FLOOR, baselineFilamentPrice) : FILAMENT_PRICE_MAX_FLOOR;
+  const electricityRateMax = job ? widenMax(ELECTRICITY_RATE_MAX_FLOOR, baselineElectricityRate) : ELECTRICITY_RATE_MAX_FLOOR;
 
   const currency: Currency = job?.currency ?? userProfile.currency;
 
@@ -195,14 +222,20 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
   const baselineBreakEven = result ? deriveBaseline(result.breakEven, result.deltas.breakEven) : null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={job ? `What-if: ${job.name}` : 'What-if simulator'} size="md">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={job ? `What-if: ${job.name}` : 'What-if simulator'}
+      size="md"
+      initialFocusRef={firstSliderRef}
+    >
       {!job || !result ? (
         <div className="p-4 text-sm text-slate-400">Select a job to simulate.</div>
       ) : (
         <div className="p-4 space-y-5">
           <p className="text-xs text-slate-500">
-            Drag a slider to see how it would change this job&apos;s numbers. Nothing here is saved — close the
-            simulator and the saved job is untouched.
+            Every slider starts at this job&apos;s own saved value. Drag one to see how it would change this job&apos;s
+            numbers — nothing here is saved, and closing the simulator leaves the saved job untouched.
           </p>
 
           <div className="space-y-4">
@@ -210,12 +243,18 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="whatif-filament-price" className="text-xs text-slate-400 flex items-center gap-1">
                   Filament price per gram
-                  <InfoTooltip text="Overrides the price of every filament row on this job for the scenario only." />
+                  <InfoTooltip
+                    text={`Starts at ${formatCurrency(baselineFilamentPrice, currency)}/g — this job's own saved filament cost (its price-per-gram at save time, or the material's current cost if no per-job price was set). Dragging overrides the price of every filament row on this job for the scenario only.`}
+                  />
                 </label>
                 <span className="text-xs font-mono text-slate-300">{formatCurrency(filamentPricePerGram, currency)}/g</span>
               </div>
+              <p className="text-[11px] text-slate-500 mb-1">
+                Saved: {formatCurrency(baselineFilamentPrice, currency)}/g — this job&apos;s own filament cost
+              </p>
               {/* allow-raw-html: native range input is the simulator's slider control — no shared Slider primitive exists in src/components/ui */}
               <input
+                ref={firstSliderRef}
                 id="whatif-filament-price"
                 type="range"
                 aria-label="Filament price per gram"
@@ -223,7 +262,7 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
                 max={filamentPriceMax}
                 step={FILAMENT_PRICE_STEP}
                 value={filamentPricePerGram}
-                onChange={(e) => setFilamentPricePerGram(Number(e.target.value))}
+                onChange={(e) => setFilamentOverride(Number(e.target.value))}
                 className="w-full accent-blue-500"
               />
             </div>
@@ -232,10 +271,15 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="whatif-electricity-rate" className="text-xs text-slate-400 flex items-center gap-1">
                   Electricity rate
-                  <InfoTooltip text="Replaces this job's saved $/kWh rate for the scenario only." />
+                  <InfoTooltip
+                    text={`Starts at ${formatCurrency(baselineElectricityRate, currency)}/kWh — this job's saved electricity rate (its time-of-use rate at save time, or your flat rate if none applied). Dragging replaces that rate for the scenario only.`}
+                  />
                 </label>
                 <span className="text-xs font-mono text-slate-300">{formatCurrency(electricityRatePerKwh, currency)}/kWh</span>
               </div>
+              <p className="text-[11px] text-slate-500 mb-1">
+                Saved: {formatCurrency(baselineElectricityRate, currency)}/kWh — this job&apos;s own electricity rate
+              </p>
               {/* allow-raw-html: native range input is the simulator's slider control — no shared Slider primitive exists in src/components/ui */}
               <input
                 id="whatif-electricity-rate"
@@ -245,7 +289,7 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
                 max={electricityRateMax}
                 step={ELECTRICITY_RATE_STEP}
                 value={electricityRatePerKwh}
-                onChange={(e) => setElectricityRatePerKwh(Number(e.target.value))}
+                onChange={(e) => setElectricityOverride(Number(e.target.value))}
                 className="w-full accent-blue-500"
               />
             </div>
@@ -254,10 +298,15 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="whatif-failure-rate" className="text-xs text-slate-400 flex items-center gap-1">
                   Failure rate
-                  <InfoTooltip text="Replaces this job's saved failure rate for the scenario only." />
+                  <InfoTooltip
+                    text={`Starts at ${baselineFailureRate}% — this job's own saved failure rate. Dragging replaces that rate for the scenario only.`}
+                  />
                 </label>
                 <span className="text-xs font-mono text-slate-300">{failureRate}%</span>
               </div>
+              <p className="text-[11px] text-slate-500 mb-1">
+                Saved: {baselineFailureRate}% — this job&apos;s own failure rate
+              </p>
               {/* allow-raw-html: native range input is the simulator's slider control — no shared Slider primitive exists in src/components/ui */}
               <input
                 id="whatif-failure-rate"
@@ -267,7 +316,7 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
                 max={FAILURE_RATE_MAX}
                 step={FAILURE_RATE_STEP}
                 value={failureRate}
-                onChange={(e) => setFailureRate(Number(e.target.value))}
+                onChange={(e) => setFailureOverride(Number(e.target.value))}
                 className="w-full accent-blue-500"
               />
             </div>
@@ -309,7 +358,7 @@ export function WhatIfSimulator({ job, isOpen, onClose }: WhatIfSimulatorProps) 
 
           <div className="flex justify-between items-center pt-1">
             <Button variant="secondary" btnSize="sm" onClick={resetToSaved}>Reset to saved</Button>
-            <Button variant="secondary" btnSize="md" onClick={onClose}>Close</Button>
+            <Button variant="secondary" btnSize="md" onClick={handleClose}>Close</Button>
           </div>
         </div>
       )}
