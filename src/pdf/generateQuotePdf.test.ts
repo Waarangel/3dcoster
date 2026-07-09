@@ -493,6 +493,64 @@ describe('generateQuotePdf', () => {
   });
 
   // -------------------------------------------------------------------------
+  // CONN-03 (D-08): Quote Variants tier table
+  // -------------------------------------------------------------------------
+
+  describe('CONN-03 D-08 variants tier table', () => {
+    it('renders exactly one line-item row when variantsSnapshot is absent (existing single-row behavior unchanged)', async () => {
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({ lineItemsSnapshot: { jobTitle: 'Solo Widget', sellingPrice: 42 } }),
+      );
+      const text = pdfExtractText(bytes);
+      const occurrences = text.split('Solo Widget').length - 1;
+      expect(occurrences).toBe(1);
+      expect(text).toContain('42');
+    });
+
+    it('renders N rows for an N-tier variantsSnapshot, one per tier (Qty / Unit Price / Amount)', async () => {
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({
+          lineItemsSnapshot: { jobTitle: 'Tiered Gadget', sellingPrice: 20 },
+          variantsSnapshot: {
+            quantities: [1, 10, 50],
+            discountsPercent: [0, 10, 20],
+            unitPrices: [20, 18, 16],
+            currency: 'USD' as Currency,
+          },
+        }),
+      );
+      const text = pdfExtractText(bytes);
+      // Description repeats once per tier row.
+      const occurrences = text.split('Tiered Gadget').length - 1;
+      expect(occurrences).toBe(3);
+      // Qty column values present.
+      expect(text).toContain('10');
+      expect(text).toContain('50');
+      // Amount column: qty × unitPrice per tier (10×18=180, 50×16=800).
+      expect(text).toContain('180');
+      expect(text).toContain('800');
+    });
+
+    it('variants branch reads only variantsSnapshot + lineItemsSnapshot (D-17 G4) — the Variant options total sums Σ(qty×unitPrice)', async () => {
+      const bytes = await generateQuotePdfBytes(
+        makeQuote({
+          lineItemsSnapshot: { jobTitle: 'Sum Check', sellingPrice: 5 },
+          variantsSnapshot: {
+            quantities: [2, 5],
+            discountsPercent: [0, 0],
+            unitPrices: [10, 10],
+            currency: 'USD' as Currency,
+          },
+        }),
+      );
+      const text = pdfExtractText(bytes);
+      // 2×10 + 5×10 = 70
+      expect(text).toContain('Variant options total');
+      expect(text).toMatch(/Variant options total.*70/);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // writeFile error mapping (Task 2 — DESK-01 defensive catch)
   // -------------------------------------------------------------------------
 

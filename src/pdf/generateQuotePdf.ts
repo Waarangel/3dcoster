@@ -128,24 +128,37 @@ function renderMetaAndCustomer(doc: jsPDF, quote: Quote, startY: number): number
 
 function renderLineItems(doc: jsPDF, quote: Quote, startY: number): number {
   const { jobTitle, sellingPrice, currency } = quote.lineItemsSnapshot;
-  // Quote.lineItemsSnapshot does not carry quantity — collapsed single-row layout
-  // per D-04 always renders qty=1 at this surface. The amount column equals the
-  // unit price.
-  const qty = 1;
-  const unitPrice = sellingPrice;
-  const amount = qty * unitPrice;
-
+  const variants = quote.variantsSnapshot;
   const description = `Custom 3D print — ${jobTitle}`;
+
+  // CONN-03 (D-08): when a by-value variants snapshot is present, emit one
+  // autoTable row per tier — Qty/Unit Price/Amount derived ONLY from
+  // variantsSnapshot (D-17 G4 by-value rule; no PrintJob/UserProfile reads).
+  // When absent, fall back to the original single-row collapsed layout
+  // (D-04) unchanged: qty=1, amount = unit price.
+  const body: string[][] =
+    variants && variants.quantities.length > 0
+      ? variants.quantities.map((qty, i) => {
+          const unitPrice = variants.unitPrices[i];
+          const amount = qty * unitPrice;
+          return [
+            description,
+            String(qty),
+            formatCurrency(unitPrice, variants.currency),
+            formatCurrency(amount, variants.currency),
+          ];
+        })
+      : [[
+          description,
+          String(1),
+          formatCurrency(sellingPrice, currency),
+          formatCurrency(sellingPrice, currency),
+        ]];
 
   autoTable(doc, {
     startY,
     head: [['Description', 'Qty', 'Unit Price', 'Amount']],
-    body: [[
-      description,
-      String(qty),
-      formatCurrency(unitPrice, currency),
-      formatCurrency(amount, currency),
-    ]],
+    body,
     theme: 'plain',
     styles: {
       font: FONT_ID,
@@ -164,6 +177,7 @@ function renderLineItems(doc: jsPDF, quote: Quote, startY: number): number {
 function renderTotals(doc: jsPDF, quote: Quote, startY: number): number {
   const { sellingPrice, shippingCost, resolvedTaxRate, taxAmount, currency, countryAtSendTime } =
     quote.lineItemsSnapshot;
+  const variants = quote.variantsSnapshot;
   const pageWidth = doc.internal.pageSize.getWidth();
   const rightX = pageWidth - MARGIN_RIGHT;
 
@@ -174,11 +188,33 @@ function renderTotals(doc: jsPDF, quote: Quote, startY: number): number {
   const subtotal = sellingPrice;
   const showShipping = shippingCost > 0;
   const showTax = resolvedTaxRate > 0 && taxAmount > 0;
+  const showVariantsTotal = !!variants && variants.quantities.length > 0;
 
   doc.setFontSize(10);
   doc.setFont(FONT_ID, 'normal');
 
   let y = startY + 16;
+
+  // CONN-03 (D-08): a tier table above with no matching total reads as
+  // broken, so surface an informational "Variant options total" line —
+  // Σ(qty × unitPrice) sourced ONLY from variantsSnapshot. This does NOT
+  // replace Subtotal/Tax/Total below, which continue to read exclusively
+  // from lineItemsSnapshot (D-22 tax-base lock is untouched).
+  if (showVariantsTotal) {
+    const variantsTotal = variants!.quantities.reduce(
+      (sum, qty, i) => sum + qty * variants!.unitPrices[i],
+      0,
+    );
+    doc.setFont(FONT_ID, 'bold');
+    doc.text(
+      `Variant options total: ${formatCurrency(variantsTotal, variants!.currency)}`,
+      rightX,
+      y,
+      { align: 'right' },
+    );
+    doc.setFont(FONT_ID, 'normal');
+    y += 14;
+  }
 
   // Subtotal
   doc.text(`Subtotal: ${formatCurrency(subtotal, currency)}`, rightX, y, { align: 'right' });
