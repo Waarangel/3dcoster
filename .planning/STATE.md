@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 40
 current_phase_name: insight-layer
 status: executing
-stopped_at: Completed 40-03-PLAN.md
-last_updated: "2026-07-08T23:43:45.834Z"
+stopped_at: Completed 40-04-PLAN.md
+last_updated: "2026-07-09T12:37:20.402Z"
 last_activity: 2026-07-08
 last_activity_desc: Phase 40 execution started
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 40 (insight-layer) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-07-08 — Phase 40 execution started
 
@@ -93,6 +93,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 40-02: PeriodPicker exposes an onCustomRangeInvalidChange callback (beyond the plan's onRangeChange) so ReportsSection preserves the T-40-03 backwards-custom-range guard without re-deriving picker state — Lifting mode/year/month/quarter/custom state into PeriodPicker without a validity callback would have broken the Download-button disable + warning message, or forced ReportsSection to redeclare the same state machine the plan exists to eliminate
 - [Phase ?]: 40-03: PeriodPicker gained an additive 'all-time' RangeMode + defaultMode prop (default 'month' unchanged) so Insights can satisfy the locked D-04 all-time default without forking a second range picker
 - [Phase ?]: 40-03: InsightsPanel filters sales into the selected PeriodPicker range itself before calling computeWageHeadline/computeProductRanking, since insights.ts derivations have no built-in range parameter
+- [Phase 40-04]: PrinterROI computes payback from the full sales history, not the PeriodPicker-scoped range used for wage/ranking — payback is a lifetime cumulative metric
+- [Phase 40-04]: PrinterSettings reads sales/failureEvents/maintenanceEvents/materials/fxTable via its own hooks instead of threading five new props through App.tsx; old gross asking-price recovery math removed so both payback surfaces agree (D-16/P-01 closed)
 
 ### Pending Todos
 
@@ -108,8 +110,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-08T23:43:45.827Z
-Stopped at: Completed 40-03-PLAN.md
+Last session: 2026-07-09T12:37:20.395Z
+Stopped at: Completed 40-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -138,3 +140,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 40 P01 | 20min | 3 tasks | 9 files |
 | Phase 40-insight-layer P02 | 3min | 2 tasks | 5 files |
 | Phase 40 P03 | 5min | 3 tasks | 12 files |
+| Phase 40 P04 | ~5min | 3 tasks | 3 files |

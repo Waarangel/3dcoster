@@ -161,7 +161,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 40-04-PLAN.md — Per-printer payback/ROI cards + PrinterSettings recovery-bar reconciliation (INS-02, D-16)
+- [x] 40-04-PLAN.md — Per-printer payback/ROI cards + PrinterSettings recovery-bar reconciliation (INS-02, D-16)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -256,7 +256,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 |-------|----------------|--------|-----------|
 | 38. Foundation | 4/4 | Complete    | 2026-07-05 |
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
-| 40. Insight Layer | 3/5 | In Progress|  |
+| 40. Insight Layer | 4/5 | In Progress|  |
 | 41. Quick-Win Features | 0/TBD | Not started | - |
 | 42. GDPR & Onboarding | 0/TBD | Not started | - |
 | 43. Pro Backend | 0/TBD | Not started | - |
