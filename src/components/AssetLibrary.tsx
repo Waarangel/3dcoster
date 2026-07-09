@@ -10,7 +10,7 @@ import { ResetAssetsModal } from './ResetAssetsModal';
 import { RepriceReviewModal } from './RepriceReviewModal';
 import { isCustomCategory } from '../utils/assetCategories';
 import { detectIsAbrasive } from '../utils/abrasive';
-import { resolveHygroscopicityClass, resolveMoistureRisk, daysSinceOpened } from '../utils/hygroscopicity';
+import { detectHygroscopicityClass, resolveHygroscopicityClass, resolveMoistureRisk, daysSinceOpened } from '../utils/hygroscopicity';
 import type { HygroscopicityClass } from '../types';
 import { StockBadge } from './inventory/StockBadge';
 import { LowStockBar } from './inventory/LowStockBar';
@@ -258,6 +258,13 @@ function stockUnit(asset: Pick<Asset, 'category' | 'unit' | 'unitsPerPackage'>):
     return { unit: 'spools', perUnit: asset.unitsPerPackage };
   }
   return { unit: asset.unit || 'units', perUnit: 1 };
+}
+
+// Phase 41 LIFE-01: date-only ISO (yyyy-mm-dd) string for a date-input value
+// or a dryingLog entry (D-10). Mirrors LogMaintenanceModal.tsx's
+// toDateInputValue.
+function toDateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
 type AssetRowCallbacks = {
@@ -641,6 +648,10 @@ export function AssetLibrary({
   const stockOnHandId = useId();
   const lowStockThresholdId = useId();
   const abrasiveOverrideId = useId();
+  // Phase 41 LIFE-01 (D-09/D-11): Spool section field ids.
+  const openedAtId = useId();
+  const storageLocationId = useId();
+  const hygroscopicityOverrideId = useId();
   const formErrorId = useId();
 
   const [isAdding, setIsAdding] = useState(false);
@@ -946,6 +957,12 @@ export function AssetLibrary({
         isAbrasive: formData.isAbrasive,
         currency: formData.currency ?? userCurrency,
         tags: formData.tags,
+        // Phase 41 LIFE-01 (D-09/D-11): spool lifecycle fields — all optional,
+        // undefined = untracked / auto-detect (mirrors isAbrasive above).
+        openedAt: formData.openedAt,
+        storageLocation: formData.storageLocation,
+        dryingLog: formData.dryingLog,
+        hygroscopicityOverride: formData.hygroscopicityOverride,
       };
 
       if (editingId) {
@@ -1568,6 +1585,101 @@ export function AssetLibrary({
                       <option value="no">Not abrasive</option>
                     </Select>
                   </div>
+                )}
+                {/* Phase 41 LIFE-01 (D-09/D-11/D-12): spool lifecycle — opened
+                    date, storage location, drying log, hygroscopicity
+                    override. Filament-only, mirrors the abrasive-override
+                    block's structure. */}
+                {formData.category === 'filament' && (
+                  <>
+                    <div className="col-span-2 pt-1 mt-1 border-t border-slate-600/50">
+                      <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide pt-1">Spool</h3>
+                    </div>
+                    <div>
+                      <label htmlFor={openedAtId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                        <span>Opened date (optional)</span>
+                        <InfoTooltip text="When this spool was opened / removed from its sealed bag. Used with the drying log to estimate moisture risk. 'New spool' sets today's date and clears the drying log." />
+                      </label>
+                      <div className="flex gap-2">
+                        <Input
+                          id={openedAtId}
+                          type="date"
+                          compact
+                          className="flex-1"
+                          value={formData.openedAt ? toDateInputValue(formData.openedAt) : ''}
+                          onChange={e => setFormData({
+                            ...formData,
+                            openedAt: e.target.value ? new Date(`${e.target.value}T00:00:00`) : undefined,
+                          })}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          btnSize="sm"
+                          className="whitespace-nowrap"
+                          title="Mark this as a freshly opened spool — sets today's date and clears the drying log"
+                          onClick={() => setFormData({ ...formData, openedAt: new Date(), dryingLog: [] })}
+                        >
+                          New spool
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor={storageLocationId} className="block text-xs text-slate-400 mb-1">Storage location (optional)</label>
+                      <Input
+                        id={storageLocationId}
+                        type="text"
+                        value={formData.storageLocation || ''}
+                        onChange={e => setFormData({ ...formData, storageLocation: e.target.value })}
+                        placeholder="e.g., Dry box #2"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                        <span>Drying log</span>
+                        <InfoTooltip text="Logging a drying session resets the moisture-risk clock to today." />
+                      </label>
+                      <div className="flex items-center justify-between gap-2 bg-slate-800/50 border border-slate-600/50 rounded-md px-3 py-2">
+                        <span className="text-sm text-slate-300">
+                          {formData.dryingLog && formData.dryingLog.length > 0
+                            ? `Last dried ${formData.dryingLog[formData.dryingLog.length - 1]}, ${formData.dryingLog.length} session${formData.dryingLog.length === 1 ? '' : 's'}`
+                            : 'No drying sessions logged'}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          btnSize="sm"
+                          onClick={() => setFormData({
+                            ...formData,
+                            dryingLog: [...(formData.dryingLog ?? []), toDateInputValue(new Date())],
+                          })}
+                        >
+                          Log drying today
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor={hygroscopicityOverrideId} className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                        <span>Moisture sensitivity</span>
+                        <InfoTooltip text="Auto-detect guesses HIGH/MEDIUM/LOW from the name and type (e.g. nylon = HIGH). Override here if this material behaves differently." />
+                      </label>
+                      <Select
+                        id={hygroscopicityOverrideId}
+                        value={formData.hygroscopicityOverride ?? 'auto'}
+                        onChange={e => setFormData({
+                          ...formData,
+                          hygroscopicityOverride: e.target.value === 'auto' ? undefined : e.target.value as HygroscopicityClass,
+                        })}
+                      >
+                        <option value="auto">
+                          Auto-detect ({detectHygroscopicityClass(formData.filamentType, formData.name ?? '')})
+                        </option>
+                        <option value="HIGH">HIGH</option>
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="LOW">LOW</option>
+                      </Select>
+                    </div>
+                  </>
                 )}
               </>
             )}
