@@ -7,3 +7,4 @@ export { TrashIcon } from './TrashIcon';
 export { CloseIcon } from './CloseIcon';
 export { CheckIcon } from './CheckIcon';
 export { TrendingUpIcon } from './TrendingUpIcon';
+export { SlidersIcon } from './SlidersIcon';

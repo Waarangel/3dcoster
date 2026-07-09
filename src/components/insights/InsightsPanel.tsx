@@ -7,11 +7,13 @@ import { useFxRates } from '../../hooks/useFxRates';
 import type { SalesReportRange } from '../../utils/salesReportAggregates';
 import { resolveDateRange } from '../../utils/periodRange';
 import { computeProductRanking, computeWageHeadline, computePrinterPayback } from '../../utils/insights';
-import { EmptyState, PeriodPicker } from '../ui';
-import { TrendingUpIcon } from '../ui/icons';
+import { EmptyState, PeriodPicker, Select, InfoTooltip, Button } from '../ui';
+import { TrendingUpIcon, SlidersIcon } from '../ui/icons';
+import { NewBadge } from '../NewBadge';
 import { WageInsight } from './WageInsight';
 import { ProductRanking } from './ProductRanking';
 import { PrinterROI } from './PrinterROI';
+import { WhatIfSimulator } from './WhatIfSimulator';
 
 interface InsightsPanelProps {
   /** 'jobs' for the empty-state CTA (40-03); 'settings' for the printer-payback missing-price CTA (40-04). */
@@ -42,6 +44,13 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
 
   // D-04: all-time is the default scope; the shared PeriodPicker (40-02) narrows it.
   const [range, setRange] = useState<SalesReportRange>(() => resolveDateRange('all-time', ALL_TIME_PARTS));
+
+  // Phase 40 Plan 05 (INS-03/D-09): job picker for the shared WhatIfSimulator —
+  // the SAME component the JobsManager job-row action opens, so behavior is
+  // identical from either entry point.
+  const [whatIfJobId, setWhatIfJobId] = useState('');
+  const [showWhatIf, setShowWhatIf] = useState(false);
+  const whatIfJob = jobs.find(j => j.id === whatIfJobId) ?? null;
 
   const yearOptions = useMemo(() => {
     const years = new Set<number>([new Date().getFullYear()]);
@@ -119,7 +128,41 @@ export function InsightsPanel({ onSwitchTab }: InsightsPanelProps) {
 
       <PrinterROI payback={printerPayback} userCurrency={userProfile.currency} onSwitchTab={onSwitchTab} />
 
-      {/* 40-05: what-if simulator section extends this orchestrator here. */}
+      {/* Phase 40 Plan 05 (INS-03/D-09): what-if simulator job picker — opens the
+          SAME shared WhatIfSimulator the JobsManager job-row action opens. */}
+      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 mt-4">
+        <div className="flex items-center gap-1.5 mb-3">
+          <h3 className="text-sm font-medium text-slate-300">What-if simulator</h3>
+          <InfoTooltip text="Pick a saved job and drag the sliders to see how filament price, electricity rate, or failure rate would change its numbers. Nothing is saved." />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Select
+            selectSize="sm"
+            value={whatIfJobId}
+            onChange={(e) => setWhatIfJobId(e.target.value)}
+            aria-label="Select a job to simulate"
+          >
+            <option value="">Select a job…</option>
+            {jobs.map(j => (
+              <option key={j.id} value={j.id}>{j.name}</option>
+            ))}
+          </Select>
+          <div className="relative inline-flex">
+            <Button
+              variant="secondary"
+              btnSize="sm"
+              disabled={!whatIfJobId}
+              onClick={() => setShowWhatIf(true)}
+            >
+              <SlidersIcon className="w-4 h-4 mr-1.5" />
+              Simulate
+            </Button>
+            <NewBadge feature="what-if-simulator" className="absolute -top-1 -right-1 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+
+      <WhatIfSimulator job={whatIfJob} isOpen={showWhatIf} onClose={() => setShowWhatIf(false)} />
     </div>
   );
 }

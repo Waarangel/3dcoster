@@ -7,11 +7,13 @@ import { db } from '../db/database';
 import { Button, EditButton, DeleteButton, IconButton, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
 import { ClipboardListIcon } from './ui/icons';
 import { SearchIcon } from './ui/icons';
+import { SlidersIcon } from './ui/icons';
 import { NewBadge } from './NewBadge';
 import { PrintQuoteModal } from './PrintQuoteModal';
 import { DeclineQuoteModal } from './DeclineQuoteModal';
 import { RecordSaleModal } from './RecordSaleModal';
 import { LogFailureModal, type LogFailureModalPrefill } from './LogFailureModal';
+import { WhatIfSimulator } from './insights/WhatIfSimulator';
 import { dominantMaterialId } from '../db/failureRate';
 import { SaleRow } from './SaleRow';
 import { formatQuoteNumber } from '../utils/format';
@@ -131,6 +133,8 @@ type JobCardProps = {
   onDeleteSale: (sale: Sale) => void;
   /** Phase 39 FAIL-01: opens LogFailureModal pre-filled with this job's printer + dominant material + total filament grams. */
   onLogFailure: (job: PrintJob) => void;
+  /** Phase 40 Plan 05 (INS-03): opens the shared WhatIfSimulator for this job. */
+  onWhatIf: (job: PrintJob) => void;
   /** PERF-09: returns the lifted quotes slice for this job (replaces per-row useQuotes() call). */
   getQuotesForJob: (jobId: string) => Quote[];
   /** PERF-09: updateQuote from the single parent useQuotes() call, threaded down for the Reopen action. */
@@ -498,6 +502,7 @@ export const JobCard = memo(function JobCard({
   onEditSale,
   onDeleteSale,
   onLogFailure,
+  onWhatIf,
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
@@ -834,6 +839,19 @@ export const JobCard = memo(function JobCard({
               />
               <NewBadge feature="log-failure" className="absolute -top-1 -right-1 pointer-events-none" />
             </div>
+            {/* Phase 40 Plan 05 (INS-03/D-09): opens the shared WhatIfSimulator
+                pre-filled from this job — icon action per the UI Conventions,
+                mirroring the Log Failure icon-button pattern. */}
+            <div className="relative inline-flex">
+              <IconButton
+                label={`What-if ${job.name}`}
+                icon={<SlidersIcon className="w-4 h-4" />}
+                variant="ghost"
+                className="text-blue-400 hover:text-blue-300"
+                onClick={(e) => { e.stopPropagation(); onWhatIf(job); }}
+              />
+              <NewBadge feature="what-if-simulator" className="absolute -top-1 -right-1 pointer-events-none" />
+            </div>
           </div>
 
           {/* D-23: Unified "Orders" section per job. OrdersSection internally
@@ -897,6 +915,8 @@ type JobRowProps = {
   onDeleteSale: (sale: Sale) => void;
   /** Phase 39 FAIL-01: opens LogFailureModal pre-filled with this job's printer + dominant material + total filament grams. */
   onLogFailure: (job: PrintJob) => void;
+  /** Phase 40 Plan 05 (INS-03): opens the shared WhatIfSimulator for this job. */
+  onWhatIf: (job: PrintJob) => void;
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
@@ -931,6 +951,7 @@ const JobRow = ({
   onEditSale,
   onDeleteSale,
   onLogFailure,
+  onWhatIf,
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
@@ -964,6 +985,7 @@ const JobRow = ({
       onEditSale={onEditSale}
       onDeleteSale={onDeleteSale}
       onLogFailure={onLogFailure}
+      onWhatIf={onWhatIf}
       onStartConversion={onStartConversion}
       onEditQuote={onEditQuote}
       onDeclineQuote={onDeclineQuote}
@@ -1096,6 +1118,11 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
   // Task 3) prefill is undefined.
   const [logFailurePrefill, setLogFailurePrefill] = useState<LogFailureModalPrefill | null>(null);
   const [showLogFailureModal, setShowLogFailureModal] = useState(false);
+  // Phase 40 Plan 05 (INS-03/D-09): WhatIfSimulator open state, mirroring the
+  // LogFailureModal state pair above. whatIfJob carries the job to prefill;
+  // showWhatIf controls the shared Modal's isOpen.
+  const [whatIfJob, setWhatIfJob] = useState<PrintJob | null>(null);
+  const [showWhatIf, setShowWhatIf] = useState(false);
   // Convert to Sale state (plan 16-12, D-20). When non-null, the Record Sale modal
   // opens in "conversion" mode pre-populated from this Quote's snapshot; on save
   // the Sale write + Quote 'converted' patch run in one Dexie transaction.
@@ -1294,6 +1321,18 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     setLogFailurePrefill(null);
   }, []);
 
+  // Phase 40 Plan 05 (INS-03/D-09): opens the shared WhatIfSimulator prefilled
+  // from this job row. The simulator sources its own supporting config
+  // (electricity/printers/materials) via hooks, so no extra props are needed here.
+  const handleOpenWhatIf = useCallback((job: PrintJob) => {
+    setWhatIfJob(job);
+    setShowWhatIf(true);
+  }, []);
+
+  const handleCloseWhatIf = useCallback(() => {
+    setShowWhatIf(false);
+  }, []);
+
   // D-27: Edit Quote — opens PrintQuoteModal in edit mode for the given Pending Quote.
   const handleStartEditQuote = useCallback((quote: Quote) => {
     const job = jobs.find(j => j.id === quote.printJobId);
@@ -1484,6 +1523,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     onEditSale: handleEditSaleStable,
     onDeleteSale: handleDeleteSaleStable,
     onLogFailure: handleLogFailure,
+    onWhatIf: handleOpenWhatIf,
     onStartConversion: handleStartConversion,
     onEditQuote: handleStartEditQuote,
     onDeclineQuote: handleStartDecline,
@@ -1496,7 +1536,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     onCancelAddTag: handleCancelAddTag,
     onSubmitAddTag: handleSubmitAddTag,
     onRemoveTag: handleRemoveTag,
-  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, getQuotesForJob, updateQuoteFromHook, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleLogFailure, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
+  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, getQuotesForJob, updateQuoteFromHook, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleLogFailure, handleOpenWhatIf, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1701,6 +1741,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
                       onEditSale={handleEditSaleStable}
                       onDeleteSale={handleDeleteSaleStable}
                       onLogFailure={handleLogFailure}
+                      onWhatIf={handleOpenWhatIf}
                       onStartConversion={handleStartConversion}
                       onEditQuote={handleStartEditQuote}
                       onDeclineQuote={handleStartDecline}
@@ -1825,6 +1866,15 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
         printerInstances={printerInstances}
         filamentAssets={filamentAssets}
         prefill={logFailurePrefill ?? undefined}
+      />
+
+      {/* Phase 40 Plan 05 (INS-03/D-09): shared WhatIfSimulator — same component
+          the Insights tab job picker opens. Sources its own supporting config
+          (electricity/printers/materials) via hooks. */}
+      <WhatIfSimulator
+        job={whatIfJob}
+        isOpen={showWhatIf}
+        onClose={handleCloseWhatIf}
       />
 
     </div>

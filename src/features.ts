@@ -28,6 +28,9 @@ export const featureReleases: Record<string, Date> = {
   'maintenance-log': new Date('2026-07-06'),
   // v2.0 Phase 40 — Insight Layer (INS-01): Insights tab + target-wage Setting
   'insights-tab': new Date('2026-07-08'),
+  // v2.0 Phase 40 — Insight Layer (INS-03): what-if margin simulator, reachable
+  // from a JobsManager job row and from the Insights tab job picker (D-09)
+  'what-if-simulator': new Date('2026-07-08'),
   // Add new features here with their release date
 };
 
