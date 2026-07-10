@@ -15,6 +15,7 @@ import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
 import { MaintenanceAlertModal } from './components/MaintenanceAlertModal';
 import { NewBadge } from './components/NewBadge';
+import { OnboardingOverlay } from './components/onboarding/OnboardingOverlay';
 import { Footer } from './components/Footer';
 import { UpdateBanner } from './components/UpdateBanner';
 import { AnnouncementBanner } from './components/AnnouncementBanner';
@@ -510,6 +511,7 @@ function App() {
       </main>
 
       <Footer variant="minimal" />
+      <OnboardingOverlay navigateToTab={navigateToTab} />
     </div>
     </ToastProvider>
   );

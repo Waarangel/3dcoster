@@ -36,6 +36,10 @@ export const featureReleases: Record<string, Date> = {
   'quote-variants': new Date('2026-07-09'),
   'spool-lifecycle': new Date('2026-07-09'),
   'tax-threshold': new Date('2026-07-09'),
+  // v2.0 Phase 42 — GDPR & Onboarding (ONBD-01): first-run guided setup
+  // wizard. The consent banner and legal pages are NOT features (D-CONTEXT)
+  // — only the wizard itself is user-facing and gets a NEW badge.
+  'onboarding-wizard': new Date('2026-07-09'),
   // Add new features here with their release date
 };
 
