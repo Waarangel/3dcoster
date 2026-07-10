@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 42
 current_phase_name: gdpr-onboarding
 status: executing
-stopped_at: Completed 42-02-PLAN.md
-last_updated: "2026-07-10T11:11:28.755Z"
+stopped_at: Completed 42-03-PLAN.md
+last_updated: "2026-07-10T11:21:31.871Z"
 last_activity: 2026-07-10
 last_activity_desc: Phase 42 execution started
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 24
-  completed_plans: 22
+  completed_plans: 23
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 42 (gdpr-onboarding) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-07-10 — Phase 42 execution started
 
@@ -114,6 +114,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: CookieSettingsLink renders a raw button with allow-raw-html justification instead of the shared Button primitive, matching the JobsManager.tsx overflow-toggle precedent
 - [Phase 42]: 42-02: shouldShow's auto-skip (instances.length===0) only applies while onboardingStep is still 0 - once step > 0 the overlay stays visible/resumable regardless of owned-printer count, otherwise the wizard's own step-0 tile write immediately re-triggers its own auto-skip and breaks resume-after-reload
 - [Phase 42]: 42-02: filament/price-a-job wizard steps advance via a baseline-count-on-entry pattern (materials.length/jobs.length captured on step entry, advance when it increases) instead of a raw count===0 check, since the printer+filament catalogs are auto-seeded into db.materials on a brand-new DB
+- [Phase 42]: 42-03: Privacy Policy processor list traces line-by-line to docs/DATA-FLOW-INVENTORY.md (built from vercel.json connect-src, cross-checked against grep fetch( src/) — inventory updated first, policy second (Pitfall C-05 defense)
+- [Phase 42]: 42-03: Terms of Service Pro-tier section stays fully generic (no prices/cycles/refunds) per D-06 — a regex guard in TermsPage.test.tsx prevents an accidental price leak before Phase 43 sets real pricing
 
 ### Pending Todos
 
@@ -129,8 +131,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-10T11:11:28.748Z
-Stopped at: Completed 42-02-PLAN.md
+Last session: 2026-07-10T11:21:31.863Z
+Stopped at: Completed 42-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -168,3 +170,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 41 P03 | 6min | 3 tasks | 3 files |
 | Phase 42 P01 | 20min | 3 tasks | 13 files |
 | Phase 42 P02 | 35min | 3 tasks | 8 files |
+| Phase 42 P03 | 12min | 2 tasks | 8 files |

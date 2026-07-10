@@ -59,8 +59,8 @@
 ### GDPR & Legal (hard gate before backend)
 
 - [x] **GDPR-01**: Cookie/consent banner (vanilla-cookieconsent v3) with **equal-weight Accept/Reject on the first layer**, granular categories, revocable at any time, consent stored — Vercel Analytics and any future script loads only after opt-in; skipped entirely in the Tauri desktop app
-- [ ] **GDPR-02**: EU/GDPR-compliant privacy policy page — what's collected, lawful basis, retention, data-subject rights (access/export/delete), processors (Vercel, Supabase, FX API), contact
-- [ ] **GDPR-03**: Terms of Service page for the Pro tier
+- [x] **GDPR-02**: EU/GDPR-compliant privacy policy page — what's collected, lawful basis, retention, data-subject rights (access/export/delete), processors (Vercel, Supabase, FX API), contact
+- [x] **GDPR-03**: Terms of Service page for the Pro tier
 
 ### Pro Backend & Hosted Quotes
 
@@ -126,8 +126,8 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | LIFE-01 | Phase 41 | Complete |
 | LIFE-02 | Phase 41 | Complete |
 | GDPR-01 | Phase 42 | Complete |
-| GDPR-02 | Phase 42 | Pending |
-| GDPR-03 | Phase 42 | Pending |
+| GDPR-02 | Phase 42 | Complete |
+| GDPR-03 | Phase 42 | Complete |
 | ONBD-01 | Phase 42 | Complete |
 | PRO-01 | Phase 43 | Pending |
 | PRO-02 | Phase 43 | Pending |
