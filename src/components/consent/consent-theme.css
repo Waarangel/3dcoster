@@ -1,0 +1,49 @@
+/* Phase 42 GDPR-01 (D-01) — theme vanilla-cookieconsent to the slate-900/blue-600
+ * design system. Scoped to #cc-main so it never leaks into the rest of the app.
+ *
+ * Pitfall 5 / T-42-01: Accept (primary) and Reject (secondary) buttons keep
+ * IDENTICAL padding, font-weight, and border-radius — only background/text
+ * color differ. This preserves the library's `equalWeightButtons: true`
+ * default at the styling layer, not just the config layer.
+ */
+#cc-main {
+  --cc-font-family: inherit;
+  --cc-modal-border-radius: 0.75rem;
+  --cc-btn-border-radius: 0.5rem;
+
+  --cc-bg: #0f172a; /* slate-900 */
+  --cc-primary-color: #f1f5f9; /* slate-100 */
+  --cc-secondary-color: #94a3b8; /* slate-400 */
+
+  --cc-btn-primary-bg: #2563eb; /* blue-600 */
+  --cc-btn-primary-color: #ffffff;
+  --cc-btn-primary-border-color: var(--cc-btn-primary-bg);
+  --cc-btn-primary-hover-bg: #1d4ed8; /* blue-700 */
+  --cc-btn-primary-hover-color: #ffffff;
+  --cc-btn-primary-hover-border-color: var(--cc-btn-primary-hover-bg);
+
+  /* Reject/manage button — same shape as primary (Pitfall 5), distinguished
+   * only by a lower-contrast slate fill, never a smaller/outline treatment. */
+  --cc-btn-secondary-bg: #334155; /* slate-700 */
+  --cc-btn-secondary-color: #f1f5f9;
+  --cc-btn-secondary-border-color: var(--cc-btn-secondary-bg);
+  --cc-btn-secondary-hover-bg: #475569; /* slate-600 */
+  --cc-btn-secondary-hover-color: #ffffff;
+  --cc-btn-secondary-hover-border-color: var(--cc-btn-secondary-hover-bg);
+
+  --cc-separator-border-color: #1e293b; /* slate-800 */
+  --cc-toggle-on-bg: var(--cc-btn-primary-bg);
+  --cc-toggle-off-bg: #475569;
+  --cc-toggle-readonly-bg: #334155;
+
+  --cc-cookie-category-block-bg: #1e293b; /* slate-800 */
+  --cc-cookie-category-block-border: #1e293b;
+  --cc-cookie-category-block-hover-bg: #273549;
+  --cc-cookie-category-block-hover-border: #273549;
+  --cc-cookie-category-expanded-block-hover-bg: #1e293b;
+
+  --cc-overlay-bg: rgba(2, 6, 23, 0.75);
+  --cc-footer-bg: #1e293b;
+  --cc-footer-color: var(--cc-secondary-color);
+  --cc-footer-border-color: #1e293b;
+}

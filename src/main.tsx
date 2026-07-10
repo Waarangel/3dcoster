@@ -2,12 +2,13 @@ import { StrictMode, Component, Suspense } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.tsx'
 import { lazyWithRetry } from './utils/lazyWithRetry.ts'
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt.tsx'
 import { ScrollToTop } from './components/ScrollToTop.tsx'
+import { CookieConsentManager } from './components/consent/CookieConsentManager.tsx'
+import { AnalyticsGate } from './components/consent/AnalyticsGate.tsx'
 
 // Lazy load marketing pages (not needed for calculator startup).
 // lazyWithRetry auto-reloads once on a stale-chunk 404 after a redeploy,
@@ -110,7 +111,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <Root />
+      {/* Phase 42 GDPR-01/D-03: web-only. Desktop ships zero analytics —
+          nothing to consent to, so no banner and no gate mount there. */}
+      {!__IS_TAURI__ && <CookieConsentManager />}
     </ErrorBoundary>
-    <Analytics />
+    {!__IS_TAURI__ && <AnalyticsGate />}
   </StrictMode>,
 )
