@@ -607,6 +607,14 @@ export interface UserProfile {
   // Phase 41 LIFE-02 (D-16): user-entered threshold label, used only when
   // taxJurisdiction === 'OTHER'. Optional, non-indexed.
   customTaxThresholdLabel?: string;
+
+  // Phase 42 ONBD-01: first-run onboarding wizard progress. Optional,
+  // non-indexed JSON-in-settings additions requiring no Dexie migration
+  // (DB is at v12), mirroring taxJurisdiction. 0=printer, 1=filament,
+  // 2=price-a-job. onboardingCompletedAt presence (skip or finish) means
+  // the wizard is done and must never be shown again.
+  onboardingStep?: number;
+  onboardingCompletedAt?: string;
 }
 
 // Built-in shipping carriers
