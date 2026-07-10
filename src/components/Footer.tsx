@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { CookieSettingsLink } from './consent/CookieSettingsLink';
 
 interface FooterProps {
   variant?: 'full' | 'minimal';
@@ -136,6 +137,9 @@ export function Footer({ variant = 'full' }: FooterProps) {
                 >
                   Source Code
                 </a>
+              </li>
+              <li>
+                <CookieSettingsLink />
               </li>
             </ul>
           </div>

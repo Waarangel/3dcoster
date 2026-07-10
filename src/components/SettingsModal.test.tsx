@@ -15,6 +15,14 @@ import type { ElectricityConfig, ShippingConfig, MarketplaceFees, UserProfile } 
 // All DOM queries target document.body (not the container div).
 // ---------------------------------------------------------------------------
 
+// __IS_TAURI__ is a Vite `define` global injected at build time (vite.config.ts),
+// but vitest.config.ts doesn't include that define — see App.test.tsx for the
+// origin of this stub. Phase 42 (D-02) SettingsModal's Data tab now reads
+// __IS_TAURI__ to gate the Cookie settings entry; the arrow-key nav tests below
+// navigate through every tab (including Data), so this must be stubbed for the
+// whole file, not just a Data-tab-specific test.
+vi.stubGlobal('__IS_TAURI__', false);
+
 const defaultElectricity: ElectricityConfig = { costPerKwh: 0.15 };
 
 const defaultShipping: ShippingConfig = {

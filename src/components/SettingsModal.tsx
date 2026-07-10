@@ -5,6 +5,7 @@ import { resolveTaxRate } from '../utils/taxResolution';
 import { US_MARKETPLACE_FACILITATOR_NOTE } from '../data/taxRates';
 import { NewBadge } from './NewBadge';
 import { BackupRestoreSection } from './BackupRestoreSection';
+import { CookieSettingsLink } from './consent/CookieSettingsLink';
 import { Button, IconButton, EditButton, DeleteButton, RemoveButton, Input, Select, SidePanel, FieldWarning } from './ui';
 import { CheckIcon } from './ui/icons';
 import { InfoTooltip } from './ui/InfoTooltip';
@@ -1185,7 +1186,24 @@ export function SettingsModal({
 
           {/* Data Tab — backup/restore. Content lives in its own component
               file (this modal sits at the 800-line cap). */}
-          {activeTab === 'data' && <BackupRestoreSection />}
+          {activeTab === 'data' && (
+            <div className="space-y-6">
+              <BackupRestoreSection />
+
+              {/* Phase 42 GDPR-01 (D-02) — web-only cookie/privacy control.
+                  Desktop ships zero analytics (D-03): nothing to consent to,
+                  so this entry never appears in the Tauri build. */}
+              {!__IS_TAURI__ && (
+                <div className="pt-4 border-t border-slate-700">
+                  <h3 className="text-sm font-medium text-slate-300 mb-2">Privacy &amp; cookies</h3>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Reopen your analytics-cookie choices at any time. Changes take effect immediately, no reload needed.
+                  </p>
+                  <CookieSettingsLink className="inline-flex items-center rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium px-4 py-2 transition-colors" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
     </SidePanel>
   );
