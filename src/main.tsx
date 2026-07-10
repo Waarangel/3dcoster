@@ -20,6 +20,7 @@ const RoadmapPage = lazyWithRetry(() => import('./pages/RoadmapPage.tsx').then(m
 const FeedbackPage = lazyWithRetry(() => import('./pages/FeedbackPage.tsx').then(m => ({ default: m.FeedbackPage })), 'FeedbackPage')
 const FAQPage = lazyWithRetry(() => import('./pages/FAQPage.tsx').then(m => ({ default: m.FAQPage })), 'FAQPage')
 const ChangelogPage = lazyWithRetry(() => import('./pages/ChangelogPage.tsx').then(m => ({ default: m.ChangelogPage })), 'ChangelogPage')
+const PrivacyPage = lazyWithRetry(() => import('./pages/PrivacyPage.tsx').then(m => ({ default: m.PrivacyPage })), 'PrivacyPage')
 
 // Page loading fallback
 function PageLoading() {
@@ -96,6 +97,7 @@ function Root() {
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
             </>
           )}
         </Routes>

@@ -119,6 +119,11 @@ export function Footer({ variant = 'full' }: FooterProps) {
             <h3 className="text-white font-medium mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li>
+                <Link to="/privacy" className="text-slate-400 hover:text-slate-300 transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
                 <a
                   href="https://github.com/Waarangel/3dcoster/blob/main/LICENSE"
                   target="_blank"
