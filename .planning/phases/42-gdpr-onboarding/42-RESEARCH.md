@@ -641,19 +641,19 @@ export function useUserProfile() {
 
 **If this table is empty:** N/A — see rows above. All library/API/source-code claims in this document were verified via `npm view`, official docs fetches, the `gsd-tools package-legitimacy check` seam, or by directly reading installed source files — none are marked `[ASSUMED]` for library behavior. The three items above are project-specific interpretive calls, not unverified technical facts.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Which UI surface is "the calculator's Settings tab" for the Cookie settings entry (D-02)?**
+1. **Which UI surface is "the calculator's Settings tab" for the Cookie settings entry (D-02)?** — RESOLVED: `SettingsModal` (gear icon), confirmed in plan 42-01 Task 3.
    - What we know: Two candidate surfaces exist in the code — the `?tab=settings` route (renders `PrinterSettings`) and the gear-icon `SettingsModal` (renders currency/electricity/shipping/profile settings).
    - What's unclear: CONTEXT.md's wording doesn't disambiguate; both are plausible readings of "Settings."
    - Recommendation: Default to `SettingsModal` (Pitfall 3 rationale) but confirm with the user before implementation — a one-line clarifying question, not a blocking research gap.
 
-2. **Does the D-08 data-flow inventory need to include GitHub API (release checks) and Formspree (feedback), or does CONTEXT.md's "Vercel, Supabase, FX API" list intentionally scope the Privacy Policy narrower for this phase?**
+2. **Does the D-08 data-flow inventory need to include GitHub API (release checks) and Formspree (feedback), or does CONTEXT.md's "Vercel, Supabase, FX API" list intentionally scope the Privacy Policy narrower for this phase?** — RESOLVED: full `connect-src` inventory (all 5 destinations), implemented in plan 42-03.
    - What we know: The actual CSP `connect-src` includes 5 external destinations today, not 3.
    - What's unclear: Whether CONTEXT.md's shorter list was a deliberate simplification (Supabase isn't even live yet — it's future-looking) or an incomplete enumeration.
    - Recommendation: Include all `connect-src` destinations in the inventory — GDPR's accountability principle (PITFALLS.md C-05) requires the policy to match actual processing, and Formspree in particular collects user-entered PII (feedback + optional reply email), which is squarely in scope for a privacy policy regardless of how CONTEXT.md phrased the summary.
 
-3. **Should the Playwright E2E harness live at the repo root (`e2e/`, `playwright.config.ts`) or under `src/`?**
+3. **Should the Playwright E2E harness live at the repo root (`e2e/`, `playwright.config.ts`) or under `src/`?** — RESOLVED: root-level `e2e/` + `playwright.config.ts`, implemented in plan 42-04.
    - What we know: Vitest's `include` glob is scoped to `src/**/*.test.ts(x)`; Playwright specs are a different test runner with a different invocation (`playwright test`, not `vitest run`) and would be accidentally picked up by neither `vitest run` nor by the `lint:no-raw-html` script if placed correctly outside `src/`.
    - What's unclear: Nothing technical — this is a project convention choice, not a research gap.
    - Recommendation: Root-level `e2e/` directory, matching common Playwright project convention and keeping it clearly separate from the Vitest unit-test suite; add `npm run test:e2e` script.
