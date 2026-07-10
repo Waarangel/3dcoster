@@ -32,7 +32,16 @@ export function useOnboarding(): UseOnboardingResult {
 
   const isDone = Boolean(profile.onboardingCompletedAt);
   const step = profile.onboardingStep ?? 0;
-  const shouldShow = !profileLoading && !instancesLoading && !isDone && instances.length === 0;
+  // Auto-skip only applies to a never-started wizard (step 0): a user who
+  // already owned a printer before ever seeing the overlay is skipped
+  // entirely. Once the wizard has advanced past step 0 — which, for the
+  // printer step, only happens by adding a printer instance — the
+  // instances.length===0 check would otherwise flip false the instant the
+  // user completes step 0 via the wizard's own tile, hiding the overlay
+  // before it can show the filament/price-a-job steps and breaking resume
+  // after a reload mid-wizard. `step > 0` keeps it visible for the rest of
+  // the session and across reloads once real progress has been made.
+  const shouldShow = !profileLoading && !instancesLoading && !isDone && (instances.length === 0 || step > 0);
 
   const advanceStep = useCallback(async (next: number) => {
     await updateProfile({ ...profile, onboardingStep: next });

@@ -126,6 +126,18 @@ describe('useOnboarding — shouldShow (auto-skip / first-run detection)', () =>
     render();
     expect(api().shouldShow).toBe(false);
   });
+
+  it('shouldShow stays true after step > 0 even once a printer instance now exists (resume mid-wizard, not re-triggered auto-skip)', () => {
+    // The user progressed past the printer step (onboardingStep=1) by adding
+    // a printer instance via the wizard's own step-0 tile. A reload (or a
+    // re-render right after the tile write) must not hide the overlay just
+    // because instances.length is now >0 — otherwise "resumes after reload"
+    // (must_haves truth) is broken by the wizard's own step-0 action.
+    profileMock({ onboardingStep: 1 });
+    instancesMock([{ id: 'inst-1', printerConfigId: 'p1', nickname: 'My A1', printHours: 0 }]);
+    render();
+    expect(api().shouldShow).toBe(true);
+  });
 });
 
 describe('useOnboarding — step resolution', () => {
