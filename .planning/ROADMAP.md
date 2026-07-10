@@ -218,7 +218,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 **Wave 1**
 
 - [x] 42-01-PLAN.md — Consent banner: vanilla-cookieconsent v3 (opt-in, equal-weight Accept/Reject), useConsent store, AnalyticsGate (mount-gate + revoke cleanup), web-only mount (desktop strips Analytics), Footer + SettingsModal cookie-settings entries (GDPR-01)
-- [ ] 42-02-PLAN.md — Onboarding wizard: UserProfile onboarding fields + useOnboarding (auto-skip on owned printer instance, Dexie-not-localStorage), OnboardingOverlay/Step 3-step guided real-UI flow, App.tsx mount + NEW-badge (ONBD-01)
+- [x] 42-02-PLAN.md — Onboarding wizard: UserProfile onboarding fields + useOnboarding (auto-skip on owned printer instance, Dexie-not-localStorage), OnboardingOverlay/Step 3-step guided real-UI flow, App.tsx mount + NEW-badge (ONBD-01)
 
 **Wave 2** *(blocked on 42-01 — shared main.tsx / Footer.tsx / package.json)*
 
@@ -284,7 +284,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
-| 42. GDPR & Onboarding | 1/4 | In Progress|  |
+| 42. GDPR & Onboarding | 2/4 | In Progress|  |
 | 43. Pro Backend | 0/TBD | Not started | - |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |

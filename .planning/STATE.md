@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 42
 current_phase_name: gdpr-onboarding
 status: executing
-stopped_at: Completed 42-01-PLAN.md
-last_updated: "2026-07-10T10:55:23.122Z"
+stopped_at: Completed 42-02-PLAN.md
+last_updated: "2026-07-10T11:11:28.755Z"
 last_activity: 2026-07-10
 last_activity_desc: Phase 42 execution started
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 24
-  completed_plans: 21
+  completed_plans: 22
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 42 (gdpr-onboarding) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-07-10 — Phase 42 execution started
 
@@ -112,6 +112,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 41]: 41-03: MoistureRiskBadge and log-drying were added to both the desktop MaterialRow and the mobile MobileCardItem (plan named MaterialRow only) for feature parity with StockBadge/EditButton/DeleteButton, which already exist in both rows.
 - [Phase ?]: Cookie settings entry placed in gear-icon SettingsModal Data tab (not the ?tab=settings PrinterSettings route) per Pitfall 3 disambiguation
 - [Phase ?]: CookieSettingsLink renders a raw button with allow-raw-html justification instead of the shared Button primitive, matching the JobsManager.tsx overflow-toggle precedent
+- [Phase 42]: 42-02: shouldShow's auto-skip (instances.length===0) only applies while onboardingStep is still 0 - once step > 0 the overlay stays visible/resumable regardless of owned-printer count, otherwise the wizard's own step-0 tile write immediately re-triggers its own auto-skip and breaks resume-after-reload
+- [Phase 42]: 42-02: filament/price-a-job wizard steps advance via a baseline-count-on-entry pattern (materials.length/jobs.length captured on step entry, advance when it increases) instead of a raw count===0 check, since the printer+filament catalogs are auto-seeded into db.materials on a brand-new DB
 
 ### Pending Todos
 
@@ -127,8 +129,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-10T10:55:23.114Z
-Stopped at: Completed 42-01-PLAN.md
+Last session: 2026-07-10T11:11:28.748Z
+Stopped at: Completed 42-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -165,3 +167,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 41 P05 | ~20min | 3 tasks | 5 files |
 | Phase 41 P03 | 6min | 3 tasks | 3 files |
 | Phase 42 P01 | 20min | 3 tasks | 13 files |
+| Phase 42 P02 | 35min | 3 tasks | 8 files |
