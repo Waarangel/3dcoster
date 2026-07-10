@@ -29,5 +29,10 @@ src-tauri/target/
 # Vitest coverage output
 coverage/
 
+# Playwright artifacts
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
 # Claude Code local worktrees
 .claude/worktrees/
