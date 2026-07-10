@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 42
-current_phase_name: GDPR & Onboarding
+current_phase_name: gdpr-onboarding
 status: executing
-stopped_at: Phase 42 context gathered
-last_updated: "2026-07-10T00:14:26.768Z"
-last_activity: 2026-07-09
-last_activity_desc: Phase 41 complete, transitioned to Phase 42
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-07-10T10:55:23.122Z"
+last_activity: 2026-07-10
+last_activity_desc: Phase 42 execution started
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
+  total_plans: 24
+  completed_plans: 21
   percent: 50
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–45). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 41 — quick-win-features
+**Current focus:** Phase 42 — gdpr-onboarding
 
 ## Current Position
 
-Phase: 42 — GDPR & Onboarding
-Plan: Not started
+Phase: 42 (gdpr-onboarding) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-07-09 — Phase 41 complete, transitioned to Phase 42
+Last activity: 2026-07-10 — Phase 42 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -110,6 +110,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 41]: 41-03: detectHygroscopicityClass matches nylon by name (nylon|pa6|pa11|pa12|polyamide) in addition to the two CF-nylon FilamentTypes, mirroring abrasive.ts's dual match — closes the FilamentType nylon gap (Pitfall 1).
 - [Phase 41]: 41-03: RISK_THRESHOLDS (HIGH 1/3, MEDIUM 3/7, LOW 14/30 days) shipped verbatim as the user-confirmed values locked at plan-phase — not re-derived.
 - [Phase 41]: 41-03: MoistureRiskBadge and log-drying were added to both the desktop MaterialRow and the mobile MobileCardItem (plan named MaterialRow only) for feature parity with StockBadge/EditButton/DeleteButton, which already exist in both rows.
+- [Phase ?]: Cookie settings entry placed in gear-icon SettingsModal Data tab (not the ?tab=settings PrinterSettings route) per Pitfall 3 disambiguation
+- [Phase ?]: CookieSettingsLink renders a raw button with allow-raw-html justification instead of the shared Button primitive, matching the JobsManager.tsx overflow-toggle precedent
 
 ### Pending Todos
 
@@ -125,9 +127,9 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-09T18:39:00.413Z
-Stopped at: Phase 42 context gathered
-Resume file: .planning/phases/42-gdpr-onboarding/42-CONTEXT.md
+Last session: 2026-07-10T10:55:23.114Z
+Stopped at: Completed 42-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
@@ -162,3 +164,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 41 P04 | 35min | 3 tasks | 7 files |
 | Phase 41 P05 | ~20min | 3 tasks | 5 files |
 | Phase 41 P03 | 6min | 3 tasks | 3 files |
+| Phase 42 P01 | 20min | 3 tasks | 13 files |
