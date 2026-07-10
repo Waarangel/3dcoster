@@ -124,6 +124,11 @@ export function Footer({ variant = 'full' }: FooterProps) {
                 </Link>
               </li>
               <li>
+                <Link to="/terms" className="text-slate-400 hover:text-slate-300 transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
                 <a
                   href="https://github.com/Waarangel/3dcoster/blob/main/LICENSE"
                   target="_blank"

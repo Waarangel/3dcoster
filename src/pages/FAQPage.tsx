@@ -24,7 +24,7 @@ const faqs: FAQItem[] = [
   {
     category: 'getting-started',
     question: 'Is 3DCoster really free?',
-    answer: 'Yes, completely free and open source under the MIT license. No ads, no premium tiers, no data collection. If you find it useful, you can support development via Buy Me a Coffee.',
+    answer: 'Yes, completely free and open source under the MIT license. No ads, no account required, and your project data never leaves your device. See our Privacy Policy for the limited, consent-gated analytics we collect. If you find it useful, you can support development via Buy Me a Coffee.',
   },
   {
     category: 'getting-started',
