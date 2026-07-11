@@ -219,7 +219,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 - [x] 42-01-PLAN.md — Consent banner: vanilla-cookieconsent v3 (opt-in, equal-weight Accept/Reject), useConsent store, AnalyticsGate (mount-gate + revoke cleanup), web-only mount (desktop strips Analytics), Footer + SettingsModal cookie-settings entries (GDPR-01)
 - [x] 42-02-PLAN.md — Onboarding wizard: UserProfile onboarding fields + useOnboarding (auto-skip on owned printer instance, Dexie-not-localStorage), OnboardingOverlay/Step 3-step guided real-UI flow, App.tsx mount + NEW-badge (ONBD-01)
-- [ ] 42-05-PLAN.md — Gap closure (UAT test 1, major): step-0 tile onClick awaits addInstance then advanceStep(1) directly (mirrors filament tile), fixing the shouldShow/auto-advance same-render race that unmounted the wizard + never persisted onboardingStep; adds a non-mocked real-Dexie (fake-indexeddb) regression test for tile-click → advance → reload-resume (ONBD-01)
+- [x] 42-05-PLAN.md — Gap closure (UAT test 1, major): step-0 tile onClick awaits addInstance then advanceStep(1) directly (mirrors filament tile), fixing the shouldShow/auto-advance same-render race that unmounted the wizard + never persisted onboardingStep; adds a non-mocked real-Dexie (fake-indexeddb) regression test for tile-click → advance → reload-resume (ONBD-01)
 
 **Wave 2** *(blocked on 42-01 — shared main.tsx / Footer.tsx / package.json)*
 
@@ -285,7 +285,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
-| 42. GDPR & Onboarding | 4/4 | Complete   | 2026-07-11 |
+| 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
 | 43. Pro Backend | 0/TBD | Not started | - |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |

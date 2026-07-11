@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 42
 current_phase_name: gdpr-onboarding
 status: verifying
-stopped_at: Completed 42-03-PLAN.md
-last_updated: "2026-07-11T12:22:51.639Z"
-last_activity: 2026-07-10
+stopped_at: Completed 42-05-PLAN.md (gap closure)
+last_updated: "2026-07-11T13:26:16.849Z"
+last_activity: 2026-07-11
 last_activity_desc: Phase 42 execution started
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 24
-  completed_plans: 24
+  total_plans: 25
+  completed_plans: 25
   percent: 63
 ---
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 42 (gdpr-onboarding) — EXECUTING
-Plan: 4 of 4
+Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-07-10 — Phase 42 execution started
+Last activity: 2026-07-11 — Phase 42 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -118,6 +118,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 42]: 42-03: Terms of Service Pro-tier section stays fully generic (no prices/cycles/refunds) per D-06 — a regex guard in TermsPage.test.tsx prevents an accidental price leak before Phase 43 sets real pricing
 - [Phase ?]: 42-04: vanilla-cookieconsent hideFromBots default checks navigator.webdriver and silently hides the banner from Playwright's Chromium (webdriver=true by default) - fixed test-side via page.addInitScript, not by disabling hideFromBots in production config
 - [Phase ?]: 42-04: E2E equal-weight button assertion compares computed padding/font-weight/font-size/border for exact equality plus exact height, with a 12px width tolerance - raw width alone is not a reliable equal-weight signal since different button labels render at slightly different natural glyph widths
+- [Phase 42-gdpr-onboarding]: 42-05: Fix confined entirely to the step-0 tile onClick (await addInstance then advanceStep(1)); useOnboarding.ts shouldShow/auto-skip (D-09) left byte-for-byte unchanged
+- [Phase 42-gdpr-onboarding]: 42-05: Existing step-0 auto-advance effect kept as a best-effort fallback for a manual 'Mine isn't listed' add; advanceStep(1) is idempotent so it cannot double-advance against the tile's deterministic call
 
 ### Pending Todos
 
@@ -133,8 +135,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-11T12:21:50.130Z
-Stopped at: Completed 42-03-PLAN.md
+Last session: 2026-07-11T13:25:25.584Z
+Stopped at: Completed 42-05-PLAN.md (gap closure)
 Resume file: None
 
 ## Operator Next Steps
@@ -174,3 +176,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 42 P02 | 35min | 3 tasks | 8 files |
 | Phase 42 P03 | 12min | 2 tasks | 8 files |
 | Phase 42 P04 | 25min | 2 tasks | 6 files |
+| Phase 42-gdpr-onboarding P05 | 20min | 2 tasks | 3 files |
