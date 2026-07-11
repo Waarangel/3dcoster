@@ -223,7 +223,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 **Wave 2** *(blocked on 42-01 — shared main.tsx / Footer.tsx / package.json)*
 
 - [x] 42-03-PLAN.md — Legal pages: docs/DATA-FLOW-INVENTORY.md (full connect-src processor list), PrivacyPage + TermsPage (lazy marketing-page pattern), Footer links, FAQ "no data collection" fix; privacy@3dcoster.com human prerequisite (GDPR-02/GDPR-03)
-- [ ] 42-04-PLAN.md — E2E consent gate: @playwright/test (SUS human-verify checkpoint) + chromium, playwright.config.ts (:4173 preview), consent-gate.spec (zero pre-consent beacons, one-click reject, equal-weight buttons), docs/GATE-VERIFICATION.md manual prod check (GDPR-01 / D-14)
+- [x] 42-04-PLAN.md — E2E consent gate: @playwright/test (SUS human-verify checkpoint) + chromium, playwright.config.ts (:4173 preview), consent-gate.spec (zero pre-consent beacons, one-click reject, equal-weight buttons), docs/GATE-VERIFICATION.md manual prod check (GDPR-01 / D-14)
 
 **UI hint**: yes
 **Hard gate**: This phase must ship and be live in production before Phase 43 begins. Do not proceed to Pro backend until the consent banner is confirmed live and network-verified (zero analytics requests before first consent click).
@@ -284,7 +284,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 | 39. Cost Realism | 6/6 | Complete    | 2026-07-07 |
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
-| 42. GDPR & Onboarding | 3/4 | In Progress|  |
+| 42. GDPR & Onboarding | 4/4 | Complete   | 2026-07-11 |
 | 43. Pro Backend | 0/TBD | Not started | - |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |

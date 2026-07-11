@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 42
 current_phase_name: gdpr-onboarding
-status: executing
+status: verifying
 stopped_at: Completed 42-03-PLAN.md
-last_updated: "2026-07-10T11:21:31.871Z"
+last_updated: "2026-07-11T12:22:51.639Z"
 last_activity: 2026-07-10
 last_activity_desc: Phase 42 execution started
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 24
-  completed_plans: 23
-  percent: 50
+  completed_plans: 24
+  percent: 63
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 Phase: 42 (gdpr-onboarding) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-10 — Phase 42 execution started
 
 ## v2.0 Phase Order Reference
@@ -116,6 +116,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 42]: 42-02: filament/price-a-job wizard steps advance via a baseline-count-on-entry pattern (materials.length/jobs.length captured on step entry, advance when it increases) instead of a raw count===0 check, since the printer+filament catalogs are auto-seeded into db.materials on a brand-new DB
 - [Phase 42]: 42-03: Privacy Policy processor list traces line-by-line to docs/DATA-FLOW-INVENTORY.md (built from vercel.json connect-src, cross-checked against grep fetch( src/) — inventory updated first, policy second (Pitfall C-05 defense)
 - [Phase 42]: 42-03: Terms of Service Pro-tier section stays fully generic (no prices/cycles/refunds) per D-06 — a regex guard in TermsPage.test.tsx prevents an accidental price leak before Phase 43 sets real pricing
+- [Phase ?]: 42-04: vanilla-cookieconsent hideFromBots default checks navigator.webdriver and silently hides the banner from Playwright's Chromium (webdriver=true by default) - fixed test-side via page.addInitScript, not by disabling hideFromBots in production config
+- [Phase ?]: 42-04: E2E equal-weight button assertion compares computed padding/font-weight/font-size/border for exact equality plus exact height, with a 12px width tolerance - raw width alone is not a reliable equal-weight signal since different button labels render at slightly different natural glyph widths
 
 ### Pending Todos
 
@@ -131,7 +133,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-10T11:21:31.863Z
+Last session: 2026-07-11T12:21:50.130Z
 Stopped at: Completed 42-03-PLAN.md
 Resume file: None
 
@@ -171,3 +173,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 42 P01 | 20min | 3 tasks | 13 files |
 | Phase 42 P02 | 35min | 3 tasks | 8 files |
 | Phase 42 P03 | 12min | 2 tasks | 8 files |
+| Phase 42 P04 | 25min | 2 tasks | 6 files |
