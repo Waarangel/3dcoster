@@ -1,32 +1,28 @@
 ---
-status: testing
+status: partial
 phase: 42-gdpr-onboarding
 source: [42-VERIFICATION.md]
 started: 2026-07-11T00:00:00Z
-updated: 2026-07-11T00:00:00Z
+updated: 2026-07-11T13:25:00Z
 ---
 
 ## Current Test
 
-number: 2
-name: Tauri desktop build visual confirmation
-expected: |
-  Run `npm run tauri dev` (or a compiled build) — no cookie banner and zero analytics
-  anywhere in the desktop app (compile-time `!__IS_TAURI__` gate).
-awaiting: user response
+[testing paused — 2 deploy-gated items outstanding (tests 3 & 4)]
 
 ## Tests
 
-### 1. Full-browser onboarding wizard walkthrough
+### 1. Full-browser onboarding wizard walkthrough (re-test after 42-05 fix)
 expected: Clear IndexedDB → reload → wizard at step 0 → printer tile advances to step 1 → filament advances to step 2 → saved job fires completion toast and unmounts overlay → reload does not re-show. Existing-printer profiles never see the wizard. Mid-wizard reload resumes at the same step (real Dexie persistence, not mocks).
-result: issue
-source: automated (preview-browser drive against live dev server, 2026-07-11)
-reported: "Clicking the 'Bambu Lab A1 mini' quick-add tile writes the printerInstance to Dexie but the wizard unmounts immediately instead of advancing to step 2. No onboarding step/userProfile record is ever persisted (3DCosterDB has no profile store entry; settings store has only fxRateTable + seedState). After reload the wizard never reappears — steps 2 and 3 are unreachable. Auto-skip race re-fires on the wizard's own printer write before the step-advance write lands; the unit-test mocks hid this because only real Dexie liveQuery exhibits the race."
-severity: major
+result: pass
+source: automated (preview-browser drive against live dev server, 2026-07-11, post-42-05)
+retest_of: "issue found 2026-07-11 (tile-autoskip race), fixed in 42-05 (commits c4271d7 RED test, dd494b9 GREEN fix)"
+evidence: "Fresh DB → wizard STEP 1 OF 3; 'Bambu Lab A1 mini' tile advanced to STEP 2 OF 3 (previously unmounted); mid-wizard reload resumed at STEP 2 (settings.userProfile record now persists — was never written pre-fix); 'Bambu PLA Basic' tile advanced to STEP 3; saving job 'UAT Test Benchy' fired completion toast ('You're ready — save this job or create a quote') and unmounted overlay; reload did not re-show; existing-user simulation (printerInstance present, userProfile deleted) never showed the wizard; zero console errors."
 
 ### 2. Tauri desktop build visual confirmation
 expected: Run `npm run tauri dev` (or a compiled build) — no cookie banner and zero analytics anywhere in the desktop app (compile-time `!__IS_TAURI__` gate). Low-risk one-time check.
-result: [pending]
+result: pass
+source: user (manual desktop-app check, 2026-07-11)
 
 ### 3. privacy@3dcoster.com forwarding alias
 expected: Email forwarding alias exists and receives mail BEFORE the production deploy that makes /privacy publicly reachable (the page's Contact section names this address). External DNS/email configuration.
@@ -43,16 +39,16 @@ reason: "Requires a production deploy, which is gated behind UAT completion, rel
 ## Summary
 
 total: 4
-passed: 0
-issues: 1
-pending: 1
+passed: 2
+issues: 0
+pending: 0
 skipped: 0
 blocked: 2
 
 ## Gaps
 
 - truth: "Onboarding wizard advances from the printer step to the filament step when the user adds a printer via a quick-add tile, and mid-wizard progress survives a page reload (real Dexie persistence)"
-  status: failed
+  status: closed (fixed in 42-05, re-verified pass 2026-07-11 via automated preview-browser drive)
   reason: "User reported (automated preview-browser drive): tile click writes printerInstance to Dexie, wizard unmounts instead of advancing; no onboarding step is ever persisted; reload never re-shows the wizard, making steps 2-3 unreachable for new users. Auto-skip re-fires on the wizard's own printer write before the step-advance persists."
   severity: major
   test: 1
