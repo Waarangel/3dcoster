@@ -213,12 +213,13 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   4. The site has a published Privacy Policy page naming every data processor (Vercel, Supabase, FX API) and a Terms of Service page covering the Pro tier
   5. A first-run web or desktop user sees a skippable, 3-step onboarding wizard (add printer → add filament → price first job) that auto-skips if a printer already exists in Dexie, and can be resumed if partially completed
 
-**Plans**: 4 plans in 2 waves
+**Plans**: 5 plans in 2 waves (1 gap-closure)
 
 **Wave 1**
 
 - [x] 42-01-PLAN.md — Consent banner: vanilla-cookieconsent v3 (opt-in, equal-weight Accept/Reject), useConsent store, AnalyticsGate (mount-gate + revoke cleanup), web-only mount (desktop strips Analytics), Footer + SettingsModal cookie-settings entries (GDPR-01)
 - [x] 42-02-PLAN.md — Onboarding wizard: UserProfile onboarding fields + useOnboarding (auto-skip on owned printer instance, Dexie-not-localStorage), OnboardingOverlay/Step 3-step guided real-UI flow, App.tsx mount + NEW-badge (ONBD-01)
+- [ ] 42-05-PLAN.md — Gap closure (UAT test 1, major): step-0 tile onClick awaits addInstance then advanceStep(1) directly (mirrors filament tile), fixing the shouldShow/auto-advance same-render race that unmounted the wizard + never persisted onboardingStep; adds a non-mocked real-Dexie (fake-indexeddb) regression test for tile-click → advance → reload-resume (ONBD-01)
 
 **Wave 2** *(blocked on 42-01 — shared main.tsx / Footer.tsx / package.json)*
 
