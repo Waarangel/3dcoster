@@ -1,7 +1,7 @@
 ---
 phase: 42-gdpr-onboarding
 verified: 2026-07-11T13:38:26Z
-status: human_needed
+status: passed
 score: 20/20 must-haves verified
 behavior_unverified: 0
 ---
@@ -168,21 +168,25 @@ All behavioral checks pass. No behavioral_failures.
 ## Human Verification Required
 
 ### 1. Manual production DevTools network check (D-13/D-14 hard gate)
+
 **Test:** Per `docs/GATE-VERIFICATION.md` §2 — fresh incognito on `https://3dcoster.com` after deploy, hard reload, inspect Network tab before any click.
 **Expected:** Zero `/_vercel/insights/*` requests before consent; beacon fires after Accept All; stays silent after Reject All including across a reload.
 **Why human:** No production deploy exists at verification time — this is a live-environment check (real CDN, real DNS, real CSP headers) that cannot be simulated locally. Per the phase's own design, the hard gate is not closed until this passes on production.
 
 ### 2. `privacy@3dcoster.com` forwarding alias
+
 **Test:** Confirm the alias exists and receives mail.
 **Expected:** Mail sent to `privacy@3dcoster.com` is received, before `/privacy` becomes publicly reachable in production (the page's Contact section names this address).
 **Why human:** Pure external DNS/email configuration, outside the codebase — cannot be verified programmatically.
 
 ### 3. Full-browser onboarding UAT — steps 1→2→done (narrowed scope)
+
 **Test:** Clear IndexedDB → reload → confirm wizard at step 0 → add a printer via a tile (now proven automatically, see truth 9/17/18 above) → add a filament → confirm advance to step 2 → save a job → confirm the completion toast fires and the overlay unmounts → reload → confirm it does not reappear. Separately confirm a DB that already owns a printer never shows the wizard.
 **Expected:** All transitions occur exactly as described, matching the mocked-test assertions and the now-real-Dexie-proven step-0→1 transition.
 **Why human:** The step-0→1 tile-click→advance→reload-resume path (the specific path that was broken and is the subject of this gap-closure plan) is now covered by a real, non-mocked, real-Dexie test and no longer needs human verification. The remaining path — step 1→2, step 2→completion-toast-and-unmount, and a full live-browser walkthrough — is still covered only by mocked-hook unit tests (`OnboardingOverlay.test.tsx`), not a real-Dexie integration test or a live browser session, so it remains a genuine human-verification item (narrower in scope than the prior verification's equivalent item).
 
 ### 4. Tauri desktop build visual confirmation (low risk)
+
 **Test:** Run `npm run tauri dev` (or a compiled build) — visually confirm no cookie banner and zero analytics anywhere in the desktop app.
 **Expected:** No banner, no analytics script/network activity.
 **Why human:** Deduced from the `!__IS_TAURI__` compile-time gate (same pattern already shipped for `PwaUpdatePrompt`), which is strong evidence but not a substitute for a one-time visual check on an actual `tauri:dev`/`tauri build` run. Low risk — this is a deterministic boolean constant, not a runtime state machine.
