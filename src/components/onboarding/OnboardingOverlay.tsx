@@ -96,14 +96,23 @@ export function OnboardingOverlay({ navigateToTab }: OnboardingOverlayProps) {
   if (step === 0) {
     const tiles = defaultPrinterAssets.slice(0, QUICK_ADD_COUNT).map(printer => ({
       label: printer.name,
-      onClick: () => {
+      // Deterministic advance path (Phase 42 gap closure, T-42-09): await the
+      // printer write, then persist the step directly — mirroring the
+      // non-racy step-1 filament tile below. This no longer depends on the
+      // instances.length-driven auto-advance effect above, which loses the
+      // race against shouldShow recomputing on the SAME render (see
+      // .planning/debug/onboarding-tile-autoskip-race.md). The effect stays
+      // in place as a best-effort catch for a manual "Mine isn't listed" add;
+      // advanceStep(1) is idempotent so there is no double-advance.
+      onClick: async () => {
         const instance: PrinterInstance = {
           id: makeInstanceId(),
           printerConfigId: printer.id,
           nickname: printer.name,
           printHours: 0,
         };
-        addInstance(instance);
+        await addInstance(instance);
+        await advanceStep(1);
       },
     }));
 

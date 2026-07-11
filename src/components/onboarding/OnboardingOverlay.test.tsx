@@ -120,6 +120,25 @@ describe('OnboardingOverlay — skip affordance', () => {
   });
 });
 
+describe('OnboardingOverlay — printer tile deterministic advance (Phase 42 gap closure)', () => {
+  it('clicking the first printer quick-add tile calls addInstance and advanceStep(1)', async () => {
+    mockUseOnboarding.mockReturnValue(baseOnboarding({ step: 0 }));
+    render();
+
+    const tileButton = Array.from(container!.querySelectorAll('button'))
+      .find(btn => btn.textContent === 'Bambu Lab A1 mini');
+    expect(tileButton).not.toBeUndefined();
+
+    await act(async () => {
+      tileButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mockAddInstance).toHaveBeenCalledTimes(1);
+    expect(mockAdvanceStep).toHaveBeenCalledWith(1);
+  });
+});
+
 describe('OnboardingOverlay — step content', () => {
   it('renders the filament step at step 1', () => {
     mockUseOnboarding.mockReturnValue(baseOnboarding({ step: 1 }));
