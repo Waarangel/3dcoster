@@ -34,7 +34,7 @@ evidence: "Google Workspace Default routing catch-all (`^.*@3dcoster\\.com$` →
 expected: Per docs/GATE-VERIFICATION.md, after production deploy: fresh incognito on https://3dcoster.com, hard reload, DevTools Network shows zero /_vercel/insights/* requests before any consent click; beacon fires after Accept All; stays silent after Reject All including across a reload. The GDPR hard gate is not closed until this passes on live production.
 result: blocked
 blocked_by: release-build
-reason: "Requires a production deploy, which is gated behind UAT completion, release review, and the user's DEPLOY_OK=1 — cannot run yet."
+reason: "Requires a production deploy. USER DECISION 2026-07-13: no deploy until v2.0 is ready — this test is deliberately deferred to the v2.0 launch deploy (post phases 43-45). It is the FIRST item on the launch-day checklist: run docs/GATE-VERIFICATION.md against live 3dcoster.com immediately after the deploy, then re-run /gsd-verify-work 42 to close the phase. Note 2026-07-13: production bundle (index-CCVB6jcp.js) confirmed to contain zero consent code — old build, analytics unconditional — so a pre-deploy 'pass' is impossible by construction."
 
 ## Summary
 
