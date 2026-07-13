@@ -3,12 +3,12 @@ status: partial
 phase: 42-gdpr-onboarding
 source: [42-VERIFICATION.md]
 started: 2026-07-11T00:00:00Z
-updated: 2026-07-11T13:25:00Z
+updated: 2026-07-13T19:30:00Z
 ---
 
 ## Current Test
 
-[testing paused — 2 deploy-gated items outstanding (tests 3 & 4)]
+[testing paused — 1 deploy-gated item outstanding (test 4: production DevTools network check)]
 
 ## Tests
 
@@ -26,9 +26,9 @@ source: user (manual desktop-app check, 2026-07-11)
 
 ### 3. privacy@3dcoster.com forwarding alias
 expected: Email forwarding alias exists and receives mail BEFORE the production deploy that makes /privacy publicly reachable (the page's Contact section names this address). External DNS/email configuration.
-result: blocked
-blocked_by: third-party
-reason: "External email/DNS configuration — must be done by the operator before the production deploy; no deploy has happened yet."
+result: pass
+source: user + automated mailbox verification (2026-07-13)
+evidence: "Google Workspace Default routing catch-all (`^.*@3dcoster\\.com$` → envelope-rewrite to support@3dcoster.com, which delivers to marcus@howtoproject.ca). External test mail from waarangel@gmail.com to privacy@3dcoster.com landed in INBOX at 2026-07-13T19:24:27Z (verified via Gmail search). Earlier self-sent tests were hidden by Gmail same-mailbox Message-ID dedupe — not a routing failure. Alias confirmed working BEFORE production deploy, satisfying the ordering requirement."
 
 ### 4. Manual production DevTools network check (D-13/D-14 hard gate)
 expected: Per docs/GATE-VERIFICATION.md, after production deploy: fresh incognito on https://3dcoster.com, hard reload, DevTools Network shows zero /_vercel/insights/* requests before any consent click; beacon fires after Accept All; stays silent after Reject All including across a reload. The GDPR hard gate is not closed until this passes on live production.
@@ -39,11 +39,11 @@ reason: "Requires a production deploy, which is gated behind UAT completion, rel
 ## Summary
 
 total: 4
-passed: 2
+passed: 3
 issues: 0
 pending: 0
 skipped: 0
-blocked: 2
+blocked: 1
 
 ## Gaps
 
