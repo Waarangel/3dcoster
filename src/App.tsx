@@ -12,6 +12,7 @@ import { ReportsSection } from './components/ReportsSection';
 import { InsightsPanel } from './components/insights/InsightsPanel';
 import { JobsManager } from './components/JobsManager';
 import { UserProfileModal } from './components/UserProfileModal';
+import { SignInModal } from './components/pro/SignInModal';
 import { SettingsModal } from './components/SettingsModal';
 import { MaintenanceAlertModal } from './components/MaintenanceAlertModal';
 import { NewBadge } from './components/NewBadge';
@@ -87,6 +88,9 @@ function App() {
   }, [rawTab, setSearchParams]);
 
   const [showProfileModal, setShowProfileModal] = useState(false);
+  // Phase 43-03 (D-09): contextual Pro sign-in. Opened ONLY from the profile
+  // panel's "Sign in for Pro" entry — signed-out users see no new chrome.
+  const [showSignInModal, setShowSignInModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingJob, setEditingJob] = useState<PrintJob | null>(null);
   const [maintenanceAlert, setMaintenanceAlert] = useState<{ instanceId: string; hours: number } | null>(null);
@@ -330,7 +334,23 @@ function App() {
         onClose={() => setShowProfileModal(false)}
         userProfile={userProfile}
         onProfileChange={updateUserProfile}
+        onOpenSignIn={() => {
+          // D-09: the sign-in flow replaces the profile panel rather than
+          // stacking a second dialog on top of it.
+          setShowProfileModal(false);
+          setShowSignInModal(true);
+        }}
       />
+
+      {/* Pro magic-link sign-in (Phase 43-03, PRO-01). Web only — the Tauri
+          desktop build ships no auth UI at all (D-12), so the mount itself is
+          compiled out under __IS_TAURI__. */}
+      {!__IS_TAURI__ && (
+        <SignInModal
+          isOpen={showSignInModal}
+          onClose={() => setShowSignInModal(false)}
+        />
+      )}
 
       {/* Settings Modal */}
       <SettingsModal

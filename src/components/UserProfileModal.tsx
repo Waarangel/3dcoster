@@ -1,13 +1,16 @@
 import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG } from '../utils/currency';
-import { Input, Select, Textarea, SidePanel } from './ui';
+import { Input, Select, Textarea, SidePanel, Button } from './ui';
+import { useProAuth } from '../hooks/useProAuth';
 
 interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   userProfile: UserProfile;
   onProfileChange: (profile: UserProfile) => void;
+  /** Opens the Pro magic-link SignInModal (App.tsx owns that state — D-09). */
+  onOpenSignIn: () => void;
 }
 
 export function UserProfileModal({
@@ -15,12 +18,63 @@ export function UserProfileModal({
   onClose,
   userProfile,
   onProfileChange,
+  onOpenSignIn,
 }: UserProfileModalProps) {
   const userCurrency = userProfile.currency;
+  // Phase 43-03 (PRO-01/D-09): account state for the Account & Pro section
+  // below. Safe to call unconditionally — the hook is a no-op when the
+  // Supabase client is null (Tauri desktop, or unconfigured web build).
+  const { user, isSignedIn, signOut } = useProAuth();
 
   return (
     <SidePanel isOpen={isOpen} onClose={onClose} title="Profile" size="md">
       <div className="p-4 space-y-6">
+          {/* Account & Pro (Phase 43-03, D-09: account/billing status lives in
+              the existing profile area — no new chrome anywhere else). Web
+              only: the Tauri desktop build renders no Pro/auth UI at all
+              (D-12), so this whole section is compiled out under __IS_TAURI__. */}
+          {!__IS_TAURI__ && (
+            <div>
+              <h3 className="text-sm font-medium text-slate-300 mb-3">Account &amp; Pro</h3>
+              {isSignedIn ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">{user?.email}</p>
+                      <p className="text-xs text-slate-500">Signed in</p>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      btnSize="sm"
+                      onClick={() => void signOut()}
+                      aria-label="Sign out of your Pro account"
+                    >
+                      Sign out
+                    </Button>
+                  </div>
+                  {/* Billing panel slot — plan 43-06 mounts <BillingPanel /> here
+                      (subscription status + Paddle manage/cancel). Intentionally
+                      empty until that plan lands. */}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-500">
+                    The calculator is free forever — an account is only needed
+                    for Pro features like hosted quote pages.
+                  </p>
+                  <Button
+                    variant="primary"
+                    btnSize="sm"
+                    onClick={onOpenSignIn}
+                    aria-label="Sign in for Pro"
+                  >
+                    Sign in for Pro
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Basic Info */}
           <div>
             <h3 className="text-sm font-medium text-slate-300 mb-3">Profile</h3>
