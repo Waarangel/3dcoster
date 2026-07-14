@@ -6,14 +6,14 @@ current_phase: 43
 current_phase_name: pro-backend
 status: executing
 stopped_at: Completed 43-01-PLAN.md
-last_updated: "2026-07-14T16:26:23.911Z"
+last_updated: "2026-07-14T16:50:39.530Z"
 last_activity: 2026-07-14
 last_activity_desc: Phase 43 execution started
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 32
-  completed_plans: 27
+  completed_plans: 28
   percent: 63
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 43 (pro-backend) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-07-14 — Phase 43 execution started
 
@@ -123,6 +123,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 43-02]: vercel.json connect-src uses wildcard https://*.supabase.co (not the literal project ref) because plan 43-01's Supabase project had not yet been created; RLS/RPC (not CSP) is the actual anti-enumeration boundary
 - [Phase 43-02]: Pro pricing surfaced verbatim in ToS: EUR 6.90/month and EUR 69/year, Paddle as Merchant of Record, no free trial, lapse-safe existing hosted-quote links after cancellation
 - [Phase 43]: 43-01: Live Supabase project created and migration applied via mcp__supabase__apply_migration (Supabase MCP), not supabase db push -- user-approved substitution, no CLI credentials configured — The plan's user_setup step required a manual dashboard project creation; user approved MCP-based creation (How to Project org, $10/mo, confirmed via MCP cost-confirmation flow) instead, applying the migration directly through the MCP tool
+- [Phase 43]: 43-03: T-43-09 accepted — supabase-js session in localStorage (pure SPA, no httpOnly path); strict CSP script-src 'self' is the compensating XSS control
+- [Phase 43]: 43-03: supabaseClient degrades to null+warn when VITE_SUPABASE_URL/ANON_KEY absent (never a module-load throw) — free floor must survive an unconfigured deploy (PRO-01)
+- [Phase 43]: 43-03: flowType 'pkce' pinned explicitly in createClient options; e2e/free-floor-no-network.spec.ts is the permanent PRO-01 boundary regression guard
 
 ### Pending Todos
 
@@ -138,7 +141,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-14T16:26:23.904Z
+Last session: 2026-07-14T16:49:56.900Z
 Stopped at: Completed 43-01-PLAN.md
 Resume file: None
 
@@ -182,3 +185,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 42-gdpr-onboarding P05 | 20min | 2 tasks | 3 files |
 | Phase 43-pro-backend P02 | 25min | 3 tasks | 7 files |
 | Phase 43 P01 | 20min | 2 tasks | 2 files |
+| Phase 43 P03 | ~35min | 3 tasks | 12 files |

@@ -250,7 +250,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 43-03-PLAN.md — Pro auth, account UX & client bootstrap (magic-link, web-only gate, free-floor no-network E2E) [wave 2]
+- [x] 43-03-PLAN.md — Pro auth, account UX & client bootstrap (magic-link, web-only gate, free-floor no-network E2E) [wave 2]
 - [ ] 43-05-PLAN.md — Hosted quote page, approve/decline & approval email (branded 404/noindex, non-enumerability tests) [wave 2]
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -306,7 +306,7 @@ Plans:
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
-| 43. Pro Backend | 2/7 | In Progress|  |
+| 43. Pro Backend | 3/7 | In Progress|  |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |
 
