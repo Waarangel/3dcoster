@@ -8,7 +8,7 @@ import { Footer } from '../components/Footer';
 // (Pitfall C-05 defense: the inventory is updated first, this policy second).
 // 100% developer-authored static JSX — no dangerouslySetInnerHTML, no
 // user-supplied content is ever rendered on this page.
-const EFFECTIVE_DATE = 'July 10, 2026';
+const EFFECTIVE_DATE = 'July 14, 2026';
 
 export function PrivacyPage() {
   return (
@@ -61,6 +61,20 @@ export function PrivacyPage() {
                   by serving the site &mdash; the same kind of technical logs any web
                   host keeps.
                 </li>
+                <li>
+                  <strong>Pro account data</strong> &mdash; if, and only if, you create a
+                  Pro account: your account email (via Supabase Auth), the pricing
+                  snapshot of any quote you choose to publish as a hosted link, and
+                  your Pro subscription billing details (handled entirely by our
+                  payment provider, Paddle &mdash; we never see or store your card
+                  details). When a customer views one of your hosted quote links and
+                  records an approve/decline decision, we transmit that customer only
+                  their <strong>first name</strong> &mdash; never their email, address,
+                  or any other identifying detail &mdash; and we send you (the Pro
+                  account holder) a notification email about the decision via Resend.
+                  None of this happens unless you explicitly create a Pro account and
+                  publish a hosted quote.
+                </li>
               </ul>
               <p className="mt-3">
                 We also make a small number of read-only network requests that carry
@@ -95,7 +109,15 @@ export function PrivacyPage() {
                 <li>
                   <strong>Legitimate interest</strong> &mdash; for the minimal,
                   non-personal technical requests needed to run the service (hosting,
-                  version checks, currency rates, in-app announcements).
+                  version checks, currency rates, in-app announcements), and for the
+                  approval-decision notification email sent to your own Pro account
+                  address.
+                </li>
+                <li>
+                  <strong>Contract necessity</strong> &mdash; for Pro account data
+                  (Supabase) and Pro subscription billing (Paddle). This data exists
+                  only because you created a Pro account and only for as long as the
+                  account or the individual hosted quote exists.
                 </li>
               </ul>
             </section>
@@ -108,7 +130,10 @@ export function PrivacyPage() {
                 consent to it, is retained by Vercel only in aggregate form &mdash; we
                 do not receive or store an individual profile of your visits.
                 Feedback submissions are retained by Formspree per their own retention
-                policy and are only used to respond to you.
+                policy and are only used to respond to you. Pro account data (Supabase)
+                and any hosted quote you publish are retained until you delete your
+                Pro account or the individual quote yourself; billing data is retained
+                by Paddle per its own retention policy as Merchant of Record.
               </p>
             </section>
 
@@ -149,14 +174,32 @@ export function PrivacyPage() {
                 <li><strong>currency-api</strong> (<code>latest.currency-api.pages.dev</code>) &mdash; public exchange rates</li>
                 <li><strong>Frankfurter</strong> (<code>api.frankfurter.dev</code>) &mdash; public exchange rates (fallback/secondary provider)</li>
                 <li><strong>Formspree</strong> (<code>formspree.io</code>) &mdash; processes voluntary feedback-form submissions</li>
+                <li>
+                  <strong>Supabase</strong> (hosted in the EU, Frankfurt &mdash;
+                  <code>eu-central-1</code>) &mdash; stores Pro account data: your
+                  account email, the hosted-quote pricing snapshot, and any customer
+                  approval/decline decision. Only used for Pro accounts, on contract
+                  necessity grounds.
+                </li>
+                <li>
+                  <strong>Paddle</strong> &mdash; our Merchant of Record for Pro
+                  subscription billing. Paddle handles your billing email and payment
+                  method directly; we never receive or store your card details. Used
+                  only for Pro accounts, on contract necessity grounds.
+                </li>
+                <li>
+                  <strong>Resend</strong> &mdash; sends the transactional
+                  approval-decision notification email to your own Pro account
+                  address when a customer responds to a hosted quote. Used only for
+                  Pro accounts, on legitimate interest / contract necessity grounds.
+                </li>
               </ul>
               <p className="mt-3">
-                <strong>Forthcoming:</strong> when the Pro tier launches, an
-                additional processor &mdash; Supabase, hosted in the EU (Frankfurt,
-                eu-central-1) &mdash; will store Pro account data (such as your email
-                and saved quotes) for users who choose to create a Pro account. This
-                Privacy Policy will be updated with full details and a new effective
-                date before that feature goes live. It is not active today.
+                A customer viewing one of your hosted quote pages only ever transmits
+                their <strong>first name</strong> to us &mdash; never an email address,
+                shipping address, or any other identifying detail. That first name is
+                stored alongside the quote so you can identify who approved or
+                declined it.
               </p>
             </section>
 
