@@ -245,7 +245,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 Plans:
 **Wave 1**
 
-- [ ] 43-01-PLAN.md — Supabase schema, RLS/RPC & schema push (hosted_quotes + entitlements, SECURITY DEFINER RPCs, [BLOCKING] db push) [wave 1]
+- [x] 43-01-PLAN.md — Supabase schema, RLS/RPC & schema push (hosted_quotes + entitlements, SECURITY DEFINER RPCs, [BLOCKING] db push) [wave 1]
 - [x] 43-02-PLAN.md — Compliance docs & network CSP/routing (inventory-first, CSP for Supabase+Paddle, /q/ + /api/ rewrite exclusion, Privacy + ToS pricing) [wave 1]
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -306,7 +306,7 @@ Plans:
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
-| 43. Pro Backend | 1/7 | In Progress|  |
+| 43. Pro Backend | 2/7 | In Progress|  |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |
 
