@@ -1,0 +1,126 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabaseClient';
+
+// ---------------------------------------------------------------------------
+// useProAuth — magic-link auth hook for the Pro tier (Phase 43-03, PRO-01).
+//
+// Wraps supabase.auth.signInWithOtp / onAuthStateChange / signOut behind the
+// same return-object + useCallback-action conventions as useDatabase.ts hooks.
+//
+// Safe to call unconditionally from any component: when `supabase` is null
+// (Tauri desktop build, or web build without Supabase env config) every
+// action is a no-op and the hook reports a permanently signed-out state —
+// no effect subscribes, no network is touched (PRO-01 free-floor guarantee).
+// ---------------------------------------------------------------------------
+
+/** Auth lifecycle for UI surfaces (SignInModal button/toast states). */
+export type ProAuthStatus =
+  | 'unavailable'   // supabase client is null (Tauri / unconfigured web)
+  | 'signed-out'
+  | 'sending-link'  // signInWithEmail in flight
+  | 'link-sent'     // magic link email dispatched — waiting on the user
+  | 'signed-in';
+
+export interface ProAuth {
+  session: Session | null;
+  user: User | null;
+  isSignedIn: boolean;
+  status: ProAuthStatus;
+  /**
+   * Request a magic link for `email`. Resolves to an error message on
+   * failure, or null on success (link dispatched). No-op (returns null)
+   * when the client is unavailable.
+   */
+  signInWithEmail: (email: string) => Promise<string | null>;
+  /** Sign out and clear the persisted session. No-op when unavailable. */
+  signOut: () => Promise<void>;
+}
+
+export function useProAuth(): ProAuth {
+  const [session, setSession] = useState<Session | null>(null);
+  const [status, setStatus] = useState<ProAuthStatus>(
+    supabase ? 'signed-out' : 'unavailable'
+  );
+
+  useEffect(() => {
+    if (!supabase) return; // Tauri / unconfigured web: never subscribe (D-12)
+
+    let cancelled = false;
+
+    // Seed from the persisted session (localStorage) so a reload restores
+    // the signed-in state without waiting for the first auth event.
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data.session) {
+        setSession(data.session);
+        setStatus('signed-in');
+      }
+    }).catch((err: unknown) => {
+      console.error('[useProAuth] getSession failed:', err);
+    });
+
+    // onAuthStateChange drives all subsequent state: SIGNED_IN (magic-link
+    // redirect completes the PKCE code exchange), TOKEN_REFRESHED, SIGNED_OUT.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        if (cancelled) return;
+        setSession(nextSession);
+        setStatus(nextSession ? 'signed-in' : 'signed-out');
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string): Promise<string | null> => {
+    if (!supabase) return null; // no-op on Tauri / unconfigured web
+    setStatus('sending-link');
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          // Land back on the calculator app after the magic link is clicked;
+          // supabase-js (detectSessionInUrl) completes the PKCE exchange there.
+          emailRedirectTo: window.location.origin + '/app',
+        },
+      });
+      if (error) {
+        setStatus('signed-out');
+        return error.message;
+      }
+      setStatus('link-sent');
+      return null;
+    } catch (err) {
+      console.error('[useProAuth] signInWithOtp failed:', err);
+      setStatus('signed-out');
+      return err instanceof Error ? err.message : 'Could not send the magic link.';
+    }
+  }, []);
+
+  const signOut = useCallback(async (): Promise<void> => {
+    if (!supabase) return; // no-op on Tauri / unconfigured web
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) console.error('[useProAuth] signOut failed:', error.message);
+    } catch (err) {
+      console.error('[useProAuth] signOut failed:', err);
+    }
+    // onAuthStateChange fires SIGNED_OUT and clears session/status; set
+    // eagerly too so the UI never lags behind a slow network round-trip.
+    setSession(null);
+    setStatus(supabase ? 'signed-out' : 'unavailable');
+  }, []);
+
+  return {
+    session,
+    user: session?.user ?? null,
+    isSignedIn: session !== null,
+    status,
+    signInWithEmail,
+    signOut,
+  };
+}

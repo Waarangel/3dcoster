@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Phase 43-03 (PRO-01): local Supabase env values. .env.example (checked in)
+# documents the two PUBLIC var names; the real .env is never committed.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
