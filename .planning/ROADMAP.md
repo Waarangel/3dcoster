@@ -243,13 +243,25 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 **Plans**: 7 plans (4 waves)
 Plans:
+**Wave 1**
+
 - [ ] 43-01-PLAN.md — Supabase schema, RLS/RPC & schema push (hosted_quotes + entitlements, SECURITY DEFINER RPCs, [BLOCKING] db push) [wave 1]
 - [ ] 43-02-PLAN.md — Compliance docs & network CSP/routing (inventory-first, CSP for Supabase+Paddle, /q/ + /api/ rewrite exclusion, Privacy + ToS pricing) [wave 1]
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 43-03-PLAN.md — Pro auth, account UX & client bootstrap (magic-link, web-only gate, free-floor no-network E2E) [wave 2]
-- [ ] 43-04-PLAN.md — Publish/unpublish + Quote publish metadata + in-app status refresh (PRO-02) [wave 3]
 - [ ] 43-05-PLAN.md — Hosted quote page, approve/decline & approval email (branded 404/noindex, non-enumerability tests) [wave 2]
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 43-04-PLAN.md — Publish/unpublish + Quote publish metadata + in-app status refresh (PRO-02) [wave 3]
 - [ ] 43-06-PLAN.md — Pro subscription billing via Paddle MoR (checkout, signature-verified webhook → entitlements) [wave 3]
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 43-07-PLAN.md — PRO-03 formal security review gate + phase verification [wave 4]
+
 **Research flag**: SATISFIED — see 43-RESEARCH.md. Supabase magic-link (PKCE, localStorage session on pure SPA; httpOnly-cookie session deferred with Tauri keyring per D-12 web-first), RLS non-enumerability via SECURITY DEFINER RPC (anon table SELECT revoked), and Paddle Billing (MoR) selected. Backend Supabase eu-central-1 locked per REQUIREMENTS.md.
 **Security gate**: PRO-03 requires a formal security review before the hosted quote endpoint ships to production (non-enumerable URLs, RLS verified, no PII in CDN caches).
 
