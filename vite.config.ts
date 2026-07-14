@@ -58,6 +58,16 @@ export default defineConfig(({ mode }) => ({
         // precache manifest — they are only used on the landing page and
         // are too large to bake into the service worker for all users.
         globIgnores: ['assets/image*.png'],
+        // Phase 43-02 (Research Open Question 2 / T-43-14): the SW registers
+        // scope '/', so without this denylist its navigation fallback could
+        // hand a /q/* or /api/* navigation a cached SPA index.html BEFORE the
+        // request ever reaches the Vercel function router — showing a stale
+        // precached page after a maker unpublishes a hosted quote (violates
+        // D-13 freshness / PRO-03 no-store). This is the SECOND SPA-fallback
+        // layer (the first is the vercel.json rewrite negative-lookahead) —
+        // both must exclude /q/ and /api/ or a hosted-quote request can still
+        // be served stale/cached.
+        navigateFallbackDenylist: [/^\/q\//, /^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

@@ -10,10 +10,12 @@ permitted to talk to), cross-checked against every `fetch(` call site in
 repurposes a network destination — a new API, a new SDK, a new CDN — updates
 **this inventory first**, then the Privacy Policy (`src/pages/PrivacyPage.tsx`)
 second. The policy's processor list must never drift ahead of, or fall behind,
-what the code actually does. Phase 43 (Pro Backend / Supabase) is the next
-change that will touch this file — update the Supabase row from FORTHCOMING to
-live, with its real retention and legal-basis answers, before that policy
-section ships.
+what the code actually does. Phase 43 (Pro Backend) added the Supabase, Paddle,
+and Resend rows below — the account/billing/email backbone for the Pro tier.
+These three calls are FUNCTIONAL (account, billing, and transactional-email
+plumbing for a feature the user explicitly opted into by creating a Pro
+account), NOT analytics — they are not gated behind the cookie-consent
+analytics category, but they only ever fire for a signed-in Pro user.
 
 ## External Destinations
 
@@ -26,10 +28,14 @@ section ships.
 | None (no request body) — fetches published exchange-rate tables | Currency conversion, via `latest.currency-api.pages.dev` and `api.frankfurter.dev` (two independent FX providers, primary + fallback) | Cloudflare Pages-hosted currency-api mirror; Frankfurter (European Central Bank rate republisher) | Not stored by 3DCoster beyond an in-memory/local cache of the rate table; provider logs apply | Legitimate interest (displaying prices in the user's chosen currency) |
 | User-entered feedback message + optional reply-to email address (PII when provided) | Formspree, via `formspree.io` | Formspree's form-processing backend, which forwards to the project owner's inbox | Retained per Formspree's own data retention policy; submission is voluntary and initiated by the user | Consent (user actively fills out and submits the feedback form) |
 | **On-device only — never transmitted** | The browser's IndexedDB (via Dexie.js) | Nowhere — projects, jobs, printers, filaments, customers, sales, and settings stay on the user's device | Until the user clears browser data or exports/deletes it themselves | N/A — no processing occurs off-device |
-| **FORTHCOMING (Phase 43 — Pro Backend, not yet live):** Pro-tier account data (email, hashed auth token, saved quotes) | Supabase (planned region: `eu-central-1`, Frankfurt) | Supabase-hosted Postgres, EU region | To be defined in the Phase 43 Privacy Policy update, alongside a new effective date | To be defined — will require explicit account creation (contract necessity) |
+| Pro account email (via Supabase Auth) + hosted-quote snapshot (pricing line items) + customer FIRST NAME ONLY (D-08, never full customer PII) + approval decision/note/timestamp | Supabase (region: `eu-central-1`, Frankfurt) | Supabase-hosted Postgres + Auth, EU region | Until the Pro maker deletes the account or the individual hosted quote | Contract necessity — this data exists only because an account was created specifically for Pro features |
+| Pro subscription billing email + payment method (card details never touch 3DCoster's own servers) | Paddle (Merchant of Record for the Pro tier) | Paddle's own payment infrastructure, region per Paddle's MoR terms | Per Paddle's own retention policy as Merchant of Record | Contract necessity — required to process and administer the Pro subscription the maker purchased |
+| Maker's own account email address, notified when a customer approves/declines a hosted quote | Resend (transactional email) | Resend's email-sending infrastructure, delivered to the maker's own inbox | Per Resend's own transactional-log retention policy | Legitimate interest / contract necessity — this is an operational notification about the maker's own Pro account activity, not marketing |
 
 ## Notes
 
-- This list reflects every origin in the `connect-src` directive of `vercel.json`'s Content-Security-Policy as of this writing: `'self'`, `api.github.com`, `cdn.jsdelivr.net`, `latest.currency-api.pages.dev`, `api.frankfurter.dev`, `formspree.io`. Any origin not on this list cannot be reached by the browser — the CSP itself is a technical control that keeps this inventory enforceable, not just descriptive.
+- This list reflects every origin in the `connect-src` directive of `vercel.json`'s Content-Security-Policy as of this writing: `'self'`, `api.github.com`, `cdn.jsdelivr.net`, `latest.currency-api.pages.dev`, `api.frankfurter.dev`, `formspree.io`, `*.supabase.co`, `*.paddle.com`. Any origin not on this list cannot be reached by the browser — the CSP itself is a technical control that keeps this inventory enforceable, not just descriptive.
 - The desktop (Tauri) build ships with zero analytics and no consent banner — there is nothing to consent to on desktop. The `api.github.com` update check happens on both platforms; it carries no user data in the request.
 - Cross-checked against `grep -rn "fetch(" src/` to confirm no undisclosed egress exists outside the CSP allowlist.
+- **Supabase project origin (Phase 43):** the CSP allowlist uses the wildcard `https://*.supabase.co` rather than a literal `https://<project-ref>.supabase.co`. Plan 43-01 (parallel wave-1 plan, user-setup required) is what actually creates the Supabase project in the Supabase Dashboard and produces the concrete project ref — that step had not yet run when this plan executed. The wildcard is scoped to Supabase's own domain (no broader than the intended single project) and is the standard fallback when the concrete ref is not yet known; narrowing to the literal project subdomain once 43-01 completes is optional hardening, not a functional requirement, since the real security boundary (RLS + SECURITY DEFINER RPCs revoking all anon table access) lives in the database, not the CSP.
+- **Paddle CSP domains (Phase 43):** `*.paddle.com` (script-src, frame-src, connect-src) and `cdn.paddle.com` (script-src) are the domains flagged by research (43-RESEARCH.md Pitfall 3 / Open Question A4) as the typical Paddle Billing checkout-overlay + API origins. Research explicitly flags these as needing reconfirmation against developer.paddle.com's own current CSP guidance at a live preview deploy before the billing feature (plan 43-06) ships to production — carried into this plan's verification section as an operator step.
