@@ -241,8 +241,16 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
   3. The maker can unpublish a hosted quote at any time, after which the URL returns a 404 — and hosted quote URLs are non-enumerable (UUID v4, no sequential IDs, noindex headers on all /q/* routes)
   4. A Pro user can subscribe to the Pro tier, view their billing status, and cancel — with the price anchored against 3DPrintQuote's €9.90/mo
 
-**Plans**: TBD
-**Research flag**: REQUIRED before planning — Supabase magic-link auth implementation (httpOnly session cookie, Tauri secure keyring integration), RLS policy for hosted quote non-enumerability, and payment provider selection all need concrete implementation plans. Backend choice (Supabase eu-central-1) is locked per REQUIREMENTS.md; auth flow implementation details are not.
+**Plans**: 7 plans (4 waves)
+Plans:
+- [ ] 43-01-PLAN.md — Supabase schema, RLS/RPC & schema push (hosted_quotes + entitlements, SECURITY DEFINER RPCs, [BLOCKING] db push) [wave 1]
+- [ ] 43-02-PLAN.md — Compliance docs & network CSP/routing (inventory-first, CSP for Supabase+Paddle, /q/ + /api/ rewrite exclusion, Privacy + ToS pricing) [wave 1]
+- [ ] 43-03-PLAN.md — Pro auth, account UX & client bootstrap (magic-link, web-only gate, free-floor no-network E2E) [wave 2]
+- [ ] 43-04-PLAN.md — Publish/unpublish + Quote publish metadata + in-app status refresh (PRO-02) [wave 3]
+- [ ] 43-05-PLAN.md — Hosted quote page, approve/decline & approval email (branded 404/noindex, non-enumerability tests) [wave 2]
+- [ ] 43-06-PLAN.md — Pro subscription billing via Paddle MoR (checkout, signature-verified webhook → entitlements) [wave 3]
+- [ ] 43-07-PLAN.md — PRO-03 formal security review gate + phase verification [wave 4]
+**Research flag**: SATISFIED — see 43-RESEARCH.md. Supabase magic-link (PKCE, localStorage session on pure SPA; httpOnly-cookie session deferred with Tauri keyring per D-12 web-first), RLS non-enumerability via SECURITY DEFINER RPC (anon table SELECT revoked), and Paddle Billing (MoR) selected. Backend Supabase eu-central-1 locked per REQUIREMENTS.md.
 **Security gate**: PRO-03 requires a formal security review before the hosted quote endpoint ships to production (non-enumerable URLs, RLS verified, no PII in CDN caches).
 
 ### Phase 44: Sync & STL Instant Quote
