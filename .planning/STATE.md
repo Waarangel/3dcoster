@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
-current_phase: 42
-current_phase_name: gdpr-onboarding
+current_phase: 43
+current_phase_name: pro-backend
 status: executing
-stopped_at: Phase 43 context gathered
-last_updated: "2026-07-14T11:56:51.067Z"
-last_activity: 2026-07-11
-last_activity_desc: Phase 42 execution started
+stopped_at: Completed 43-02-PLAN.md
+last_updated: "2026-07-14T16:03:29.233Z"
+last_activity: 2026-07-14
+last_activity_desc: Phase 43 execution started
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 25
-  completed_plans: 25
+  total_plans: 32
+  completed_plans: 26
   percent: 63
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–45). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 42 — gdpr-onboarding
+**Current focus:** Phase 43 — pro-backend
 
 ## Current Position
 
-Phase: 42 (gdpr-onboarding) — EXECUTING
-Plan: 5 of 5
+Phase: 43 (pro-backend) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-07-11 — Phase 42 execution started
+Last activity: 2026-07-14 — Phase 43 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -120,6 +120,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 42-04: E2E equal-weight button assertion compares computed padding/font-weight/font-size/border for exact equality plus exact height, with a 12px width tolerance - raw width alone is not a reliable equal-weight signal since different button labels render at slightly different natural glyph widths
 - [Phase 42-gdpr-onboarding]: 42-05: Fix confined entirely to the step-0 tile onClick (await addInstance then advanceStep(1)); useOnboarding.ts shouldShow/auto-skip (D-09) left byte-for-byte unchanged
 - [Phase 42-gdpr-onboarding]: 42-05: Existing step-0 auto-advance effect kept as a best-effort fallback for a manual 'Mine isn't listed' add; advanceStep(1) is idempotent so it cannot double-advance against the tile's deterministic call
+- [Phase 43-02]: vercel.json connect-src uses wildcard https://*.supabase.co (not the literal project ref) because plan 43-01's Supabase project had not yet been created; RLS/RPC (not CSP) is the actual anti-enumeration boundary
+- [Phase 43-02]: Pro pricing surfaced verbatim in ToS: EUR 6.90/month and EUR 69/year, Paddle as Merchant of Record, no free trial, lapse-safe existing hosted-quote links after cancellation
 
 ### Pending Todos
 
@@ -135,9 +137,9 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-14T00:23:19.387Z
-Stopped at: Phase 43 context gathered
-Resume file: .planning/phases/43-pro-backend/43-CONTEXT.md
+Last session: 2026-07-14T16:03:29.224Z
+Stopped at: Completed 43-02-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
@@ -177,3 +179,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 42 P03 | 12min | 2 tasks | 8 files |
 | Phase 42 P04 | 25min | 2 tasks | 6 files |
 | Phase 42-gdpr-onboarding P05 | 20min | 2 tasks | 3 files |
+| Phase 43-pro-backend P02 | 25min | 3 tasks | 7 files |
