@@ -407,16 +407,19 @@ export default async function handler(req: Request): Promise<Response> {
    - What we know: Band is €6.90–7.90/mo locked (D-02); annual ≈ "2 months free."
    - What's unclear: The precise number, and whether it should be set before or during Phase 43 planning vs. held until Phase 45 (BRAND-01 pricing spots).
    - Recommendation: Set it during Phase 43 planning so Paddle SKUs can be created once — Phase 45 then just reads the already-configured price, avoiding a second Paddle-dashboard pass.
+   - **RESOLVED (Phase 43 planning): €6.90/month and €69/year (annual ≈ 2 months free, within the D-02 band). Surfaced in the ToS copy in plan 43-02 (Task 3) and configured as the Paddle SKUs + billing-panel values in plan 43-06; both must stay identical.**
 
 2. **Whether the Vercel Function approach requires converting the whole deployment off pure static hosting**
    - What we know: Adding one `api/` directory to a Vite project on Vercel is a supported, common pattern (confirmed via WebSearch on Vercel's own rewrite/functions docs) and does not require a framework change (no Next.js needed).
    - What's unclear: Whether the existing `vite-plugin-pwa` service-worker precache (`workbox.globPatterns`) needs any adjustment so it doesn't try to precache `/q/*` responses (it currently globs build output, not runtime routes, so likely no change needed — but this should be an explicit plan verification step).
    - Recommendation: Planner adds a task to verify the PWA service worker does not intercept `/q/*` requests (it registers scope `/` per `vite.config.ts`).
+   - **RESOLVED (Phase 43 planning): `globPatterns` precaches build output only (no change needed there), BUT the SW registers scope `/`, so its navigation fallback could hand a `/q/*` navigation a cached SPA shell. Plan 43-02 (Task 1, step 4) now adds `navigateFallbackDenylist: [/^\/q\//, /^\/api\//]` to the workbox config (a concrete config change, not just a check), asserted statically by `scripts/verify-pro-csp.mjs` and re-verified on a preview deploy with the PWA installed (unpublish→reload must 404 fresh). Aggregated as control 7 in the plan 43-07 PRO-03 gate. No `runtimeCaching` rule is added for `/q/` or `/api/` — those responses stay no-store, owned by the function in 43-05.**
 
 3. **Whether Paddle's overlay checkout iframe requires a CSP `frame-src` addition beyond the current `frame-src 'none'`**
    - What we know: The current CSP has `frame-src 'none'`, which will block any iframe-based checkout outright.
    - What's unclear: Paddle's exact current overlay-checkout domain(s) for `frame-src`.
    - Recommendation: Confirm against Paddle's own CSP integration guidance at implementation time and update `vercel.json` + `docs/DATA-FLOW-INVENTORY.md` together.
+   - **RESOLVED (Phase 43 planning): addressed in plan 43-02 (Task 1, step 2) — `frame-src` and `script-src` get Paddle's overlay-checkout origins and `connect-src` gets Paddle's API origin, with the exact domains reconfirmed against developer.paddle.com's CSP guidance at implementation time (A4), and `docs/DATA-FLOW-INVENTORY.md` updated in the same task.**
 
 ## Environment Availability
 
