@@ -6,12 +6,13 @@ import { TermsPage } from './TermsPage';
 
 // ---------------------------------------------------------------------------
 // Phase 42-03 — TermsPage smoke test (GDPR-03).
+// Phase 43-02 — the price-absence guard below was intentionally INVERTED:
+// Phase 42 blocked a price leak until pricing was finalized (D-06); Phase 43
+// is the phase that finalizes it, so this test now asserts the real price
+// IS present and matches the locked D-02/D-03 values (EUR 6.90/mo, EUR 69/yr).
 //
 // Follows the project's component-mount test harness (createRoot + act,
 // no @testing-library/react — see ScrollToTop.test.tsx / App.test.tsx).
-//
-// Proves the page renders both the free tier and a price-free Pro-tier
-// framework section (D-06 — no hard-coded Pro price this phase).
 // ---------------------------------------------------------------------------
 
 let container: HTMLDivElement;
@@ -55,7 +56,7 @@ describe('TermsPage', () => {
     expect(text).toContain('Pro tier');
   });
 
-  it('does not contain a hard-coded Pro-tier price figure', async () => {
+  it('contains the concrete Pro-tier price figures and names Paddle as Merchant of Record', async () => {
     await act(async () => {
       root.render(
         <MemoryRouter initialEntries={['/terms']}>
@@ -65,9 +66,25 @@ describe('TermsPage', () => {
     });
 
     const text = document.body.textContent ?? '';
-    // Guard against a currency figure like "$9.90" or "€9.90/mo" sneaking in
-    // before Phase 43 finalizes pricing (D-06).
-    expect(text).not.toMatch(/[$€£]\s?\d/);
-    expect(text).not.toMatch(/\d+(\.\d+)?\s?\/\s?(mo|month|yr|year)/i);
+    // Phase 43-02: the real, final price (D-02/D-03) must now be present —
+    // this is the inverse of the Phase 42 price-leak guard.
+    expect(text).toContain('EUR 6.90');
+    expect(text).toContain('EUR 69');
+    expect(text).toMatch(/Merchant of Record/i);
+    expect(text).toMatch(/Paddle/i);
+  });
+
+  it('states no free trial and lapse-safe existing hosted-quote links', async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/terms']}>
+          <TermsPage />
+        </MemoryRouter>,
+      );
+    });
+
+    const text = document.body.textContent ?? '';
+    expect(text).toMatch(/no (free )?trial/i);
+    expect(text).toMatch(/stay live/i);
   });
 });

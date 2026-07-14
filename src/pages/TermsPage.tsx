@@ -3,13 +3,15 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 
 // Phase 42 GDPR-03 — Terms of Service page.
+// Phase 43-02 — Pro-tier section replaced with concrete billing terms (D-06
+// carry-forward): price EUR 6.90/month and EUR 69/year, billed by Paddle as
+// Merchant of Record (D-01), no free trial (D-04), lapse-safe existing
+// hosted-quote links (D-11). These values must stay identical to the Paddle
+// SKUs and billing-panel copy configured in plan 43-06.
 //
-// Free-tier terms are fully concrete (D-06). The Pro-tier section is a
-// GENERIC framework only — no hard-coded prices, billing cycles, or refund
-// figures. Phase 43 replaces this section with real billing specifics as a
-// dated ToS update once pricing is finalized. 100% developer-authored
-// static JSX — no dangerouslySetInnerHTML, no user-supplied content.
-const EFFECTIVE_DATE = 'July 10, 2026';
+// Free-tier terms are fully concrete (D-06). 100% developer-authored static
+// JSX — no dangerouslySetInnerHTML, no user-supplied content.
+const EFFECTIVE_DATE = 'July 14, 2026';
 
 export function TermsPage() {
   return (
@@ -69,19 +71,34 @@ export function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Pro tier (framework)</h2>
+              <h2 className="text-2xl font-semibold text-white mb-3">Pro tier</h2>
               <p className="mb-3">
-                A paid Pro tier is planned for a future release, offering optional
-                account-based features (such as cloud-hosted quote pages and sync)
-                on top of the free tier. The terms below describe the general
-                framework that will govern the Pro tier. Specific pricing, billing
-                cycles, and refund terms are not yet finalized and will be published
-                in a future update to this page, with a new effective date, before
-                the Pro tier becomes available for purchase.
+                The Pro tier is a paid subscription offering account-based features
+                on top of the free tier &mdash; including cloud-hosted, shareable
+                quote pages. It has no free trial: the free tier itself is the
+                trial. The terms below govern Pro subscriptions.
               </p>
               <ul className="list-disc list-inside space-y-2">
                 <li>
-                  <strong>Accounts.</strong> Pro features will require creating an
+                  <strong>Price.</strong> Pro is EUR 6.90 per month, or EUR 69 per
+                  year (paid annually, equivalent to roughly two months free versus
+                  the monthly price). Prices are shown and billed in EUR regardless
+                  of your local currency.
+                </li>
+                <li>
+                  <strong>Merchant of Record.</strong> Pro subscriptions are billed
+                  and administered by <strong>Paddle</strong> (paddle.com), acting as
+                  our Merchant of Record. Paddle handles your payment method and
+                  billing, issues receipts, and is the seller of record on your
+                  statement &mdash; not 3DCoster directly.
+                </li>
+                <li>
+                  <strong>No trial.</strong> There is no free trial period for Pro.
+                  You can evaluate 3DCoster fully on the free tier before deciding
+                  to subscribe.
+                </li>
+                <li>
+                  <strong>Accounts.</strong> Pro features require creating an
                   account. You are responsible for keeping your account credentials
                   secure and for all activity under your account.
                 </li>
@@ -92,23 +109,27 @@ export function TermsPage() {
                   storage or hosted-page bandwidth).
                 </li>
                 <li>
-                  <strong>Payment obligations.</strong> Pro subscriptions will be
-                  billed on a recurring basis to the payment method you provide.
-                  Failure to pay may result in suspension of Pro features until
-                  payment is resolved.
+                  <strong>Cancellation.</strong> You can cancel a Pro subscription at
+                  any time; cancellation stops future billing at the end of the
+                  current billing period. Hosted quote links you already published
+                  stay live and reachable by customers even after you cancel &mdash;
+                  canceling does not retroactively take down existing links.
                 </li>
                 <li>
-                  <strong>Cancellation.</strong> You will be able to cancel a Pro
-                  subscription at any time; cancellation will stop future billing.
-                  Specific proration and refund policies will be published alongside
-                  final pricing.
+                  <strong>Refunds.</strong> Refunds are handled per Paddle&apos;s
+                  standard refund policy as Merchant of Record. Contact Paddle
+                  support (linked from your purchase receipt) or us at the address
+                  below to start a refund request.
                 </li>
                 <li>
                   <strong>Data on termination.</strong> If a Pro account is canceled
-                  or terminated, any data stored specifically for Pro features
-                  (rather than on your device) will be handled per the retention
-                  terms published with the Pro tier launch, and you will be given a
-                  reasonable opportunity to export your data first.
+                  or terminated, Pro-specific data stored off your device (account
+                  email, hosted quotes, billing records) is retained per our{' '}
+                  <Link to="/privacy" className="text-blue-400 hover:text-blue-300 underline">
+                    Privacy Policy
+                  </Link>
+                  , and you will be given a reasonable opportunity to export your
+                  data first.
                 </li>
               </ul>
             </section>
