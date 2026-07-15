@@ -65,7 +65,7 @@
 ### Pro Backend & Hosted Quotes
 
 - [x] **PRO-01**: Supabase project (eu-central-1) with magic-link auth — accounts exist ONLY for Pro features; the free floor never requires one (no-account is a first-class state in every policy/flag)
-- [ ] **PRO-02**: Maker can publish a quote as a hosted share link — POST of the self-contained `Quote.lineItemsSnapshot` (no two-way sync); local Quote stores the `publishedUrl`; maker can unpublish
+- [x] **PRO-02**: Maker can publish a quote as a hosted share link — POST of the self-contained `Quote.lineItemsSnapshot` (no two-way sync); local Quote stores the `publishedUrl`; maker can unpublish
 - [x] **PRO-03**: Hosted quote pages pass a security review gate — non-enumerable URLs, RLS verified, no PII in CDN caches, customer can view/approve without an account
 - [x] **PRO-04**: Pro subscription billing — user can subscribe/cancel; price anchored against 3DPrintQuote's €9.90/mo (payment provider research at phase-plan time — not covered by milestone research)
 
@@ -130,7 +130,7 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | GDPR-03 | Phase 42 | Complete |
 | ONBD-01 | Phase 42 | Complete |
 | PRO-01 | Phase 43 | Complete |
-| PRO-02 | Phase 43 | Pending |
+| PRO-02 | Phase 43 | Complete |
 | PRO-03 | Phase 43 | Complete |
 | PRO-04 | Phase 43 | Complete |
 | SYNC-01 | Phase 44 | Pending |

@@ -6,14 +6,14 @@ current_phase: 43
 current_phase_name: pro-backend
 status: executing
 stopped_at: Completed 43-01-PLAN.md
-last_updated: "2026-07-14T16:50:39.530Z"
+last_updated: "2026-07-15T11:49:37.653Z"
 last_activity: 2026-07-14
 last_activity_desc: Phase 43 execution started
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 32
-  completed_plans: 28
+  completed_plans: 29
   percent: 63
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 43 (pro-backend) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-07-14 — Phase 43 execution started
 
@@ -126,6 +126,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 43]: 43-03: T-43-09 accepted — supabase-js session in localStorage (pure SPA, no httpOnly path); strict CSP script-src 'self' is the compensating XSS control
 - [Phase 43]: 43-03: supabaseClient degrades to null+warn when VITE_SUPABASE_URL/ANON_KEY absent (never a module-load throw) — free floor must survive an unconfigured deploy (PRO-01)
 - [Phase 43]: 43-03: flowType 'pkce' pinned explicitly in createClient options; e2e/free-floor-no-network.spec.ts is the permanent PRO-01 boundary regression guard
+- [Phase ?]: 43-05: Expired-but-published hosted quotes render the SAME branded 404 as unpublished/unknown (D-16 supersedes a distinct D-14 expired message); the expiry check lives in api/q/[token].ts since the RPC only filters status='published'
+- [Phase ?]: 43-05: /q/* function reads server-env SUPABASE_URL/SUPABASE_ANON_KEY (never VITE_-prefixed, never service-role) via a raw-fetch RPC helper — no @supabase/supabase-js in the function bundle
+- [Phase ?]: 43-05: on-quote-decision edge function no-ops gracefully (200 + warn) when RESEND_API_KEY is unset — decision stays recorded in DB, in-app refreshStatuses still surfaces it; Resend setup is an open operator step
+- [Phase ?]: 43-05: resend package-legitimacy blocking checkpoint executed OUT OF ORDER (import committed before the gate) — self-caught, verified live against npm (v6.17.2, official resend/resend-node), retroactively approved by user; flagged for the 43-07 security review
 
 ### Pending Todos
 
@@ -141,7 +145,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-14T16:49:56.900Z
+Last session: 2026-07-15T11:48:20.509Z
 Stopped at: Completed 43-01-PLAN.md
 Resume file: None
 
@@ -186,3 +190,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 43-pro-backend P02 | 25min | 3 tasks | 7 files |
 | Phase 43 P01 | 20min | 2 tasks | 2 files |
 | Phase 43 P03 | ~35min | 3 tasks | 12 files |
+| Phase 43-pro-backend P05 | 30min | 3 tasks | 6 files |
