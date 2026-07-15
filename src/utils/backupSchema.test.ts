@@ -47,6 +47,26 @@ describe('DATE_FIELDS (Phase 39 — new store date-field maps)', () => {
   });
 });
 
+describe('DATE_FIELDS.quotes (Phase 43-04 — hosted-quote publish metadata round-trips)', () => {
+  it('includes publishedAt', () => {
+    expect(DATE_FIELDS.quotes).toContain('publishedAt');
+  });
+
+  it('includes hostedDecisionAt', () => {
+    expect(DATE_FIELDS.quotes).toContain('hostedDecisionAt');
+  });
+
+  it('includes hostedExpiresAt (Rule 1: same round-trip requirement as the other two Date fields)', () => {
+    expect(DATE_FIELDS.quotes).toContain('hostedExpiresAt');
+  });
+
+  it('still includes every pre-existing quotes Date field (additive only)', () => {
+    for (const field of ['createdAt', 'sentAt', 'decisionAt', 'convertedAt']) {
+      expect(DATE_FIELDS.quotes).toContain(field);
+    }
+  });
+});
+
 describe('BackupData shape (Phase 39 — type-level contract)', () => {
   it('accepts an object literal with failureEvents and maintenanceEvents arrays', () => {
     // Type-level assertion: this will fail to compile (tsc -b) if the

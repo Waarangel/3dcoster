@@ -416,6 +416,28 @@ export interface Quote {
     unitPrices: number[];
     currency: Currency;
   };
+  /**
+   * Phase 43-04 (PRO-02): hosted-quote publish metadata. Additive, optional,
+   * non-indexed — no Dexie version bump (DB stays v12, matching the
+   * variantsSnapshot/taxJurisdiction precedent). Mirrors the corresponding
+   * columns on the `hosted_quotes` Supabase table (supabase/migrations/
+   * 0001_pro_backend.sql) but lives here so the local Quote can render its
+   * own share/unpublish state without a network round-trip.
+   */
+  /** `https://3dcoster.com/q/<hostedToken>` once published. Stays set after unpublish (D-13: the URL 404s, it isn't forgotten). */
+  publishedUrl?: string;
+  /** When this Quote was most recently published. */
+  publishedAt?: Date;
+  /** Local mirror of the hosted row's `status` column. */
+  publishStatus?: 'published' | 'unpublished';
+  /** The `hosted_quotes.token` (uuid) — the sole identifier used for unpublish/refresh calls. */
+  hostedToken?: string;
+  /** Pulled back from the hosted row by `refreshStatuses()` (D-07 in-app status pull-back). */
+  hostedDecision?: 'approved' | 'declined';
+  hostedDecisionAt?: Date;
+  hostedDecisionNote?: string;
+  /** D-14: optional expiry set at share time, mirrored from `hosted_quotes.expires_at`. */
+  hostedExpiresAt?: Date;
 }
 
 // A saved print job with break-even tracking

@@ -87,7 +87,13 @@ export const DATE_FIELDS: Record<BackupStoreName, readonly string[]> = {
   sales: ['soldAt'],
   settings: [],
   customers: ['createdAt', 'lastUsedAt'],
-  quotes: ['createdAt', 'sentAt', 'decisionAt', 'convertedAt'],
+  // Phase 43-04 (PRO-02): publishedAt/hostedDecisionAt/hostedExpiresAt are
+  // the three additive Date fields on Quote's hosted-quote publish metadata
+  // (src/types.ts) — all three must round-trip or a restored backup would
+  // silently downgrade them to strings (Rule 1: hostedExpiresAt wasn't named
+  // explicitly in the plan's action text but is a Date-typed field with the
+  // exact same round-trip requirement as the other two).
+  quotes: ['createdAt', 'sentAt', 'decisionAt', 'convertedAt', 'publishedAt', 'hostedDecisionAt', 'hostedExpiresAt'],
   stockEvents: ['timestamp'],
   failureEvents: ['failedAt'],
   maintenanceEvents: ['occurredAt'],
