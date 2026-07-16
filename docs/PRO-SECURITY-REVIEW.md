@@ -275,6 +275,8 @@ The following require a live production/preview deployment and **cannot be exerc
 
 **Disposition:** these are DEPLOYMENT-TIME checklist items, not gate failures. The PRO-03 gate as scoped by the ROADMAP ("non-enumerable URLs, RLS verified, no PII in CDN caches") is fully verifiable pre-deploy and IS verified above (Controls 1, 3, 4, 5, 6, and the static half of 2 and 7). The items in this table are either (a) live-deployment-only checks that re-confirm what static/unit evidence already shows, or (b) genuinely new capability (billing, email) that cannot exist without third-party accounts the operator has not yet created. None of them represent an unreviewed or untested security boundary — they are unexercised *integrations*, clearly labeled as such.
 
+**Per the 2026-07-16 scoped sign-off (see Sign-off section), all nine items above plus the Item 2 webhook-auth remediation are formally moved to the v2.0 Launch-Day Checklist in Part 5.**
+
 ---
 
 ## Part 3 — Threat Register Disposition (from 43-07-PLAN.md `<threat_model>`)
@@ -313,6 +315,28 @@ All four threat-register entries this plan is responsible for closing are mitiga
 
 ---
 
+## Part 5 — v2.0 Launch-Day Checklist (authoritative list for the Pro backend)
+
+**Context:** Production shipping is explicitly deferred until the entire v2.0 milestone is built (project policy: Phases 38–43 stay on local `main`; deploy is the user's call; the deploy guard requires `DEPLOY_OK=1`). Per the 2026-07-16 scoped sign-off below, the deferred-to-deploy items from this review join Phase 42's live production gate check on a single launch-day checklist. **Every item here MUST be re-verified at launch before the hosted endpoint takes real traffic.**
+
+Phase 42's item remains first (precedent: commit `6eb0ea8`, recorded in `.planning/phases/42-gdpr-onboarding/42-UAT.md`):
+
+- [ ] **0. Phase 42 GDPR live gate check (FIRST — hard gate)** — run `docs/GATE-VERIFICATION.md` against live 3dcoster.com immediately after the deploy (DevTools network check: zero analytics before consent), then re-run `/gsd-verify-work 42` to close Phase 42.
+
+Phase 43 Pro-backend items (this review, Items 2 + 3):
+
+- [ ] **1. Vercel server env vars** — set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `PADDLE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` in the Vercel project (never `VITE_`-prefixed) before the deploy. (43-05, 43-06)
+- [ ] **2. Resend** — create account, verify the `3dcoster.com` sending domain (SPF/DKIM), `supabase secrets set RESEND_API_KEY=<key>`. (43-05)
+- [ ] **3. Paddle seller account** — sandbox first, then live; create the two prices (EUR 6.90/mo, EUR 69/yr — byte-identical to the ToS); set `VITE_PADDLE_CLIENT_TOKEN`, `VITE_PADDLE_PRICE_ID_MONTHLY`, `VITE_PADDLE_PRICE_ID_ANNUAL` (+ optional `VITE_PADDLE_CANCEL_URL`); register the webhook at `https://3dcoster.com/api/webhooks/paddle` for `subscription.created/updated/canceled`. (43-06)
+- [ ] **4. Supabase Auth redirect allow-list** — add `https://3dcoster.com/app` + Vercel preview URLs (Dashboard → Authentication → URL Configuration). (43-03)
+- [ ] **5. Live magic-link round trip** — request link on the deploy, click it, confirm SIGNED_IN + persisted session on reload. (43-03)
+- [ ] **6. Sandbox Paddle checkout → cancel round trip** — checkout → webhook 200 in Paddle's delivery log → `entitlements` row upserts → app shows Pro → cancel → existing published `/q/*` links still resolve (D-11). (43-06)
+- [ ] **7. Preview-deploy `curl -I` on `/q/*`** — real published token (200), unpublished, expired, and random UUID (identical 404s), all with `X-Robots-Tag: noindex` + `Cache-Control: no-store`; diff the 404 bodies for byte equality. (43-02, 43-05 / Controls 2 & 7)
+- [ ] **8. Installed-PWA freshness check** — install the PWA on the deploy, publish a quote, unpublish, reload `/q/<token>` — must return the fresh branded 404, never a stale cached shell. (43-02 / Control 7)
+- [ ] **9. Webhook auth gap remediation (Item 2 above)** — follow-up migration adding the `Authorization: Bearer <anon key>` header to `notify_quote_decision()`'s `pg_net` POST (or the shared-secret alternative), set `app.settings.functions_url`, then verify a live approve/decline round trip delivers the maker email (2xx at the gateway, not 401). (this review)
+
+---
+
 ## Sign-off
 
 This review requires a **human signature** before the hosted quote endpoint is considered cleared for production. The signature below must be provided by a human who has personally:
@@ -322,10 +346,11 @@ This review requires a **human signature** before the hosted quote endpoint is c
 
 | Field | Value |
 |-------|-------|
-| Signed by | _pending — awaiting human signature_ |
-| Date | _pending_ |
-| Decision | _pending: "approved — ship to production" / "sent back for remediation"_ |
-| Conditions attached (if any) | _pending_ |
+| Signed by | Marcus Dickinson |
+| Date | 2026-07-16 |
+| Decision | **Approved at PRE-DEPLOY scope** — the verified-now evidence (Controls 1–7, Part 1) is accepted as-is. This is NOT "approved — ship to production": production shipping is explicitly deferred until the entire v2.0 milestone is built (project policy — phases 38–43 stay on local `main`; deploy guard requires `DEPLOY_OK=1`). |
+| Conditions attached | The nine deferred-to-deploy items (Item 3) plus the webhook-auth follow-up migration (Item 2) are moved to the v2.0 Launch-Day Checklist (Part 5), joining Phase 42's live production gate check (test 4, precedent commit `6eb0ea8`). They MUST be re-verified at launch before the endpoint takes real traffic. |
+| Signature channel | Provided via orchestrated session, 2026-07-16 |
 
 ---
 
