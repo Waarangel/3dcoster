@@ -87,7 +87,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 - [x] **Phase 40: Insight Layer** - Insights tab with hourly wage, printer ROI, what-if simulator (completed 2026-07-09)
 - [x] **Phase 41: Quick-Win Features** - Reprice alerts, spool lifecycle, tax threshold tracker, Quote Variants PDF (completed 2026-07-09)
 - [ ] **Phase 42: GDPR & Onboarding** - Consent banner, privacy policy, terms, guided first-run wizard
-- [ ] **Phase 43: Pro Backend** - Supabase auth, hosted quote pages, Pro subscription billing
+- [x] **Phase 43: Pro Backend** - Supabase auth, hosted quote pages, Pro subscription billing (completed 2026-07-16)
 - [ ] **Phase 44: Sync & STL Instant Quote** - File-based device sync, STL volume estimate to calculator
 - [ ] **Phase 45: Brand & Launch** - Cost-Truth Dark redesign merge, Pro pricing copy
 
@@ -306,7 +306,7 @@ Plans:
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
-| 43. Pro Backend | 7/7 | Complete   | 2026-07-16 |
+| 43. Pro Backend | 7/7 | Complete    | 2026-07-16 |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |
 
