@@ -255,7 +255,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 43-04-PLAN.md — Publish/unpublish + Quote publish metadata + in-app status refresh (PRO-02) [wave 3]
+- [x] 43-04-PLAN.md — Publish/unpublish + Quote publish metadata + in-app status refresh (PRO-02) [wave 3]
 - [ ] 43-06-PLAN.md — Pro subscription billing via Paddle MoR (checkout, signature-verified webhook → entitlements) [wave 3]
 
 **Wave 4** *(blocked on Wave 3 completion)*
@@ -306,7 +306,7 @@ Plans:
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
-| 43. Pro Backend | 4/7 | In Progress|  |
+| 43. Pro Backend | 5/7 | In Progress|  |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |
 
