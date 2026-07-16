@@ -83,7 +83,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 ### v2.0 Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
 
 - [ ] **Phase 38: Foundation** - CostCalculator split + PERF-11 fix + tab-in-URL routing
-- [ ] **Phase 39: Cost Realism** - Failure-cost engine, TOU electricity, maintenance amortization
+- [x] **Phase 39: Cost Realism** - Failure-cost engine, TOU electricity, maintenance amortization
 - [x] **Phase 40: Insight Layer** - Insights tab with hourly wage, printer ROI, what-if simulator (completed 2026-07-09)
 - [x] **Phase 41: Quick-Win Features** - Reprice alerts, spool lifecycle, tax threshold tracker, Quote Variants PDF (completed 2026-07-09)
 - [ ] **Phase 42: GDPR & Onboarding** - Consent banner, privacy policy, terms, guided first-run wizard
