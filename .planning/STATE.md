@@ -6,14 +6,14 @@ current_phase: 43
 current_phase_name: pro-backend
 status: executing
 stopped_at: Completed 43-04-PLAN.md
-last_updated: "2026-07-16T13:12:50.734Z"
+last_updated: "2026-07-16T20:59:44.603Z"
 last_activity: 2026-07-14
 last_activity_desc: Phase 43 execution started
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 32
-  completed_plans: 30
+  completed_plans: 31
   percent: 63
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 43 (pro-backend) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-07-14 — Phase 43 execution started
 
@@ -133,6 +133,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 43-pro-backend]: 43-04: publish snapshot includes businessName (from UserProfile.name) + embedded variantsSnapshot, closing 43-05's cross-plan Known Stub so the hosted page renders the maker-brand line and quote-variant tiers — api/q/[token].ts's HostedSnapshot contract already expected these optional fields inside the single snapshot jsonb column; Quote.lineItemsSnapshot alone never carried them
 - [Phase 43-pro-backend]: 43-04: ShareQuoteButton discriminates signed-in vs signed-out only (not a live per-row entitlement read) for the Pro-chip/pitch-modal branch — avoids reintroducing the PERF-09 N-subscription/N-request problem across quote rows; 43-06 billing has not shipped so there is no live entitled state to distinguish yet; the D-11 gate is still enforced inside publish() regardless
 - [Phase 43-pro-backend]: 43-04: publish/unpublish threaded from ONE usePublishedQuote() call per container (JobsManager, PrintQuoteModal) down through JobCard/OrdersSection/OrdersQuoteRows/QuoteRow as optional props — mirrors the existing PERF-09 updateQuote threading pattern; keeps publishQuote/unpublishQuote optional so ~20 pre-existing JobsManager.test.tsx call sites did not need touching
+- [Phase 43]: 43-06: entitlement user_id mapping = Paddle checkout customData only (PADDLE_API_KEY lookup fallback reserved, unimplemented); webhook verifies the Paddle signature over the RAW body BEFORE parse/write per Paddle's documented HMAC recipe (no @paddle/paddle-node-sdk install)
+- [Phase 43]: 43-06: Pro-status vocabulary centralised in useEntitlement.isProStatus (active + past_due = Pro, trialing rejected per D-04); usePublishedQuote's D-11 publish gate now shares it — the 43-04-flagged reconciliation
+- [Phase 43]: 43-06: Cancel action is env-driven via optional VITE_PADDLE_CANCEL_URL (entitlements schema has no management_urls column); absent, BillingPanel points at Paddle receipt-email manage links
 
 ### Pending Todos
 
@@ -148,7 +151,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-16T13:12:50.726Z
+Last session: 2026-07-16T20:58:47.804Z
 Stopped at: Completed 43-04-PLAN.md
 Resume file: None
 
@@ -195,3 +198,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 43 P03 | ~35min | 3 tasks | 12 files |
 | Phase 43-pro-backend P05 | 30min | 3 tasks | 6 files |
 | Phase 43-pro-backend P04 | 50min | 2 tasks | 14 files |
+| Phase 43-pro-backend P06 | 30min | 3 tasks | 13 files |
