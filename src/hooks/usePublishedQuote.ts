@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { Quote } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useProAuth } from './useProAuth';
+import { isProStatus } from './useEntitlement';
 
 // ---------------------------------------------------------------------------
 // usePublishedQuote — publish/unpublish a hosted quote link + pull hosted
@@ -87,7 +88,10 @@ async function hasActiveEntitlement(userId: string): Promise<boolean> {
     .eq('user_id', userId)
     .maybeSingle();
   if (error || !data) return false;
-  return (data as { status: string | null }).status === 'active';
+  // Status vocabulary is owned by useEntitlement.isProStatus — the Paddle
+  // webhook (43-06) writes 'active' | 'past_due' | 'canceled' | 'paused';
+  // active + past-due-grace count as Pro (no trial anywhere, D-04).
+  return isProStatus((data as { status: string | null }).status);
 }
 
 export function usePublishedQuote(

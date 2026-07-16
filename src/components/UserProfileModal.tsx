@@ -3,6 +3,7 @@ import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG } from '../utils/currency';
 import { Input, Select, Textarea, SidePanel, Button } from './ui';
 import { useProAuth } from '../hooks/useProAuth';
+import { BillingPanel } from './pro/BillingPanel';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -52,9 +53,9 @@ export function UserProfileModal({
                       Sign out
                     </Button>
                   </div>
-                  {/* Billing panel slot — plan 43-06 mounts <BillingPanel /> here
-                      (subscription status + Paddle manage/cancel). Intentionally
-                      empty until that plan lands. */}
+                  {/* Billing panel (Phase 43-06, PRO-04): subscribe / status /
+                      cancel via Paddle MoR. Self-gates on __IS_TAURI__ too. */}
+                  <BillingPanel />
                 </div>
               ) : (
                 <div className="space-y-2">
