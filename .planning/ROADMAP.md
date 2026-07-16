@@ -260,7 +260,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 43-07-PLAN.md — PRO-03 formal security review gate + phase verification [wave 4]
+- [x] 43-07-PLAN.md — PRO-03 formal security review gate + phase verification [wave 4]
 
 **Research flag**: SATISFIED — see 43-RESEARCH.md. Supabase magic-link (PKCE, localStorage session on pure SPA; httpOnly-cookie session deferred with Tauri keyring per D-12 web-first), RLS non-enumerability via SECURITY DEFINER RPC (anon table SELECT revoked), and Paddle Billing (MoR) selected. Backend Supabase eu-central-1 locked per REQUIREMENTS.md.
 **Security gate**: PRO-03 requires a formal security review before the hosted quote endpoint ships to production (non-enumerable URLs, RLS verified, no PII in CDN caches).
@@ -306,7 +306,7 @@ Plans:
 | 40. Insight Layer | 5/5 | Complete    | 2026-07-09 |
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
-| 43. Pro Backend | 6/7 | In Progress|  |
+| 43. Pro Backend | 7/7 | Complete   | 2026-07-16 |
 | 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |
 

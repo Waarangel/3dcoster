@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 43
 current_phase_name: pro-backend
-status: executing
-stopped_at: Completed 43-04-PLAN.md
-last_updated: "2026-07-16T20:59:44.603Z"
+status: verifying
+stopped_at: Completed 43-07-PLAN.md — Phase 43 all 7 plans executed, ready for phase verification
+last_updated: "2026-07-16T22:45:28.582Z"
 last_activity: 2026-07-14
 last_activity_desc: Phase 43 execution started
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 32
-  completed_plans: 31
-  percent: 63
+  completed_plans: 32
+  percent: 75
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 Phase: 43 (pro-backend) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-14 — Phase 43 execution started
 
 ## v2.0 Phase Order Reference
@@ -136,6 +136,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 43]: 43-06: entitlement user_id mapping = Paddle checkout customData only (PADDLE_API_KEY lookup fallback reserved, unimplemented); webhook verifies the Paddle signature over the RAW body BEFORE parse/write per Paddle's documented HMAC recipe (no @paddle/paddle-node-sdk install)
 - [Phase 43]: 43-06: Pro-status vocabulary centralised in useEntitlement.isProStatus (active + past_due = Pro, trialing rejected per D-04); usePublishedQuote's D-11 publish gate now shares it — the 43-04-flagged reconciliation
 - [Phase 43]: 43-06: Cancel action is env-driven via optional VITE_PADDLE_CANCEL_URL (entitlements schema has no management_urls column); absent, BillingPanel points at Paddle receipt-email manage links
+- [Phase ?]: 43-07: PRO-03 security review signed at PRE-DEPLOY scope (Marcus Dickinson 2026-07-16) — verified-now evidence accepted; production shipping deferred until all of v2.0 is built; 9 deploy-time items + webhook-auth migration moved to the v2.0 Launch-Day Checklist in docs/PRO-SECURITY-REVIEW.md Part 5 (joins Phase 42 test 4 as item 0)
+- [Phase ?]: 43-07: notify_quote_decision() webhook auth gap dispositioned OPEN/tracked non-blocking — pg_net POST has no Authorization header vs verify_jwt=true edge function; inert while app.settings.functions_url is NULL; remediation = follow-up migration adding anon-key bearer + functions_url at deploy (launch-day item 9)
+- [Phase ?]: 43-07: 43-05 resend package-gate ordering violation CLOSED — zero execution exposure, registry-verified official package, retroactive user approval; process note: blocking-human gates mean no commits until resume signal
 
 ### Pending Todos
 
@@ -151,8 +154,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-16T20:58:47.804Z
-Stopped at: Completed 43-04-PLAN.md
+Last session: 2026-07-16T22:45:14.811Z
+Stopped at: Completed 43-07-PLAN.md — Phase 43 all 7 plans executed, ready for phase verification
 Resume file: None
 
 ## Operator Next Steps
@@ -199,3 +202,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 43-pro-backend P05 | 30min | 3 tasks | 6 files |
 | Phase 43-pro-backend P04 | 50min | 2 tasks | 14 files |
 | Phase 43-pro-backend P06 | 30min | 3 tasks | 13 files |
+| Phase 43 P07 | 20min | 2 tasks | 1 files |
