@@ -40,6 +40,9 @@ export const featureReleases: Record<string, Date> = {
   // wizard. The consent banner and legal pages are NOT features (D-CONTEXT)
   // — only the wizard itself is user-facing and gets a NEW badge.
   'onboarding-wizard': new Date('2026-07-09'),
+  // v2.0 Phase 43 — Pro Backend (PRO-02): Share quote publishes a hosted,
+  // maker-branded quote link a customer can Approve/Decline.
+  'share-quote': new Date('2026-07-15'),
   // Add new features here with their release date
 };
 

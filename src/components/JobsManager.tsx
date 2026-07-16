@@ -3,6 +3,8 @@ import type { SVGProps } from 'react';
 import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Quote, QuoteStatus, MarketplaceFees, PrinterInstance } from '../types';
 import { useSales, useAllSales, useQuotes } from '../hooks/useDatabase';
+import { usePublishedQuote, type PublishOptions } from '../hooks/usePublishedQuote';
+import { ShareQuoteButton } from './pro/ShareQuoteButton';
 import { db } from '../db/database';
 import { Button, EditButton, DeleteButton, IconButton, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
 import { ClipboardListIcon } from './ui/icons';
@@ -139,6 +141,9 @@ type JobCardProps = {
   getQuotesForJob: (jobId: string) => Quote[];
   /** PERF-09: updateQuote from the single parent useQuotes() call, threaded down for the Reopen action. */
   updateQuote: (quote: Quote) => Promise<void>;
+  /** Phase 43-04 (PRO-02): publish/unpublish from the single parent usePublishedQuote() call, threaded down for ShareQuoteButton (PERF-09-style — avoids a per-row hook instance). */
+  publishQuote?: (quote: Quote, options?: PublishOptions) => Promise<string>;
+  unpublishQuote?: (quote: Quote) => Promise<void>;
   /** Phase 16 plan 16-12: when provided, enables the Convert to Sale button on Pending Quotes in the Orders section. */
   onStartConversion?: (quote: Quote) => void;
   /** Phase 16 ext2 D-27: opens PrintQuoteModal in edit mode for the given Pending Quote. */
@@ -233,9 +238,12 @@ interface QuoteRowProps {
   onEdit?: () => void;
   onDecline?: () => void;
   onReopen?: () => Promise<void>;
+  /** Phase 43-04 (PRO-02): from the single parent usePublishedQuote() call — renders ShareQuoteButton on the row. */
+  publishQuote?: (quote: Quote, options?: PublishOptions) => Promise<string>;
+  unpublishQuote?: (quote: Quote) => Promise<void>;
 }
 
-function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: QuoteRowProps) {
+function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen, publishQuote, unpublishQuote }: QuoteRowProps) {
   const customerLabel = quote.customerSnapshot.name || quote.customerSnapshot.email || 'No customer';
   const currency = quote.lineItemsSnapshot.currency;
   const total = quote.lineItemsSnapshot.sellingPrice + quote.lineItemsSnapshot.shippingCost + quote.lineItemsSnapshot.taxAmount;
@@ -305,6 +313,12 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
         <div className="font-semibold text-slate-100 truncate flex items-center gap-2">
           {formatQuoteNumber(quote.quoteNumber)} · {customerLabel}
           <QuoteStatusPill kind={pillKind} />
+          {/* Phase 43-04 (PRO-02): published-affordance badge, consistent with the pill styling above. */}
+          {quote.publishStatus === 'published' && (
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-700/30 text-blue-300">
+              Live link
+            </span>
+          )}
         </div>
         <div className="text-xs text-slate-400">
           Quoted {formatRelativeDate(new Date(quote.sentAt))} · {formatCurrency(total, currency)}
@@ -327,6 +341,9 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
             >
               Convert to Sale
             </Button>
+            {publishQuote && unpublishQuote && (
+              <ShareQuoteButton quote={quote} publish={publishQuote} unpublish={unpublishQuote} />
+            )}
             {/* allow-raw-html: overflow toggle is a small icon button, not a CTA — Button primitive would dwarf the row */}
             <button
               ref={overflowTriggerRef}
@@ -367,10 +384,17 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen }: Q
             )}
           </>
         )}
-        {pillKind === 'declined' && onReopen && (
-          <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onReopen(); }}>
-            Reopen
-          </Button>
+        {pillKind === 'declined' && (
+          <>
+            {onReopen && (
+              <Button variant="secondary" btnSize="sm" onClick={(e) => { e.stopPropagation(); void onReopen(); }}>
+                Reopen
+              </Button>
+            )}
+            {publishQuote && unpublishQuote && (
+              <ShareQuoteButton quote={quote} publish={publishQuote} unpublish={unpublishQuote} />
+            )}
+          </>
         )}
       </div>
     </li>
@@ -392,6 +416,8 @@ export function OrdersQuoteRows({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
+  publishQuote,
+  unpublishQuote,
 }: {
   /** Kept for API compatibility — the quotes slice is now passed via quotesForJob. */
   jobId: string;
@@ -400,6 +426,9 @@ export function OrdersQuoteRows({
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
+  /** Phase 43-04 (PRO-02): from the single parent usePublishedQuote() call. */
+  publishQuote?: (quote: Quote, options?: PublishOptions) => Promise<string>;
+  unpublishQuote?: (quote: Quote) => Promise<void>;
 }) {
   // Filter out 'converted' (D-26) and 'draft' (G6 legacy) rows — only Pending + Declined render here.
   const visible = quotesForJob.filter(q => quoteStatusToPill(q.status) !== null);
@@ -425,6 +454,8 @@ export function OrdersQuoteRows({
               // D-29 Reopen: clears decisionAt + declineReason; flips back to 'sent'.
               await updateQuote({ ...quote, status: 'sent', decisionAt: undefined, declineReason: undefined });
             } : undefined}
+            publishQuote={publishQuote}
+            unpublishQuote={unpublishQuote}
           />
         );
       })}
@@ -448,6 +479,8 @@ function OrdersSection({
   onStartConversion,
   onEditQuote,
   onDeclineQuote,
+  publishQuote,
+  unpublishQuote,
   children,
 }: {
   jobId: string;
@@ -457,6 +490,9 @@ function OrdersSection({
   onStartConversion?: (quote: Quote) => void;
   onEditQuote?: (quote: Quote) => void;
   onDeclineQuote?: (quote: Quote) => void;
+  /** Phase 43-04 (PRO-02): from the single parent usePublishedQuote() call. */
+  publishQuote?: (quote: Quote, options?: PublishOptions) => Promise<string>;
+  unpublishQuote?: (quote: Quote) => Promise<void>;
   children?: React.ReactNode;  // Sale rows render block from JobCard
 }) {
   const visibleQuotes = quotesForJob.filter(q => quoteStatusToPill(q.status) !== null);
@@ -474,6 +510,8 @@ function OrdersSection({
         onStartConversion={onStartConversion}
         onEditQuote={onEditQuote}
         onDeclineQuote={onDeclineQuote}
+        publishQuote={publishQuote}
+        unpublishQuote={unpublishQuote}
       />
       {children}
     </div>
@@ -494,6 +532,8 @@ export const JobCard = memo(function JobCard({
   getFilamentName,
   getQuotesForJob,
   updateQuote,
+  publishQuote,
+  unpublishQuote,
   onToggleSelect,
   onOpenSaleForm,
   onEdit,
@@ -868,6 +908,8 @@ export const JobCard = memo(function JobCard({
             onStartConversion={onStartConversion}
             onEditQuote={onEditQuote}
             onDeclineQuote={onDeclineQuote}
+            publishQuote={publishQuote}
+            unpublishQuote={unpublishQuote}
           >
             {recentSales && recentSales.length > 0 && (
               <div className="space-y-1 mt-1">
@@ -905,6 +947,9 @@ type JobRowProps = {
   getQuotesForJob: (jobId: string) => Quote[];
   /** PERF-09: updateQuote from the single parent useQuotes() call. */
   updateQuote: (quote: Quote) => Promise<void>;
+  /** Phase 43-04 (PRO-02): from the single parent usePublishedQuote() call. */
+  publishQuote?: (quote: Quote, options?: PublishOptions) => Promise<string>;
+  unpublishQuote?: (quote: Quote) => Promise<void>;
   getBreakEvenInfo: (job: PrintJob) => BreakEvenInfo;
   onToggleSelect: (id: string) => void;
   onOpenSaleForm: (job: PrintJob) => void;
@@ -942,6 +987,8 @@ const JobRow = ({
   getFilamentName,
   getQuotesForJob,
   updateQuote,
+  publishQuote,
+  unpublishQuote,
   getBreakEvenInfo,
   onToggleSelect,
   onOpenSaleForm,
@@ -977,6 +1024,8 @@ const JobRow = ({
       getFilamentName={getFilamentName}
       getQuotesForJob={getQuotesForJob}
       updateQuote={updateQuote}
+      publishQuote={publishQuote}
+      unpublishQuote={unpublishQuote}
       onToggleSelect={onToggleSelect}
       onOpenSaleForm={onOpenSaleForm}
       onEdit={onEdit}
@@ -1130,7 +1179,25 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
   // PERF-09: single useQuotes() call for the entire component tree. quotesByJobId
   // feeds getQuotesForJob (below); updateQuoteFromHook feeds the Decline modal
   // and the Reopen action via the prop chain.
-  const { quotesByJobId, updateQuote: updateQuoteFromHook } = useQuotes();
+  const { quotes, quotesByJobId, updateQuote: updateQuoteFromHook } = useQuotes();
+
+  // Phase 43-04 (PRO-02): one usePublishedQuote() call for the whole tree —
+  // publish/unpublish are threaded down to each QuoteRow's ShareQuoteButton
+  // via the same prop-chain pattern as updateQuoteFromHook above (mirrors
+  // PERF-09; a per-row hook call would add a Supabase round-trip per row).
+  const { publish: publishQuote, unpublish: unpublishQuote, refreshStatuses } =
+    usePublishedQuote(userProfile.name, updateQuoteFromHook);
+
+  // D-07: pull hosted approve/decline status back into the app once when the
+  // Jobs surface mounts. Safe to call unconditionally — refreshStatuses is a
+  // no-op when signed out and never reads entitlements (D-11), so a lapsed
+  // subscription never blocks this. Intentionally NOT re-run when `quotes`
+  // changes (would create a refresh storm as updateQuote's own writes flow
+  // back through the liveQuery) — this is a one-time "on open" refresh.
+  useEffect(() => {
+    void refreshStatuses(quotes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-time refresh on mount only, see comment above
+  }, []);
 
   // PERF-09: stable per-job slice accessor. useCallback([quotesByJobId]) keeps
   // identity stable when the Map ref hasn't changed, so rowProps (and JobCard
@@ -1512,6 +1579,9 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     // quotes change (stable when quotesByJobId Map ref is unchanged).
     getQuotesForJob,
     updateQuote: updateQuoteFromHook,
+    // Phase 43-04 (PRO-02): from the single parent usePublishedQuote() call above.
+    publishQuote,
+    unpublishQuote,
     // PERF-01 (D-19, Pitfall 6): preserve JobRowProps shape with an arrow
     // wrapper so JobCard's prop interface stays unchanged.
     getBreakEvenInfo: (job: PrintJob) => breakEvenMap.get(job.id)!,
@@ -1536,7 +1606,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
     onCancelAddTag: handleCancelAddTag,
     onSubmitAddTag: handleSubmitAddTag,
     onRemoveTag: handleRemoveTag,
-  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, getQuotesForJob, updateQuoteFromHook, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleLogFailure, handleOpenWhatIf, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
+  }), [searchedJobs, selectedJobId, sales, userCurrency, getFilamentName, getQuotesForJob, updateQuoteFromHook, publishQuote, unpublishQuote, breakEvenMap, handleToggleSelect, handleOpenSaleForm, onEditJob, handleDeleteJob, handleGeneratePdf, handleEditSaleStable, handleDeleteSaleStable, handleLogFailure, handleOpenWhatIf, handleStartConversion, handleStartEditQuote, handleStartDecline, editingTitleJobId, handleStartEditTitle, handleCancelEditTitle, handleSaveTitle, addingTagJobId, handleStartAddTag, handleCancelAddTag, handleSubmitAddTag, handleRemoveTag]);
 
   // Search-only clearer — used by the filter-empty-state CTA below the sticky sub-header
   // (Gap C: TAGS-02 withdrawn 2026-05-24).
@@ -1733,6 +1803,8 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
                       getFilamentName={getFilamentName}
                       getQuotesForJob={getQuotesForJob}
                       updateQuote={updateQuoteFromHook}
+                      publishQuote={publishQuote}
+                      unpublishQuote={unpublishQuote}
                       onToggleSelect={handleToggleSelect}
                       onOpenSaleForm={handleOpenSaleForm}
                       onEdit={onEditJob}

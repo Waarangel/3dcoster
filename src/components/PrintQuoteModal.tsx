@@ -9,6 +9,8 @@ import { calculateTax } from '../utils/costCalc';
 import { computeJobShipping } from '../utils/jobShipping';
 import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
 import { formatQuoteNumber } from '../utils/format';
+import { usePublishedQuote } from '../hooks/usePublishedQuote';
+import { ShareQuoteButton } from './pro/ShareQuoteButton';
 
 // ---------------------------------------------------------------------------
 // CONN-03 Quantity variants (D-05..D-08). Three fixed tier slots, defaulting
@@ -68,6 +70,10 @@ export interface PrintQuoteModalProps {
 export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onClose, onQuoteCreated, editingQuote }: PrintQuoteModalProps) {
   const { customers, customersByEmail } = useCustomers();
   const { createQuote, updateQuote } = useQuotes();
+  // Phase 43-04 (PRO-02): Share/Unpublish for the quote currently being
+  // edited. D-13: only edit-mode has an already-created Quote to publish —
+  // create-mode's Quote doesn't exist yet until Create Quote is clicked.
+  const { publish: publishQuote, unpublish: unpublishQuote } = usePublishedQuote(userProfile.name, updateQuote);
 
   const isEdit = editingQuote !== undefined;
 
@@ -578,18 +584,26 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 pt-2 border-t border-slate-700">
-          <Button variant="secondary" btnSize="md" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            btnSize="md"
-            onClick={() => { void handleGenerateQuote(); }}
-            disabled={generateDisabled}
-          >
-            {isGenerating ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save & Re-download' : 'Create Quote')}
-          </Button>
+        <div className="flex items-center justify-between gap-2 p-4 pt-2 border-t border-slate-700">
+          {/* D-13: only edit-mode has an already-created Quote to share — create-mode's Quote doesn't exist until Create Quote is clicked. */}
+          <div>
+            {editingQuote && (
+              <ShareQuoteButton quote={editingQuote} publish={publishQuote} unpublish={unpublishQuote} />
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" btnSize="md" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              btnSize="md"
+              onClick={() => { void handleGenerateQuote(); }}
+              disabled={generateDisabled}
+            >
+              {isGenerating ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save & Re-download' : 'Create Quote')}
+            </Button>
+          </div>
         </div>
     </Modal>
   );

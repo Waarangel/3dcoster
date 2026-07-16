@@ -5,6 +5,13 @@ import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import type { Customer, PrintJob, UserProfile, Quote } from '../types';
 import type { CreateQuoteInput } from '../hooks/useDatabase';
+import { ToastProvider } from './ui';
+
+// Phase 43-04: PrintQuoteModal now renders ShareQuoteButton (D-12 gate reads
+// __IS_TAURI__ directly) when editingQuote is set. Same stub pattern as
+// App.test.tsx / SettingsModal.test.tsx — the Vite `define` global does not
+// exist under Vitest without this.
+vi.stubGlobal('__IS_TAURI__', false);
 
 // ---------------------------------------------------------------------------
 // PrintQuoteModal — Phase 16 gap closure (16-10).
@@ -190,7 +197,11 @@ async function renderModal(opts: { job?: PrintJob; userProfile?: UserProfile; on
     onQuoteCreated: opts.onQuoteCreated ?? vi.fn(),
   };
   await act(async () => {
-    root!.render(<PrintQuoteModal {...props} />);
+    root!.render(
+      <ToastProvider>
+        <PrintQuoteModal {...props} />
+      </ToastProvider>,
+    );
   });
   return props;
 }
@@ -369,15 +380,19 @@ describe('PrintQuoteModal — edit mode (D-27)', () => {
     };
 
     await act(async () => {
-      root!.render(<PrintQuoteModal
-        job={makeJob()}
-        userProfile={makeUserProfile()}
-        shippingConfig={makeShippingConfig()}
-        isOpen={true}
-        onClose={onClose}
-        onQuoteCreated={onQuoteCreated}
-        editingQuote={editingQuote}
-      />);
+      root!.render(
+        <ToastProvider>
+          <PrintQuoteModal
+            job={makeJob()}
+            userProfile={makeUserProfile()}
+            shippingConfig={makeShippingConfig()}
+            isOpen={true}
+            onClose={onClose}
+            onQuoteCreated={onQuoteCreated}
+            editingQuote={editingQuote}
+          />
+        </ToastProvider>,
+      );
     });
 
     // Title flips to Edit Quote
