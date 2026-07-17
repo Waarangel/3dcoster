@@ -60,11 +60,14 @@ export interface ValidatedBackup {
   counts: Record<BackupStoreName, number>;
 }
 
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
+// Exported (not just used internally) so syncMerge.ts (Phase 44-01) can reuse
+// the SAME forbidden-key / plain-record guards for tombstone validation
+// instead of re-implementing a second, potentially weaker, check.
+export function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function hasForbiddenKey(record: Record<string, unknown>): string | null {
+export function hasForbiddenKey(record: Record<string, unknown>): string | null {
   for (const key of Object.keys(record)) {
     if (FORBIDDEN_KEYS.has(key)) return key;
   }

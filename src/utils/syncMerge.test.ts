@@ -17,7 +17,7 @@ function validMeta() {
   };
 }
 
-function emptyData() {
+function emptyData(): Record<string, unknown[]> {
   return {
     materials: [],
     printers: [],
@@ -82,8 +82,12 @@ describe('validateSyncFile — schema version gate (SYNC-01)', () => {
 
 describe('validateSyncFile — delegates structural + forbidden-key checks to validateBackupFile', () => {
   it('rejects a record carrying a __proto__ key (whole-file rejection)', () => {
+    // JSON.parse creates __proto__ as a plain own property (mirrors a real
+    // attack payload) — object-literal syntax would set the actual prototype
+    // instead, which is a different (non-attack) shape.
+    const evilRecord = JSON.parse('{"id":"m1","__proto__":{"evil":true}}');
     const data = emptyData();
-    data.materials = [{ id: 'm1', __proto__: { evil: true } }] as unknown[];
+    data.materials = [evilRecord];
     const result = validateSyncFile({
       meta: validMeta(),
       data,
