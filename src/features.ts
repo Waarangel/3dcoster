@@ -43,6 +43,14 @@ export const featureReleases: Record<string, Date> = {
   // v2.0 Phase 43 — Pro Backend (PRO-02): Share quote publishes a hosted,
   // maker-branded quote link a customer can Approve/Decline.
   'share-quote': new Date('2026-07-15'),
+  // v2.0 Phase 44 — Sync & STL Instant Quote (SYNC-01, CONN-02). Both keys
+  // owned here in Plan 01 (like Phase 39 Plan 01) so no other Wave-1 plan
+  // writes features.ts. Consumed downstream via <NewBadge feature=...>:
+  // the STL estimate key by the calculator import flow, the sync key by
+  // the Settings Data-tab sync UI. Re-confirm both dates are still within
+  // NEW_FEATURE_MAX_AGE_DAYS at the eventual v2.0 tag.
+  'sync-devices': new Date('2026-07-17'),
+  'stl-estimate': new Date('2026-07-17'),
   // Add new features here with their release date
 };
 
