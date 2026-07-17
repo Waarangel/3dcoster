@@ -277,8 +277,25 @@ Plans:
   3. User can upload an STL or 3MF file and see an estimated filament weight and material cost pre-filled into the calculator — with an explicit infill-percentage input, a units-detection warning (mm vs inches), a non-manifold mesh warning if applicable, and a visible "this is an estimate — review before quoting" disclaimer
   4. The STL/3MF parsing never blocks the main thread or adds to the main bundle — Three.js loads only when the user initiates an upload (dynamic import, same CI gate as jsPDF)
 
-**Plans**: TBD
-**Research flag**: REQUIRED before planning — file-based sync conflict detection for multi-tab races (BroadcastChannel lock patterns, atomic JSON write in Tauri) is likely underestimated. Recommend a research spike on BroadcastChannel + atomic write before creating plans.
+**Plans**: 6 plans in 3 waves
+
+**Wave 1** *(independent foundations, parallel)*
+
+- [ ] 44-01-PLAN.md — Sync contract + LWW/tombstone merge core (pure) + both NEW-badge keys (SYNC-01, D-05/06/07)
+- [ ] 44-02-PLAN.md — STL mesh math (volume/area/non-manifold/shells+infill/units) + three lazy chunk + CI gate (CONN-02, D-10/13/14/15/16)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 44-03-PLAN.md — Sync write-layer: db v13 syncTombstones, centralized updatedAt stamping, applyMerge transaction (SYNC-01, D-05/06)
+- [ ] 44-04-PLAN.md — Sync IO: Web Locks critical section, atomic read/write, Tauri persisted-scope + folder picker (SYNC-01, D-01/02)
+- [ ] 44-05-PLAN.md — STL worker + MeshEstimateCard (preview/infill/warnings/Apply) + drop-zone routing (CONN-02, D-09/11/12)
+
+**Wave 3** *(blocked on 44-03 + 44-04)*
+
+- [ ] 44-06-PLAN.md — Sync UI + orchestration: Backup/Restore/Sync tab, merge summary, debounced auto-write, launch merge check, pre-merge undo (SYNC-01, D-01/02/03/04/07/08)
+
+**Research flag**: SATISFIED — see 44-RESEARCH.md. Web Locks API (not BroadcastChannel) provides the multi-tab mutex; web writes are atomic via createWritable(); desktop needs write-temp-then-rename + tauri-plugin-persisted-scope (without it D-01's "pick once" breaks on restart); tombstone-based LWW extends the existing backup/restore contract. STL/3MF mesh math runs in a Web Worker with three lazy-loaded behind the same CI gate as jsPDF.
+**UI hint**: yes
 
 ### Phase 45: Brand & Launch
 
@@ -307,7 +324,7 @@ Plans:
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
 | 43. Pro Backend | 7/7 | Complete    | 2026-07-16 |
-| 44. Sync & STL Instant Quote | 0/TBD | Not started | - |
+| 44. Sync & STL Instant Quote | 0/6 | Planned | - |
 | 45. Brand & Launch | 0/TBD | Not started | - |
 
 <details>
