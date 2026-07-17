@@ -58,6 +58,51 @@ export interface BackupFile {
 }
 
 /**
+ * A tombstone marks a deleted record so the deletion can propagate to other
+ * devices during a sync merge (SYNC-01 D-06). `store` disambiguates the id
+ * across BACKUP_STORES (ids are not globally unique). `deletedAt` is the
+ * timestamp the deletion happened locally — computeMerge (44-01 Task 2)
+ * compares it against the surviving record's `updatedAt` to implement
+ * edit-wins semantics.
+ */
+export interface SyncTombstone {
+  id: string;
+  store: BackupStoreName;
+  deletedAt: Date;
+}
+
+/** Date fields on a SyncTombstone that must be rehydrated on read (mirrors DATE_FIELDS). */
+export const TOMBSTONE_DATE_FIELDS = ['deletedAt'] as const;
+
+/**
+ * Tombstone retention window (SYNC-01, RESEARCH.md Open Question 1). Longer
+ * than any realistic offline gap between two synced devices, but bounded so
+ * the tombstone list cannot grow unbounded across a long-lived install.
+ * computeMerge prunes tombstones older than this on every merge.
+ */
+export const SYNC_TOMBSTONE_RETENTION_DAYS = 90;
+
+/** Per-device sync metadata carried in the sync file envelope. */
+export interface SyncFileMeta {
+  /** Stable per-device UUID, minted client-side on first sync setup. */
+  deviceId: string;
+  /** ISO 8601 timestamp of this device's last successful sync. */
+  lastSyncedAt: string;
+}
+
+/**
+ * The sync file envelope = the backup envelope (meta + data, validated by
+ * validateBackupFile unchanged) PLUS tombstones + syncMeta. Keeping SyncFile
+ * as an extension of BackupFile (rather than a parallel shape) is what lets
+ * validateSyncFile (syncMerge.ts, Task 2) delegate structural validation to
+ * validateBackupFile verbatim instead of re-implementing it.
+ */
+export interface SyncFile extends BackupFile {
+  tombstones: SyncTombstone[];
+  syncMeta: SyncFileMeta;
+}
+
+/**
  * The 9 store names in fixed order — the single source of truth for
  * iteration in export, validation, and the restore transaction.
  */
@@ -80,21 +125,24 @@ export const DATE_FIELDS: Record<BackupStoreName, readonly string[]> = {
   // Phase 41 LIFE-01 (D-09): Asset.openedAt is a Date field — rehydrate it
   // on restore. dryingLog is intentionally NOT listed here: it's an array of
   // ISO date-only STRINGS by design (D-10) and must stay strings.
-  materials: ['openedAt'],
-  printers: [],
-  printerInstances: ['purchaseDate'],
+  // Phase 44-01 (SYNC-01, D-05): 'updatedAt' appended to every store below —
+  // the LWW basis for sync merges. Additive only, existing fields preserved.
+  materials: ['openedAt', 'updatedAt'],
+  printers: ['updatedAt'],
+  printerInstances: ['purchaseDate', 'updatedAt'],
   jobs: ['createdAt', 'updatedAt'],
-  sales: ['soldAt'],
-  settings: [],
-  customers: ['createdAt', 'lastUsedAt'],
+  sales: ['soldAt', 'updatedAt'],
+  // Settings rows gain a stamped updatedAt in 44-03 for row-level LWW.
+  settings: ['updatedAt'],
+  customers: ['createdAt', 'lastUsedAt', 'updatedAt'],
   // Phase 43-04 (PRO-02): publishedAt/hostedDecisionAt/hostedExpiresAt are
   // the three additive Date fields on Quote's hosted-quote publish metadata
   // (src/types.ts) — all three must round-trip or a restored backup would
   // silently downgrade them to strings (Rule 1: hostedExpiresAt wasn't named
   // explicitly in the plan's action text but is a Date-typed field with the
   // exact same round-trip requirement as the other two).
-  quotes: ['createdAt', 'sentAt', 'decisionAt', 'convertedAt', 'publishedAt', 'hostedDecisionAt', 'hostedExpiresAt'],
-  stockEvents: ['timestamp'],
-  failureEvents: ['failedAt'],
-  maintenanceEvents: ['occurredAt'],
+  quotes: ['createdAt', 'sentAt', 'decisionAt', 'convertedAt', 'publishedAt', 'hostedDecisionAt', 'hostedExpiresAt', 'updatedAt'],
+  stockEvents: ['timestamp', 'updatedAt'],
+  failureEvents: ['failedAt', 'updatedAt'],
+  maintenanceEvents: ['occurredAt', 'updatedAt'],
 };
