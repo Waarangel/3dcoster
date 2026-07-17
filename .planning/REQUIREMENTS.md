@@ -53,7 +53,7 @@
 
 ### Sync & Onboarding
 
-- [ ] **SYNC-01**: User can sync between devices via file-based export/merge (user-owned folder e.g. Dropbox/Drive) with last-write-wins semantics, schema-version checks on import, and corruption guards (atomic writes, multi-tab safety) — free floor, no backend
+- [x] **SYNC-01**: User can sync between devices via file-based export/merge (user-owned folder e.g. Dropbox/Drive) with last-write-wins semantics, schema-version checks on import, and corruption guards (atomic writes, multi-tab safety) — free floor, no backend
 - [x] **ONBD-01**: First-run users get a guided, skippable, resumable onboarding wizard (add printer → add filament → price first job) that never blocks returning users or touches existing data
 
 ### GDPR & Legal (hard gate before backend)
@@ -133,7 +133,7 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | PRO-02 | Phase 43 | Complete |
 | PRO-03 | Phase 43 | Complete |
 | PRO-04 | Phase 43 | Complete |
-| SYNC-01 | Phase 44 | Pending |
+| SYNC-01 | Phase 44 | Complete |
 | CONN-02 | Phase 44 | Pending |
 | BRAND-01 | Phase 45 | Pending |
 

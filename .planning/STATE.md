@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 44
-current_phase_name: Sync & STL Instant Quote
+current_phase_name: sync-stl-instant-quote
 status: executing
 stopped_at: Phase 44 context gathered
-last_updated: "2026-07-17T01:50:29.220Z"
-last_activity: 2026-07-16
-last_activity_desc: Phase 43 complete, transitioned to Phase 44
+last_updated: "2026-07-17T13:58:17.823Z"
+last_activity: 2026-07-17
+last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 32
-  completed_plans: 32
+  total_plans: 38
+  completed_plans: 33
   percent: 75
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–45). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 43 — pro-backend
+**Current focus:** Phase 44 — sync-stl-instant-quote
 
 ## Current Position
 
-Phase: 44 — Sync & STL Instant Quote
-Plan: Not started
+Phase: 44 (sync-stl-instant-quote) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-07-16 — Phase 43 complete, transitioned to Phase 44
+Last activity: 2026-07-17 — Phase 44 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -139,6 +139,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 43-07: PRO-03 security review signed at PRE-DEPLOY scope (Marcus Dickinson 2026-07-16) — verified-now evidence accepted; production shipping deferred until all of v2.0 is built; 9 deploy-time items + webhook-auth migration moved to the v2.0 Launch-Day Checklist in docs/PRO-SECURITY-REVIEW.md Part 5 (joins Phase 42 test 4 as item 0)
 - [Phase ?]: 43-07: notify_quote_decision() webhook auth gap dispositioned OPEN/tracked non-blocking — pg_net POST has no Authorization header vs verify_jwt=true edge function; inert while app.settings.functions_url is NULL; remediation = follow-up migration adding anon-key bearer + functions_url at deploy (launch-day item 9)
 - [Phase ?]: 43-07: 43-05 resend package-gate ordering violation CLOSED — zero execution exposure, registry-verified official package, retroactive user approval; process note: blocking-human gates mean no commits until resume signal
+- [Phase ?]: 44-01: computeMerge resolves tombstone edit-wins symmetrically (remote tombstone vs local edit, AND local tombstone vs resurrecting remote edit) — the plan's explicit truth only names one direction, but MergeInput carries both localTombstones and remoteTombstones
+- [Phase ?]: 44-01: exported isPlainRecord/hasForbiddenKey from backupRestore.ts (previously private) so syncMerge.ts's tombstone-array validation reuses the same forbidden-key guard rather than a second validator
 
 ### Pending Todos
 
@@ -154,7 +156,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-17T01:11:34.561Z
+Last session: 2026-07-17T13:53:24.000Z
 Stopped at: Phase 44 context gathered
 Resume file: .planning/phases/44-sync-stl-instant-quote/44-CONTEXT.md
 
@@ -203,3 +205,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 43-pro-backend P04 | 50min | 2 tasks | 14 files |
 | Phase 43-pro-backend P06 | 30min | 3 tasks | 13 files |
 | Phase 43 P07 | 20min | 2 tasks | 1 files |
+| Phase 44 P01 | 6min | 3 tasks | 6 files |
