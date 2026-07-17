@@ -1,8 +1,8 @@
 ---
 phase: 44
 slug: sync-stl-instant-quote
-status: draft
-nyquist_compliant: false
+status: approved
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-16
 ---
@@ -71,11 +71,11 @@ created: 2026-07-16
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 90s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies (gsd-plan-checker verified: every task in all 6 plans carries an `<automated>` command)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (no broken Wave-0 refs; test files are created by their own plans during execution — `wave_0_complete` flips then)
+- [x] No watch-mode flags
+- [x] Feedback latency < 90s for per-task quick-runs (full `npm run build` chain in 44-02/44-05/44-06 exceeds this — accepted as WARNING per dimension 8b threshold, runs at wave/phase boundaries)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-07-16 (gsd-plan-checker VERIFICATION PASSED, 2 non-blocking warnings closed)

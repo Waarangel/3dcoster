@@ -442,14 +442,16 @@ A sibling `scripts/assert-no-static-three-import.mjs`, cloned from `assert-no-st
 
 **If this table is empty:** N/A — three items above need light confirmation, none are load-bearing enough to block planning.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact tombstone retention window**
+   - RESOLVED (planning): Plan 44-01 sets `SYNC_TOMBSTONE_RETENTION_DAYS = 90`, matching the recommendation below.
    - What we know: D-06 requires pruning after "a retention window" and explicitly defers the exact number to the planner.
    - What's unclear: No product/legal constraint was surfaced during research that mandates a specific value (unlike, say, GDPR retention requirements elsewhere in this project).
    - Recommendation: Pick something safely longer than the realistic max gap between two devices syncing (e.g., 90 days) — long enough that a device that's been offline for a normal vacation/hiatus doesn't silently resurrect a deletion it never saw, short enough that the tombstone store doesn't grow unbounded for active users. Document the choice with the same reasoning-comment convention already used for `MAX_RECORDS_PER_STORE` etc. in `backupSchema.ts`.
 
 2. **Whether `ThreeMFLoader.parse()`'s Group traversal reliably yields exactly one estimate-relevant mesh for the multi-plate/multi-object 3MF files this app already sees via the sliced path**
+   - RESOLVED (planning): Plan 44-05 sums all mesh geometries in the loaded Group and surfaces the object count in the estimate-card breakdown, per the recommendation below.
    - What we know: The existing `threeMfParser.ts` already handles multi-plate sliced 3MF files (Bambu/Orca). A non-sliced 3MF opened via `ThreeMFLoader` for the mesh-estimate path could, in principle, also contain multiple objects/plates.
    - What's unclear: Whether D-13's weight model should sum volume across all meshes in the Group, or only estimate the first/largest one, when a non-sliced 3MF contains multiple objects.
    - Recommendation: Default to summing all mesh geometries found in the loaded Group (most conservative, matches "what would actually print" if all objects are on the plate); surface the object count in the estimate card breakdown so the user can tell at a glance if that's not what they expected. Confirm this reading during planning/UAT rather than guessing silently.
