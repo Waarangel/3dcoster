@@ -6,14 +6,14 @@ current_phase: 44
 current_phase_name: sync-stl-instant-quote
 status: executing
 stopped_at: Phase 44 context gathered
-last_updated: "2026-07-17T13:58:17.823Z"
+last_updated: "2026-07-18T15:00:17.169Z"
 last_activity: 2026-07-17
 last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 38
-  completed_plans: 33
+  completed_plans: 34
   percent: 75
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 44 (sync-stl-instant-quote) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-07-17 — Phase 44 execution started
 
@@ -141,6 +141,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 43-07: 43-05 resend package-gate ordering violation CLOSED — zero execution exposure, registry-verified official package, retroactive user approval; process note: blocking-human gates mean no commits until resume signal
 - [Phase ?]: 44-01: computeMerge resolves tombstone edit-wins symmetrically (remote tombstone vs local edit, AND local tombstone vs resurrecting remote edit) — the plan's explicit truth only names one direction, but MergeInput carries both localTombstones and remoteTombstones
 - [Phase ?]: 44-01: exported isPlainRecord/hasForbiddenKey from backupRestore.ts (previously private) so syncMerge.ts's tombstone-array validation reuses the same forbidden-key guard rather than a second validator
+- [Phase ?]: 44-02: stlParser.ts deliberately has no three import - operates on raw Float32Array position buffer, keeping it worker-callable and testable without the three chunk
+- [Phase ?]: 44-02: detectNonManifold welds vertices to a 1e-5 default tolerance before building the edge-adjacency map (Pitfall 4) so real slicer float-rounding noise does not false-positive a closed mesh
+- [Phase ?]: 44-02: meshWeightModel approximates top/bottom footprint as a fixed 1/3 fraction of total surface area (box-equivalent heuristic) since WeightModelInput carries no separate footprint area - anti-underestimate guarantee holds regardless of the exact fraction
+- [Phase ?]: 44-02: three package-legitimacy checkpoint approved by user in a prior session (RESEARCH.md documented SUS-false-positive audit); this session reconciled the already-installed-but-uncommitted state into a proper chore commit
 
 ### Pending Todos
 
@@ -156,7 +160,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-17T13:53:24.000Z
+Last session: 2026-07-18T14:58:31.190Z
 Stopped at: Phase 44 context gathered
 Resume file: .planning/phases/44-sync-stl-instant-quote/44-CONTEXT.md
 
@@ -206,3 +210,4 @@ Carried forward from v1.9 (acknowledged at v1.9 close 2026-07-03):
 | Phase 43-pro-backend P06 | 30min | 3 tasks | 13 files |
 | Phase 43 P07 | 20min | 2 tasks | 1 files |
 | Phase 44 P01 | 6min | 3 tasks | 6 files |
+| Phase 44 P02 | 35min | 3 tasks | 10 files |

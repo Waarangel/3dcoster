@@ -43,7 +43,7 @@
 ### Connected Cost
 
 - [x] **CONN-01**: When a material price or FX rate changes, the app flags saved products whose margin falls below target ("7 products now under target margin — reprice?")
-- [ ] **CONN-02**: User can get an instant local quote from an STL/3MF upload — in-browser mesh-volume estimate (Three.js lazy-loaded behind the same dynamic-import discipline as jsPDF + CI guard) with all three accuracy guards: units detection (mm/inch), infill-factor assumption surfaced, non-manifold mesh warning — framed as a maker-reviewed **estimate**, never an auto-price
+- [x] **CONN-02**: User can get an instant local quote from an STL/3MF upload — in-browser mesh-volume estimate (Three.js lazy-loaded behind the same dynamic-import discipline as jsPDF + CI guard) with all three accuracy guards: units detection (mm/inch), infill-factor assumption surfaced, non-manifold mesh warning — framed as a maker-reviewed **estimate**, never an auto-price
 - [x] **CONN-03**: User can generate a Quote Variants PDF — 1pc / 10pc / 50pc tiered pricing in one branded document (rides the existing jsPDF quote engine)
 
 ### Maker-Life
@@ -134,7 +134,7 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | PRO-03 | Phase 43 | Complete |
 | PRO-04 | Phase 43 | Complete |
 | SYNC-01 | Phase 44 | Complete |
-| CONN-02 | Phase 44 | Pending |
+| CONN-02 | Phase 44 | Complete |
 | BRAND-01 | Phase 45 | Pending |
 
 **Coverage:**

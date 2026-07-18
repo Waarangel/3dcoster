@@ -282,7 +282,7 @@ Plans:
 **Wave 1** *(independent foundations, parallel)*
 
 - [x] 44-01-PLAN.md — Sync contract + LWW/tombstone merge core (pure) + both NEW-badge keys (SYNC-01, D-05/06/07)
-- [ ] 44-02-PLAN.md — STL mesh math (volume/area/non-manifold/shells+infill/units) + three lazy chunk + CI gate (CONN-02, D-10/13/14/15/16)
+- [x] 44-02-PLAN.md — STL mesh math (volume/area/non-manifold/shells+infill/units) + three lazy chunk + CI gate (CONN-02, D-10/13/14/15/16)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -324,7 +324,7 @@ Plans:
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
 | 43. Pro Backend | 7/7 | Complete    | 2026-07-16 |
-| 44. Sync & STL Instant Quote | 1/6 | In Progress|  |
+| 44. Sync & STL Instant Quote | 2/6 | In Progress|  |
 | 45. Brand & Launch | 0/TBD | Not started | - |
 
 <details>
