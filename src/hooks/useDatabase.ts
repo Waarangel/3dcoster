@@ -8,6 +8,35 @@ import { DEFAULT_GAS_PRICE_PER_LITER } from '../utils/currency';
 import { backfillCustomersFromSales, reconcileCopiesSoldFromSales, normalizeTagsOnJob, reconcileFixedCostsAtSave, reconcileCustomerEmailLowercase, reconcileAssetCurrency, reconcileTouSnapshot } from '../db/backfill';
 import { upsertJobStockEvents, removeJobStockEvents } from '../db/stockEventsWriter';
 import { isPreservedOnMaterialReset, isCustomCategory } from '../utils/assetCategories';
+import { stampAndAdd, stampAndPut, stampAndBulkPut, writeTombstone } from '../db/syncStamp';
+
+// 44-03 SYNC-01 (D-05/D-06) — every user-facing add/put/bulkPut in this file
+// routes through the syncStamp wrappers above so every store participates in
+// LWW, and every delete pairs with a writeTombstone in the SAME transaction
+// so the deletion propagates to other devices on the next sync merge.
+//
+// EXCLUDED by design (documented, not an oversight — grep-audit clause):
+//   - PrintJob writes: `PrintJob.updatedAt` is a REQUIRED (non-optional) type
+//     field, so every call site that constructs a job (e.g. CostCalculator.tsx)
+//     already stamps it at construction time — the type system enforces this
+//     structurally, equivalent to routing through the wrapper. updateJob and
+//     the copiesSold/tags reconciles below already stamp updatedAt inline;
+//     the fixedCosts/touSnapshot reconciles intentionally do NOT bump it
+//     (WR-03 — preserves the original save timestamp for legacy records).
+//   - Stock/failure/maintenance ledger events (stockEventsWriter.ts): these
+//     are derived, regenerated-on-save records keyed by refId (a job's id),
+//     not independently user-edited rows. Their sync semantics are deferred
+//     to a later phase — the owning job's own stamp/tombstone is what drives
+//     LWW for a job's cost inputs; the ledger rows regenerate deterministically
+//     whenever the winning job is written. Not routed through the wrapper or
+//     tombstoned in this pass.
+//   - Category-scoped bulk `.where(...).delete()` calls inside the
+//     reset*/resetAssetScope helpers: these are catalog-level resets, not
+//     single-record user deletions, and are intentionally excluded from the
+//     six named delete callbacks (asset/instance/job/sale/customer/quote)
+//     this task tombstones. The bulk RE-ADD in the same reset IS routed
+//     through stampAndBulkPut so the resulting rows still get a fresh
+//     updatedAt ("Do NOT change reset*ToDefaults semantics beyond stamping").
 
 // Process-lifetime flag so the Sale→Customer backfill (D-32 / gap K) only
 // runs ONCE per page load. The helper is idempotent so a second pass would
@@ -84,7 +113,7 @@ async function addMissingCatalogRows(catalog: Asset[]): Promise<number> {
     for (const asset of catalog) {
       const existing = await db.materials.get(asset.id);
       if (!existing) {
-        await db.materials.add(asset);
+        await stampAndAdd(db.materials, asset);
         added++;
       }
     }
@@ -124,7 +153,7 @@ export function useAssets() {
           // unconditional seed; an empty library on a FIRST run is "no data yet,"
           // whereas an empty CATEGORY on a later run is a deliberate user state.
           const allDefaults: Asset[] = [...defaultMaterials, ...defaultPrinterAssets];
-          await db.materials.bulkPut(allDefaults);
+          await stampAndBulkPut(db.materials, allDefaults);
           // A fresh full seed already includes every catalog row, so mark all the
           // migration flags done — they have nothing left to add.
           patch.didInitialSeed = true;
@@ -257,11 +286,11 @@ export function useAssets() {
   // (useFxRates → src/utils/fxConvert.ts). See src/hooks/useFxRates.ts.
 
   const addAsset = useCallback(async (asset: Asset) => {
-    await db.materials.add(asset);
+    await stampAndAdd(db.materials, asset);
   }, []);
 
   const updateAsset = useCallback(async (asset: Asset) => {
-    await db.materials.put(asset);
+    await stampAndPut(db.materials, asset);
   }, []);
 
   const deleteAsset = useCallback(async (id: string) => {
@@ -269,18 +298,23 @@ export function useAssets() {
     // assetId, already indexed). Without this, deleting a material orphaned its
     // ledger entries — they bloated backups and could RESURRECT phantom stock
     // if the same id was ever reused (e.g. reset-to-defaults re-adds a default
-    // id). Wrapped in one rw transaction so the material delete and the ledger
-    // cleanup commit (or roll back) together.
-    await db.transaction('rw', db.materials, db.stockEvents, async () => {
+    // id). Wrapped in one rw transaction so the material delete, the ledger
+    // cleanup, and the sync tombstone commit (or roll back) together.
+    await db.transaction('rw', db.materials, db.stockEvents, db.syncTombstones, async (tx) => {
       await db.materials.delete(id);
       await db.stockEvents.where('assetId').equals(id).delete();
+      await writeTombstone(tx, 'materials', id);
     });
   }, []);
 
   const resetToDefaults = useCallback(async () => {
     await db.materials.clear();
     const allDefaults: Asset[] = [...defaultMaterials, ...defaultPrinterAssets];
-    await db.materials.bulkAdd(allDefaults);
+    // bulkPut (via the stamp wrapper) behaves identically to bulkAdd here —
+    // the store was just cleared, so there is no duplicate-id risk — and it
+    // stamps a fresh updatedAt on every row ("stamping" is in scope for
+    // resets per this task's action text; no other reset semantics changed).
+    await stampAndBulkPut(db.materials, allDefaults);
   }, []);
 
   const resetMaterialsOnly = useCallback(async () => {
@@ -292,7 +326,7 @@ export function useAssets() {
     const existing = await db.materials.toArray();
     const preserved = existing.filter(a => isPreservedOnMaterialReset(a.category));
     await db.materials.clear();
-    await db.materials.bulkAdd([...defaultMaterials, ...preserved]);
+    await stampAndBulkPut(db.materials, [...defaultMaterials, ...preserved]);
   }, []);
 
   const resetPrintersOnly = useCallback(async () => {
@@ -301,12 +335,15 @@ export function useAssets() {
     // silently delete machines the user defined themselves.
     const existing = await db.materials.where('category').equals('printer').toArray();
     const customModels = existing.filter(a => a.id.startsWith('custom-'));
+    // Category-scoped bulk delete — intentionally NOT tombstoned (see the
+    // documented exclusion note at the top of this file: catalog-level
+    // resets, not single-record user deletions).
     await db.materials.where('category').equals('printer').delete();
-    await db.materials.bulkAdd([...defaultPrinterAssets, ...customModels]);
+    await stampAndBulkPut(db.materials, [...defaultPrinterAssets, ...customModels]);
   }, []);
 
   const bulkImportAssets = useCallback(async (importAssets: Asset[]) => {
-    await db.materials.bulkPut(importAssets); // upsert — handles both new + overwrite
+    await stampAndBulkPut(db.materials, importAssets); // upsert — handles both new + overwrite
   }, []);
 
   // Reset scoped to the asset library's current filter:
@@ -318,12 +355,15 @@ export function useAssets() {
   const resetAssetScope = useCallback(async (scope: AssetCategory | 'all') => {
     if (scope === 'all') { await resetMaterialsOnly(); return; }
     if (scope === 'printer') { await resetPrintersOnly(); return; }
+    // Category-scoped bulk deletes below are intentionally NOT tombstoned —
+    // catalog-level resets, not single-record user deletions (see the
+    // documented exclusion note at the top of this file).
     if (isCustomCategory(scope)) {
       await db.materials.where('category').equals(scope).delete();
       return;
     }
     await db.materials.where('category').equals(scope).delete();
-    await db.materials.bulkAdd(defaultMaterials.filter(m => m.category === scope));
+    await stampAndBulkPut(db.materials, defaultMaterials.filter(m => m.category === scope));
   }, [resetMaterialsOnly, resetPrintersOnly]);
 
   return {
@@ -430,15 +470,18 @@ export function usePrinterInstances() {
   }, []);
 
   const addInstance = useCallback(async (instance: PrinterInstance) => {
-    await db.printerInstances.add(instance);
+    await stampAndAdd(db.printerInstances, instance);
   }, []);
 
   const updateInstance = useCallback(async (instance: PrinterInstance) => {
-    await db.printerInstances.put(instance);
+    await stampAndPut(db.printerInstances, instance);
   }, []);
 
   const deleteInstance = useCallback(async (id: string) => {
-    await db.printerInstances.delete(id);
+    await db.transaction('rw', db.printerInstances, db.syncTombstones, async (tx) => {
+      await db.printerInstances.delete(id);
+      await writeTombstone(tx, 'printerInstances', id);
+    });
   }, []);
 
   // Add print hours to an instance (called when a job is completed)
@@ -454,7 +497,7 @@ export function usePrinterInstances() {
     await db.transaction('rw', db.printerInstances, async () => {
       const instance = await db.printerInstances.get(instanceId);
       if (instance) {
-        await db.printerInstances.put({
+        await stampAndPut(db.printerInstances, {
           ...instance,
           printHours: instance.printHours + hours,
         });
@@ -928,9 +971,20 @@ export function useJobs() {
     // sales referencing a deleted jobId — the same DATA-01 concern that
     // motivated wrapping addSale/deleteSale/updateSale in plan 20-01.
     // v1.8: also clear the job's stock events so deletion releases its deduction.
-    await db.transaction('rw', db.sales, db.jobs, db.stockEvents, async () => {
+    // 44-03 SYNC-01 D-06: tombstone BOTH the job AND every sale cascade-deleted
+    // with it — without the cascaded-sale tombstones, another device would
+    // never learn those sales were deleted (Rule 2: the plan named "deleteJob"
+    // as a tombstoned callback, but a job's sales delete via a bulk `.where()`
+    // query here, not the single-record `deleteSale` path, so they need their
+    // own tombstones written explicitly).
+    await db.transaction('rw', db.sales, db.jobs, db.stockEvents, db.syncTombstones, async (tx) => {
+      const cascadedSales = await db.sales.where('jobId').equals(id).toArray();
       await db.sales.where('jobId').equals(id).delete();
+      for (const sale of cascadedSales) {
+        await writeTombstone(tx, 'sales', sale.id);
+      }
       await db.jobs.delete(id);
+      await writeTombstone(tx, 'jobs', id);
       await removeJobStockEvents(db, id);
     });
   }, []);
@@ -960,7 +1014,7 @@ export function useSales(jobId?: string) {
 
   const addSale = useCallback(async (sale: Sale) => {
     await db.transaction('rw', db.sales, db.jobs, async () => {
-      await db.sales.add(sale);
+      await stampAndAdd(db.sales, sale);
       // Update job's copiesSold count
       const job = await db.jobs.get(sale.jobId);
       if (job) {
@@ -974,8 +1028,9 @@ export function useSales(jobId?: string) {
   }, []);
 
   const deleteSale = useCallback(async (sale: Sale) => {
-    await db.transaction('rw', db.sales, db.jobs, async () => {
+    await db.transaction('rw', db.sales, db.jobs, db.syncTombstones, async (tx) => {
       await db.sales.delete(sale.id);
+      await writeTombstone(tx, 'sales', sale.id);
       // Update job's copiesSold count
       const job = await db.jobs.get(sale.jobId);
       if (job) {
@@ -998,7 +1053,7 @@ export function useSales(jobId?: string) {
   const updateSale = useCallback(async (updated: Sale) => {
     await db.transaction('rw', db.sales, db.jobs, async () => {
       const previous = await db.sales.get(updated.id);
-      await db.sales.put(updated);
+      await stampAndPut(db.sales, updated);
       if (previous && previous.quantity !== updated.quantity) {
         const job = await db.jobs.get(updated.jobId);
         if (job) {
@@ -1101,7 +1156,11 @@ export function useCustomers() {
           const currentCustomers = await db.customers.toArray();
           const toInsert = backfillCustomersFromSales(allSales, currentCustomers);
           if (toInsert.length > 0) {
-            await db.customers.bulkAdd(toInsert);
+            // bulkPut (via the stamp wrapper) behaves identically to bulkAdd
+            // here — toInsert is already de-duped against a fresh in-tx read
+            // of currentCustomers — and stamps a fresh updatedAt on the newly
+            // materialized customers.
+            await stampAndBulkPut(db.customers, toInsert);
           }
           await setSeedState({ didSaleCustomerBackfill: true });
         });
@@ -1138,7 +1197,10 @@ export function useCustomers() {
         const patches = reconcileCustomerEmailLowercase(customers);
         if (cancelled) return;  // do NOT set flag — never wrote
         if (patches.length > 0) {
-          await db.customers.bulkPut(patches);
+          // Content change (email casing) — correctly DOES bump updatedAt,
+          // mirroring the copiesSold/tags reconciles' "changes content
+          // semantics" rationale (unlike fixedCosts/touSnapshot's WR-03).
+          await stampAndBulkPut(db.customers, patches);
         }
         // WR-01: mark only on full completion. If we returned early via the
         // `cancelled` guard above, the flag stays false so a future mount retries.
@@ -1188,15 +1250,18 @@ export function useCustomers() {
   }, [customersFrozen]);
 
   const addCustomer = useCallback(async (customer: Customer) => {
-    await db.customers.add(customer);
+    await stampAndAdd(db.customers, customer);
   }, []);
 
   const updateCustomer = useCallback(async (customer: Customer) => {
-    await db.customers.put(customer);
+    await stampAndPut(db.customers, customer);
   }, []);
 
   const deleteCustomer = useCallback(async (id: string) => {
-    await db.customers.delete(id);
+    await db.transaction('rw', db.customers, db.syncTombstones, async (tx) => {
+      await db.customers.delete(id);
+      await writeTombstone(tx, 'customers', id);
+    });
   }, []);
 
   // D-03: bump lastUsedAt when the customer is picked in the Record Sale combobox
@@ -1206,14 +1271,14 @@ export function useCustomers() {
   const bumpLastUsed = useCallback(async (id: string) => {
     const existing = await db.customers.get(id);
     if (existing) {
-      await db.customers.put({ ...existing, lastUsedAt: new Date() });
+      await stampAndPut(db.customers, { ...existing, lastUsedAt: new Date() });
     }
   }, []);
 
   // Bulk import for the CSV importer (Plan 03). Mirrors useAssets.bulkImportAssets:
   // upsert semantics so the same call handles both new rows and overwrite-existing.
   const bulkImportCustomers = useCallback(async (toImport: Customer[]) => {
-    await db.customers.bulkPut(toImport);
+    await stampAndBulkPut(db.customers, toImport);
   }, []);
 
   return {
@@ -1297,15 +1362,18 @@ export function useQuotes() {
   // addQuote / deleteQuote are surfaced for future hygiene; they are distinct from createQuote
   // (which wraps the full transactional action with customer link + counter bump).
   const addQuote = useCallback(async (quote: Quote) => {
-    await db.quotes.add(quote);
+    await stampAndAdd(db.quotes, quote);
   }, []);
 
   const updateQuote = useCallback(async (quote: Quote) => {
-    await db.quotes.put(quote);
+    await stampAndPut(db.quotes, quote);
   }, []);
 
   const deleteQuote = useCallback(async (id: string) => {
-    await db.quotes.delete(id);
+    await db.transaction('rw', db.quotes, db.syncTombstones, async (tx) => {
+      await db.quotes.delete(id);
+      await writeTombstone(tx, 'quotes', id);
+    });
   }, []);
 
   /**
@@ -1405,12 +1473,12 @@ export function useQuotes() {
       if (existingCustomerId) {
         const existing = await db.customers.get(existingCustomerId);
         if (existing) {
-          await db.customers.put({ ...existing, lastUsedAt: new Date() });
+          await stampAndPut(db.customers, { ...existing, lastUsedAt: new Date() });
         }
       } else if (newCustomerCandidate) {
-        await db.customers.add(newCustomerCandidate);
+        await stampAndAdd(db.customers, newCustomerCandidate);
       }
-      await db.quotes.add(quotePayload);
+      quotePayload = await stampAndAdd<Quote & { status: RuntimeQuoteStatus }>(db.quotes, quotePayload);
       await setUserProfile({ ...userProfile, nextQuoteNumber: nextNum + 1 });
     });
 
