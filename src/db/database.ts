@@ -2,11 +2,15 @@ import Dexie, { type EntityTable } from 'dexie';
 import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, LaborConfig, PrintJob, Sale, UserProfile, ShippingConfig, MarketplaceFees, Customer, Quote, StockEvent, FailureEvent, MaintenanceEvent } from '../types';
 import { backfillTagsOnJob, backfillQuotesFromJobs, reconcileQuoteCurrency, stampRecordCurrency } from './backfill';
 import type { FxRateTable } from '../utils/fxConvert';
+import type { SyncTombstone } from '../utils/backupSchema';
+import { stampAndPut } from './syncStamp';
 
-// Settings stored as key-value pairs
+// Settings stored as key-value pairs. `updatedAt` is stamped in `setSetting`
+// (44-03 SYNC-01 D-05) so settings rows participate in row-level LWW.
 interface Setting {
   key: string;
   value: string;
+  updatedAt?: Date;
 }
 
 // Extend Dexie
@@ -22,6 +26,7 @@ const db = new Dexie('3DCosterDB') as Dexie & {
   stockEvents: EntityTable<StockEvent, 'id'>;
   failureEvents: EntityTable<FailureEvent, 'id'>;
   maintenanceEvents: EntityTable<MaintenanceEvent, 'id'>;
+  syncTombstones: EntityTable<SyncTombstone, 'id'>;
 };
 
 // Schema - version 3 (added jobs and sales tables)
@@ -278,6 +283,29 @@ db.version(12).stores({
   maintenanceEvents: 'id, printerInstanceId, partType, occurredAt',
 });
 
+// v13 (v2.0 Phase 44 SYNC-01): add the `syncTombstones` ledger — records a
+// {id, store, deletedAt} row for every deletion so it can propagate to other
+// devices during a sync merge (D-06, src/utils/syncMerge.ts computeMerge).
+// New empty store, so no upgrade/backfill — existing users start with zero
+// tombstones and accumulate them going forward, exactly like v11's
+// `stockEvents` and v12's `failureEvents`/`maintenanceEvents` precedent. The
+// versionchange→reload handler below (Phase 12 SCHEMA-02) already covers any
+// new version, v13 included.
+db.version(13).stores({
+  materials: 'id, category, brand, filamentType, currency',
+  printers: 'id, name',
+  printerInstances: 'id, printerConfigId, nickname',
+  jobs: 'id, name, createdAt, printerInstanceId',
+  sales: 'id, jobId, soldAt',
+  settings: 'key',
+  customers: 'id, name, email, lastUsedAt',
+  quotes: 'id, quoteNumber, status, printJobId, customerId, sentAt',
+  stockEvents: 'id, assetId, refId, timestamp',
+  failureEvents: 'id, printerInstanceId, materialId, jobId, failedAt',
+  maintenanceEvents: 'id, printerInstanceId, partType, occurredAt',
+  syncTombstones: 'id, store, deletedAt',
+});
+
 // Reload this tab if another tab loads a newer schema (SCHEMA-02 / D-10 / D-11).
 // Without this, Dexie's default closes the connection and console.warn()s,
 // which crashes the React tree via useLiveQuery references.
@@ -318,7 +346,10 @@ export async function getSetting<T>(
 }
 
 export async function setSetting<T>(key: string, value: T): Promise<void> {
-  await db.settings.put({ key, value: JSON.stringify(value) });
+  // 44-03 SYNC-01 D-05: every settings write routes through the stamp
+  // wrapper so settings rows participate in LWW (the single choke-point
+  // every user-facing Dexie write in the app goes through — see syncStamp.ts).
+  await stampAndPut<Setting>(db.settings, { key, value: JSON.stringify(value) });
 }
 
 // Typed setting getters/setters
