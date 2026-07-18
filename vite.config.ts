@@ -149,6 +149,18 @@ export default defineConfig(({ mode }) => ({
             || id.includes('/raf/') || id.includes('/performance-now/')) {
             return 'pdf';
           }
+          // Route `three` (and three-stdlib addons) to its own lazily-loaded chunk
+          // (Phase 44-02, CONN-02). CRITICAL ORDER: must run BEFORE the node_modules
+          // block below — same discipline as the pdf chunk above — or three would be
+          // claimed by 'vendor' and lose its lazy-load boundary (the 300 KB main-chunk
+          // gate + the assert-no-static-three-import.mjs CI gate both depend on this).
+          // The mesh math utils (stlParser/meshWeightModel/unitsHeuristic) live in
+          // /src/utils/ and are already caught by the utils branch above; only the
+          // three library itself (and its addons, e.g. STLLoader/ThreeMFLoader) plus
+          // the worker added in 44-05 belong in this chunk.
+          if (id.includes('/three/') || id.includes('/three-stdlib/')) {
+            return 'three';
+          }
           if (id.includes('node_modules')) {
             // PERF-05 (Phase 25): explicitly route ALL react-* packages and their core
             // companions into react-vendor. Previously only /react/ + /react-dom/ were caught,
