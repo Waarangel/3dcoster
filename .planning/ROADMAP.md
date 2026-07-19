@@ -292,7 +292,7 @@ Plans:
 
 **Wave 3** *(blocked on 44-03 + 44-04)*
 
-- [ ] 44-06-PLAN.md — Sync UI + orchestration: Backup/Restore/Sync tab, merge summary, debounced auto-write, launch merge check, pre-merge undo (SYNC-01, D-01/02/03/04/07/08)
+- [x] 44-06-PLAN.md — Sync UI + orchestration: Backup/Restore/Sync tab, merge summary, debounced auto-write, launch merge check, pre-merge undo (SYNC-01, D-01/02/03/04/07/08)
 
 **Research flag**: SATISFIED — see 44-RESEARCH.md. Web Locks API (not BroadcastChannel) provides the multi-tab mutex; web writes are atomic via createWritable(); desktop needs write-temp-then-rename + tauri-plugin-persisted-scope (without it D-01's "pick once" breaks on restart); tombstone-based LWW extends the existing backup/restore contract. STL/3MF mesh math runs in a Web Worker with three lazy-loaded behind the same CI gate as jsPDF.
 **UI hint**: yes

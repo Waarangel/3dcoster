@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 44
 current_phase_name: sync-stl-instant-quote
-status: executing
+status: verifying
 stopped_at: Completed 44-05-PLAN.md
-last_updated: "2026-07-19T15:53:41.878Z"
+last_updated: "2026-07-19T17:31:55.444Z"
 last_activity: 2026-07-17
 last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 38
-  completed_plans: 37
-  percent: 75
+  completed_plans: 38
+  percent: 88
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 Phase: 44 (sync-stl-instant-quote) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-17 — Phase 44 execution started
 
 ## v2.0 Phase Order Reference
@@ -68,6 +68,7 @@ Last activity: 2026-07-17 — Phase 44 execution started
 | Phase 44 P03 | 15min | 3 tasks | 6 files |
 | Phase 44 P04 | 20min | 3 tasks | 9 files |
 | Phase 44 P05 | 41min | 4 tasks | 9 files |
+| Phase 44 P06 | 8min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 44]: 44-04: web FileSystemDirectoryHandle persisted in a dedicated IndexedDB store, desktop sync-folder path persisted via the existing settings store — handles are structured-clonable but not JSON-serializable, so they cannot go through setSetting's JSON.stringify
 - [Phase 44]: 44-05: Camera framing uses bounding-sphere-in-frustum distance (radius * margin / sin(fov/2)), not axis-aligned maxDim — fixes preview clipping found in Task 4 human-verify round 1
 - [Phase 44]: 44-05: Preview pane needs self-start plus a derived aspect ratio from the model's bbox (isometric corner-projection) — flex align-items:stretch was stretching the wrapper independent of the canvas's own size, found in round 2
+- [Phase 44]: 44-06: useSyncFolder composes withSyncLock -> readSyncFile -> validateSyncFile+computeMerge -> confirm-gated applyMerge -> writeSyncFileAtomic -> notifyPeers in the exact key_links order; a module-scoped useSyncExternalStore shares one live sync state between App.tsx's launch check and SyncSetup
+- [Phase 44]: 44-06: SyncMergeSummary takes the full MergePlan (not the bare MergeSummary the plan's action text named) since only MergePlan carries the per-record names/ids needed for the expand-detail
+- [Phase 44]: 44-06: Rule 1/2 fix — useSyncFolder's ensureInitialized/checkOnLaunch now catch platform-capability probe failures instead of leaving an unhandled promise rejection, since sync is opt-in (D-01) and must never crash a host component's mount
 
 ### Pending Todos
 
@@ -177,7 +181,7 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-19T15:53:41.866Z
+Last session: 2026-07-19T17:30:58.578Z
 Stopped at: Completed 44-05-PLAN.md
 Resume file: None
 
