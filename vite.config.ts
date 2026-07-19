@@ -92,6 +92,14 @@ export default defineConfig(({ mode }) => ({
       ? [visualizer({ open: true, gzipSize: true, brotliSize: true, filename: 'dist/stats.html' })]
       : []),
   ],
+  // meshEstimate.worker.ts (Phase 44-05) is a module worker that itself
+  // dynamic-imports three/addons — Rollup's default IIFE worker format does
+  // not support code-splitting builds (the dynamic import inside the worker
+  // would fail to bundle). 'es' format is required for any worker that uses
+  // its own dynamic import().
+  worker: {
+    format: 'es',
+  },
   build: {
     // Disable automatic modulepreload link injection so the pdf chunk is NOT
     // preloaded on every page load — it is only fetched on first "Generate PDF"

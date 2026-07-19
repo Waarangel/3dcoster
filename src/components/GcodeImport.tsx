@@ -1,11 +1,18 @@
 import { useState, useCallback, useRef } from 'react';
-import type { Asset } from '../types';
+import type { Asset, Currency } from '../types';
 import { parseGcode, matchFilamentType, findBestFilamentMatch, readGcodeFile } from '../utils/gcodeParser';
 import { parseThreeMf } from '../utils/threeMfParser';
 import { Button, useToast } from './ui';
+import { MeshEstimateCard, type MeshEstimateApplyResult } from './MeshEstimateCard';
+import type { MeshEstimateWorkerMessage, MeshEstimateWorkerOutput } from '../workers/meshEstimate.worker';
 
 interface GcodeImportProps {
   assets: Asset[];
+  // D-10: density+price source for the mesh estimate — the first currently
+  // selected filament row's asset, or null (PLA fallback, shown in the card).
+  selectedFilament?: Asset | null;
+  userCurrency?: Currency;
+  currencySymbol?: string;
   onImport: (result: {
     filaments: Array<{ filamentId?: string; grams: number }>;
     printTimeHours: number;
@@ -33,15 +40,33 @@ const SLICER_LABELS: Record<string, string> = {
 // GB). 200 MB covers the largest real sliced 3MF files. Module scope = stable.
 const MAX_THREE_MF_BYTES = 200 * 1024 * 1024;
 
+// SEC: cap .stl size at 200 MB before handing bytes to the mesh worker — same
+// ceiling as MAX_THREE_MF_BYTES above (T-44-05-01), checked here as well as
+// inside meshEstimate.worker.ts (defense in depth: the worker's own cap
+// covers any caller, this one avoids spinning up a worker for an obviously
+// oversized file).
+const MAX_STL_FILE_BYTES = 200 * 1024 * 1024;
+
+// D-09 trust distinction: g-code/sliced-3MF numbers are exact from the
+// slicer; STL/non-sliced-3MF numbers are a mesh-volume estimate. The two
+// paths must never look interchangeable in the UI.
+const EXACT_SOURCE_LABEL = 'exact from slicer';
+const ESTIMATED_SOURCE_LABEL = 'estimated from mesh';
+
 // Rich body for the "import succeeded" toast. The shared ToastViewport supplies
 // the container, the success icon, and the dismiss button; this renders only
-// the content (slicer + time + per-filament breakdown).
+// the content (slicer + time + per-filament breakdown). Only used by the
+// EXACT paths (g-code, sliced 3MF) — the mesh-estimate path opens
+// MeshEstimateCard instead (D-12: review card, not an auto-apply toast).
 function ImportSuccessToast({ info }: { info: SuccessInfo }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
         <span className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full">
           {info.slicer}
+        </span>
+        <span className="px-2 py-0.5 bg-green-900/40 text-green-300 text-xs rounded-full">
+          {EXACT_SOURCE_LABEL}
         </span>
         {info.time && <span className="text-green-300">{info.time}</span>}
       </div>
@@ -58,12 +83,73 @@ function ImportSuccessToast({ info }: { info: SuccessInfo }) {
   );
 }
 
-export function GcodeImport({ assets, onImport }: GcodeImportProps) {
+/**
+ * Runs the mesh-estimate worker end-to-end for one file: reads it as an
+ * ArrayBuffer, spins up meshEstimate.worker.ts (module worker, transferring
+ * the buffer), and resolves with the parsed estimate or rejects with the
+ * worker's error message. A fresh worker per parse — terminated immediately
+ * after its single message — keeps this simple and avoids idle-worker
+ * lifecycle management for what is an infrequent, one-shot operation.
+ */
+async function parseMeshEstimate(file: File, kind: 'stl' | '3mf'): Promise<MeshEstimateWorkerOutput> {
+  const buffer = await file.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../workers/meshEstimate.worker.ts', import.meta.url), { type: 'module' });
+    worker.onmessage = (e: MessageEvent<MeshEstimateWorkerMessage>) => {
+      worker.terminate();
+      if (e.data.type === 'result') resolve(e.data.data);
+      else reject(new Error(e.data.message));
+    };
+    worker.onerror = () => {
+      worker.terminate();
+      reject(new Error('Failed to parse mesh file'));
+    };
+    worker.postMessage({ buffer, kind }, [buffer]);
+  });
+}
+
+interface MeshEstimateState {
+  fileName: string;
+  data: MeshEstimateWorkerOutput;
+}
+
+export function GcodeImport({ assets, selectedFilament, userCurrency, currencySymbol, onImport }: GcodeImportProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // D-09/D-12: the mesh-estimate review card — set only for the estimated
+  // path (.stl, non-sliced .3mf). Nothing here touches the calculator form
+  // until the maker clicks Apply inside the card.
+  const [meshEstimate, setMeshEstimate] = useState<MeshEstimateState | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
+
+  const handleMeshApply = useCallback((result: MeshEstimateApplyResult) => {
+    onImport(result);
+    setMeshEstimate(null);
+  }, [onImport]);
+
+  const processStlFile = useCallback(async (file: File) => {
+    // SEC: reject oversized STL files before handing bytes to the worker —
+    // mirrors the MAX_THREE_MF_BYTES guard below (T-44-05-01).
+    if (file.size > MAX_STL_FILE_BYTES) {
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+      setError(`File is ${sizeMb} MB. STL files must be under 200 MB.`);
+      return;
+    }
+
+    setIsParsing(true);
+    setError(null);
+
+    try {
+      const data = await parseMeshEstimate(file, 'stl');
+      setMeshEstimate({ fileName: file.name, data });
+    } catch (err) {
+      setError(err instanceof Error ? `Failed to parse STL: ${err.message}` : 'Failed to parse STL');
+    } finally {
+      setIsParsing(false);
+    }
+  }, []);
 
   const processThreeMfFile = useCallback(async (file: File) => {
     setIsParsing(true);
@@ -73,7 +159,10 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
       const result = await parseThreeMf(file);
 
       if (!result.isSliced) {
-        setError('This 3MF hasn\'t been sliced. In Bambu Studio: click "Slice All" then "Export all sliced file" to get a sliced .3mf.');
+        // D-09: not a slicer-sliced 3MF — route to the same mesh-estimate
+        // path as .stl instead of the old "hasn't been sliced" error.
+        const data = await parseMeshEstimate(file, '3mf');
+        setMeshEstimate({ fileName: file.name, data });
         return;
       }
 
@@ -131,6 +220,13 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
   // files (Bambu multi-plate projects routinely run 50–100 MB) while keeping
   // a generous safety ceiling.
   const processFile = useCallback(async (file: File) => {
+    // D-09: .stl always routes to the mesh-estimate path — there is no
+    // "exact" reading for a bare mesh file (no slicer numbers exist).
+    if (file.name.toLowerCase().endsWith('.stl')) {
+      await processStlFile(file);
+      return;
+    }
+
     // Handle .3mf files (both .3mf and .gcode.3mf from Bambu Studio)
     if (file.name.toLowerCase().endsWith('.3mf')) {
       if (file.size > MAX_THREE_MF_BYTES) {
@@ -225,7 +321,7 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
     } finally {
       setIsParsing(false);
     }
-  }, [assets, onImport, processThreeMfFile, toast]);
+  }, [assets, onImport, processStlFile, processThreeMfFile, toast]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -258,8 +354,26 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
         </div>
       )}
 
+      {/* Mesh estimate review card (D-09/D-12) — .stl or non-sliced .3mf.
+          Replaces the drop zone entirely until the maker applies or
+          discards; nothing here touches the calculator form on its own. */}
+      {meshEstimate && (
+        <div className="mb-2">
+          <p className="text-[11px] text-slate-500 mb-1 uppercase tracking-wide">{ESTIMATED_SOURCE_LABEL}</p>
+          <MeshEstimateCard
+            fileName={meshEstimate.fileName}
+            estimate={meshEstimate.data}
+            selectedFilament={selectedFilament ?? null}
+            userCurrency={userCurrency ?? 'USD'}
+            currencySymbol={currencySymbol ?? '$'}
+            onApply={handleMeshApply}
+            onDismiss={() => setMeshEstimate(null)}
+          />
+        </div>
+      )}
+
       {/* Drop zone */}
-      {!isParsing && (
+      {!isParsing && !meshEstimate && (
         <div
           onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
@@ -277,14 +391,14 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
           <p className="text-sm">
-            Drop .gcode or .3mf file here or click to browse
+            Drop .gcode, .3mf, or .stl file here or click to browse
           </p>
-          <p className="text-xs text-slate-500 mt-1">Supports Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, SuperSlicer, IdeaMaker + Bambu/Orca 3MF projects</p>
+          <p className="text-xs text-slate-500 mt-1">Supports Bambu Studio, PrusaSlicer, Cura, OrcaSlicer, SuperSlicer, IdeaMaker + Bambu/Orca 3MF projects + .stl ({ESTIMATED_SOURCE_LABEL})</p>
           {/* allow-raw-html: hidden file picker — primitive base styles would bleed through `hidden` */}
           <input
             ref={fileInputRef}
             type="file"
-            accept=".gcode,.gc,.3mf"
+            accept=".gcode,.gc,.3mf,.stl"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -292,7 +406,7 @@ export function GcodeImport({ assets, onImport }: GcodeImportProps) {
       )}
 
       {/* Loading state */}
-      {isParsing && (
+      {isParsing && !meshEstimate && (
         <div className="border border-slate-600 rounded-lg p-4 text-center">
           <div className="animate-spin w-5 h-5 border-2 border-slate-400 border-t-blue-500 rounded-full mx-auto mb-2" />
           <p className="text-sm text-slate-400">Parsing file...</p>

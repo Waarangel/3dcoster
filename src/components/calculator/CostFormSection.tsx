@@ -73,6 +73,9 @@ export function CostFormSection({
       {/* G-code Import */}
       <GcodeImport
         assets={materials}
+        selectedFilament={materials.find(m => m.id === filamentRows[0]?.filamentId) ?? null}
+        userCurrency={userCurrency}
+        currencySymbol={currencySymbol}
         onImport={({ filaments, printTimeHours: time, printName: name }) => {
           if (time > 0) onImportPrintTime(time);
           if (name && !printName) onImportPrintName(name);
