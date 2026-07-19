@@ -77,7 +77,7 @@ describe('meshEstimate.worker computeMeshFromBuffer', () => {
   it('parses an STL buffer into volume/area/bbox/manifold + position (kind: stl)', async () => {
     const { computeMeshFromBuffer } = await import('./meshEstimate.worker');
     const cube = buildWatertightCube(10);
-    const result = await computeMeshFromBuffer({ buffer: cube.buffer, kind: 'stl' });
+    const result = await computeMeshFromBuffer({ buffer: cube.buffer as ArrayBuffer, kind: 'stl' });
 
     expect(result.volumeCm3).toBeCloseTo(1.0, 3);
     expect(result.surfaceAreaCm2).toBeCloseTo(6.0, 3);
@@ -91,7 +91,7 @@ describe('meshEstimate.worker computeMeshFromBuffer', () => {
   it('sums volume/area across all mesh geometries in a multi-object 3MF Group and reports object count', async () => {
     const { computeMeshFromBuffer } = await import('./meshEstimate.worker');
     const cube = buildWatertightCube(10);
-    const result = await computeMeshFromBuffer({ buffer: cube.buffer, kind: '3mf' });
+    const result = await computeMeshFromBuffer({ buffer: cube.buffer as ArrayBuffer, kind: '3mf' });
 
     // The mocked ThreeMFLoader splits the same cube buffer across 2 meshes;
     // merging them back reconstructs the original triangle soup exactly, so
@@ -156,7 +156,7 @@ describe('meshEstimate.worker computeMeshFromBuffer — never blocks the main th
     let ticks = 0;
     const interval = setInterval(() => { ticks += 1; }, 5);
 
-    await computeMeshFromBuffer({ buffer: cube.buffer, kind: 'stl' });
+    await computeMeshFromBuffer({ buffer: cube.buffer as ArrayBuffer, kind: 'stl' });
 
     clearInterval(interval);
     expect(ticks).toBeGreaterThan(0);
