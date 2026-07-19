@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 44
 current_phase_name: sync-stl-instant-quote
 status: executing
-stopped_at: Phase 44 context gathered
-last_updated: "2026-07-18T15:00:17.169Z"
+stopped_at: Completed 44-03-PLAN.md
+last_updated: "2026-07-19T12:58:59.039Z"
 last_activity: 2026-07-17
 last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 38
-  completed_plans: 34
+  completed_plans: 35
   percent: 75
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 44 (sync-stl-instant-quote) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-07-17 — Phase 44 execution started
 
@@ -60,6 +60,12 @@ Last activity: 2026-07-17 — Phase 44 execution started
 
 **v1.9 Hardening (reference):** 4 phases (34–37), 11 plans, 14/15 requirements, ~7 days incl. 1-week review/UAT hold.
 **v1.3 Hardening (reference — the model for structured milestones):** 10 phases (18–26), 43 plans, 56 tasks, 53 requirements, 4 days, audit verdict `passed`.
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 44 P03 | 15min | - tasks | - files |
+| Phase 44 P03 | 15min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -145,6 +151,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 44-02: detectNonManifold welds vertices to a 1e-5 default tolerance before building the edge-adjacency map (Pitfall 4) so real slicer float-rounding noise does not false-positive a closed mesh
 - [Phase ?]: 44-02: meshWeightModel approximates top/bottom footprint as a fixed 1/3 fraction of total surface area (box-equivalent heuristic) since WeightModelInput carries no separate footprint area - anti-underestimate guarantee holds regardless of the exact fraction
 - [Phase ?]: 44-02: three package-legitimacy checkpoint approved by user in a prior session (RESEARCH.md documented SUS-false-positive audit); this session reconciled the already-installed-but-uncommitted state into a proper chore commit
+- [Phase ?]: 44-03: reset*ToDefaults helpers swap post-clear() bulkAdd for stampAndBulkPut (behaviorally identical, stamping now in scope)
+- [Phase ?]: 44-03: category-scoped bulk .where(...).delete() resets are intentionally NOT tombstoned (catalog-level, not single-record user deletions)
+- [Phase ?]: 44-03: stock/failure/maintenance ledger events deferred from sync stamping/tombstoning — derived, regenerated-on-save records, not independently user-edited
+- [Phase ?]: 44-03: deleteJob now tombstones each cascade-deleted sale individually (Rule 2 fix)
+- [Phase ?]: 44-03: applyMerge always scopes its transaction to every BACKUP_STORES table, mirroring restoreBackup.ts
 
 ### Pending Todos
 
@@ -160,9 +171,9 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-18T14:58:31.190Z
-Stopped at: Phase 44 context gathered
-Resume file: .planning/phases/44-sync-stl-instant-quote/44-CONTEXT.md
+Last session: 2026-07-19T12:58:59.031Z
+Stopped at: Completed 44-03-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

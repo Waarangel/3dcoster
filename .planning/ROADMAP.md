@@ -286,7 +286,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 44-03-PLAN.md — Sync write-layer: db v13 syncTombstones, centralized updatedAt stamping, applyMerge transaction (SYNC-01, D-05/06)
+- [x] 44-03-PLAN.md — Sync write-layer: db v13 syncTombstones, centralized updatedAt stamping, applyMerge transaction (SYNC-01, D-05/06)
 - [ ] 44-04-PLAN.md — Sync IO: Web Locks critical section, atomic read/write, Tauri persisted-scope + folder picker (SYNC-01, D-01/02)
 - [ ] 44-05-PLAN.md — STL worker + MeshEstimateCard (preview/infill/warnings/Apply) + drop-zone routing (CONN-02, D-09/11/12)
 
