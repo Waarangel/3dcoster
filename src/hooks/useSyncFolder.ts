@@ -321,20 +321,36 @@ function registerChangeListener(database: Dexie): void {
 
 function ensureInitialized(database: Dexie): Promise<void> {
   if (!initPromise) {
+    // Rule 2 (missing critical error handling): this runs unconditionally
+    // on every mount of every component that calls useSyncFolder() —
+    // including test/SSR-like environments with no IndexedDB or platform
+    // globals, and real browsers in restrictive modes (private browsing
+    // without IndexedDB). NEVER let this reject — an uncaught rejection
+    // here would surface as an unhandled promise rejection on ordinary app
+    // boot for users on those environments, and would break every other
+    // component's tests that happen to render something mounting this hook.
     initPromise = (async () => {
-      registerChangeListener(database);
-      const capability = syncCapability();
-      const [target, lastSyncedAt, snapshot] = await Promise.all([
-        getPersistedSyncTarget(),
-        getSetting<string | null>(SYNC_LAST_SYNCED_AT_KEY, null),
-        getSetting<BackupFile | null>(SYNC_PRE_MERGE_SNAPSHOT_KEY, null),
-      ]);
-      setState({
-        capability,
-        isConfigured: target !== null,
-        lastSyncedAt,
-        canUndo: snapshot !== null,
-      });
+      try {
+        registerChangeListener(database);
+        const capability = syncCapability();
+        const [target, lastSyncedAt, snapshot] = await Promise.all([
+          getPersistedSyncTarget(),
+          getSetting<string | null>(SYNC_LAST_SYNCED_AT_KEY, null),
+          getSetting<BackupFile | null>(SYNC_PRE_MERGE_SNAPSHOT_KEY, null),
+        ]);
+        setState({
+          capability,
+          isConfigured: target !== null,
+          lastSyncedAt,
+          canUndo: snapshot !== null,
+        });
+      } catch {
+        // Sync is an opt-in enhancement (D-01) — a platform without the
+        // required capabilities (or a test environment with no
+        // IndexedDB/__IS_TAURI__) simply stays unconfigured/manual rather
+        // than crashing the host component's mount.
+        setState({ capability: 'manual', isConfigured: false });
+      }
     })();
   }
   return initPromise;
@@ -343,9 +359,14 @@ function ensureInitialized(database: Dexie): Promise<void> {
 async function checkOnLaunchAction(database: Dexie): Promise<void> {
   if (launchCheckRan) return;
   launchCheckRan = true;
-  if (syncCapability() !== 'auto') return;
-  await ensureInitialized(database);
-  await runSyncCycle(database);
+  try {
+    if (syncCapability() !== 'auto') return;
+    await ensureInitialized(database);
+    await runSyncCycle(database);
+  } catch {
+    // Same opt-in-enhancement reasoning as ensureInitialized above — never
+    // let a platform-capability probe crash app boot.
+  }
 }
 
 /**

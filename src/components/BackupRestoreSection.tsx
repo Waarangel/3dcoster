@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type Dexie from 'dexie';
 import { db } from '../db/database';
 import { Button } from './ui';
+import { SyncSetup } from './SyncSetup';
 import { downloadBackup } from '../utils/backupExport';
 import { restoreBackup, validateBackupFile } from '../utils/backupRestore';
 import { MAX_BACKUP_BYTES, type BackupStoreName } from '../utils/backupSchema';
@@ -151,6 +152,12 @@ export function BackupRestoreSection({
 
   return (
     <div className="space-y-6">
+      {/* Phase 44-06 (SYNC-01 D-03): this heading names the WHOLE Data-tab
+          section — Backup + Restore (unchanged below) plus the new Sync
+          subsection at the bottom. One home for all three, no new chrome
+          elsewhere. */}
+      <h2 className="text-base font-semibold text-white">Backup, Restore &amp; Sync</h2>
+
       {error && (
         <div role="alert" className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400">
           {error}
@@ -225,6 +232,9 @@ export function BackupRestoreSection({
           <p role="status" className="text-sm text-slate-300">Restoring… the app will reload when it finishes.</p>
         )}
       </div>
+
+      {/* Sync (Phase 44-06, SYNC-01 D-03) — third subsection, below Restore. */}
+      <SyncSetup database={database} />
     </div>
   );
 }

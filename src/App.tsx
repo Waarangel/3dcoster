@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, useUserProfile, useShippingConfig, useMarketplaceFees, useCustomers, useAllSales } from './hooks/useDatabase';
 import { useFxRates } from './hooks/useFxRates';
 import { useFailureEvents } from './hooks/useFailureEvents';
+import { useSyncFolder } from './hooks/useSyncFolder';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
@@ -17,6 +18,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { MaintenanceAlertModal } from './components/MaintenanceAlertModal';
 import { NewBadge } from './components/NewBadge';
 import { OnboardingOverlay } from './components/onboarding/OnboardingOverlay';
+import { SyncMergeSummary } from './components/SyncMergeSummary';
 import { Footer } from './components/Footer';
 import { UpdateBanner } from './components/UpdateBanner';
 import { AnnouncementBanner } from './components/AnnouncementBanner';
@@ -186,6 +188,17 @@ function App() {
     updateFees: updateMarketplaceFees,
     resetToDefaults: resetMarketplaceFees,
   } = useMarketplaceFees();
+
+  // Phase 44-06 (SYNC-01 D-01/D-07): the launch-time newer-sync-file check.
+  // checkOnLaunch() is a module-guarded one-shot (safe to call on every
+  // mount) and is itself a no-op when no sync folder is configured (D-01 —
+  // opt-in) or on a manual-capability browser (D-02). This same hook
+  // instance also drives the debounced auto-write for the app's lifetime —
+  // see useSyncFolder.ts's module-scoped external store.
+  const { pendingMerge: syncPendingMerge, confirmMerge: confirmSyncMerge, cancelMerge: cancelSyncMerge, checkOnLaunch } = useSyncFolder();
+  useEffect(() => {
+    void checkOnLaunch();
+  }, [checkOnLaunch]);
 
   // Handle saving a job and updating printer hours
   const handleSaveJob = async (job: PrintJob, printHours: number) => {
@@ -379,6 +392,19 @@ function App() {
           setMaintenanceAlert(null);
         }}
       />
+
+      {/* Phase 44-06 (SYNC-01 D-07): a divergent sync file found at launch
+          never auto-commits — it surfaces here for the user to review and
+          confirm before anything merges. */}
+      {syncPendingMerge && (
+        <div className="max-w-6xl mx-auto px-4 pt-4">
+          <SyncMergeSummary
+            plan={syncPendingMerge.plan}
+            onConfirm={() => void confirmSyncMerge()}
+            onCancel={cancelSyncMerge}
+          />
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="bg-slate-800/50 border-b border-slate-700">
