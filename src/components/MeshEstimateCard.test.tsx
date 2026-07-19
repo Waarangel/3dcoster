@@ -34,7 +34,13 @@ vi.mock('three', () => {
   }
   return {
     Scene: class { add() { /* no-op */ } },
-    PerspectiveCamera: class { position = new Vector3(); lookAt() { /* no-op */ } },
+    PerspectiveCamera: class {
+      position = new Vector3();
+      near = 0.1;
+      far = 10000;
+      lookAt() { /* no-op */ }
+      updateProjectionMatrix() { /* no-op */ }
+    },
     BufferGeometry,
     BufferAttribute: class {},
     MeshStandardMaterial: class {},
@@ -46,6 +52,7 @@ vi.mock('three', () => {
     WebGLRenderer: class {
       domElement = document.createElement('canvas');
       setSize() { /* no-op */ }
+      setPixelRatio() { /* no-op */ }
       render() { /* no-op */ }
       dispose() { /* no-op */ }
     },

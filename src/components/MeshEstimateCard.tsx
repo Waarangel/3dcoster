@@ -4,6 +4,7 @@ import { computeMeshEstimate, type MeshGeometryResult } from '../utils/stlParser
 import { estimateWeightGrams } from '../utils/meshWeightModel';
 import { detectUnitsWarning, convertInchesToMm } from '../utils/unitsHeuristic';
 import { getMaterialDensity } from '../utils/gcodeParser';
+import { computeCameraFraming } from '../utils/cameraFraming';
 import type { MeshEstimateWorkerOutput } from '../workers/meshEstimate.worker';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Button, Card, Input } from './ui';
@@ -17,6 +18,9 @@ const DEFAULT_INFILL_PERCENT = 15;
 /** Square preview viewport size in CSS px — a compact rotatable preview (D-11), not a full 3D editor. */
 const PREVIEW_SIZE_PX = 220;
 
+/** Vertical FOV of the preview camera — also the effective horizontal FOV since the viewport is square (aspect = 1). */
+const PREVIEW_FOV_DEGREES = 45;
+
 /**
  * Structural subset of THREE.WebGLRenderer/OrbitControls this preview
  * touches. Deliberately hand-declared (not `import type {...} from 'three'`)
@@ -27,6 +31,7 @@ interface MinimalRenderer {
   domElement: HTMLCanvasElement;
   dispose: () => void;
   setSize: (w: number, h: number) => void;
+  setPixelRatio?: (ratio: number) => void;
   render: (scene: unknown, camera: unknown) => void;
 }
 interface MinimalControls {
@@ -135,7 +140,12 @@ export function MeshEstimateCard({
       if (disposed) return;
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 10000);
+      // near/far are placeholders here — computeCameraFraming derives the
+      // real clip planes below from the model's actual bounding sphere, so a
+      // 2mm model and a 300mm model both clip correctly (fixed constants
+      // would either clip a tiny model's near edge or waste depth precision
+      // on a huge far plane it never needs).
+      const camera = new THREE.PerspectiveCamera(PREVIEW_FOV_DEGREES, 1, 0.1, 10000);
 
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(effectivePosition, 3));
@@ -151,15 +161,33 @@ export function MeshEstimateCard({
       const box = new THREE.Box3().setFromObject(mesh);
       const boxSize = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
-      const maxDim = Math.max(boxSize.x, boxSize.y, boxSize.z) || 1;
-      camera.position.set(center.x + maxDim, center.y + maxDim, center.z + maxDim);
-      camera.lookAt(center);
+
+      // Fixed: the previous "center + maxDim" offset had no relationship to
+      // the camera's FOV and clipped every model (a cube's bounding-sphere
+      // radius, ~0.87x its edge length, didn't fit the frustum at that
+      // distance — see cameraFraming.ts for the full writeup + regression
+      // tests). computeCameraFraming derives distance + near/far from the
+      // real bounding sphere and FOV so the model is always fully framed.
+      const framing = computeCameraFraming(
+        { x: center.x, y: center.y, z: center.z },
+        { x: boxSize.x, y: boxSize.y, z: boxSize.z },
+        PREVIEW_FOV_DEGREES
+      );
+      camera.near = framing.near;
+      camera.far = framing.far;
+      camera.updateProjectionMatrix();
+      camera.position.set(framing.position.x, framing.position.y, framing.position.z);
+      camera.lookAt(framing.target.x, framing.target.y, framing.target.z);
 
       const rendererInstance = new THREE.WebGLRenderer({
         canvas: canvasRef.current,
         antialias: true,
         alpha: true,
       }) as unknown as MinimalRenderer;
+      // devicePixelRatio keeps the preview crisp on retina displays — the
+      // renderer defaulted to a 1:1 pixel ratio before, which is correct
+      // sizing-wise but blurry on high-DPI screens.
+      rendererInstance.setPixelRatio?.(Math.min(window.devicePixelRatio || 1, 2));
       rendererInstance.setSize(PREVIEW_SIZE_PX, PREVIEW_SIZE_PX);
       renderer = rendererInstance;
 
