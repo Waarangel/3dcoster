@@ -8,6 +8,7 @@
     "shell:default",
     "window-state:default",
     "dialog:allow-save",
+    "dialog:allow-open",
     {
       "identifier": "fs:allow-write-file",
       "allow": [

@@ -10,6 +10,11 @@ fn main() {
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        // 44-04 (SYNC-01 D-01 / RESEARCH.md Pitfall 3): persists the fs+asset
+        // scope grant that the directory dialog auto-extends when the user
+        // picks their sync folder, so "pick once, then automatic" survives an
+        // app restart. Must be registered after tauri_plugin_fs::init().
+        .plugin(tauri_plugin_persisted_scope::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
