@@ -88,7 +88,7 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 - [x] **Phase 41: Quick-Win Features** - Reprice alerts, spool lifecycle, tax threshold tracker, Quote Variants PDF (completed 2026-07-09)
 - [ ] **Phase 42: GDPR & Onboarding** - Consent banner, privacy policy, terms, guided first-run wizard
 - [x] **Phase 43: Pro Backend** - Supabase auth, hosted quote pages, Pro subscription billing (completed 2026-07-16)
-- [ ] **Phase 44: Sync & STL Instant Quote** - File-based device sync, STL volume estimate to calculator
+- [x] **Phase 44: Sync & STL Instant Quote** - File-based device sync, STL volume estimate to calculator (completed 2026-07-19)
 - [ ] **Phase 45: Brand & Launch** - Cost-Truth Dark redesign merge, Pro pricing copy
 
 ---
