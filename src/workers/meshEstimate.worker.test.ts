@@ -120,7 +120,9 @@ describe('meshEstimate.worker computeMeshFromBuffer', () => {
     // Structural guard mirrored by the acceptance-criteria grep, kept here too
     // so a regression fails the test suite, not just a separate CI script.
     const fs = await import('node:fs/promises');
-    const source = await fs.readFile(new URL('./meshEstimate.worker.ts', import.meta.url), 'utf-8');
+    const path = await import('node:path');
+    const filePath = path.join(process.cwd(), 'src/workers/meshEstimate.worker.ts');
+    const source = await fs.readFile(filePath, 'utf-8');
     expect(source).toMatch(/await import\('three/);
     expect(source).not.toMatch(/^import.*from 'three'/m);
   });
