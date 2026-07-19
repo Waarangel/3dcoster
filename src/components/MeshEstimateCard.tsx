@@ -4,7 +4,7 @@ import { computeMeshEstimate, type MeshGeometryResult } from '../utils/stlParser
 import { estimateWeightGrams } from '../utils/meshWeightModel';
 import { detectUnitsWarning, convertInchesToMm } from '../utils/unitsHeuristic';
 import { getMaterialDensity } from '../utils/gcodeParser';
-import { computeCameraFraming } from '../utils/cameraFraming';
+import { computeCameraFraming, derivePaneAspect, derivePaneSize, FRAMING_MARGIN } from '../utils/cameraFraming';
 import type { MeshEstimateWorkerOutput } from '../workers/meshEstimate.worker';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Button, Card, Input } from './ui';
@@ -15,10 +15,13 @@ import { NewBadge } from './NewBadge';
 // Variants discount default (NOT a UserProfile/Dexie field).
 const DEFAULT_INFILL_PERCENT = 15;
 
-/** Square preview viewport size in CSS px — a compact rotatable preview (D-11), not a full 3D editor. */
-const PREVIEW_SIZE_PX = 220;
-
-/** Vertical FOV of the preview camera — also the effective horizontal FOV since the viewport is square (aspect = 1). */
+/**
+ * Vertical FOV of the preview camera. The pane itself is NO LONGER a fixed
+ * square (Task 4 human-verify round 2 — "match model proportions plus
+ * padding"): `derivePaneAspect`/`derivePaneSize` (cameraFraming.ts) turn the
+ * model's bounding box into a pane width/height, and `computeCameraFraming`
+ * accounts for the resulting non-square aspect via its `aspect` param.
+ */
 const PREVIEW_FOV_DEGREES = 45;
 
 /**
@@ -122,6 +125,14 @@ export function MeshEstimateCard({
 
   const { size } = effectiveGeometry.boundingBoxMm;
 
+  // Task 4 human-verify round 2 ("match model proportions plus padding"):
+  // the pane is no longer a fixed 220x220 square — its aspect ratio is
+  // derived from the model's actual on-screen proportions at the preview's
+  // fixed isometric angle, then clamped to a sane size (cameraFraming.ts).
+  // Re-derived whenever the model's (possibly unit-converted) size changes.
+  const paneSize = useMemo(() => derivePaneSize(derivePaneAspect(size)), [size]);
+  const paneAspectRatio = paneSize.width / paneSize.height;
+
   // 3D preview (D-11) — three.js loaded ONLY via dynamic import(), so it stays
   // in the lazy three chunk (assert-no-static-three-import.mjs). The WebGL
   // render/rotate itself is verified by the Task 4 human-verify checkpoint;
@@ -145,7 +156,7 @@ export function MeshEstimateCard({
       // 2mm model and a 300mm model both clip correctly (fixed constants
       // would either clip a tiny model's near edge or waste depth precision
       // on a huge far plane it never needs).
-      const camera = new THREE.PerspectiveCamera(PREVIEW_FOV_DEGREES, 1, 0.1, 10000);
+      const camera = new THREE.PerspectiveCamera(PREVIEW_FOV_DEGREES, paneAspectRatio, 0.1, 10000);
 
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(effectivePosition, 3));
@@ -168,10 +179,14 @@ export function MeshEstimateCard({
       // distance — see cameraFraming.ts for the full writeup + regression
       // tests). computeCameraFraming derives distance + near/far from the
       // real bounding sphere and FOV so the model is always fully framed.
+      // `paneAspectRatio` is passed through so a non-square (portrait or
+      // landscape) pane fits the model on BOTH axes, not just vertically.
       const framing = computeCameraFraming(
         { x: center.x, y: center.y, z: center.z },
         { x: boxSize.x, y: boxSize.y, z: boxSize.z },
-        PREVIEW_FOV_DEGREES
+        PREVIEW_FOV_DEGREES,
+        FRAMING_MARGIN,
+        paneAspectRatio
       );
       camera.near = framing.near;
       camera.far = framing.far;
@@ -188,7 +203,11 @@ export function MeshEstimateCard({
       // renderer defaulted to a 1:1 pixel ratio before, which is correct
       // sizing-wise but blurry on high-DPI screens.
       rendererInstance.setPixelRatio?.(Math.min(window.devicePixelRatio || 1, 2));
-      rendererInstance.setSize(PREVIEW_SIZE_PX, PREVIEW_SIZE_PX);
+      // setSize (with its default updateStyle=true) sets BOTH the drawing
+      // buffer resolution and canvas.style.width/height to paneSize — the
+      // three pieces (renderer buffer size, canvas CSS size, camera.aspect)
+      // must all agree or the render distorts (Task 4 round 2 bug).
+      rendererInstance.setSize(paneSize.width, paneSize.height);
       renderer = rendererInstance;
 
       const orbitControls = new OrbitControls(camera, rendererInstance.domElement) as unknown as MinimalControls;
@@ -216,7 +235,7 @@ export function MeshEstimateCard({
       controls?.dispose();
       renderer?.dispose();
     };
-  }, [effectivePosition]);
+  }, [effectivePosition, paneSize.width, paneSize.height, paneAspectRatio]);
 
   const handleApply = () => {
     onApply({
@@ -238,9 +257,23 @@ export function MeshEstimateCard({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="shrink-0 rounded-lg overflow-hidden bg-slate-900 border border-slate-700">
-          {/* allow-raw-html: bare WebGL surface — the three.js renderer owns this canvas directly */}
-          <canvas ref={canvasRef} width={PREVIEW_SIZE_PX} height={PREVIEW_SIZE_PX} />
+        {/*
+          Task 4 round 2 bug fix: this wrapper is a flex item in a container
+          that defaults to `align-items: stretch`. Without `self-start`, the
+          cross axis (height in the sm:flex-row desktop layout, width in the
+          flex-col mobile layout) stretched to match the taller/wider info
+          column next to it — the canvas itself always rendered at its
+          intended size, but the bordered/background box around it appeared
+          as a "vertical rectangle" instead of hugging the canvas. `self-start`
+          makes this wrapper size to its content (the canvas) on both axes,
+          in both layouts, so the visible pane always matches the actual
+          rendered dimensions.
+        */}
+        <div className="self-start shrink-0 rounded-lg overflow-hidden bg-slate-900 border border-slate-700">
+          {/* allow-raw-html: bare WebGL surface — the three.js renderer owns this canvas directly.
+              width/height are the model-proportioned pane size (derivePaneSize) — the renderer's
+              setSize() call keeps the CSS size and drawing-buffer resolution in sync with these. */}
+          <canvas ref={canvasRef} width={paneSize.width} height={paneSize.height} />
         </div>
 
         <div className="flex-1 space-y-3 text-sm">

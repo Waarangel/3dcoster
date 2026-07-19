@@ -3,7 +3,15 @@ import {
   boundingSphereRadius,
   computeFramingDistance,
   computeCameraFraming,
+  computeEffectiveFovDegrees,
+  computeProjectedExtent,
+  derivePaneAspect,
+  derivePaneSize,
   FRAMING_MARGIN,
+  MIN_PANE_ASPECT,
+  MAX_PANE_ASPECT,
+  MIN_PANE_PX,
+  MAX_PANE_PX,
 } from './cameraFraming';
 
 const FOV_DEGREES = 45;
@@ -126,5 +134,179 @@ describe('computeCameraFraming', () => {
     // The fixed formula fits.
     const fixedDistance = computeFramingDistance(realRadius, FOV_DEGREES, FRAMING_MARGIN);
     expect(fitsInFrustum(realRadius, fixedDistance, FOV_DEGREES)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Round 2 (Task 4 human-verify): pane aspect derived from model proportions,
+// and the two-axis frustum fit needed once the pane is no longer square.
+// ---------------------------------------------------------------------------
+
+describe('computeEffectiveFovDegrees', () => {
+  it('equals the vertical FOV for a square viewport (aspect = 1)', () => {
+    expect(computeEffectiveFovDegrees(45, 1)).toBeCloseTo(45, 10);
+  });
+
+  it('equals the vertical FOV for a landscape viewport (aspect > 1) — horizontal FOV is wider, not binding', () => {
+    expect(computeEffectiveFovDegrees(45, 2)).toBeCloseTo(45, 10);
+  });
+
+  it('is narrower than the vertical FOV for a portrait viewport (aspect < 1) — horizontal FOV binds', () => {
+    const effective = computeEffectiveFovDegrees(45, 0.5);
+    expect(effective).toBeLessThan(45);
+    expect(effective).toBeGreaterThan(0);
+  });
+
+  it('narrows further as the viewport gets more portrait (smaller aspect)', () => {
+    const mild = computeEffectiveFovDegrees(45, 0.8);
+    const extreme = computeEffectiveFovDegrees(45, MIN_PANE_ASPECT);
+    expect(extreme).toBeLessThan(mild);
+  });
+});
+
+describe('computeProjectedExtent', () => {
+  it('exactly matches the analytic isometric-projection extent for a cube (width = s*sqrt(2), height = 4s/sqrt(6))', () => {
+    const s = 10;
+    const { width, height } = computeProjectedExtent({ x: s, y: s, z: s });
+    expect(width).toBeCloseTo(s * Math.sqrt(2), 5);
+    expect(height).toBeCloseTo((4 * s) / Math.sqrt(6), 5);
+  });
+
+  it('grows the width for a model widened along x/z while height is unchanged by a y-only change', () => {
+    const base = computeProjectedExtent({ x: 10, y: 10, z: 10 });
+    const widened = computeProjectedExtent({ x: 40, y: 10, z: 40 });
+    expect(widened.width).toBeGreaterThan(base.width);
+  });
+
+  it('grows the height for a model heightened along y', () => {
+    const base = computeProjectedExtent({ x: 10, y: 10, z: 10 });
+    const heightened = computeProjectedExtent({ x: 10, y: 100, z: 10 });
+    expect(heightened.height).toBeGreaterThan(base.height);
+  });
+
+  it('falls back to world +X as the right axis when viewDirection is parallel to worldUp (degenerate cross product)', () => {
+    const { width, height } = computeProjectedExtent({ x: 10, y: 10, z: 10 }, { x: 0, y: 1, z: 0 });
+    expect(Number.isFinite(width)).toBe(true);
+    expect(Number.isFinite(height)).toBe(true);
+    expect(width).toBeGreaterThan(0);
+    expect(height).toBeGreaterThan(0);
+  });
+});
+
+describe('derivePaneAspect', () => {
+  it('matches the exact analytic aspect for a cube (sqrt(3)/2, unclamped since it is within bounds)', () => {
+    expect(derivePaneAspect({ x: 10, y: 10, z: 10 })).toBeCloseTo(Math.sqrt(3) / 2, 5);
+  });
+
+  it('clamps to MIN_PANE_ASPECT for a very tall thin column (portrait)', () => {
+    expect(derivePaneAspect({ x: 5, y: 1000, z: 5 })).toBeCloseTo(MIN_PANE_ASPECT, 5);
+  });
+
+  it('produces a landscape aspect for a very wide thin plate, asymptotically approaching sqrt(3) for this isometric view (a box can never actually reach MAX_PANE_ASPECT=2 under a (1,1,1)/up=(0,1,0) projection — width depends only on the x/z half-extents while height always retains a y contribution, so MAX_PANE_ASPECT is a defensive upper clamp, not a reachable value)', () => {
+    const aspect = derivePaneAspect({ x: 100000, y: 1, z: 100000 });
+    expect(aspect).toBeGreaterThan(1);
+    expect(aspect).toBeLessThan(MAX_PANE_ASPECT);
+    expect(aspect).toBeCloseTo(Math.sqrt(3), 2);
+  });
+
+  it('derivePaneSize still honors MAX_PANE_ASPECT as a hard upper clamp even though no box reaches it via derivePaneAspect (defense in depth for future projection changes)', () => {
+    expect(derivePaneSize(MAX_PANE_ASPECT).width / derivePaneSize(MAX_PANE_ASPECT).height).toBeCloseTo(
+      MAX_PANE_ASPECT,
+      1
+    );
+  });
+
+  it('produces a smaller aspect for a taller model than a wider one', () => {
+    const tall = derivePaneAspect({ x: 20, y: 200, z: 20 });
+    const wide = derivePaneAspect({ x: 200, y: 20, z: 200 });
+    expect(tall).toBeLessThan(wide);
+  });
+});
+
+describe('derivePaneSize', () => {
+  it('returns the original 220x220 square for aspect = 1 (backward-compatible with the fixed preview size)', () => {
+    expect(derivePaneSize(1)).toEqual({ width: 220, height: 220 });
+  });
+
+  it('produces a portrait pane (height > width) for aspect < 1', () => {
+    const { width, height } = derivePaneSize(MIN_PANE_ASPECT);
+    expect(height).toBeGreaterThan(width);
+  });
+
+  it('produces a landscape pane (width > height) for aspect > 1', () => {
+    const { width, height } = derivePaneSize(MAX_PANE_ASPECT);
+    expect(width).toBeGreaterThan(height);
+  });
+
+  it('never exceeds MAX_PANE_PX or drops below MIN_PANE_PX on either axis, across the full clamped aspect range', () => {
+    for (const aspect of [MIN_PANE_ASPECT, 0.8, 1, 1.5, MAX_PANE_ASPECT]) {
+      const { width, height } = derivePaneSize(aspect);
+      expect(width).toBeLessThanOrEqual(MAX_PANE_PX);
+      expect(width).toBeGreaterThanOrEqual(MIN_PANE_PX);
+      expect(height).toBeLessThanOrEqual(MAX_PANE_PX);
+      expect(height).toBeGreaterThanOrEqual(MIN_PANE_PX);
+    }
+  });
+
+  it('preserves the requested aspect ratio after any min/max clamping (scales both dimensions together, never distorts)', () => {
+    const { width, height } = derivePaneSize(MAX_PANE_ASPECT);
+    expect(width / height).toBeCloseTo(MAX_PANE_ASPECT, 1);
+  });
+
+  it('internally clamps an out-of-range aspect the same as derivePaneAspect would have (defensive — matches the MAX_PANE_ASPECT result)', () => {
+    expect(derivePaneSize(10)).toEqual(derivePaneSize(MAX_PANE_ASPECT));
+    expect(derivePaneSize(0.01)).toEqual(derivePaneSize(MIN_PANE_ASPECT));
+  });
+});
+
+describe('two-axis frustum fit for non-square panes', () => {
+  /** Mirrors `fitsInFrustum` but also checks the horizontal frustum plane —
+   *  needed once the pane (and therefore camera.aspect) is no longer square. */
+  function fitsInFrustum2D(radius: number, distance: number, vFovDegrees: number, aspect: number): boolean {
+    const vFovRadians = (vFovDegrees * Math.PI) / 180;
+    const hFovRadians = 2 * Math.atan(Math.tan(vFovRadians / 2) * aspect);
+    const vHalfHeight = distance * Math.tan(vFovRadians / 2);
+    const hHalfWidth = distance * Math.tan(hFovRadians / 2);
+    return vHalfHeight >= radius - 1e-6 && hHalfWidth >= radius - 1e-6;
+  }
+
+  it.each([
+    { name: 'portrait pane (2mm cube)', size: { x: 2, y: 2, z: 2 }, aspect: MIN_PANE_ASPECT },
+    { name: 'portrait pane (40mm cube)', size: { x: 40, y: 40, z: 40 }, aspect: 0.75 },
+    { name: 'landscape pane (300mm cube)', size: { x: 300, y: 300, z: 300 }, aspect: MAX_PANE_ASPECT },
+    { name: 'landscape pane (thin plate)', size: { x: 300, y: 300, z: 1 }, aspect: 1.5 },
+  ])('fully frames a $name on BOTH axes at every FOV', ({ size, aspect }) => {
+    for (const fov of [30, 45, 60, 75]) {
+      const radius = boundingSphereRadius(size);
+      const distance = computeFramingDistance(radius, fov, FRAMING_MARGIN, aspect);
+      expect(fitsInFrustum2D(radius, distance, fov, aspect)).toBe(true);
+    }
+  });
+
+  it('demonstrates that ignoring aspect (the pre-fix single-axis distance) clips a portrait pane horizontally', () => {
+    const size = { x: 40, y: 40, z: 40 };
+    const radius = boundingSphereRadius(size);
+    const portraitAspect = MIN_PANE_ASPECT;
+
+    // Old behavior: distance computed as if aspect were always 1 (vFov only).
+    const squareOnlyDistance = computeFramingDistance(radius, FOV_DEGREES, FRAMING_MARGIN, 1);
+    expect(fitsInFrustum2D(radius, squareOnlyDistance, FOV_DEGREES, portraitAspect)).toBe(false);
+
+    // Fixed: passing the real aspect widens the distance enough to fit both axes.
+    const aspectAwareDistance = computeFramingDistance(radius, FOV_DEGREES, FRAMING_MARGIN, portraitAspect);
+    expect(fitsInFrustum2D(radius, aspectAwareDistance, FOV_DEGREES, portraitAspect)).toBe(true);
+  });
+
+  it('computeCameraFraming passes aspect through to the distance calculation (position offset grows for a portrait pane)', () => {
+    const center = { x: 0, y: 0, z: 0 };
+    const size = { x: 40, y: 40, z: 40 };
+    const square = computeCameraFraming(center, size, FOV_DEGREES, FRAMING_MARGIN, 1);
+    const portrait = computeCameraFraming(center, size, FOV_DEGREES, FRAMING_MARGIN, MIN_PANE_ASPECT);
+
+    const squareDistance = Math.sqrt(square.position.x ** 2 + square.position.y ** 2 + square.position.z ** 2);
+    const portraitDistance = Math.sqrt(
+      portrait.position.x ** 2 + portrait.position.y ** 2 + portrait.position.z ** 2
+    );
+    expect(portraitDistance).toBeGreaterThan(squareDistance);
   });
 });
