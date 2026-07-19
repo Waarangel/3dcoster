@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 44
 current_phase_name: sync-stl-instant-quote
 status: executing
-stopped_at: Completed 44-04-PLAN.md
-last_updated: "2026-07-19T13:17:11.367Z"
+stopped_at: Completed 44-05-PLAN.md
+last_updated: "2026-07-19T15:53:41.878Z"
 last_activity: 2026-07-17
 last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 38
-  completed_plans: 36
+  completed_plans: 37
   percent: 75
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 44 (sync-stl-instant-quote) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-07-17 — Phase 44 execution started
 
@@ -67,6 +67,7 @@ Last activity: 2026-07-17 — Phase 44 execution started
 | Phase 44 P03 | 15min | - tasks | - files |
 | Phase 44 P03 | 15min | 3 tasks | 6 files |
 | Phase 44 P04 | 20min | 3 tasks | 9 files |
+| Phase 44 P05 | 41min | 4 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 44-03: applyMerge always scopes its transaction to every BACKUP_STORES table, mirroring restoreBackup.ts
 - [Phase 44]: 44-04: Web Locks is the mutex, BroadcastChannel is notification-only for sync's read-merge-write critical section — RESEARCH.md anti-pattern guard — never conflate the two
 - [Phase 44]: 44-04: web FileSystemDirectoryHandle persisted in a dedicated IndexedDB store, desktop sync-folder path persisted via the existing settings store — handles are structured-clonable but not JSON-serializable, so they cannot go through setSetting's JSON.stringify
+- [Phase 44]: 44-05: Camera framing uses bounding-sphere-in-frustum distance (radius * margin / sin(fov/2)), not axis-aligned maxDim — fixes preview clipping found in Task 4 human-verify round 1
+- [Phase 44]: 44-05: Preview pane needs self-start plus a derived aspect ratio from the model's bbox (isometric corner-projection) — flex align-items:stretch was stretching the wrapper independent of the canvas's own size, found in round 2
 
 ### Pending Todos
 
@@ -174,8 +177,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-19T13:17:11.358Z
-Stopped at: Completed 44-04-PLAN.md
+Last session: 2026-07-19T15:53:41.866Z
+Stopped at: Completed 44-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
