@@ -71,7 +71,7 @@
 
 ### Brand & Launch
 
-- [ ] **BRAND-01**: The "Cost-Truth Dark" marketing-site redesign (branch `test/design-skills-experiment`) is merged for launch, with v1.7+ DownloadPage/FAQPage Linux correctness ported and the 3 Pro-pricing spots filled with real numbers
+- [x] **BRAND-01**: The "Cost-Truth Dark" marketing-site redesign (branch `test/design-skills-experiment`) is merged for launch, with v1.7+ DownloadPage/FAQPage Linux correctness ported and the 3 Pro-pricing spots filled with real numbers
 
 ## v2 Requirements (deferred)
 
@@ -135,7 +135,7 @@ Which phases cover which requirements. Updated during roadmap creation 2026-07-0
 | PRO-04 | Phase 43 | Complete |
 | SYNC-01 | Phase 44 | Complete |
 | CONN-02 | Phase 44 | Complete |
-| BRAND-01 | Phase 45 | Pending |
+| BRAND-01 | Phase 45 | Complete |
 
 **Coverage:**
 

@@ -336,7 +336,7 @@ Plans:
 
 **Wave 6**
 
-- [ ] 45-11-PLAN.md — Targeted release review (D-17) + branch archive/retirement (BRAND-01, D-01/17)
+- [x] 45-11-PLAN.md — Targeted release review (D-17) + branch archive/retirement (BRAND-01, D-01/17)
 
 **UI hint**: yes
 
