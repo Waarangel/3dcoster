@@ -338,6 +338,11 @@ Plans:
 
 - [x] 45-11-PLAN.md — Targeted release review (D-17) + branch archive/retirement (BRAND-01, D-01/17)
 
+**Wave 7** *(gap closure — from 45-UAT.md, 2026-07-20)*
+
+- [ ] 45-12-PLAN.md — Currency-aware Pro pricing display: stored-pref → locale → USD resolution + billed-as-EUR disclosure across /pricing, landing teaser, /features (G-45-CURRENCY)
+- [ ] 45-13-PLAN.md — /features layout containment + visible Free vs Pro section + "Coming to Pro" strip + Pro-badged /roadmap entries (G-45-FEATURES-LAYOUT, G-45-FREE-PRO-VISIBILITY)
+
 **UI hint**: yes
 
 ---
