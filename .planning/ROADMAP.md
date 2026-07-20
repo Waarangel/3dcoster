@@ -320,7 +320,7 @@ Plans:
 **Wave 3** *(parallel)*
 
 - [x] 45-03-PLAN.md — Pricing spine: src/pricing.ts constant + /pricing page + byte-match guard (BRAND-01, D-06/09/10)
-- [ ] 45-06-PLAN.md — DownloadPage + FAQPage: Linux correctness + content reconciliation (BRAND-01)
+- [x] 45-06-PLAN.md — DownloadPage + FAQPage: Linux correctness + content reconciliation (BRAND-01)
 - [ ] 45-07-PLAN.md — ChangelogPage (isSafeHttpUrl) + RoadmapPage (D-13 refresh) + FeedbackPage (BRAND-01, D-13)
 - [ ] 45-08-PLAN.md — Legal restyle: Privacy + Terms + cookie banner, content byte-identical (BRAND-01, D-12)
 - [ ] 45-09-PLAN.md — SupportNudge retargeted to Pro + wire into save-success paths (BRAND-01, D-03)
