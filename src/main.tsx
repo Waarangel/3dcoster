@@ -1,7 +1,7 @@
 import { StrictMode, Component, Suspense } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { lazyWithRetry } from './utils/lazyWithRetry.ts'
@@ -9,6 +9,7 @@ import { PwaUpdatePrompt } from './components/PwaUpdatePrompt.tsx'
 import { ScrollToTop } from './components/ScrollToTop.tsx'
 import { CookieConsentManager } from './components/consent/CookieConsentManager.tsx'
 import { AnalyticsGate } from './components/consent/AnalyticsGate.tsx'
+import { MarketingThemeScope } from './components/marketing/MarketingThemeScope.tsx'
 
 // Lazy load marketing pages (not needed for calculator startup).
 // lazyWithRetry auto-reloads once on a stale-chunk 404 after a redeploy,
@@ -22,6 +23,20 @@ const FAQPage = lazyWithRetry(() => import('./pages/FAQPage.tsx').then(m => ({ d
 const ChangelogPage = lazyWithRetry(() => import('./pages/ChangelogPage.tsx').then(m => ({ default: m.ChangelogPage })), 'ChangelogPage')
 const PrivacyPage = lazyWithRetry(() => import('./pages/PrivacyPage.tsx').then(m => ({ default: m.PrivacyPage })), 'PrivacyPage')
 const TermsPage = lazyWithRetry(() => import('./pages/TermsPage.tsx').then(m => ({ default: m.TermsPage })), 'TermsPage')
+
+// Layout route wrapping every marketing route in the Cost-Truth Dark token
+// scope. Mounted ONCE across marketing→marketing navigation (not per-page),
+// so the route-marketing body marker stays stable and only toggles when
+// crossing the marketing↔/app boundary. /app (<App />) and the Tauri branch
+// below are siblings OUTSIDE this element — they must never render inside
+// MarketingThemeScope (D-02).
+function MarketingLayout() {
+  return (
+    <MarketingThemeScope>
+      <Outlet />
+    </MarketingThemeScope>
+  )
+}
 
 // Page loading fallback
 function PageLoading() {
@@ -89,17 +104,20 @@ function Root() {
             </>
           ) : (
             <>
-              {/* Web: show full site with marketing pages */}
-              <Route path="/" element={<LandingPage />} />
+              {/* /app stays OUTSIDE MarketingThemeScope — slate palette (D-02). */}
               <Route path="/app" element={<App />} />
-              <Route path="/download" element={<DownloadPage />} />
-              <Route path="/features" element={<FeaturesPage />} />
-              <Route path="/roadmap" element={<RoadmapPage />} />
-              <Route path="/feedback" element={<FeedbackPage />} />
-              <Route path="/faq" element={<FAQPage />} />
-              <Route path="/changelog" element={<ChangelogPage />} />
-              <Route path="/privacy" element={<PrivacyPage />} />
-              <Route path="/terms" element={<TermsPage />} />
+              {/* Web: full marketing site, brand-themed via the layout route. */}
+              <Route element={<MarketingLayout />}>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/download" element={<DownloadPage />} />
+                <Route path="/features" element={<FeaturesPage />} />
+                <Route path="/roadmap" element={<RoadmapPage />} />
+                <Route path="/feedback" element={<FeedbackPage />} />
+                <Route path="/faq" element={<FAQPage />} />
+                <Route path="/changelog" element={<ChangelogPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+              </Route>
             </>
           )}
         </Routes>
