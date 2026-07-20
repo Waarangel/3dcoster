@@ -328,7 +328,7 @@ Plans:
 **Wave 4** *(needs pricing constant)*
 
 - [x] 45-04-PLAN.md — LandingPage port + Pro teaser + four-pillar headline (BRAND-01, D-07/11)
-- [ ] 45-05-PLAN.md — FeaturesPage port + Pro column + fix stale "no Pro tier" copy (BRAND-01, D-08/11)
+- [x] 45-05-PLAN.md — FeaturesPage port + Pro column + fix stale "no Pro tier" copy (BRAND-01, D-08/11)
 
 **Wave 5**
 
