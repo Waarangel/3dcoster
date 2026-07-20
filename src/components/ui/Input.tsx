@@ -21,10 +21,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ inputSize = 'md', error = false, compact = false, className = '', disabled, id, ...props }, ref) => {
     const generatedId = useId();
     const resolvedId = id ?? generatedId;
-    const baseStyles = 'w-full bg-slate-700 text-white rounded-lg border-0 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500';
+    const baseStyles = 'w-full bg-[var(--surface-2)] text-[var(--ink)] rounded-lg border-0 placeholder-[var(--ink-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]';
     const compactStyles = compact ? 'max-w-28' : '';
     const errorStyles = error ? 'ring-2 ring-red-500' : '';
-    const disabledStyles = disabled ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : '';
+    const disabledStyles = disabled ? 'bg-[var(--surface)] text-[var(--ink-faint)] cursor-not-allowed' : '';
 
     return (
       <input

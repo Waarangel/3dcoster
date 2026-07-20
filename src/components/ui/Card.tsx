@@ -9,9 +9,9 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles: Record<CardVariant, string> = {
-  default: 'bg-slate-800 border border-slate-700',
-  elevated: 'bg-slate-800/50 border border-slate-700',
-  interactive: 'bg-slate-800/50 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer',
+  default: 'bg-[var(--surface)] border border-[var(--hairline)]',
+  elevated: 'bg-[var(--surface)] border border-[var(--hairline)]',
+  interactive: 'bg-[var(--surface)] border border-[var(--hairline)] hover:border-[rgba(23,150,255,0.4)] transition-colors cursor-pointer',
 };
 
 const paddingStyles: Record<'none' | 'sm' | 'md' | 'lg', string> = {

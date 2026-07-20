@@ -13,11 +13,11 @@ interface BaseButtonProps {
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, BaseButtonProps {}
 
 export const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-  secondary: 'bg-slate-700 hover:bg-slate-600 text-white',
+  primary: 'bg-[var(--brand)] hover:bg-[var(--brand-soft)] text-white',
+  secondary: 'bg-[var(--surface-2)] hover:brightness-125 text-[var(--ink)]',
   success: 'bg-green-600 hover:bg-green-700 text-white',
   danger: 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30',
-  ghost: 'bg-transparent hover:bg-slate-700 text-slate-300',
+  ghost: 'bg-transparent hover:bg-[var(--surface-2)] text-[var(--ink-soft)]',
 };
 
 export const sizeStyles: Record<ButtonSize, string> = {
@@ -26,8 +26,8 @@ export const sizeStyles: Record<ButtonSize, string> = {
   lg: 'px-6 py-3 text-base min-h-[48px]',
 };
 
-export const baseButtonStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900';
-export const disabledButtonStyles = 'disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed disabled:border-slate-600';
+export const baseButtonStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:ring-offset-2 focus:ring-offset-[var(--bg)]';
+export const disabledButtonStyles = 'disabled:bg-[var(--surface-2)] disabled:text-[var(--ink-faint)] disabled:cursor-not-allowed disabled:border-[var(--hairline)]';
 
 export function getButtonClasses(
   variant: ButtonVariant = 'primary',
