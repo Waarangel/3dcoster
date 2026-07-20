@@ -1,7 +1,7 @@
 {
-  "id": "example-template",
+  "id": "v2-0-launch",
   "active": false,
-  "message": "Help shape 3DCoster — got 2 minutes for a quick survey?",
-  "ctaLabel": "Share your thoughts",
-  "url": "https://example.com/your-teamwork-form"
+  "message": "3DCoster 2.0 is here — real failure rates, TOU electricity, printer ROI, device sync, and hosted quotes with 3DCoster Pro.",
+  "ctaLabel": "See what's new",
+  "url": "https://3dcoster.com/changelog"
 }
