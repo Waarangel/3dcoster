@@ -32,7 +32,7 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700/50">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg)]/80 backdrop-blur-sm border-b border-[var(--hairline)]">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center" aria-label="3DCoster home">
           <img src="/3DCosterLogoWithWords.svg" alt="3DCoster" className="h-9 w-auto" />
@@ -42,19 +42,25 @@ export function Header() {
         <div className="hidden md:flex items-center gap-4">
           <Link
             to="/features"
-            className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
+            className="px-4 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors text-sm font-medium"
           >
             Features
           </Link>
           <Link
+            to="/pricing"
+            className="px-4 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors text-sm font-medium"
+          >
+            Pricing
+          </Link>
+          <Link
             to="/download"
-            className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
+            className="px-4 py-2 text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors text-sm font-medium"
           >
             Download
           </Link>
           <Link
             to="/app"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-[var(--brand)] hover:bg-[var(--brand-soft)] text-white rounded-lg transition-colors text-sm font-medium"
           >
             Go to App
           </Link>
@@ -109,25 +115,32 @@ export function Header() {
           mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="bg-slate-900/95 backdrop-blur-sm border-t border-slate-700/50 px-6 py-3 flex flex-col gap-1">
+        <div className="bg-[var(--bg)]/95 backdrop-blur-sm border-t border-[var(--hairline)] px-6 py-3 flex flex-col gap-1">
           <Link
             to="/features"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center px-4 py-3 min-h-[44px] text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors text-sm font-medium"
+            className="flex items-center px-4 py-3 min-h-[44px] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-sm font-medium"
           >
             Features
           </Link>
           <Link
+            to="/pricing"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center px-4 py-3 min-h-[44px] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-sm font-medium"
+          >
+            Pricing
+          </Link>
+          <Link
             to="/download"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center px-4 py-3 min-h-[44px] text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors text-sm font-medium"
+            className="flex items-center px-4 py-3 min-h-[44px] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-sm font-medium"
           >
             Download
           </Link>
           <Link
             to="/app"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center justify-center px-4 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium mt-1"
+            className="flex items-center justify-center px-4 py-3 min-h-[44px] bg-[var(--brand)] hover:bg-[var(--brand-soft)] text-white rounded-lg transition-colors text-sm font-medium mt-1"
           >
             Go to App
           </Link>
