@@ -154,3 +154,7 @@ None - no external service configuration required.
 ---
 *Phase: 45-brand-launch*
 *Completed: 2026-07-20*
+
+## Self-Check: PASSED
+
+All created/modified files present on disk (src/index.css, src/components/marketing/MarketingThemeScope.tsx, src/components/motion/Reveal.tsx, src/components/landing/CostReveal.tsx, vite.config.ts, src/main.tsx). All 4 commits (aa96eed, 4c73c25, fe9d514, 50e65a1) confirmed present in `git log --oneline --all`.

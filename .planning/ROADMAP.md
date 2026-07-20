@@ -310,12 +310,15 @@ Plans:
 **Plans**: 11 plans in 6 waves
 
 **Wave 1**
-- [ ] 45-01-PLAN.md — Brand foundation: slate-safe token cascade + .theme-brand-dark scope, self-hosted font, motion primitives, MarketingThemeScope mount (BRAND-01, D-01/02)
+
+- [x] 45-01-PLAN.md — Brand foundation: slate-safe token cascade + .theme-brand-dark scope, self-hosted font, motion primitives, MarketingThemeScope mount (BRAND-01, D-01/02)
 
 **Wave 2**
+
 - [ ] 45-02-PLAN.md — Shared chrome: token-scoped ui primitives + support toast variant + Header (/pricing nav) + Footer (BRAND-01, D-02)
 
 **Wave 3** *(parallel)*
+
 - [ ] 45-03-PLAN.md — Pricing spine: src/pricing.ts constant + /pricing page + byte-match guard (BRAND-01, D-06/09/10)
 - [ ] 45-06-PLAN.md — DownloadPage + FAQPage: Linux correctness + content reconciliation (BRAND-01)
 - [ ] 45-07-PLAN.md — ChangelogPage (isSafeHttpUrl) + RoadmapPage (D-13 refresh) + FeedbackPage (BRAND-01, D-13)
@@ -323,13 +326,16 @@ Plans:
 - [ ] 45-09-PLAN.md — SupportNudge retargeted to Pro + wire into save-success paths (BRAND-01, D-03)
 
 **Wave 4** *(needs pricing constant)*
+
 - [ ] 45-04-PLAN.md — LandingPage port + Pro teaser + four-pillar headline (BRAND-01, D-07/11)
 - [ ] 45-05-PLAN.md — FeaturesPage port + Pro column + fix stale "no Pro tier" copy (BRAND-01, D-08/11)
 
 **Wave 5**
+
 - [ ] 45-10-PLAN.md — Docs (PRODUCT/DESIGN) + v2.0.0 release prep (no tag) + launch-comms kit (BRAND-01, D-05/16/18)
 
 **Wave 6**
+
 - [ ] 45-11-PLAN.md — Targeted release review (D-17) + branch archive/retirement (BRAND-01, D-01/17)
 
 **UI hint**: yes
