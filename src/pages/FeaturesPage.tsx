@@ -138,7 +138,7 @@ export function FeaturesPage() {
         {/* Hero */}
         <section className="relative overflow-hidden pt-32 pb-16 px-6" aria-labelledby="features-hero-heading">
           <div className="hero-aura pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
-          <Reveal trigger="mount">
+          <Reveal trigger="mount" className="max-w-6xl mx-auto">
             <div className="max-w-3xl mx-auto text-center">
               <h1 id="features-hero-heading" className="font-display text-4xl md:text-5xl font-extrabold text-[var(--ink)] leading-[1.05]">
                 Where other tools stop, <span className="text-[var(--brand-soft)]">3DCoster keeps going.</span>
@@ -154,75 +154,77 @@ export function FeaturesPage() {
 
         {/* Only in 3DCoster */}
         <section className="py-12 px-6" aria-labelledby="only-in-3dcoster-heading">
-          <Reveal trigger="inView" className="max-w-2xl mb-10">
-            <h2 id="only-in-3dcoster-heading" className="font-display text-3xl font-bold text-[var(--ink)]">Only in 3DCoster</h2>
-            <p className="mt-3 text-[var(--ink-soft)] leading-relaxed [text-wrap:balance]">
-              Across every free tool we compared, these are the capabilities no one else offers —
-              the difference between a calculator and a selling workflow.
-            </p>
-          </Reveal>
-          <div className="grid gap-4 lg:grid-cols-6 lg:auto-rows-fr">
-            {/* Featured — PDF quotes, with a mini quote mock */}
-            <Reveal trigger="inView" className="lg:col-span-3 lg:row-span-2">
-              <article className="group h-full flex flex-col rounded-2xl border border-[rgba(23,150,255,0.3)] bg-[var(--surface)] p-8 transition duration-200 ease-out hover:border-[rgba(23,150,255,0.5)]">
-                <span className="block w-10 h-10 text-[var(--brand-soft)]"><Glyph>{ONLY_IN_3DCOSTER[0].icon}</Glyph></span>
-                <h3 className="font-display mt-5 text-2xl font-bold text-[var(--ink)]">{ONLY_IN_3DCOSTER[0].title}</h3>
-                <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{ONLY_IN_3DCOSTER[0].description}</p>
-                <div className="mt-auto pt-8">
-                  <div className="rounded-xl border border-[var(--hairline)] bg-[var(--bg)] p-4 max-w-xs">
-                    <div className="flex items-center justify-between text-xs text-[var(--ink-faint)]">
-                      <span>Quote #00042</span><span>Valid 30 days</span>
+          <div className="max-w-6xl mx-auto">
+            <Reveal trigger="inView" className="max-w-2xl mb-10">
+              <h2 id="only-in-3dcoster-heading" className="font-display text-3xl font-bold text-[var(--ink)]">Only in 3DCoster</h2>
+              <p className="mt-3 text-[var(--ink-soft)] leading-relaxed [text-wrap:balance]">
+                Across every free tool we compared, these are the capabilities no one else offers —
+                the difference between a calculator and a selling workflow.
+              </p>
+            </Reveal>
+            <div className="grid gap-4 lg:grid-cols-6 lg:auto-rows-fr">
+              {/* Featured — PDF quotes, with a mini quote mock */}
+              <Reveal trigger="inView" className="lg:col-span-3 lg:row-span-2">
+                <article className="group h-full flex flex-col rounded-2xl border border-[rgba(23,150,255,0.3)] bg-[var(--surface)] p-8 transition duration-200 ease-out hover:border-[rgba(23,150,255,0.5)]">
+                  <span className="block w-10 h-10 text-[var(--brand-soft)]"><Glyph>{ONLY_IN_3DCOSTER[0].icon}</Glyph></span>
+                  <h3 className="font-display mt-5 text-2xl font-bold text-[var(--ink)]">{ONLY_IN_3DCOSTER[0].title}</h3>
+                  <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{ONLY_IN_3DCOSTER[0].description}</p>
+                  <div className="mt-auto pt-8">
+                    <div className="rounded-xl border border-[var(--hairline)] bg-[var(--bg)] p-4 max-w-xs">
+                      <div className="flex items-center justify-between text-xs text-[var(--ink-faint)]">
+                        <span>Quote #00042</span><span>Valid 30 days</span>
+                      </div>
+                      <div className="mt-3 space-y-1.5">
+                        <div className="h-1.5 rounded w-3/4" style={{ background: 'var(--surface-2)' }} />
+                        <div className="h-1.5 rounded w-1/2" style={{ background: 'var(--surface-2)' }} />
+                      </div>
+                      <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline)] pt-2.5">
+                        <span className="text-xs text-[var(--ink-soft)]">Total</span>
+                        <span className="text-sm font-semibold text-[var(--brand-soft)] tabular-nums">$48.00</span>
+                      </div>
                     </div>
-                    <div className="mt-3 space-y-1.5">
-                      <div className="h-1.5 rounded w-3/4" style={{ background: 'var(--surface-2)' }} />
-                      <div className="h-1.5 rounded w-1/2" style={{ background: 'var(--surface-2)' }} />
-                    </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline)] pt-2.5">
-                      <span className="text-xs text-[var(--ink-soft)]">Total</span>
-                      <span className="text-sm font-semibold text-[var(--brand-soft)] tabular-nums">$48.00</span>
-                    </div>
+                    <p className="mt-2 text-xs text-[var(--ink-faint)]">Example — auto-generated from the job.</p>
                   </div>
-                  <p className="mt-2 text-xs text-[var(--ink-faint)]">Example — auto-generated from the job.</p>
-                </div>
-              </article>
-            </Reveal>
-
-            {/* Quote → Sale — with a status flow */}
-            <Reveal trigger="inView" delay={0.06} className="lg:col-span-3">
-              <article className="group h-full rounded-2xl border border-[rgba(23,150,255,0.22)] bg-[var(--surface)] p-8 transition duration-200 ease-out hover:border-[rgba(23,150,255,0.5)]">
-                <h3 className="font-display text-xl font-bold text-[var(--ink)]">{ONLY_IN_3DCOSTER[1].title}</h3>
-                <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{ONLY_IN_3DCOSTER[1].description}</p>
-                <div className="mt-4 flex items-center gap-2 text-xs">
-                  <span className="rounded-lg border border-[var(--hairline-strong)] px-2.5 py-1 text-[var(--ink-soft)]">Quote sent</span>
-                  <svg className="w-4 h-4 text-[var(--ink-faint)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                  <span className="rounded-lg border border-[rgba(23,150,255,0.3)] bg-[rgba(23,150,255,0.1)] px-2.5 py-1 font-medium text-[var(--brand-soft)]">Sale · tracked</span>
-                </div>
-              </article>
-            </Reveal>
-
-            {/* Customer library — icon-left */}
-            <Reveal trigger="inView" delay={0.1} className="lg:col-span-3">
-              <article className="group h-full flex items-start gap-5 rounded-2xl border border-[rgba(23,150,255,0.22)] bg-[var(--surface)] p-8 transition duration-200 ease-out hover:border-[rgba(23,150,255,0.5)]">
-                <span className="block w-10 h-10 shrink-0 text-[var(--brand-soft)] transition-transform duration-200 ease-out group-hover:scale-110"><Glyph>{ONLY_IN_3DCOSTER[2].icon}</Glyph></span>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-[var(--ink)]">{ONLY_IN_3DCOSTER[2].title}</h3>
-                  <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{ONLY_IN_3DCOSTER[2].description}</p>
-                </div>
-              </article>
-            </Reveal>
-
-            {/* Compact trio */}
-            {[ONLY_IN_3DCOSTER[3], ONLY_IN_3DCOSTER[4], ONLY_IN_3DCOSTER[5]].map((item, i) => (
-              <Reveal key={item.title} trigger="inView" delay={0.14 + i * 0.05} className="lg:col-span-2 h-full">
-                <article className="group h-full rounded-2xl border border-[rgba(23,150,255,0.22)] bg-[var(--surface)] p-6 transition duration-200 ease-out hover:-translate-y-1 hover:border-[rgba(23,150,255,0.5)]">
-                  <div className="flex items-center gap-2.5 mb-2.5">
-                    <span className="w-5 h-5 text-[var(--brand-soft)] transition-transform duration-200 ease-out group-hover:scale-110"><Glyph>{item.icon}</Glyph></span>
-                    <h3 className="text-base font-semibold text-[var(--ink)]">{item.title}</h3>
-                  </div>
-                  <p className="text-sm text-[var(--ink-soft)] leading-relaxed">{item.description}</p>
                 </article>
               </Reveal>
-            ))}
+
+              {/* Quote → Sale — with a status flow */}
+              <Reveal trigger="inView" delay={0.06} className="lg:col-span-3">
+                <article className="group h-full rounded-2xl border border-[rgba(23,150,255,0.22)] bg-[var(--surface)] p-8 transition duration-200 ease-out hover:border-[rgba(23,150,255,0.5)]">
+                  <h3 className="font-display text-xl font-bold text-[var(--ink)]">{ONLY_IN_3DCOSTER[1].title}</h3>
+                  <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{ONLY_IN_3DCOSTER[1].description}</p>
+                  <div className="mt-4 flex items-center gap-2 text-xs">
+                    <span className="rounded-lg border border-[var(--hairline-strong)] px-2.5 py-1 text-[var(--ink-soft)]">Quote sent</span>
+                    <svg className="w-4 h-4 text-[var(--ink-faint)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                    <span className="rounded-lg border border-[rgba(23,150,255,0.3)] bg-[rgba(23,150,255,0.1)] px-2.5 py-1 font-medium text-[var(--brand-soft)]">Sale · tracked</span>
+                  </div>
+                </article>
+              </Reveal>
+
+              {/* Customer library — icon-left */}
+              <Reveal trigger="inView" delay={0.1} className="lg:col-span-3">
+                <article className="group h-full flex items-start gap-5 rounded-2xl border border-[rgba(23,150,255,0.22)] bg-[var(--surface)] p-8 transition duration-200 ease-out hover:border-[rgba(23,150,255,0.5)]">
+                  <span className="block w-10 h-10 shrink-0 text-[var(--brand-soft)] transition-transform duration-200 ease-out group-hover:scale-110"><Glyph>{ONLY_IN_3DCOSTER[2].icon}</Glyph></span>
+                  <div>
+                    <h3 className="font-display text-xl font-bold text-[var(--ink)]">{ONLY_IN_3DCOSTER[2].title}</h3>
+                    <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{ONLY_IN_3DCOSTER[2].description}</p>
+                  </div>
+                </article>
+              </Reveal>
+
+              {/* Compact trio */}
+              {[ONLY_IN_3DCOSTER[3], ONLY_IN_3DCOSTER[4], ONLY_IN_3DCOSTER[5]].map((item, i) => (
+                <Reveal key={item.title} trigger="inView" delay={0.14 + i * 0.05} className="lg:col-span-2 h-full">
+                  <article className="group h-full rounded-2xl border border-[rgba(23,150,255,0.22)] bg-[var(--surface)] p-6 transition duration-200 ease-out hover:-translate-y-1 hover:border-[rgba(23,150,255,0.5)]">
+                    <div className="flex items-center gap-2.5 mb-2.5">
+                      <span className="w-5 h-5 text-[var(--brand-soft)] transition-transform duration-200 ease-out group-hover:scale-110"><Glyph>{item.icon}</Glyph></span>
+                      <h3 className="text-base font-semibold text-[var(--ink)]">{item.title}</h3>
+                    </div>
+                    <p className="text-sm text-[var(--ink-soft)] leading-relaxed">{item.description}</p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 
