@@ -12,19 +12,19 @@ const EFFECTIVE_DATE = 'July 14, 2026';
 
 export function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--bg)] via-[var(--surface)] to-[var(--bg)] flex flex-col">
       <Header />
 
-      <main className="flex-1 pt-24 pb-16 px-6">
+      <main className="flex-1 pt-24 pb-16 px-6" aria-labelledby="privacy-hero-heading">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">Privacy Policy</h1>
-            <p className="text-slate-400">Effective date: {EFFECTIVE_DATE}</p>
+            <h1 id="privacy-hero-heading" className="font-display text-4xl font-bold text-[var(--ink)] mb-4">Privacy Policy</h1>
+            <p className="text-[var(--ink-faint)]">Effective date: {EFFECTIVE_DATE}</p>
           </div>
 
-          <div className="space-y-10 text-slate-300 leading-relaxed">
+          <div className="space-y-10 text-[var(--ink-soft)] leading-relaxed">
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Local-first, by design</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Local-first, by design</h2>
               <p>
                 3DCoster does not require an account. Your projects, jobs, printers,
                 filaments, customers, sales records, and settings are stored entirely
@@ -36,7 +36,7 @@ export function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">What we collect</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">What we collect</h2>
               <p className="mb-3">
                 Because most of what you enter into 3DCoster never leaves your device,
                 the amount of data we actually collect is small and limited to what is
@@ -91,7 +91,7 @@ export function PrivacyPage() {
                   href="https://github.com/Waarangel/3dcoster/blob/main/docs/DATA-FLOW-INVENTORY.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline"
+                  className="text-[var(--brand)] hover:text-[var(--brand-soft)] underline"
                 >
                   Data Flow Inventory
                 </a>
@@ -100,7 +100,7 @@ export function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Lawful basis</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Lawful basis</h2>
               <ul className="list-disc list-inside space-y-2">
                 <li>
                   <strong>Consent</strong> &mdash; for analytics (Vercel Web Analytics)
@@ -123,7 +123,7 @@ export function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Retention</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Retention</h2>
               <p>
                 Project data never reaches us, so there is nothing for us to retain
                 beyond what you keep on your own device. Analytics data, when you
@@ -138,7 +138,7 @@ export function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Your rights</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Your rights</h2>
               <p className="mb-3">
                 Because your project data lives entirely on your device, you already
                 hold the practical ability to access, export, and delete it yourself
@@ -162,7 +162,7 @@ export function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Processors</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Processors</h2>
               <p className="mb-3">
                 We use the following processors, each acting only within the scope
                 described above:
@@ -204,13 +204,13 @@ export function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Contact</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Contact</h2>
               <p>
                 Questions about this policy or requests regarding your data can be
                 sent to{' '}
                 <a
                   href="mailto:privacy@3dcoster.com"
-                  className="text-blue-400 hover:text-blue-300 underline"
+                  className="text-[var(--brand)] hover:text-[var(--brand-soft)] underline"
                 >
                   privacy@3dcoster.com
                 </a>

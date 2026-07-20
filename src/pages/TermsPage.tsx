@@ -15,19 +15,19 @@ const EFFECTIVE_DATE = 'July 14, 2026';
 
 export function TermsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--bg)] via-[var(--surface)] to-[var(--bg)] flex flex-col">
       <Header />
 
-      <main className="flex-1 pt-24 pb-16 px-6">
+      <main className="flex-1 pt-24 pb-16 px-6" aria-labelledby="terms-hero-heading">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">Terms of Service</h1>
-            <p className="text-slate-400">Effective date: {EFFECTIVE_DATE}</p>
+            <h1 id="terms-hero-heading" className="font-display text-4xl font-bold text-[var(--ink)] mb-4">Terms of Service</h1>
+            <p className="text-[var(--ink-faint)]">Effective date: {EFFECTIVE_DATE}</p>
           </div>
 
-          <div className="space-y-10 text-slate-300 leading-relaxed">
+          <div className="space-y-10 text-[var(--ink-soft)] leading-relaxed">
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Free tier</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Free tier</h2>
               <p className="mb-3">
                 3DCoster is free, open-source software licensed under the MIT
                 License. By using it, you agree to the following:
@@ -50,7 +50,7 @@ export function TermsPage() {
                     href="https://github.com/Waarangel/3dcoster/blob/main/LICENSE"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline"
+                    className="text-[var(--brand)] hover:text-[var(--brand-soft)] underline"
                   >
                     MIT License
                   </a>{' '}
@@ -71,7 +71,7 @@ export function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Pro tier</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Pro tier</h2>
               <p className="mb-3">
                 The Pro tier is a paid subscription offering account-based features
                 on top of the free tier &mdash; including cloud-hosted, shareable
@@ -125,7 +125,7 @@ export function TermsPage() {
                   <strong>Data on termination.</strong> If a Pro account is canceled
                   or terminated, Pro-specific data stored off your device (account
                   email, hosted quotes, billing records) is retained per our{' '}
-                  <Link to="/privacy" className="text-blue-400 hover:text-blue-300 underline">
+                  <Link to="/privacy" className="text-[var(--brand)] hover:text-[var(--brand-soft)] underline">
                     Privacy Policy
                   </Link>
                   , and you will be given a reasonable opportunity to export your
@@ -135,7 +135,7 @@ export function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Changes to these terms</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Changes to these terms</h2>
               <p>
                 We may update these Terms of Service from time to time, most notably
                 when the Pro tier launches with concrete billing terms. Material
@@ -145,17 +145,17 @@ export function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-white mb-3">Contact</h2>
+              <h2 className="text-2xl font-semibold text-[var(--ink)] mb-3">Contact</h2>
               <p>
                 Questions about these terms can be sent to{' '}
                 <a
                   href="mailto:privacy@3dcoster.com"
-                  className="text-blue-400 hover:text-blue-300 underline"
+                  className="text-[var(--brand)] hover:text-[var(--brand-soft)] underline"
                 >
                   privacy@3dcoster.com
                 </a>
                 . For data-privacy questions specifically, see our{' '}
-                <Link to="/privacy" className="text-blue-400 hover:text-blue-300 underline">
+                <Link to="/privacy" className="text-[var(--brand)] hover:text-[var(--brand-soft)] underline">
                   Privacy Policy
                 </Link>
                 .
