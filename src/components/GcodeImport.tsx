@@ -125,9 +125,25 @@ export function GcodeImport({ assets, selectedFilament, userCurrency, currencySy
   const toast = useToast();
 
   const handleMeshApply = useCallback((result: MeshEstimateApplyResult) => {
-    onImport(result);
+    // Same filename → print-name derivation as the exact 3MF path above;
+    // CostFormSection only uses it when the Print Name field is still empty.
+    const printName = meshEstimate?.fileName
+      .replace(/\.stl$/i, '')
+      .replace(/\.3mf$/i, '')
+      .replace(/_/g, ' ')
+      .trim();
+    onImport({
+      ...result,
+      // Estimated grams are unbounded floats — round to 2 dp so the form
+      // input shows 42.44, not 42.44471346927849.
+      filaments: result.filaments.map(f => ({
+        ...f,
+        grams: Math.round(f.grams * 100) / 100,
+      })),
+      printName: result.printName ?? (printName || undefined),
+    });
     setMeshEstimate(null);
-  }, [onImport]);
+  }, [onImport, meshEstimate]);
 
   const processStlFile = useCallback(async (file: File) => {
     // SEC: reject oversized STL files before handing bytes to the worker —
