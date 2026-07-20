@@ -315,7 +315,7 @@ Plans:
 
 **Wave 2**
 
-- [ ] 45-02-PLAN.md — Shared chrome: token-scoped ui primitives + support toast variant + Header (/pricing nav) + Footer (BRAND-01, D-02)
+- [x] 45-02-PLAN.md — Shared chrome: token-scoped ui primitives + support toast variant + Header (/pricing nav) + Footer (BRAND-01, D-02)
 
 **Wave 3** *(parallel)*
 
