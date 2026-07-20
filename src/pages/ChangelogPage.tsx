@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { Reveal } from '../components/motion/Reveal';
 import { isSafeHttpUrl } from '../utils/urlSecurity';
 // Source of truth: CHANGELOG.md at repo root, loaded as a string at build time
 // via Vite's `?raw` query. Replaces the previous GitHub Releases API fetch so
@@ -22,6 +23,8 @@ import changelogRaw from '../../CHANGELOG.md?raw';
 const MAX_RELEASES_DISPLAYED = 5;
 
 const GITHUB_REPO = 'Waarangel/3dcoster';
+const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`;
+const ISSUES_URL = `https://github.com/${GITHUB_REPO}/issues`;
 
 interface ParsedRelease {
   version: string;     // e.g. "1.3.2" (no v prefix)
@@ -129,19 +132,19 @@ function renderInlineMarkdown(text: string): (string | React.ReactElement)[] {
     }
     if (match[1]) {
       // **bold**
-      parts.push(<strong key={match.index} className="text-white font-semibold">{match[2]}</strong>);
+      parts.push(<strong key={match.index} className="text-[var(--ink)] font-semibold">{match[2]}</strong>);
     } else if (match[3]) {
       // `code`
-      parts.push(<code key={match.index} className="bg-slate-700 px-1.5 py-0.5 rounded text-blue-300 text-xs">{match[4]}</code>);
+      parts.push(<code key={match.index} className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[var(--brand-soft)] text-xs">{match[4]}</code>);
     } else if (match[5]) {
       // [text](url) — only emit an anchor when the url is http/https to prevent
       // javascript:, data:, or other unsafe scheme injection from CHANGELOG.md.
       // Single source of truth: the shared WHATWG-parser-backed isSafeHttpUrl
-      // guard (was an inlined prefix check that missed encoded-scheme payloads).
+      // guard (catches encoded-scheme payloads a naive prefix check would miss).
       const url = match[7];
       const isSafe = isSafeHttpUrl(url);
       parts.push(isSafe
-        ? <a key={match.index} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">{match[6]}</a>
+        ? <a key={match.index} href={url} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-soft)] hover:text-[var(--brand)] underline transition-colors duration-200">{match[6]}</a>
         : <span key={match.index}>{match[6]}</span>
       );
     }
@@ -154,6 +157,61 @@ function renderInlineMarkdown(text: string): (string | React.ReactElement)[] {
   return parts.length > 0 ? parts : [text];
 }
 
+// Small semantic chips for Keep-a-Changelog categories (allowed exception to
+// the one-accent system — they're meaning-bearing micro-tags).
+const CHANGE_TYPE_CLASS: Record<string, string> = {
+  added: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+  changed: 'bg-[rgba(23,150,255,0.1)] text-[var(--brand-soft)] border-[rgba(23,150,255,0.3)]',
+  fixed: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+  security: 'bg-red-500/10 text-red-300 border-red-500/30',
+  removed: 'bg-[var(--surface-2)] text-[var(--ink-soft)] border-[var(--hairline-strong)]',
+  deprecated: 'bg-[var(--surface-2)] text-[var(--ink-soft)] border-[var(--hairline-strong)]',
+};
+
+const TYPE_TAG_CLASS: Record<ParsedRelease['type'], string> = {
+  major: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
+  minor: 'bg-[rgba(23,150,255,0.1)] text-[var(--brand-soft)] border-[rgba(23,150,255,0.3)]',
+  milestone: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+  patch: 'bg-[var(--surface-2)] text-[var(--ink-soft)] border-[var(--hairline-strong)]',
+};
+
+const LONG_DATE: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+const SHORT_DATE: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+
+function renderBody(body: string): React.ReactNode {
+  return parseMarkdownBody(body).map((line, i) => {
+    // `## Category` → semantic chip (Added/Fixed/…) or a plain heading otherwise.
+    if (line.startsWith('## ') && !line.startsWith('### ')) {
+      const label = line.replace('## ', '').trim();
+      const cls = CHANGE_TYPE_CLASS[label.toLowerCase()];
+      if (cls) {
+        return (
+          <div key={i} className="mt-4 mb-2 first:mt-0">
+            <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium border ${cls}`}>{label}</span>
+          </div>
+        );
+      }
+      return (
+        <h4 key={i} className="font-display text-[var(--ink)] font-medium mt-4 mb-2">{renderInlineMarkdown(label)}</h4>
+      );
+    }
+    if (line.startsWith('### ')) {
+      return (
+        <h5 key={i} className="font-display text-[var(--ink)] font-medium mt-3 mb-1.5 text-sm">{renderInlineMarkdown(line.replace('### ', ''))}</h5>
+      );
+    }
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      return (
+        <div key={i} className="flex items-baseline gap-2.5 text-[var(--ink-soft)]">
+          <span className="text-[var(--brand-soft)] text-sm shrink-0" aria-hidden="true">▸</span>
+          <span className="text-sm leading-relaxed">{renderInlineMarkdown(line.replace(/^[-*]\s*/, ''))}</span>
+        </div>
+      );
+    }
+    return <p key={i} className="text-sm text-[var(--ink-soft)] leading-relaxed mb-2">{renderInlineMarkdown(line)}</p>;
+  });
+}
+
 export function ChangelogPage() {
   // CHANGELOG.md is bundled at build time — parse it once and memoize.
   // No loading state needed; no fetch can fail. Falls back to an empty list
@@ -163,216 +221,151 @@ export function ChangelogPage() {
     () => parseChangelog(changelogRaw).slice(0, MAX_RELEASES_DISPLAYED),
     []
   );
-  const loading = false;
-  const error: string | null = null;
+  const hasReleases = releases.length > 0;
+  const latest = releases[0];
+  const rest = releases.slice(1);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
       <Header />
 
-      {/* Main Content */}
-      <main className="flex-1 pt-24 pb-16 px-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">What's New</h1>
-            <p className="text-slate-400 text-lg">
-              See what features and fixes have been added to 3DCoster
+      <main className="flex-1 px-6">
+        <section className="pt-32 pb-10" aria-labelledby="changelog-hero-heading">
+          <Reveal trigger="mount" className="max-w-4xl mx-auto text-center">
+            <h1 id="changelog-hero-heading" className="font-display text-4xl md:text-5xl font-extrabold text-[var(--ink)]">
+              What&apos;s new
+            </h1>
+            <p className="mt-4 text-[var(--ink-soft)] text-lg">
+              See what features and fixes have been added to 3DCoster.
             </p>
-          </div>
+            {hasReleases && (
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-[var(--ink-faint)]">
+                <span>
+                  <strong className="text-[var(--ink)]">{releases.length}</strong> recent releases
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  latest <strong className="text-[var(--brand-soft)]">v{latest.version}</strong> on{' '}
+                  {new Date(latest.date).toLocaleDateString('en-US', LONG_DATE)}
+                </span>
+              </div>
+            )}
+          </Reveal>
+        </section>
 
-          {/* Loading State */}
-          {loading && (
-            <div className="text-center py-12">
-              <div className="inline-block w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin mb-4" />
-              <p className="text-slate-400">Loading releases from GitHub...</p>
-            </div>
-          )}
-
-          {/* Error State */}
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-              <p className="text-red-400 mb-4">{error}</p>
-              <a
-                href="https://github.com/Waarangel/3dcoster/releases"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                View releases on GitHub
-              </a>
-            </div>
-          )}
-
-          {/* No Releases */}
-          {!loading && !error && releases.length === 0 && (
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
-              <p className="text-slate-400 mb-4">No releases found yet.</p>
-              <a
-                href="https://github.com/Waarangel/3dcoster/releases"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
+        <div className="max-w-4xl mx-auto pb-16">
+          {!hasReleases ? (
+            <div className="rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] p-8 text-center">
+              <p className="text-[var(--ink-soft)] mb-4">No releases found yet.</p>
+              <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-soft)] hover:text-[var(--brand)] underline transition-colors">
                 Check GitHub for releases
               </a>
             </div>
-          )}
+          ) : (
+            <>
+              {/* Featured: the latest release */}
+              <Reveal trigger="inView">
+                <article className="relative overflow-hidden rounded-2xl border border-[rgba(23,150,255,0.3)] bg-[var(--surface)] p-7 sm:p-8">
+                  <div
+                    className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full opacity-70"
+                    style={{ background: 'radial-gradient(circle, rgba(23,150,255,0.16), transparent 70%)' }}
+                    aria-hidden="true"
+                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="rounded-full bg-[var(--brand)] px-2.5 py-0.5 text-xs font-medium text-white">Latest</span>
+                    <a href={latest.url} target="_blank" rel="noopener noreferrer" className="font-display text-3xl font-extrabold text-[var(--ink)] hover:underline">
+                      v{latest.version}
+                    </a>
+                    <span className={`rounded border px-2 py-0.5 text-xs ${TYPE_TAG_CLASS[latest.type]}`}>{latest.type}</span>
+                    <span className="text-[var(--ink-faint)] text-sm">
+                      {new Date(latest.date).toLocaleDateString('en-US', LONG_DATE)}
+                    </span>
+                  </div>
+                  <div className="mt-5">
+                    {latest.body ? (
+                      renderBody(latest.body)
+                    ) : (
+                      <p className="text-[var(--ink-faint)] italic text-sm">
+                        No release notes available.{' '}
+                        <a href={latest.url} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-soft)] hover:text-[var(--brand)] transition-colors">View on GitHub</a>
+                      </p>
+                    )}
+                  </div>
+                </article>
+              </Reveal>
 
-          {/* Releases List */}
-          {!loading && !error && releases.length > 0 && (
-            <div className="space-y-8">
+              {/* The rest: a version-anchored timeline */}
+              {rest.length > 0 && (
+                <Reveal trigger="inView" className="mt-10 space-y-1">
+                  {rest.map((release) => (
+                    <div key={release.version} className="grid grid-cols-[5rem_1fr] sm:grid-cols-[6.5rem_1fr] gap-x-4">
+                      <div className="text-right pt-0.5">
+                        <a href={release.url} target="_blank" rel="noopener noreferrer" className="block font-display font-bold text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
+                          v{release.version}
+                        </a>
+                        <div className="mt-0.5 text-[11px] text-[var(--ink-faint)]">
+                          {new Date(release.date).toLocaleDateString('en-US', SHORT_DATE)}
+                        </div>
+                      </div>
+                      <div className="relative border-l border-[var(--hairline)] pl-5 pb-8">
+                        <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-[var(--surface-2)] border border-[var(--hairline-strong)]" aria-hidden="true" />
+                        {release.body ? (
+                          renderBody(release.body)
+                        ) : (
+                          <p className="text-[var(--ink-faint)] italic text-sm">
+                            No release notes available.{' '}
+                            <a href={release.url} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-soft)] hover:text-[var(--brand)] transition-colors">View on GitHub</a>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </Reveal>
+              )}
+
               {releases.length >= MAX_RELEASES_DISPLAYED && (
-                <p className="text-slate-500 text-sm text-center -mt-4">
+                <p className="mt-6 text-center text-sm text-[var(--ink-faint)]">
                   Showing the {MAX_RELEASES_DISPLAYED} most recent releases. For older versions, see the{' '}
-                  <a
-                    href="https://github.com/Waarangel/3dcoster/releases"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline"
-                  >
+                  <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-soft)] hover:text-[var(--brand)] underline transition-colors">
                     full archive on GitHub
                   </a>
                   .
                 </p>
               )}
-              {releases.map((release, index) => (
-                <div
-                  key={release.version}
-                  className="relative pl-8 pb-8 border-l-2 border-slate-700 last:border-l-0 last:pb-0"
-                >
-                  {/* Version dot */}
-                  <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full ${
-                    index === 0 ? 'bg-blue-500' : 'bg-slate-600'
-                  }`} />
-
-                  {/* Version header */}
-                  <div className="flex flex-wrap items-center gap-3 mb-4">
-                    <a
-                      href={release.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`text-2xl font-bold hover:underline ${index === 0 ? 'text-white' : 'text-slate-300'}`}
-                    >
-                      v{release.version}
-                    </a>
-                    <span className={`px-2 py-0.5 text-xs rounded border ${
-                      release.type === 'major'
-                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                        : release.type === 'minor'
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                        : release.type === 'milestone'
-                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                        : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
-                    }`}>
-                      {release.type}
-                    </span>
-                    <span className="text-slate-500 text-sm">
-                      {new Date(release.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </span>
-                    {index === 0 && (
-                      <span className="px-2 py-0.5 text-xs rounded bg-green-500/10 text-green-400 border border-green-500/30">
-                        Latest
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Release body (markdown) */}
-                  {release.body && (
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      {parseMarkdownBody(release.body).map((line, lineIndex) => {
-                        // Handle h2 headers
-                        if (line.startsWith('## ') && !line.startsWith('### ')) {
-                          return (
-                            <h4 key={lineIndex} className="text-white font-medium mt-4 mb-2">
-                              {renderInlineMarkdown(line.replace('## ', ''))}
-                            </h4>
-                          );
-                        }
-                        // Handle h3 headers
-                        if (line.startsWith('### ')) {
-                          return (
-                            <h5 key={lineIndex} className="text-slate-200 font-medium mt-3 mb-1.5 text-sm">
-                              {renderInlineMarkdown(line.replace('### ', ''))}
-                            </h5>
-                          );
-                        }
-                        // Handle list items
-                        if (line.startsWith('- ') || line.startsWith('* ')) {
-                          const text = line.replace(/^[-*]\s*/, '');
-                          return (
-                            <div key={lineIndex} className="flex items-baseline gap-3 text-slate-300 ml-4">
-                              <span className="text-blue-400 text-sm shrink-0">▸</span>
-                              <span className="text-sm">{renderInlineMarkdown(text)}</span>
-                            </div>
-                          );
-                        }
-                        // Regular text
-                        return (
-                          <p key={lineIndex} className="text-slate-400 mb-2">
-                            {renderInlineMarkdown(line)}
-                          </p>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* No body message */}
-                  {!release.body && (
-                    <p className="text-slate-500 italic">
-                      No release notes available.{' '}
-                      <a
-                        href={release.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300"
-                      >
-                        View on GitHub
-                      </a>
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+            </>
           )}
 
           {/* Roadmap CTA */}
-          <div className="mt-12 text-center">
-            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-xl p-8">
-              <h2 className="text-xl font-semibold text-white mb-2">Want to see what's coming next?</h2>
-              <p className="text-slate-400 mb-6">
-                Check out our public roadmap and suggest features on GitHub
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-4">
+          <Reveal trigger="inView" className="mt-14">
+            <div className="rounded-2xl border border-[var(--hairline)] bg-[var(--surface-2)] p-8 text-center" style={{ boxShadow: '0 24px 70px -40px rgba(0,0,0,0.85)' }}>
+              <h2 className="font-display text-xl font-bold text-[var(--ink)]">Want to see what&apos;s coming next?</h2>
+              <p className="mt-2 text-[var(--ink-soft)] mb-6">Check out our public roadmap and suggest features on GitHub.</p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <a
-                  href="https://github.com/Waarangel/3dcoster/releases"
+                  href={RELEASES_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+                  className="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-[var(--brand-deep)] text-sm font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]"
                 >
                   All Releases on GitHub
                 </a>
                 <a
-                  href="https://github.com/Waarangel/3dcoster/issues"
+                  href={ISSUES_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+                  className="inline-flex items-center px-5 py-2.5 rounded-xl bg-white text-[var(--brand-deep)] text-sm font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]"
                 >
                   Feature Requests
                 </a>
                 <Link
                   to="/feedback"
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                  className="inline-flex items-center px-5 py-2.5 rounded-xl bg-[var(--brand)] text-white text-sm font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:translate-y-0 active:scale-[0.98]"
                 >
                   Send Feedback
                 </Link>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </main>
 
