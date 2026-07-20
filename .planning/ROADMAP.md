@@ -332,7 +332,7 @@ Plans:
 
 **Wave 5**
 
-- [ ] 45-10-PLAN.md — Docs (PRODUCT/DESIGN) + v2.0.0 release prep (no tag) + launch-comms kit (BRAND-01, D-05/16/18)
+- [x] 45-10-PLAN.md — Docs (PRODUCT/DESIGN) + v2.0.0 release prep (no tag) + launch-comms kit (BRAND-01, D-05/16/18)
 
 **Wave 6**
 

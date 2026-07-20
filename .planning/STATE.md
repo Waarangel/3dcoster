@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 45
 current_phase_name: brand-launch
 status: executing
-stopped_at: Completed 45-05-PLAN.md
-last_updated: "2026-07-20T18:39:04.582Z"
+stopped_at: Completed 45-10-PLAN.md
+last_updated: "2026-07-20T18:47:37.846Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 45 execution started
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 49
-  completed_plans: 47
+  completed_plans: 48
   percent: 88
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 45 (brand-launch) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 45 execution started
 
@@ -78,6 +78,7 @@ Last activity: 2026-07-20 — Phase 45 execution started
 | Phase 45 P09 | 20min | 2 tasks | 8 files |
 | Phase 45 P04 | 11min | 2 tasks | 1 files |
 | Phase 45 P05 | 55min | 2 tasks | 1 files |
+| Phase 45 P10 | 25min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -193,6 +194,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 45-09: SUPPORT_URL/openSupportLink renamed to PRO_UPGRADE_URL/openProUpgradeLink; mechanic names (shouldShowSupportNudge, cooldown, storage key) left unchanged
 - [Phase ?]: 45-04: Added a standalone four-pillar 'What's new' section on LandingPage to literally satisfy D-11 (all four v2.0 pillars headline-billed), rather than relying only on the hero + bento
 - [Phase ?]: [Phase 45]: 45-05: FeaturesPage ported using the branch's competitor-matrix structure (verified-via-live-walkthrough SlicePrice3D data) rather than main's older 3DPrintForce table; 9 new comparison-table rows added for shipped v2.0 capabilities using "-" for unverified competitor cells; 3DCoster Pro column mirrors Free everywhere except the hosted-quote-links row (the only real Pro-gated capability)
+- [Phase ?]: docs/PRODUCT.md + docs/DESIGN.md ported from the design branch, reconciled for the shipped /pricing page and self-hosted font (no Google Fonts); Header's stale variant=light note dropped since 45-02 removed it entirely
+- [Phase ?]: CHANGELOG [2.0.0] section written as user-facing Added/Changed/Security bullets covering all 8 v2.0 phases; version bumped to 2.0.0 across src/version.ts, tauri.conf.json, Cargo.toml, and Cargo.lock (lockfile bump mirrors the v1.9.0 release precedent); no git tag created, nothing pushed (D-15/D-16)
+- [Phase ?]: Launch-comms kit (announcement.json + docs/launch/LAUNCH-COMMS.md) drafted with Pro as the single monetization voice, no donation ask; founder publishes manually on launch day
 
 ### Pending Todos
 
@@ -208,8 +212,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-20T18:39:04.570Z
-Stopped at: Completed 45-05-PLAN.md
+Last session: 2026-07-20T18:47:37.837Z
+Stopped at: Completed 45-10-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
