@@ -106,6 +106,19 @@ interface HiddenCost {
   icon: ReactNode;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Coming to Pro — genuine paid-tier direction of travel, never presented as
+   shipped. Mirrors the pro:true entries in src/roadmap.ts (Phase 45-13) so
+   this strip and /roadmap always tell the same story.
+   ───────────────────────────────────────────────────────────────────────── */
+const COMING_TO_PRO: string[] = [
+  'White-label, branded hosted quotes',
+  'Live Etsy order sync (90-day API import)',
+  'Live carrier rates & shipping labels',
+  'QuickBooks accounting sync',
+  'Cloud / real-time device sync',
+];
+
 const HIDDEN_COSTS: HiddenCost[] = [
   { title: 'Electricity', description: 'That 20-hour print uses real power. At $0.15/kWh, it adds up fast.', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M13 10V3L4 14h7v7l9-11h-7z" /> },
   { title: 'Printer depreciation', description: "Your $500 printer won't last forever. Every hour of use has a cost.", icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a1 1 0 001-1v-4a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 001 1zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h12z" /> },
@@ -287,6 +300,78 @@ export function FeaturesPage() {
               <span className="inline-flex items-center gap-2"><CoverDot state="full" /> Covered well</span>
               <span className="inline-flex items-center gap-2"><CoverDot state="partial" /> Limited or paid-tier</span>
               <span className="inline-flex items-center gap-2"><CoverDot state="none" /> Not offered</span>
+            </div>
+          </Reveal>
+        </section>
+
+        {/* Free vs Pro — visible without expanding the breakdown table below */}
+        <section className="py-12 px-6" aria-labelledby="free-vs-pro-heading">
+          <Reveal trigger="inView" className="max-w-6xl mx-auto">
+            <div className="max-w-2xl mb-10">
+              <h2 id="free-vs-pro-heading" className="font-display text-3xl font-bold text-[var(--ink)]">Free vs Pro</h2>
+              <p className="mt-3 text-[var(--ink-soft)] leading-relaxed [text-wrap:balance]">
+                Everything above — the full calculator, cost realism, insights, and selling workflow —
+                is free, forever. Pro adds one thing on top today, with more direction of travel below.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Free card */}
+              <div className="rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] p-7">
+                <h3 className="font-display text-xl font-bold text-[var(--ink)]">Free</h3>
+                <p className="mt-1 text-sm text-[var(--ink-faint)]">Everything, forever</p>
+                <p className="mt-4 text-[var(--ink-soft)] leading-relaxed">
+                  The full cost calculator, cost realism engine, insights, customer library, PDF
+                  quotes, sales tracking, and file-based device sync — no account, no paywall. See the
+                  full feature-by-feature breakdown below.
+                </p>
+              </div>
+
+              {/* Pro card */}
+              <div className="relative overflow-hidden rounded-2xl border border-[rgba(23,150,255,0.4)] bg-[var(--surface)] p-7">
+                <div
+                  className="pointer-events-none absolute -top-14 -right-14 w-40 h-40 rounded-full"
+                  style={{ background: 'var(--brand-glow)', filter: 'blur(40px)' }}
+                  aria-hidden="true"
+                />
+                <h3 className="relative font-display text-xl font-bold text-[var(--ink)]">Pro</h3>
+                <p className="relative mt-1 text-sm text-[var(--ink-faint)]">Live, hosted quote links</p>
+                <p className="relative mt-4 text-[var(--ink-soft)] leading-relaxed">
+                  Send a branded, hosted quote link your customer opens and approves online — you see
+                  the result the moment they respond.
+                </p>
+                <p className="relative mt-4 text-2xl font-bold text-[var(--brand-soft)]">
+                  {monthly.approx ?? monthly.billingLabel}
+                  <span className="text-sm font-normal text-[var(--ink-faint)]"> / month</span>
+                </p>
+                {monthly.approx && (
+                  <p className="relative text-xs text-[var(--ink-faint)]">Billed as {monthly.billingLabel}/mo</p>
+                )}
+                <p className="relative mt-1 text-xs text-[var(--brand-soft)]">Launch price for early supporters</p>
+                <Link to="/pricing" className="relative mt-5 inline-flex items-center text-sm font-medium text-[var(--brand-soft)] hover:underline">
+                  See Pro pricing <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Coming to Pro strip — never presented as shipped */}
+            <div className="mt-6 rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] p-6">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h3 className="font-display text-base font-semibold text-[var(--ink)]">Coming to Pro</h3>
+                <Link to="/roadmap" className="text-sm font-medium text-[var(--brand-soft)] hover:underline">
+                  See the full roadmap <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </div>
+              <ul className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 text-sm text-[var(--ink-soft)]">
+                {COMING_TO_PRO.map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full border border-[var(--ink-faint)]" aria-hidden="true" />
+                    <span>
+                      {item} <span className="text-[var(--ink-faint)]">— on the roadmap</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </Reveal>
         </section>
