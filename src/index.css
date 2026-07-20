@@ -1,8 +1,72 @@
 @import "tailwindcss";
 
+/* Self-hosted display font (Bricolage Grotesque, weights used by docs/DESIGN.md:
+   600/700/800, latin subset only). Bundled as a local build asset — zero
+   runtime request to fonts.googleapis.com / fonts.gstatic.com (45-RESEARCH
+   Pitfall 2/3; vercel.json CSP `font-src 'self' data:` stays untouched). */
+@import "@fontsource/bricolage-grotesque/latin-600.css";
+@import "@fontsource/bricolage-grotesque/latin-700.css";
+@import "@fontsource/bricolage-grotesque/latin-800.css";
+
 body {
   margin: 0;
   min-height: 100vh;
+}
+
+/* ── Cost-Truth Dark design tokens ────────────────────────────────────────
+   :root defines SLATE-EQUIVALENT DEFAULTS that reproduce the current /app
+   calculator palette exactly (Button/Card/Input's existing bg-blue-600,
+   bg-slate-800/700/900 values). /app never nests inside `.theme-brand-dark`,
+   so it always resolves these defaults — this is the single point where
+   D-02 (marketing-only theming) succeeds. `.theme-brand-dark`, applied only
+   by MarketingThemeScope around marketing routes, overrides the same
+   property names with the actual Cost-Truth Dark values from docs/DESIGN.md.
+   Full rationale: .planning/phases/45-brand-launch/45-RESEARCH.md
+   (Architecture Patterns Pattern 1). */
+:root {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Slate-equivalent DEFAULTS — /app inherits these unchanged */
+  --brand: #2563eb;        /* blue-600 — current primary button */
+  --brand-soft: #1d4ed8;   /* blue-700 — current hover (darkens) */
+  --brand-deep: #1e40af;   /* blue-800 — no direct /app usage, kept in-range */
+  --brand-glow: rgba(37, 99, 235, 0.32);
+  --bg: #0f172a;           /* slate-900 */
+  --surface: #1e293b;      /* slate-800 */
+  --surface-2: #334155;    /* slate-700 */
+  --hairline: #334155;     /* slate-700 border */
+  --hairline-strong: #475569; /* slate-600 */
+  --ink: #ffffff;
+  --ink-soft: #cbd5e1;     /* slate-300 */
+  --ink-faint: #94a3b8;    /* slate-400 */
+  --amber: #f59e0b;        /* amber-500 — matches existing /app warning usage */
+  --amber-soft: rgba(245, 158, 11, 0.14);
+}
+
+/* Marketing-only override — applied via MarketingThemeScope's wrapper div
+   around Header + page content + Footer for every marketing route. /app and
+   the desktop Tauri build never nest inside this class (D-02 boundary). */
+.theme-brand-dark {
+  --brand: #1796ff;
+  --brand-soft: #5bb3ff;   /* NOTE: lightens on hover — opposite direction
+                               from the slate default above; intentional
+                               per docs/DESIGN.md, independent token sets */
+  --brand-deep: #0b6fd4;
+  --brand-glow: rgba(23, 150, 255, 0.32);
+  --bg: #0a0e18;
+  --surface: #121829;
+  --surface-2: #18203a;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+  --ink: #f2f5fb;
+  --ink-soft: #a8b3c7;
+  --ink-faint: #74809a;
+  --amber: #f0b429;
+  --amber-soft: rgba(240, 180, 41, 0.14);
+}
+
+.font-display {
+  font-family: var(--font-display);
 }
 
 /* Force custom styling on native select elements (fixes Tauri/WebView OS-native rendering) */
