@@ -5,16 +5,16 @@ milestone_name: Cost-Truth & Insight
 current_phase: 45
 current_phase_name: brand-launch
 status: executing
-stopped_at: Completed 45-02-PLAN.md
-last_updated: "2026-07-20T13:19:51.442Z"
+stopped_at: Completed 45-03-PLAN.md
+last_updated: "2026-07-20T13:30:45.481Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 45 execution started
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 49
-  completed_plans: 40
-  percent: 82
+  completed_plans: 41
+  percent: 84
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 45 (brand-launch) — EXECUTING
-Plan: 3 of 11
+Plan: 4 of 11
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 45 execution started
 
@@ -71,6 +71,7 @@ Last activity: 2026-07-20 — Phase 45 execution started
 | Phase 44 P06 | 8min | 3 tasks | 7 files |
 | Phase 45 P01 | 40min | 3 tasks | 9 files |
 | Phase 45 P02 | 12min | 2 tasks | 9 files |
+| Phase 45 P03 | 9min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -173,6 +174,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 45]: 45-02: Branch's Button/Card/Input/Select/Textarea var() diffs adopted verbatim (no rewriting) since 45-01 already made this app-safe via slate-equivalent :root defaults
 - [Phase ?]: [Phase 45]: 45-02: Header.tsx fully removed the HeaderVariant/variant="light" mechanism and its --paper/--pine/--surface-sunk references (dead code) rather than keeping an unused prop
 - [Phase ?]: [Phase 45]: 45-02: Footer Product column gained a Pricing link alongside the required Legal-column Privacy/Terms/CookieSettingsLink preservation, keeping footer nav consistent with the new Header /pricing entry
+- [Phase ?]: 45-03: TDD RED/GREEN followed literally - PricingPage.test.tsx written first and confirmed failing (src/pricing.ts import unresolved) before src/pricing.ts was created to make it pass
+- [Phase ?]: 45-03: Pro feature list on /pricing derived from the actual shipped Pro surface (hosted quote links via usePublishedQuote/ProPitchModal) rather than invented copy
+- [Phase ?]: 45-03: PricingPage built natively against the Cost-Truth Dark token system (var(--brand) etc, matching Header/Card conventions from 45-01/45-02) since it is a NEW page, not a port
 
 ### Pending Todos
 
@@ -188,8 +192,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-20T13:19:51.432Z
-Stopped at: Completed 45-02-PLAN.md
+Last session: 2026-07-20T13:30:45.471Z
+Stopped at: Completed 45-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
