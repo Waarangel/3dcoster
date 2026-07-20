@@ -17,8 +17,22 @@
 // BillingPanel.tsx, not the other way around.
 // ---------------------------------------------------------------------------
 
+import type { Currency } from './types';
+
 export const MONTHLY_PRICE_LABEL = 'EUR 6.90';
 export const ANNUAL_PRICE_LABEL = 'EUR 69';
 
 /** "EUR 6.90/mo · EUR 69/yr" — reused across the 3 marketing pricing spots. */
 export const PRO_PRICE_SUMMARY = `${MONTHLY_PRICE_LABEL}/mo · ${ANNUAL_PRICE_LABEL}/yr`;
+
+// ---------------------------------------------------------------------------
+// Phase 45-12 (G-45-CURRENCY) — numeric + billing-currency constants, added
+// ALONGSIDE the label constants above (which stay byte-identical to
+// BillingPanel.tsx and the byte-match guard). These give the home-currency
+// approximation layer (src/utils/pricingDisplay.ts, src/hooks/useDisplayPrice.ts)
+// numbers to convert from, without ever hardcoding a converted figure.
+// ---------------------------------------------------------------------------
+
+export const MONTHLY_PRICE_AMOUNT = 6.9;
+export const ANNUAL_PRICE_AMOUNT = 69;
+export const BILLING_CURRENCY: Currency = 'EUR';
