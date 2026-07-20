@@ -18,6 +18,20 @@ interface JourneyNode {
   active?: boolean;
 }
 
+/** Pro-tier badge — reuses the FeaturesPage Pro-chip token treatment
+ *  (text-[var(--brand-soft)] text-xs font-medium) for visual consistency
+ *  across the two roadmap-linked surfaces. */
+function ProBadge() {
+  return (
+    <span
+      className="inline-flex items-center rounded-full border border-[rgba(23,150,255,0.3)] bg-[rgba(23,150,255,0.1)] px-2 py-0.5 text-[var(--brand-soft)] text-xs font-medium"
+      aria-label="Pro tier"
+    >
+      Pro
+    </span>
+  );
+}
+
 function StageLink({ item }: { item: RoadmapItem }) {
   if (!item.href) return null;
   return (
@@ -41,7 +55,10 @@ function StageList({ items }: { items: RoadmapItem[] }) {
         <div key={item.title} className="flex items-start gap-4 py-5 border-t border-[var(--hairline)]">
           <span className="mt-2 h-2 w-2 shrink-0 rounded-full border border-[var(--ink-faint)]" aria-hidden="true" />
           <div>
-            <h3 className="font-display font-semibold text-[var(--ink)]">{item.title}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-display font-semibold text-[var(--ink)]">{item.title}</h3>
+              {item.pro && <ProBadge />}
+            </div>
             <p className="mt-1 text-sm text-[var(--ink-soft)] leading-relaxed">{item.description}</p>
             <StageLink item={item} />
           </div>
@@ -163,7 +180,10 @@ export function RoadmapPage() {
                       </span>
                       In development
                     </span>
-                    <h3 className="font-display text-xl font-bold text-[var(--ink)] mt-3">{item.title}</h3>
+                    <div className="flex items-center gap-2 mt-3">
+                      <h3 className="font-display text-xl font-bold text-[var(--ink)]">{item.title}</h3>
+                      {item.pro && <ProBadge />}
+                    </div>
                     <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{item.description}</p>
                     <StageLink item={item} />
                   </article>

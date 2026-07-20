@@ -16,6 +16,10 @@ export interface RoadmapItem {
   href?: string;
   /** CTA link text. Defaults to "Learn more" if omitted. */
   hrefLabel?: string;
+  /** Marks a genuine paid-tier (Pro) trajectory item. Omit for free-floor items.
+   *  Mirrors the "Coming to Pro" strip on /features (Phase 45-13) — keep both
+   *  in sync. Honesty contract holds: remove pro (and the item) on ship. */
+  pro?: boolean;
 }
 
 export const roadmapItems: RoadmapItem[] = [
@@ -28,14 +32,30 @@ export const roadmapItems: RoadmapItem[] = [
   {
     title: 'Live marketplace order sync',
     description:
-      'Pull orders straight from Etsy and other storefronts so cost and profit are tracked without manual entry. Needs a secure connection layer that is still in design.',
+      'Pull orders straight from Etsy (90-day order history via the Etsy API) and other storefronts so cost and profit are tracked without manual entry. Needs a secure connection layer that is still in design.',
     stage: 'research',
+    pro: true,
   },
   {
     title: 'Live shipping rates & labels',
     description:
       'Real carrier rates and printable labels inside 3DCoster, so the shipping cost baked into your price matches what you actually pay.',
     stage: 'research',
+    pro: true,
+  },
+  {
+    title: 'White-label, branded hosted quotes',
+    description:
+      'Put your own logo and business branding on the hosted quote page your customers open and approve — today’s hosted quotes carry the 3DCoster brand.',
+    stage: 'research',
+    pro: true,
+  },
+  {
+    title: 'QuickBooks accounting sync',
+    description:
+      'Push sales and fees straight into QuickBooks so your books reconcile without re-entering every order by hand. Scoping which QuickBooks API tier this needs.',
+    stage: 'research',
+    pro: true,
   },
   {
     title: 'Use 3DCoster in your language',
@@ -54,8 +74,9 @@ export const roadmapItems: RoadmapItem[] = [
   {
     title: 'Real-time device sync',
     description:
-      'File-based sync (Dropbox/Drive) covers most sellers today. A hosted, always-on sync ceiling is next — blocked on confirming an EU-resident sync backend that fits our no-tracking, local-first posture.',
+      'File-based sync (Dropbox/Drive) covers most sellers today. A hosted, always-on cloud sync ceiling is next — blocked on confirming an EU-resident sync backend that fits our no-tracking, local-first posture.',
     stage: 'research',
+    pro: true,
   },
   {
     title: 'Green-print nudge',
