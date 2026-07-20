@@ -7,6 +7,7 @@ import { useFailureRate } from '../../hooks/useFailureRate';
 import { useMaintenanceAmortization } from '../../hooks/useMaintenanceAmortization';
 import { dominantMaterialId } from '../../db/failureRate';
 import { resolveWeightedCostPerKwh } from '../../utils/touElectricity';
+import { useSupportNudge } from '../SupportNudge';
 import { Button, useToast } from '../ui';
 import { getCurrencySymbol, getDistanceUnit } from '../../utils/currency';
 import type { FxRateTable } from '../../utils/fxConvert';
@@ -121,6 +122,9 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   } = form;
 
   const toast = useToast();
+  // Phase 45 D-03: calm value-moment Pro nudge, self-gated (cooldown + once
+  // per session) — safe to call unconditionally on the NEW-job-save path.
+  const showSupportNudge = useSupportNudge();
   // Live per-asset stock (grams for filament) — drives the "won't finish this print" hint.
   const { stockByAssetId } = useStockEvents();
 
@@ -346,6 +350,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       const job: PrintJob = { id: `job-${Date.now()}`, createdAt: new Date(), updatedAt: new Date(), copiesSold: 0, ...sharedFields };
       try {
         await onSaveJob(job, printTimeHours);
+        // Value moment: a NEW job was saved (not an edit) — nudge is self-gated.
+        showSupportNudge();
         finishAfterSave('Job saved.');
       } catch {
         toast.error('Could not save the job — please try again.');

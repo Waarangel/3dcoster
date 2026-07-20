@@ -11,6 +11,7 @@ import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
 import { formatQuoteNumber } from '../utils/format';
 import { usePublishedQuote } from '../hooks/usePublishedQuote';
 import { ShareQuoteButton } from './pro/ShareQuoteButton';
+import { useSupportNudge } from './SupportNudge';
 
 // ---------------------------------------------------------------------------
 // CONN-03 Quantity variants (D-05..D-08). Three fixed tier slots, defaulting
@@ -74,6 +75,9 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
   // edited. D-13: only edit-mode has an already-created Quote to publish —
   // create-mode's Quote doesn't exist yet until Create Quote is clicked.
   const { publish: publishQuote, unpublish: unpublishQuote } = usePublishedQuote(userProfile.name, updateQuote);
+  // Phase 45 D-03: calm value-moment Pro nudge, self-gated (cooldown + once
+  // per session) — safe to call unconditionally on the quote-CREATE path.
+  const showSupportNudge = useSupportNudge();
 
   const isEdit = editingQuote !== undefined;
 
@@ -321,6 +325,8 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
       await generateQuotePdf(quote);
 
       onQuoteCreated?.(quote);
+      // Value moment: a NEW quote was created (not an edit) — nudge is self-gated.
+      if (!isEdit) showSupportNudge();
       onClose();
     } catch (err) {
       console.error('Quote generation failed:', err);

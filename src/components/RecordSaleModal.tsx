@@ -20,6 +20,7 @@ import { Button, Input, Select, Textarea, Modal } from './ui';
 import { NewBadge } from './NewBadge';
 import { formatQuoteNumber } from '../utils/format';
 import { formatCurrency, getCurrencySymbol } from '../utils/currency';
+import { useSupportNudge } from './SupportNudge';
 
 // ---------------------------------------------------------------------------
 // RecordSaleModal — Phase 22 HYG-06 (plan 22-03).
@@ -74,6 +75,9 @@ export function RecordSaleModal({
   // D-06: modal owns its own useCustomers + useSales subscriptions
   const { customers, customersByEmail, bumpLastUsed, addCustomer } = useCustomers();
   const { addSale, updateSale } = useSales(job.id);
+  // Phase 45 D-03: calm value-moment Pro nudge, self-gated (cooldown + once
+  // per session) — safe to call unconditionally on the NEW-sale-record path.
+  const showSupportNudge = useSupportNudge();
 
   // ─── Form state (mirror of JobsManager) ────────────────────────────────────
   const [saleQuantity, setSaleQuantity] = useState(1);
@@ -403,6 +407,8 @@ export function RecordSaleModal({
       }
     }
 
+    // Value moment: a NEW sale was recorded (not an edit) — nudge is self-gated.
+    if (!editingSale) showSupportNudge();
     onSaved?.();
     onClose();
   } catch (err) {

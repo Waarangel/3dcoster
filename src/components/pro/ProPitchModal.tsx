@@ -1,13 +1,21 @@
 import { Modal, Button } from '../ui';
 
 // ---------------------------------------------------------------------------
-// ProPitchModal — the ONE pitch surface for Share quote (Phase 43-04, D-10).
+// ProPitchModal — the pitch surface for Share quote (Phase 43-04, D-10).
 //
 // Opens only from ShareQuoteButton's signed-out/non-Pro branch. Explains
 // what a hosted quote link does in one short paragraph and hands off to the
 // existing contextual sign-in flow (D-09) — this modal does not itself
-// collect an email; it defers to SignInModal via `onSignIn`. No toasts or
-// banners anywhere else pitch Pro (D-10 "no nags").
+// collect an email; it defers to SignInModal via `onSignIn`.
+//
+// As of Phase 45 (D-03), SupportNudge (src/components/SupportNudge.tsx) is a
+// SECOND surface that pitches Pro — a calm gold toast on job-save/quote-
+// create/sale-record success, gated by a 90-day cooldown and shown at most
+// once per session. The two are contextually distinct and need no shared
+// cooldown: this modal only opens from an explicit, in-context click (Share
+// quote), never ambiently, while SupportNudge only fires ambiently on
+// save-success. They realistically never stack in the same session — see
+// 45-RESEARCH.md Open Question 3 for the reasoning.
 // ---------------------------------------------------------------------------
 
 interface ProPitchModalProps {
