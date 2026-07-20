@@ -82,14 +82,14 @@ Pre-GSD-archive. Phase artifacts under `.planning/phases/01-data-foundation` thr
 
 ### v2.0 Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
 
-- [ ] **Phase 38: Foundation** - CostCalculator split + PERF-11 fix + tab-in-URL routing
+- [x] **Phase 38: Foundation** - CostCalculator split + PERF-11 fix + tab-in-URL routing (completed 2026-07-05)
 - [x] **Phase 39: Cost Realism** - Failure-cost engine, TOU electricity, maintenance amortization
 - [x] **Phase 40: Insight Layer** - Insights tab with hourly wage, printer ROI, what-if simulator (completed 2026-07-09)
 - [x] **Phase 41: Quick-Win Features** - Reprice alerts, spool lifecycle, tax threshold tracker, Quote Variants PDF (completed 2026-07-09)
 - [ ] **Phase 42: GDPR & Onboarding** - Consent banner, privacy policy, terms, guided first-run wizard
 - [x] **Phase 43: Pro Backend** - Supabase auth, hosted quote pages, Pro subscription billing (completed 2026-07-16)
 - [x] **Phase 44: Sync & STL Instant Quote** - File-based device sync, STL volume estimate to calculator (completed 2026-07-19)
-- [ ] **Phase 45: Brand & Launch** - Cost-Truth Dark redesign merge, Pro pricing copy
+- [x] **Phase 45: Brand & Launch** - Cost-Truth Dark redesign merge, Pro pricing copy (completed 2026-07-20)
 
 ---
 
@@ -354,8 +354,8 @@ Plans:
 | 41. Quick-Win Features | 5/5 | Complete    | 2026-07-09 |
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
 | 43. Pro Backend | 7/7 | Complete    | 2026-07-16 |
-| 44. Sync & STL Instant Quote | 2/6 | In Progress|  |
-| 45. Brand & Launch | 0/11 | Planned | - |
+| 44. Sync & STL Instant Quote | 6/6 | Complete    | 2026-07-19 |
+| 45. Brand & Launch | 11/11 | Complete    | 2026-07-20 |
 
 <details>
 <summary>✅ v1.9 Hardening progress (Phases 34–37) — all complete</summary>
