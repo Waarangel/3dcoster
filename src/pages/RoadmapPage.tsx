@@ -1,137 +1,231 @@
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { Reveal } from '../components/motion/Reveal';
 import { roadmapItems, STAGES } from '../roadmap';
 import type { RoadmapStage, RoadmapItem } from '../roadmap';
 
-// Full literal class strings per stage so Tailwind keeps them in the build.
-const stageStyles: Record<RoadmapStage, { bar: string; count: string; hover: string }> = {
-  research: {
-    bar: 'bg-indigo-500',
-    count: 'bg-indigo-500/15 text-indigo-300',
-    hover: 'hover:border-indigo-500/50',
-  },
-  planning: {
-    bar: 'bg-blue-500',
-    count: 'bg-blue-500/15 text-blue-300',
-    hover: 'hover:border-blue-500/50',
-  },
-  'in-development': {
-    bar: 'bg-emerald-500',
-    count: 'bg-emerald-500/15 text-emerald-300',
-    hover: 'hover:border-emerald-500/50',
-  },
-};
+const itemsForStage = (stage: RoadmapStage) => roadmapItems.filter((i) => i.stage === stage);
+const stageMeta = (stage: RoadmapStage) => STAGES.find((s) => s.id === stage);
 
-function RoadmapCard({ item, hover }: { item: RoadmapItem; hover: string }) {
+// The journey: the three real stages + a "Ships" destination. The connector
+// leading INTO each node intensifies toward the brand as work nears shipping.
+interface JourneyNode {
+  id: RoadmapStage | 'ships';
+  label: string;
+  count: number | null;
+  into: string | null; // colour of the segment entering this node
+  active?: boolean;
+}
+
+function StageLink({ item }: { item: RoadmapItem }) {
+  if (!item.href) return null;
   return (
-    <div
-      className={`bg-slate-800/60 border border-slate-700 rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 ${hover}`}
+    <a
+      href={item.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--brand-soft)] transition-colors hover:text-[var(--brand)]"
     >
-      <h3 className="text-white font-semibold leading-snug mb-2">{item.title}</h3>
-      <p className="text-slate-400 text-sm leading-relaxed">{item.description}</p>
-      {item.href && (
-        <a
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
-        >
-          {item.hrefLabel ?? 'Learn more'}
-          <span aria-hidden="true">→</span>
-        </a>
-      )}
+      {item.hrefLabel ?? 'Learn more'}
+      <span aria-hidden="true">→</span>
+    </a>
+  );
+}
+
+/** Earlier stages (research / planning) render as a light editorial ruled list. */
+function StageList({ items }: { items: RoadmapItem[] }) {
+  return (
+    <div className="grid sm:grid-cols-2 sm:gap-x-10">
+      {items.map((item) => (
+        <div key={item.title} className="flex items-start gap-4 py-5 border-t border-[var(--hairline)]">
+          <span className="mt-2 h-2 w-2 shrink-0 rounded-full border border-[var(--ink-faint)]" aria-hidden="true" />
+          <div>
+            <h3 className="font-display font-semibold text-[var(--ink)]">{item.title}</h3>
+            <p className="mt-1 text-sm text-[var(--ink-soft)] leading-relaxed">{item.description}</p>
+            <StageLink item={item} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
+function JourneyDot({ node }: { node: JourneyNode }) {
+  if (node.id === 'ships') {
+    return (
+      <span className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[var(--bg)]" aria-hidden="true">
+        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+    );
+  }
+  if (node.active) {
+    return (
+      <span className="relative z-10 flex h-5 w-5 items-center justify-center" aria-hidden="true">
+        <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--brand)] opacity-40 animate-ping" />
+        <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-[var(--brand)]" />
+      </span>
+    );
+  }
+  const ring = node.id === 'planning' ? 'border-[var(--ink-soft)]' : 'border-[var(--ink-faint)]';
+  return <span className={`relative z-10 inline-block h-4 w-4 rounded-full border-2 ${ring} bg-[var(--bg)]`} aria-hidden="true" />;
+}
+
 export function RoadmapPage() {
+  const research = itemsForStage('research');
+  const planning = itemsForStage('planning');
+  const inDev = itemsForStage('in-development');
+
+  const journey: JourneyNode[] = [
+    { id: 'research', label: 'Research', count: research.length, into: null },
+    { id: 'planning', label: 'Planning', count: planning.length, into: 'rgba(116,128,154,0.55)' },
+    { id: 'in-development', label: 'In development', count: inDev.length, into: 'rgba(91,179,255,0.5)', active: inDev.length > 0 },
+    { id: 'ships', label: 'Ships', count: null, into: 'var(--brand)' },
+  ];
+
+  // Item sections, most-advanced first (feature what's closest to shipping).
+  const earlierStages: RoadmapStage[] = ['planning', 'research'];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
       <Header />
 
       <main>
-      {/* Hero */}
-      <section className="pt-32 pb-12 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">Roadmap</h1>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-            Where 3DCoster is headed — what we're researching, what's being planned, and what's
-            actively in the works. A direction of travel, not a dated promise.
-          </p>
-        </div>
-      </section>
-
-      {/* Board */}
-      <section className="pb-16 px-6">
-        <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3 items-start">
-          {STAGES.map((stage) => {
-            const items = roadmapItems.filter((item) => item.stage === stage.id);
-            const styles = stageStyles[stage.id];
-            return (
-              <div key={stage.id} className="flex flex-col">
-                {/* Column header */}
-                <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-800/40 mb-4">
-                  <div className={`h-1 ${styles.bar}`} />
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <h2 className="text-white font-semibold">{stage.label}</h2>
-                      <span
-                        className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-semibold ${styles.count}`}
-                      >
-                        {items.length}
-                      </span>
-                    </div>
-                    <p className="text-slate-500 text-sm">{stage.blurb}</p>
-                  </div>
-                </div>
-
-                {/* Cards */}
-                <div className="flex flex-col gap-4">
-                  {items.length > 0 ? (
-                    items.map((item) => (
-                      <RoadmapCard key={item.title} item={item} hover={styles.hover} />
-                    ))
-                  ) : (
-                    <div className="border border-dashed border-slate-700 rounded-xl p-5 text-center text-slate-500 text-sm">
-                      Nothing here right now.
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="pb-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-2xl p-12 border border-blue-500/20">
-            <h2 className="text-2xl font-bold text-white mb-4">Want something on this board?</h2>
-            <p className="text-slate-400 mb-8 max-w-xl mx-auto">
-              The roadmap is shaped by what sellers actually ask for. Tell us what would make
-              3DCoster more useful — it might be the next thing we pick up.
+        {/* Hero */}
+        <section className="pt-32 pb-10 px-6" aria-labelledby="roadmap-hero-heading">
+          <Reveal trigger="mount" className="max-w-3xl mx-auto text-center">
+            <h1 id="roadmap-hero-heading" className="font-display text-4xl md:text-5xl font-extrabold text-[var(--ink)]">
+              Roadmap
+            </h1>
+            <p className="mt-5 text-lg text-[var(--ink-soft)] max-w-xl mx-auto leading-relaxed [text-wrap:balance]">
+              Where 3DCoster is headed — what we&apos;re researching, planning, and actively building.
+              A direction of travel, not a dated promise.
             </p>
-            <div className="flex items-center justify-center gap-4 flex-wrap">
-              <Link
-                to="/feedback"
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold shadow-lg shadow-blue-500/25"
-              >
-                Request a Feature
-              </Link>
-              <a
-                href="https://github.com/Waarangel/3dcoster/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-8 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors font-semibold"
-              >
-                Open an Issue on GitHub
-              </a>
+          </Reveal>
+        </section>
+
+        {/* Journey spine */}
+        <section className="pb-16 px-6" aria-label="Roadmap stages overview">
+          <Reveal trigger="inView" className="max-w-3xl mx-auto">
+            <div className="flex">
+              {journey.map((node, i) => {
+                const leftColor = node.into ?? 'transparent';
+                const rightColor = journey[i + 1]?.into ?? 'transparent';
+                return (
+                  <div key={node.id} className="flex-1 flex flex-col items-center">
+                    <div className="flex h-5 w-full items-center">
+                      <div className="h-0.5 flex-1" style={{ background: leftColor }} aria-hidden="true" />
+                      <span className="shrink-0 mx-1.5"><JourneyDot node={node} /></span>
+                      <div className="h-0.5 flex-1" style={{ background: rightColor }} aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 px-1 text-center">
+                      <div className={`text-sm font-semibold ${node.active ? 'text-[var(--ink)]' : 'text-[var(--ink-soft)]'}`}>
+                        {node.label}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[var(--ink-faint)]">
+                        {node.count === null ? 'the goal' : `${node.count} ${node.count === 1 ? 'item' : 'items'}`}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        </div>
-      </section>
+          </Reveal>
+        </section>
+
+        {/* In development — featured */}
+        {inDev.length > 0 && (
+          <section className="pb-14 px-6" aria-labelledby="roadmap-in-dev-heading">
+            <Reveal trigger="inView" className="max-w-5xl mx-auto">
+              <div className="max-w-2xl mb-8">
+                <h2 id="roadmap-in-dev-heading" className="font-display text-2xl sm:text-3xl font-bold text-[var(--ink)]">
+                  Building right now
+                </h2>
+                <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{stageMeta('in-development')?.blurb}</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {inDev.map((item) => (
+                  <article
+                    key={item.title}
+                    className="relative overflow-hidden rounded-2xl border border-[rgba(23,150,255,0.3)] bg-[var(--surface)] p-7 transition duration-200 ease-out hover:border-[rgba(23,150,255,0.5)]"
+                  >
+                    <div
+                      className="pointer-events-none absolute -right-12 -top-12 w-44 h-44 rounded-full opacity-70"
+                      style={{ background: 'radial-gradient(circle, rgba(23,150,255,0.16), transparent 70%)' }}
+                      aria-hidden="true"
+                    />
+                    <span className="inline-flex items-center gap-2 text-xs font-medium text-[var(--brand-soft)]">
+                      <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--brand)] opacity-50 animate-ping" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
+                      </span>
+                      In development
+                    </span>
+                    <h3 className="font-display text-xl font-bold text-[var(--ink)] mt-3">{item.title}</h3>
+                    <p className="mt-2 text-[var(--ink-soft)] leading-relaxed">{item.description}</p>
+                    <StageLink item={item} />
+                  </article>
+                ))}
+              </div>
+            </Reveal>
+          </section>
+        )}
+
+        {/* Earlier stages — light editorial lists */}
+        {earlierStages.map((stage) => {
+          const items = itemsForStage(stage);
+          if (items.length === 0) return null;
+          const meta = stageMeta(stage);
+          const heading = stage === 'planning' ? 'Scoped & being planned' : 'On the research bench';
+          const headingId = `roadmap-${stage}-heading`;
+          return (
+            <section key={stage} className="pb-14 px-6" aria-labelledby={headingId}>
+              <Reveal trigger="inView" className="max-w-5xl mx-auto">
+                <div className="max-w-2xl mb-2">
+                  <h2 id={headingId} className="font-display text-xl sm:text-2xl font-bold text-[var(--ink)]">
+                    {heading}
+                  </h2>
+                  <p className="mt-2 text-sm text-[var(--ink-soft)] leading-relaxed">{meta?.blurb}</p>
+                </div>
+                <StageList items={items} />
+              </Reveal>
+            </section>
+          );
+        })}
+
+        {/* CTA */}
+        <section className="py-8 pb-20 px-6" aria-labelledby="roadmap-cta-heading">
+          <Reveal trigger="inView" className="max-w-4xl mx-auto text-center">
+            <div className="rounded-3xl border border-[var(--hairline)] bg-[var(--surface-2)] p-10 sm:p-12" style={{ boxShadow: '0 24px 70px -40px rgba(0,0,0,0.85)' }}>
+              <h2 id="roadmap-cta-heading" className="font-display text-2xl sm:text-3xl font-bold text-[var(--ink)]">
+                Want something on this board?
+              </h2>
+              <p className="mx-auto mt-3 mb-8 text-[var(--ink-soft)] max-w-xl leading-relaxed [text-wrap:balance]">
+                The roadmap is shaped by what sellers actually ask for. Tell us what would make 3DCoster
+                more useful — it might be the next thing we pick up.
+              </p>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <Link
+                  to="/feedback"
+                  className="inline-flex items-center px-7 py-3.5 rounded-xl bg-[var(--brand)] text-white font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:translate-y-0 active:scale-[0.98]"
+                  style={{ boxShadow: '0 8px 30px -8px var(--brand-glow)' }}
+                >
+                  Request a Feature
+                </Link>
+                <a
+                  href="https://github.com/Waarangel/3dcoster/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-7 py-3.5 rounded-xl bg-white text-[var(--brand-deep)] font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]"
+                >
+                  Open an Issue on GitHub
+                </a>
+              </div>
+            </div>
+          </Reveal>
+        </section>
       </main>
 
       <Footer />

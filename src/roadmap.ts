@@ -45,6 +45,24 @@ export const roadmapItems: RoadmapItem[] = [
     href: 'https://github.com/Waarangel/3dcoster',
     hrefLabel: 'Help translate',
   },
+  {
+    title: 'More currencies',
+    description:
+      'Today you can price in 18 currencies. The FX data behind the scenes already covers 200+, so this is mostly about expanding the picker and labels to match — a well-scoped, low-effort follow-up post-launch.',
+    stage: 'planning',
+  },
+  {
+    title: 'Real-time device sync',
+    description:
+      'File-based sync (Dropbox/Drive) covers most sellers today. A hosted, always-on sync ceiling is next — blocked on confirming an EU-resident sync backend that fits our no-tracking, local-first posture.',
+    stage: 'research',
+  },
+  {
+    title: 'Green-print nudge',
+    description:
+      'A grid-carbon-aware suggestion ("run at 2am, save $X and cut carbon") using a free grid-carbon API, so time-of-use pricing can factor in when the grid is cleanest, not just cheapest.',
+    stage: 'research',
+  },
 ];
 
 export interface StageMeta {
