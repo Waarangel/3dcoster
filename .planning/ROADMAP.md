@@ -307,7 +307,31 @@ Plans:
   1. The Cost-Truth Dark marketing site design (from branch `test/design-skills-experiment`) is live on main — including the updated DownloadPage and FAQPage with v2.0 Linux correctness ported from v1.7+
   2. The three Pro pricing spots on the marketing site show real numbers (not placeholders), anchored against the €9.90/mo 3DPrintQuote benchmark — and those numbers match the Supabase billing configuration from Phase 43
 
-**Plans**: TBD
+**Plans**: 11 plans in 6 waves
+
+**Wave 1**
+- [ ] 45-01-PLAN.md — Brand foundation: slate-safe token cascade + .theme-brand-dark scope, self-hosted font, motion primitives, MarketingThemeScope mount (BRAND-01, D-01/02)
+
+**Wave 2**
+- [ ] 45-02-PLAN.md — Shared chrome: token-scoped ui primitives + support toast variant + Header (/pricing nav) + Footer (BRAND-01, D-02)
+
+**Wave 3** *(parallel)*
+- [ ] 45-03-PLAN.md — Pricing spine: src/pricing.ts constant + /pricing page + byte-match guard (BRAND-01, D-06/09/10)
+- [ ] 45-06-PLAN.md — DownloadPage + FAQPage: Linux correctness + content reconciliation (BRAND-01)
+- [ ] 45-07-PLAN.md — ChangelogPage (isSafeHttpUrl) + RoadmapPage (D-13 refresh) + FeedbackPage (BRAND-01, D-13)
+- [ ] 45-08-PLAN.md — Legal restyle: Privacy + Terms + cookie banner, content byte-identical (BRAND-01, D-12)
+- [ ] 45-09-PLAN.md — SupportNudge retargeted to Pro + wire into save-success paths (BRAND-01, D-03)
+
+**Wave 4** *(needs pricing constant)*
+- [ ] 45-04-PLAN.md — LandingPage port + Pro teaser + four-pillar headline (BRAND-01, D-07/11)
+- [ ] 45-05-PLAN.md — FeaturesPage port + Pro column + fix stale "no Pro tier" copy (BRAND-01, D-08/11)
+
+**Wave 5**
+- [ ] 45-10-PLAN.md — Docs (PRODUCT/DESIGN) + v2.0.0 release prep (no tag) + launch-comms kit (BRAND-01, D-05/16/18)
+
+**Wave 6**
+- [ ] 45-11-PLAN.md — Targeted release review (D-17) + branch archive/retirement (BRAND-01, D-01/17)
+
 **UI hint**: yes
 
 ---
@@ -325,7 +349,7 @@ Plans:
 | 42. GDPR & Onboarding | 5/5 | Complete   | 2026-07-11 |
 | 43. Pro Backend | 7/7 | Complete    | 2026-07-16 |
 | 44. Sync & STL Instant Quote | 2/6 | In Progress|  |
-| 45. Brand & Launch | 0/TBD | Not started | - |
+| 45. Brand & Launch | 0/11 | Planned | - |
 
 <details>
 <summary>✅ v1.9 Hardening progress (Phases 34–37) — all complete</summary>
