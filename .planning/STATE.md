@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 45
 current_phase_name: brand-launch
 status: executing
-stopped_at: Completed 45-09-PLAN.md
-last_updated: "2026-07-20T14:54:54.988Z"
+stopped_at: Completed 45-04-PLAN.md
+last_updated: "2026-07-20T15:19:08.081Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 45 execution started
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 49
-  completed_plans: 45
+  completed_plans: 46
   percent: 88
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 45 (brand-launch) — EXECUTING
-Plan: 8 of 11
+Plan: 9 of 11
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 45 execution started
 
@@ -76,6 +76,7 @@ Last activity: 2026-07-20 — Phase 45 execution started
 | Phase 45 P07 | 20min | 3 tasks | 4 files |
 | Phase 45 P08 | 12min | 2 tasks | 4 files |
 | Phase 45 P09 | 20min | 2 tasks | 8 files |
+| Phase 45 P04 | 11min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 45-09: Nudge fires only on NEW value moments (new job save, new quote create, new sale record), not edits — gated by !isEdit/!editingSale
 - [Phase ?]: 45-09: Pro upgrade target is the external /pricing page (Tauri-safe open), not a new in-app modal callback threaded through 3 save-success components — keeps app-side touches minimal per D-03
 - [Phase ?]: 45-09: SUPPORT_URL/openSupportLink renamed to PRO_UPGRADE_URL/openProUpgradeLink; mechanic names (shouldShowSupportNudge, cooldown, storage key) left unchanged
+- [Phase ?]: 45-04: Added a standalone four-pillar 'What's new' section on LandingPage to literally satisfy D-11 (all four v2.0 pillars headline-billed), rather than relying only on the hero + bento
 
 ### Pending Todos
 
@@ -204,8 +206,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-20T14:54:54.979Z
-Stopped at: Completed 45-09-PLAN.md
+Last session: 2026-07-20T15:19:08.071Z
+Stopped at: Completed 45-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
