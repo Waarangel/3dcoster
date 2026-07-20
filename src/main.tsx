@@ -21,6 +21,7 @@ const RoadmapPage = lazyWithRetry(() => import('./pages/RoadmapPage.tsx').then(m
 const FeedbackPage = lazyWithRetry(() => import('./pages/FeedbackPage.tsx').then(m => ({ default: m.FeedbackPage })), 'FeedbackPage')
 const FAQPage = lazyWithRetry(() => import('./pages/FAQPage.tsx').then(m => ({ default: m.FAQPage })), 'FAQPage')
 const ChangelogPage = lazyWithRetry(() => import('./pages/ChangelogPage.tsx').then(m => ({ default: m.ChangelogPage })), 'ChangelogPage')
+const PricingPage = lazyWithRetry(() => import('./pages/PricingPage.tsx').then(m => ({ default: m.PricingPage })), 'PricingPage')
 const PrivacyPage = lazyWithRetry(() => import('./pages/PrivacyPage.tsx').then(m => ({ default: m.PrivacyPage })), 'PrivacyPage')
 const TermsPage = lazyWithRetry(() => import('./pages/TermsPage.tsx').then(m => ({ default: m.TermsPage })), 'TermsPage')
 
@@ -111,6 +112,7 @@ function Root() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/download" element={<DownloadPage />} />
                 <Route path="/features" element={<FeaturesPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/roadmap" element={<RoadmapPage />} />
                 <Route path="/feedback" element={<FeedbackPage />} />
                 <Route path="/faq" element={<FAQPage />} />
