@@ -5,16 +5,16 @@ milestone_name: Cost-Truth & Insight
 current_phase: 45
 current_phase_name: brand-launch
 status: executing
-stopped_at: Completed 45-12-PLAN.md (gap closure G-45-CURRENCY)
-last_updated: "2026-07-20T23:07:32.661Z"
+stopped_at: Completed 45-13-PLAN.md (gap closure G-45-FEATURES-LAYOUT + G-45-FREE-PRO-VISIBILITY)
+last_updated: "2026-07-20T23:15:19.771Z"
 last_activity: 2026-07-20
-last_activity_desc: Phase 45 execution started
+last_activity_desc: Completed 45-13-PLAN.md (gap closure G-45-FEATURES-LAYOUT + G-45-FREE-PRO-VISIBILITY)
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 51
-  completed_plans: 50
-  percent: 88
+  completed_plans: 51
+  percent: 100
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 45 (brand-launch) — EXECUTING
-Plan: 12 of 13 (45-12 gap closure G-45-CURRENCY complete)
-Status: Executing Phase 45
-Last activity: 2026-07-20 — Completed 45-12-PLAN.md (gap closure G-45-CURRENCY)
+Phase: 45 (brand-launch) — All plans complete
+Plan: 13 of 13 (45-13 gap closure G-45-FEATURES-LAYOUT + G-45-FREE-PRO-VISIBILITY complete)
+Status: Phase 45 execution complete
+Last activity: 2026-07-20 — Completed 45-13-PLAN.md (gap closure G-45-FEATURES-LAYOUT + G-45-FREE-PRO-VISIBILITY)
 
 ## v2.0 Phase Order Reference
 
@@ -81,6 +81,7 @@ Last activity: 2026-07-20 — Completed 45-12-PLAN.md (gap closure G-45-CURRENCY
 | Phase 45 P10 | 25min | 3 tasks | 8 files |
 | Phase 45 P11 | 35min | 3 tasks | 2 files |
 | Phase 45 P12 | 20min | 3 tasks | 9 files |
+| Phase 45 P13 | 5min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -203,6 +204,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 45-11: A ported-not-merged branch is never an ancestor of HEAD, so git branch -d always refuses 'not fully merged' -- this is expected once the archive tag is confirmed identical to the branch tip, not a red flag; -D is the correct next step (mirrors feat/insight-pricing-coach/archive/phase-33-ui)
 - [Phase ?]: 45-11: Phase 45 (Brand & Launch) complete -- targeted D-17 review found 0 CRITICAL/1 HIGH (fixed: Footer.tsx donation link removed, closing D-03's one-monetization-voice truth), design branch archived+retired, BRAND-01 marked complete; main is launch-ready with no v2.0.0 tag and nothing pushed (D-15)
 - [Phase ?]: 45-12: useDisplayPrice reads stored userProfile currency via getSetting(null default), never getUserProfile's CAD DEFAULT_PROFILE — a never-set visitor falls through to locale inference instead of being silently treated as Canadian
+- [Phase ?]: [Phase 45]: 45-13: Hero inner block wrapped in an additional outer max-w-6xl mx-auto Reveal for structural consistency with sibling sections, even though it was not visually full-bleed beforehand
+- [Phase ?]: [Phase 45]: 45-13: Coming to Pro strip on /features is a plain string array kept in lockstep by comment cross-reference with roadmap.ts's pro:true items, not imported directly (roadmap descriptions are longer-form than the compact strip UI)
 
 ### Pending Todos
 
@@ -218,8 +221,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-20T23:07:32.652Z
-Stopped at: Completed 45-12-PLAN.md (gap closure G-45-CURRENCY)
+Last session: 2026-07-20T23:15:14.575Z
+Stopped at: Completed 45-13-PLAN.md (gap closure G-45-FEATURES-LAYOUT + G-45-FREE-PRO-VISIBILITY)
 Resume file: None
 
 ## Operator Next Steps
