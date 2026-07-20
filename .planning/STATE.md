@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
-current_phase: 38
-current_phase_name: Foundation
-status: planning
-stopped_at: Completed 45-11-PLAN.md (Phase 45 complete)
-last_updated: "2026-07-20T21:37:52.208Z"
+current_phase: 45
+current_phase_name: brand-launch
+status: executing
+stopped_at: Completed 45-12-PLAN.md (gap closure G-45-CURRENCY)
+last_updated: "2026-07-20T23:07:32.661Z"
 last_activity: 2026-07-20
-last_activity_desc: Phase 45 complete, transitioned to Phase 38
+last_activity_desc: Phase 45 execution started
 progress:
   total_phases: 8
-  completed_phases: 8
-  total_plans: 49
-  completed_plans: 49
-  percent: 100
+  completed_phases: 7
+  total_plans: 51
+  completed_plans: 50
+  percent: 88
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 38 — Foundation
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-20 — Phase 45 complete, transitioned to Phase 38
+Phase: 45 (brand-launch) — EXECUTING
+Plan: 12 of 13 (45-12 gap closure G-45-CURRENCY complete)
+Status: Executing Phase 45
+Last activity: 2026-07-20 — Completed 45-12-PLAN.md (gap closure G-45-CURRENCY)
 
 ## v2.0 Phase Order Reference
 
@@ -80,6 +80,7 @@ Last activity: 2026-07-20 — Phase 45 complete, transitioned to Phase 38
 | Phase 45 P05 | 55min | 2 tasks | 1 files |
 | Phase 45 P10 | 25min | 3 tasks | 8 files |
 | Phase 45 P11 | 35min | 3 tasks | 2 files |
+| Phase 45 P12 | 20min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -201,6 +202,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 45-11: Archive tags must be lightweight (git tag <name> <sha>), not annotated -- annotated tags resolve to a distinct tag-object SHA under git rev-parse, breaking the archive-tag-equals-branch-tip verification; matches the archive/phase-33-ui precedent
 - [Phase ?]: 45-11: A ported-not-merged branch is never an ancestor of HEAD, so git branch -d always refuses 'not fully merged' -- this is expected once the archive tag is confirmed identical to the branch tip, not a red flag; -D is the correct next step (mirrors feat/insight-pricing-coach/archive/phase-33-ui)
 - [Phase ?]: 45-11: Phase 45 (Brand & Launch) complete -- targeted D-17 review found 0 CRITICAL/1 HIGH (fixed: Footer.tsx donation link removed, closing D-03's one-monetization-voice truth), design branch archived+retired, BRAND-01 marked complete; main is launch-ready with no v2.0.0 tag and nothing pushed (D-15)
+- [Phase ?]: 45-12: useDisplayPrice reads stored userProfile currency via getSetting(null default), never getUserProfile's CAD DEFAULT_PROFILE — a never-set visitor falls through to locale inference instead of being silently treated as Canadian
 
 ### Pending Todos
 
@@ -216,8 +218,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-20T19:09:50.792Z
-Stopped at: Completed 45-11-PLAN.md (Phase 45 complete)
+Last session: 2026-07-20T23:07:32.652Z
+Stopped at: Completed 45-12-PLAN.md (gap closure G-45-CURRENCY)
 Resume file: None
 
 ## Operator Next Steps
