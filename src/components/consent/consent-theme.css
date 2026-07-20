@@ -47,3 +47,59 @@
   --cc-footer-color: var(--cc-secondary-color);
   --cc-footer-border-color: #1e293b;
 }
+
+/* Phase 45-08 (D-12 vs D-02) — Cost-Truth Dark override, marketing routes
+ * ONLY. Scoped by the `route-marketing` class MarketingThemeScope (45-01)
+ * toggles on document.body while a marketing route is mounted. #cc-main is
+ * appended by vanilla-cookieconsent as a direct child of document.body,
+ * outside the React tree and outside `.theme-brand-dark` — a body-anchored
+ * selector is the only thing that reaches it; the app's `var(--brand)` etc.
+ * cascade never touches this DOM node, so the values below are hardcoded
+ * hex mirrors of `.theme-brand-dark` (src/index.css), not var() references.
+ *
+ * COLORS ONLY. --cc-btn-border-radius, --cc-modal-border-radius, and every
+ * padding/font-weight value are intentionally left undeclared here so both
+ * buttons keep inheriting the #cc-main block's shape above — preserving the
+ * Pitfall 5 / T-42-01 equal-weight contract (Accept All and Reject All stay
+ * identically sized and styled, only the fill color changes). The base
+ * #cc-main block above is untouched and still governs /app and the desktop
+ * build (D-02). CookieConsentManager.tsx config/behavior is not touched by
+ * this override.
+ */
+body.route-marketing #cc-main {
+  --cc-bg: #0a0e18;
+  --cc-primary-color: #f2f5fb;
+  --cc-secondary-color: #a8b3c7;
+
+  --cc-btn-primary-bg: #1796ff;
+  --cc-btn-primary-color: #ffffff;
+  --cc-btn-primary-border-color: var(--cc-btn-primary-bg);
+  --cc-btn-primary-hover-bg: #5bb3ff; /* lightens on hover, matching --brand-soft */
+  --cc-btn-primary-hover-color: #ffffff;
+  --cc-btn-primary-hover-border-color: var(--cc-btn-primary-hover-bg);
+
+  /* Same shape as primary (inherited from the base block above) — only the
+   * fill differs, preserving the equal-weight contract. */
+  --cc-btn-secondary-bg: #18203a; /* surface-2 */
+  --cc-btn-secondary-color: #f2f5fb;
+  --cc-btn-secondary-border-color: var(--cc-btn-secondary-bg);
+  --cc-btn-secondary-hover-bg: #1e2849;
+  --cc-btn-secondary-hover-color: #ffffff;
+  --cc-btn-secondary-hover-border-color: var(--cc-btn-secondary-hover-bg);
+
+  --cc-separator-border-color: rgba(255, 255, 255, 0.08); /* --hairline */
+  --cc-toggle-on-bg: var(--cc-btn-primary-bg);
+  --cc-toggle-off-bg: var(--cc-btn-secondary-hover-bg);
+  --cc-toggle-readonly-bg: var(--cc-btn-secondary-bg);
+
+  --cc-cookie-category-block-bg: #121829; /* surface */
+  --cc-cookie-category-block-border: #121829;
+  --cc-cookie-category-block-hover-bg: #18203a; /* surface-2 */
+  --cc-cookie-category-block-hover-border: #18203a;
+  --cc-cookie-category-expanded-block-hover-bg: #121829;
+
+  --cc-overlay-bg: rgba(10, 14, 24, 0.75); /* --bg */
+  --cc-footer-bg: #121829;
+  --cc-footer-color: var(--cc-secondary-color);
+  --cc-footer-border-color: #121829;
+}
