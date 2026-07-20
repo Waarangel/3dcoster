@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { Reveal } from '../components/motion/Reveal';
-import { MONTHLY_PRICE_LABEL, ANNUAL_PRICE_LABEL } from '../pricing';
+import { useDisplayPrice } from '../hooks/useDisplayPrice';
 
 // ---------------------------------------------------------------------------
 // PricingPage — D-06, the dedicated /pricing spot (Phase 45-03, BRAND-01).
@@ -38,6 +38,8 @@ const PRO_FEATURES = [
 ];
 
 export function PricingPage() {
+  const { monthly, annual } = useDisplayPrice();
+
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <Header />
@@ -118,15 +120,20 @@ export function PricingPage() {
                 </div>
                 <div className="mb-2 relative">
                   <p className="text-3xl font-bold text-[var(--ink)]">
-                    {MONTHLY_PRICE_LABEL}
+                    {monthly.approx ?? monthly.billingLabel}
                     <span className="text-base font-normal text-[var(--ink-faint)]"> / month</span>
                   </p>
                   <p className="text-sm text-[var(--ink-faint)] mt-1">
-                    or {ANNUAL_PRICE_LABEL} / year — 2 months free
+                    or {annual.approx ?? annual.billingLabel} / year — 2 months free
                   </p>
+                  {monthly.approx && (
+                    <p className="text-xs text-[var(--ink-faint)] mt-1">
+                      Billed as {monthly.billingLabel}/mo · {annual.billingLabel}/yr
+                    </p>
+                  )}
                 </div>
                 <p className="text-xs text-[var(--brand-soft)] mb-6 relative">
-                  Launch price — {MONTHLY_PRICE_LABEL}/mo for early supporters
+                  Launch price — {monthly.approx ?? monthly.billingLabel}/mo for early supporters
                 </p>
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {PRO_FEATURES.map((feature) => (

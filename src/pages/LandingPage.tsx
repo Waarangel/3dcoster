@@ -5,7 +5,7 @@ import { Footer } from '../components/Footer';
 import { ImageCarousel } from '../components/ImageCarousel';
 import { Reveal } from '../components/motion/Reveal';
 import { CostReveal } from '../components/landing/CostReveal';
-import { MONTHLY_PRICE_LABEL } from '../pricing';
+import { useDisplayPrice } from '../hooks/useDisplayPrice';
 
 // ---------------------------------------------------------------------------
 // LandingPage — Cost-Truth Dark port (Phase 45-04, BRAND-01).
@@ -205,6 +205,8 @@ function PillarCard({ feature }: { feature: Feature }) {
 }
 
 export function LandingPage() {
+  const { monthly } = useDisplayPrice();
+
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
       <Header />
@@ -441,9 +443,12 @@ export function LandingPage() {
               <div className="shrink-0 w-full sm:w-auto rounded-xl border border-[rgba(23,150,255,0.4)] bg-[var(--surface-2)] px-6 py-5 text-center">
                 <p className="text-xs uppercase tracking-wide text-[var(--ink-faint)] mb-1">3DCoster Pro</p>
                 <p className="text-2xl font-bold text-[var(--ink)]">
-                  Pro from {MONTHLY_PRICE_LABEL}
+                  Pro from {monthly.approx ?? monthly.billingLabel}
                   <span className="text-sm font-normal text-[var(--ink-faint)]">/mo</span>
                 </p>
+                {monthly.approx && (
+                  <p className="text-xs text-[var(--ink-faint)] mt-1">billed as {monthly.billingLabel}</p>
+                )}
                 <Link
                   to="/pricing"
                   className="mt-4 inline-flex items-center justify-center w-full rounded-lg bg-[var(--brand)] text-white font-semibold text-sm px-5 py-2.5 transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:translate-y-0 active:scale-[0.98]"

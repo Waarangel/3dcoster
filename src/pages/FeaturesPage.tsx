@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { Reveal } from '../components/motion/Reveal';
-import { MONTHLY_PRICE_LABEL } from '../pricing';
+import { useDisplayPrice } from '../hooks/useDisplayPrice';
 
 // ---------------------------------------------------------------------------
 // FeaturesPage — Cost-Truth Dark competitor-matrix port (Phase 45-05,
@@ -128,6 +128,7 @@ const noPro = `${tdPro} text-[var(--ink-faint)]`;
 
 export function FeaturesPage() {
   const [showTable, setShowTable] = useState(false);
+  const { monthly } = useDisplayPrice();
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
@@ -319,7 +320,7 @@ export function FeaturesPage() {
             </button>
 
             <p className="mt-3 text-xs text-[var(--ink-faint)] max-w-2xl">
-              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({MONTHLY_PRICE_LABEL}/mo) adds one thing on top: live, hosted quote links your customers can approve online.
+              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({monthly.approx ? `${monthly.approx}/mo, billed as ${monthly.billingLabel}` : `${monthly.billingLabel}/mo`}) adds one thing on top: live, hosted quote links your customers can approve online.
             </p>
 
             {showTable && (
@@ -334,7 +335,10 @@ export function FeaturesPage() {
                       </th>
                       <th className="py-4 px-4 text-center align-bottom rounded-t-xl bg-[rgba(23,150,255,0.05)] border-x border-t border-[rgba(23,150,255,0.14)]">
                         <div className="font-display text-lg text-[var(--ink)] font-bold">3DCoster Pro</div>
-                        <div className="text-[var(--brand-soft)] text-sm font-medium">{MONTHLY_PRICE_LABEL}/mo</div>
+                        <div className="text-[var(--brand-soft)] text-sm font-medium">{monthly.approx ?? monthly.billingLabel}/mo</div>
+                        {monthly.approx && (
+                          <div className="text-[var(--ink-faint)] text-xs">billed {monthly.billingLabel}</div>
+                        )}
                       </th>
                       <th className="py-4 px-4 text-center align-bottom"><div className="text-[var(--ink-soft)] font-medium">Prusa Calculator</div><div className="text-[var(--ink-faint)] text-sm">Free</div></th>
                       <th className="py-4 px-4 text-center align-bottom"><div className="text-[var(--ink-soft)] font-medium">Calc3dprint</div><div className="text-[var(--ink-faint)] text-sm">Free</div></th>
@@ -387,7 +391,20 @@ export function FeaturesPage() {
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Desktop app (Windows + macOS)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Open source</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">No account required</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={yes}>Yes</td><td className={yes}>Yes</td><td className={no}>Free: yes / Paid: no</td><td className={no}>Calc: yes / App: no</td></tr>
-                    <tr><td className="py-4 px-4 text-[var(--ink-soft)] font-medium">Price</td><td className="py-4 px-4 text-center text-[var(--brand-soft)] font-bold bg-[rgba(23,150,255,0.13)] border-x border-[rgba(23,150,255,0.3)]">Free forever</td><td className="py-4 px-4 text-center text-[var(--brand-soft)] font-bold bg-[rgba(23,150,255,0.05)] border-x border-b rounded-b-xl border-[rgba(23,150,255,0.14)]">{MONTHLY_PRICE_LABEL}/mo</td><td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free</td><td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free</td><td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free / £5 / £9 mo</td><td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free (donation)</td></tr>
+                    <tr>
+                      <td className="py-4 px-4 text-[var(--ink-soft)] font-medium">Price</td>
+                      <td className="py-4 px-4 text-center text-[var(--brand-soft)] font-bold bg-[rgba(23,150,255,0.13)] border-x border-[rgba(23,150,255,0.3)]">Free forever</td>
+                      <td className="py-4 px-4 text-center bg-[rgba(23,150,255,0.05)] border-x border-b rounded-b-xl border-[rgba(23,150,255,0.14)]">
+                        <div className="text-[var(--brand-soft)] font-bold">{monthly.approx ?? monthly.billingLabel}/mo</div>
+                        {monthly.approx && (
+                          <div className="text-[var(--ink-faint)] text-xs font-normal">billed {monthly.billingLabel}</div>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free</td>
+                      <td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free</td>
+                      <td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free / £5 / £9 mo</td>
+                      <td className="py-4 px-4 text-center text-[var(--ink-soft)]">Free (donation)</td>
+                    </tr>
                   </tbody>
                 </table>
 
