@@ -23,6 +23,80 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ---
 
+## [2.0.0] - 2026-07-20
+
+**Cost-Truth & Insight** — the calculator becomes a cost-truth engine, adds decision-grade
+insights, and 3DCoster Pro launches for makers who want hosted, shareable quotes. The
+biggest release yet, ground up on a fresh "Cost-Truth Dark" brand.
+
+### Added
+- **Real failure-rate tracking.** Log a print failure in one tap — % completion, printer,
+  material — and 3DCoster learns your actual failure rate per printer × material, offering
+  it as a one-click "Apply" suggestion alongside your manual input. Applied rates fold real
+  scrap cost (partial filament + time + electricity) into your true cost. A failure history
+  ledger shows the trend per printer and material over time.
+- **Time-of-use electricity tariffs.** Enter your peak/off-peak rates and hour windows once
+  in Settings, and job electricity cost uses the tariff that actually applies when the print
+  runs — no more flat-rate guessing if your utility bills by time of day.
+- **Maintenance & nozzle-wear amortization.** Log nozzle/belt/bed swaps with cost, date, and
+  printer-hours; 3DCoster tracks cumulative abrasive-hours for CF/GF filaments on brass
+  nozzles, amortizes maintenance into a real cost-per-hour per printer, and predicts your
+  next likely swap.
+- **Insights tab: hourly wage & product ranking.** See your true hourly wage and which
+  products actually earn the most per printer-hour, derived straight from your existing
+  job and sale history.
+- **Printer payback / ROI.** See exactly when each printer earned back its purchase price,
+  and its running net profit since.
+- **What-if margin simulator.** Slide filament price, electricity rate, and failure rate to
+  see your margin respond live, before you commit to a price.
+- **Automatic reprice alerts.** When a material price or exchange rate moves, 3DCoster
+  flags saved products whose margin has fallen below your target and offers a one-tap
+  reprice.
+- **STL/3MF instant quote.** Drop in a 3D model and get an in-browser volume estimate
+  (units auto-detected, infill assumption shown, non-manifold meshes flagged) — a
+  maker-reviewed estimate to kick off a quote, never an auto-price.
+- **Quote Variants PDF.** Generate a single branded PDF with 1pc / 10pc / 50pc tiered
+  pricing for a customer in one export.
+- **Spool lifecycle & moisture tracking.** Track when a spool was opened, drying sessions,
+  and storage location, with a moisture-risk indicator based on the material's
+  hygroscopicity (Nylon high, PETG medium, PLA low) and how long it's been exposed.
+- **Tax-threshold progress tracker.** Set your jurisdiction (UK, DE, AU, US) and see your
+  cumulative revenue's progress toward the hobby-to-business tax threshold, with an alert
+  on crossing — informational only, not tax advice.
+- **Multi-device sync — no account required.** Sync your data between devices via a
+  folder you already own (Dropbox, Drive, etc.), with automatic conflict merging and
+  corruption guards. Fully free, fully local — nothing goes through a 3DCoster server.
+- **Guided first-run onboarding.** New users get a short, skippable, resumable walkthrough
+  (add a printer → add a filament → price your first job) — existing users are never
+  interrupted.
+- **Cookie-consent banner + Privacy Policy + Terms of Service.** A GDPR-compliant consent
+  banner with equal-weight Accept/Reject, revocable anytime; new Privacy Policy and Terms
+  of Service pages spell out exactly what's collected and why (short answer: very little,
+  and never before you say yes).
+- **3DCoster Pro.** Publish a quote as a hosted, shareable link your customer can view and
+  approve online — no more "did you get my PDF?" back-and-forth. Pro is EUR 6.90/mo or
+  EUR 69/yr (2 months free), an early-supporter launch price. Everything else in 3DCoster
+  stays free, forever — no account, no paywall on the core calculator.
+- **A brand-new look.** The marketing site has a completely new "Cost-Truth Dark" design —
+  calmer, clearer, and honest about what the product actually does, including a dedicated
+  [pricing page](https://3dcoster.com/pricing) laying out the free floor and what Pro adds.
+
+### Changed
+- **Faster, more responsive calculator.** The cost calculator was rebuilt internally
+  (same inputs, same numbers, verified) to remove a lag on every keystroke and make the
+  active tab shareable/bookmarkable via the URL.
+- The comparison table on the [features page](https://3dcoster.com/features) now covers
+  every capability above, so it's a complete, current picture of what 3DCoster does versus
+  the alternatives.
+
+### Security
+- Cookie consent, analytics, and any future third-party script now load only after
+  explicit opt-in — nothing tracks you before you decide.
+- Hosted Pro quote pages use non-enumerable links and were reviewed for data exposure
+  before launch (no personal data in CDN caches, no way to guess another customer's quote).
+
+---
+
 ## [1.9.0] - 2026-07-03
 
 A reliability, accuracy, and accessibility hardening release — no new features, just a calmer, more trustworthy app.
