@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 45
 current_phase_name: brand-launch
 status: executing
-stopped_at: Completed 45-08-PLAN.md
-last_updated: "2026-07-20T14:39:16.880Z"
+stopped_at: Completed 45-09-PLAN.md
+last_updated: "2026-07-20T14:54:54.988Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 45 execution started
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 49
-  completed_plans: 44
+  completed_plans: 45
   percent: 88
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 45 (brand-launch) — EXECUTING
-Plan: 7 of 11
+Plan: 8 of 11
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 45 execution started
 
@@ -75,6 +75,7 @@ Last activity: 2026-07-20 — Phase 45 execution started
 | Phase 45 P06 | 25min | 2 tasks | 2 files |
 | Phase 45 P07 | 20min | 3 tasks | 4 files |
 | Phase 45 P08 | 12min | 2 tasks | 4 files |
+| Phase 45 P09 | 20min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 45]: 45-08: Consent-banner brand override implemented as an additive body.route-marketing #cc-main CSS block appended after the untouched base #cc-main block, not a rewrite — /app and desktop provably unaffected by diff inspection alone
 - [Phase ?]: [Phase 45]: 45-08: Every --cc-* color variable overridden (not just the plan's minimum list) so no half-themed banner state exists; border-radius/padding/font-weight left undeclared to preserve the Pitfall 5 equal-weight contract
 - [Phase ?]: [Phase 45]: 45-08: PrivacyPage/TermsPage gained font-display + aria-labelledby main landmark wiring matching the a11y pattern already established on other ported marketing pages
+- [Phase ?]: 45-09: Nudge fires only on NEW value moments (new job save, new quote create, new sale record), not edits — gated by !isEdit/!editingSale
+- [Phase ?]: 45-09: Pro upgrade target is the external /pricing page (Tauri-safe open), not a new in-app modal callback threaded through 3 save-success components — keeps app-side touches minimal per D-03
+- [Phase ?]: 45-09: SUPPORT_URL/openSupportLink renamed to PRO_UPGRADE_URL/openProUpgradeLink; mechanic names (shouldShowSupportNudge, cooldown, storage key) left unchanged
 
 ### Pending Todos
 
@@ -200,8 +204,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-20T14:39:16.871Z
-Stopped at: Completed 45-08-PLAN.md
+Last session: 2026-07-20T14:54:54.979Z
+Stopped at: Completed 45-09-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

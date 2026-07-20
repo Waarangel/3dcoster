@@ -323,7 +323,7 @@ Plans:
 - [x] 45-06-PLAN.md — DownloadPage + FAQPage: Linux correctness + content reconciliation (BRAND-01)
 - [x] 45-07-PLAN.md — ChangelogPage (isSafeHttpUrl) + RoadmapPage (D-13 refresh) + FeedbackPage (BRAND-01, D-13)
 - [x] 45-08-PLAN.md — Legal restyle: Privacy + Terms + cookie banner, content byte-identical (BRAND-01, D-12)
-- [ ] 45-09-PLAN.md — SupportNudge retargeted to Pro + wire into save-success paths (BRAND-01, D-03)
+- [x] 45-09-PLAN.md — SupportNudge retargeted to Pro + wire into save-success paths (BRAND-01, D-03)
 
 **Wave 4** *(needs pricing constant)*
 
