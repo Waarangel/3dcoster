@@ -5,6 +5,7 @@ import { Footer } from '../components/Footer';
 import { ImageCarousel } from '../components/ImageCarousel';
 import { Reveal } from '../components/motion/Reveal';
 import { CostReveal } from '../components/landing/CostReveal';
+import { MONTHLY_PRICE_LABEL } from '../pricing';
 
 // ---------------------------------------------------------------------------
 // LandingPage — Cost-Truth Dark port (Phase 45-04, BRAND-01).
@@ -23,6 +24,10 @@ import { CostReveal } from '../components/landing/CostReveal';
 //      engine, device sync without accounts, STL instant quote,
 //      insights/printer-ROI). v2.0 secrecy expires at launch.
 //   5. CTA.
+//   6. Pro teaser (D-07, spot 2 of 3) — leads with the free-forever floor,
+//      then a compact "Pro from EUR 6.90/mo" card (price from src/pricing.ts,
+//      never re-typed — guarded by PricingPage.test.tsx) linking to
+//      /pricing. No donation ask; Pro is the only paid-tier mention here.
 //
 // Phase 37's a11y hardening (`<main>` landmark, `aria-labelledby` on every
 // section, `aria-hidden="true"` on decorative icons) is re-applied throughout
@@ -413,6 +418,37 @@ export function LandingPage() {
                   className="inline-flex items-center px-7 py-3.5 rounded-xl bg-white text-[var(--brand-deep)] font-semibold transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0 active:scale-[0.98]"
                 >
                   Download for desktop
+                </Link>
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
+        {/* Pro teaser — D-07 (spot 2 of 3). Free-forever floor first, Pro ceiling second. */}
+        <section className="pb-20 px-6" aria-labelledby="pro-teaser-heading">
+          <Reveal trigger="inView" className="max-w-3xl mx-auto">
+            <div className={`${cardBase} p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-6 sm:gap-8`}>
+              <div className="flex-1 text-center sm:text-left">
+                <p className="text-sm font-medium text-[var(--brand-soft)] mb-2">Free, forever</p>
+                <h2 id="pro-teaser-heading" className="font-display text-2xl sm:text-3xl font-bold text-[var(--ink)] mb-3">
+                  The calculator stays free. Pro adds hosted quote links.
+                </h2>
+                <p className="text-[var(--ink-soft)] leading-relaxed max-w-md">
+                  Every cost number, every insight, every device — no account, no paywall. Pro is
+                  for sellers who want customers to approve quotes online.
+                </p>
+              </div>
+              <div className="shrink-0 w-full sm:w-auto rounded-xl border border-[rgba(23,150,255,0.4)] bg-[var(--surface-2)] px-6 py-5 text-center">
+                <p className="text-xs uppercase tracking-wide text-[var(--ink-faint)] mb-1">3DCoster Pro</p>
+                <p className="text-2xl font-bold text-[var(--ink)]">
+                  Pro from {MONTHLY_PRICE_LABEL}
+                  <span className="text-sm font-normal text-[var(--ink-faint)]">/mo</span>
+                </p>
+                <Link
+                  to="/pricing"
+                  className="mt-4 inline-flex items-center justify-center w-full rounded-lg bg-[var(--brand)] text-white font-semibold text-sm px-5 py-2.5 transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:translate-y-0 active:scale-[0.98]"
+                >
+                  See pricing
                 </Link>
               </div>
             </div>
