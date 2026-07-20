@@ -156,3 +156,7 @@ None - no external service configuration required.
 ---
 *Phase: 45-brand-launch*
 *Completed: 2026-07-20*
+
+## Self-Check: PASSED
+
+All 4 modified files present on disk (src/pages/ChangelogPage.tsx, src/pages/RoadmapPage.tsx, src/pages/FeedbackPage.tsx, src/roadmap.ts). All 4 commits (01b31f2, ee01503, 31cd806, 3e14ede) confirmed present in `git log --oneline --all`.
