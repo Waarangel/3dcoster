@@ -361,7 +361,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 46-01-PLAN.md — Logo foundation: `UserProfile.logoDataUrl` + strict data-URL validator (XSS allowlist) + Canvas resize helper, zero new deps (D-01)
+- [x] 46-01-PLAN.md — Logo foundation: `UserProfile.logoDataUrl` + strict data-URL validator (XSS allowlist) + Canvas resize helper, zero new deps (D-01)
 - [ ] 46-02-PLAN.md — Desktop Pro auth infra: un-gate Supabase on Tauri, email-OTP `verifyOtp` code entry, `*.supabase.co` CSP + `VITE_SUPABASE_*` CI env (D-08)
 - [ ] 46-03-PLAN.md — GDPR inventory-first: logo-in-snapshot added to DATA-FLOW-INVENTORY.md then Privacy Policy, before any code transmits it (D-11)
 
