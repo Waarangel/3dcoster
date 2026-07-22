@@ -38,7 +38,7 @@ Pro users can present quotes under their own brand: (1) **white-label PDF quotes
 ### Free-user upsell surface
 - **D-13: Branding section visible to all, Pro-chipped.** Free users see the Branding section with the logo slot behind a Pro chip; interacting opens the Pro pitch modal. Mirrors the Share-quote D-10 pattern from Phase 43. No banners, no toasts, no extra hints in the PDF modal.
 - **D-14: One pitch modal, full Pro story.** Extend the existing `ProPitchModal` to present the Pro bundle (hosted quote links + white-label), shown from both entry points (Share quote, Branding section). One monetization voice.
-- **D-15: All three marketing flips in-phase:** (a) the two /features "Coming" pills (`src/pages/FeaturesPage.tsx:496-497`) flip to shipped Pro pills; (b) /pricing's Pro card gains white-label; (c) the white-label entries come OFF /roadmap (shipped-only honesty rule). Remaining Coming pills flip in their own phases / Phase 51.
+- **D-15: All three marketing flips in-phase.** (a) the two /features "Coming" pills (`src/pages/FeaturesPage.tsx:496-497`) flip to shipped Pro pills; (b) /pricing's Pro card gains white-label; (c) the white-label entries come OFF /roadmap (shipped-only honesty rule). Remaining Coming pills flip in their own phases / Phase 51.
 
 ### Claude's Discretion
 - Logo image constraints: accepted formats, size cap, client-side downscale/compression strategy, preview UX
