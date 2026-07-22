@@ -190,3 +190,7 @@ None - no external service configuration required. (Paddle price IDs/SKUs are un
 ---
 *Phase: 45-brand-launch*
 *Completed: 2026-07-21*
+
+## Self-Check: PASSED
+
+All 13 modified source files and the SUMMARY.md itself verified present on disk; all 4 commit hashes (a97e1a4, 730143c, 5f0df57, 48a83fb) verified present in `git log --oneline --all`.
