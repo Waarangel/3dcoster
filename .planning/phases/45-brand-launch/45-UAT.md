@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 phase: 45-brand-launch
 source: [45-12-SUMMARY.md, 45-13-SUMMARY.md, 45-01-SUMMARY.md, 45-02-SUMMARY.md, 45-03-SUMMARY.md, 45-04-SUMMARY.md, 45-05-SUMMARY.md, 45-06-SUMMARY.md, 45-07-SUMMARY.md, 45-08-SUMMARY.md, 45-09-SUMMARY.md, 45-10-SUMMARY.md, 45-11-SUMMARY.md]
 started: 2026-07-20T21:47:31Z
-updated: 2026-07-21T16:17:40Z
+updated: 2026-07-22T03:10:00Z
 ---
 
 ## Current Test
@@ -469,7 +469,9 @@ blocked: 0
   debug_session: "diagnosed inline during UAT (live DOM + docs/ROADMAP.md floor-and-ceiling decision review); no debug agent needed" 
 - gap_id: G-45-PRICING-CONSISTENCY
   truth: "The /pricing page renders ONE consistent currency story: Free card price in the same display currency as the Pro card (no hardcoded EUR 0 next to a $ Pro price); dollar-ambiguous currencies (CAD/AUD/NZD) disambiguated (e.g. CA$11.07) so $ is never misread as USD; Free and Pro CTA buttons bottom-aligned across the two cards."
-  status: failed
+  status: resolved
+  resolved_by: 45-14-PLAN.md
+  resolved_at: 2026-07-21
   reason: "User reported: The pro pricing page has Free in Euros, but Pro in Dollars. Also, the Use for Free and Start free, upgrade in-app buttons should be aligned."
   severity: major
   test: 51
@@ -486,7 +488,9 @@ blocked: 0
   debug_session: "diagnosed inline during UAT (code read + founder screenshots)"
 - gap_id: G-45-BILLING-CURRENCY
   truth: "Pro billing base currency matches founder intent (Canadian company): USD base price (founder to set the number) with Paddle merchant-of-record localized checkout, replacing the EUR 6.90 base everywhere it is displayed or guarded (src/pricing.ts, Terms Pro-price text, BillingPanel byte-match, launch comms)."
-  status: failed
+  status: resolved
+  resolved_by: 45-14-PLAN.md
+  resolved_at: 2026-07-21
   reason: "User asked: Why are we billing as Euros? We are a Canadian company, and if anything should bill in the user's local currency or in USD. DECIDED 2026-07-20 (UAT chat): USD base $7.99/mo, $79/yr; Paddle localized checkout; replaces EUR 6.90/EUR 69 in pricing.ts, Terms guarded text, BillingPanel byte-match, marketing surfaces, launch comms."
   severity: major
   test: 51
@@ -502,7 +506,9 @@ blocked: 0
   debug_session: "decision trail reconstructed from Phase 43 CONTEXT locks"
 - gap_id: G-45-LINUX-COPY
   truth: "The /features 'Fully offline desktop app' card names Windows, macOS, AND Linux (Linux builds shipped in v1.7.0)."
-  status: failed
+  status: resolved
+  resolved_by: 45-15-PLAN.md
+  resolved_at: 2026-07-21
   reason: "User reported: we also have a native Linux app, not just Windows and Mac."
   severity: minor
   test: 53
@@ -515,7 +521,9 @@ blocked: 0
   debug_session: "confirmed against v1.7.0 release history"
 - gap_id: G-45-TERMINOLOGY
   truth: "The feature is named 'Cost-Truth Engine' (title case, hyphenated to match Cost-Truth Dark / Cost-Truth & Insight brand style) consistently across all marketing surfaces; 'cost realism' never appears; the /features Free vs Pro intro paragraph and Free card do not repeat the same feature list twice."
-  status: failed
+  status: resolved
+  resolved_by: 45-15-PLAN.md
+  resolved_at: 2026-07-21
   reason: "User reported during test 53: inconsistent naming (Cost Truth Engine / Cost Realism engine / cost realism); wants Cost Truth Engine everywhere, content-aware edit eliminating redundancy, not search-and-replace."
   severity: minor
   test: 53
@@ -532,7 +540,9 @@ blocked: 0
   debug_session: "diagnosed inline during UAT (grep + content read of both pages)"
 - gap_id: G-45-PRO-TABLE
   truth: "The expanded /features breakdown table carries the full Pro offering so a comparison-shopper sees a real reason to pay: white-label rows (white-label PDF quotes; white-label hosted quote page branding), live-API rows (live Etsy 90-day order sync; live carrier rates & printable labels; QuickBooks/Wave accounting sync), and cloud/database rows (cloud / real-time multi-device sync). Unshipped items show a clearly-marked 'Coming' state in the Pro column (Free: No), flipped to Yes by each of phases 46-50 as they ship; phase 51 launch-prep does the final truth sweep."
-  status: failed
+  status: resolved
+  resolved_by: 45-16-PLAN.md
+  resolved_at: 2026-07-21
   reason: "User reported: on the expanded Features section I still don't see any real reason to get pro over free. We need to add all the white label elements and all the API elements as well as the database elements."
   severity: major
   test: 53

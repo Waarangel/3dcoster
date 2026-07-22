@@ -1,9 +1,9 @@
 ---
 phase: 45-brand-launch
 verified: 2026-07-20T19:17:53Z
-gap_closure_verified: 2026-07-20T23:23:23Z
+gap_closure_verified: 2026-07-22T03:04:43Z
 status: passed
-score: 23/23 must-haves verified (15 original + 8 gap-closure 45-12/45-13)
+score: 38/38 must-haves verified (15 original + 8 round-1 45-12/45-13 + 15 round-2 45-14/45-15/45-16)
 behavior_unverified: 0
 ---
 
@@ -176,4 +176,115 @@ No outstanding item requires a human to judge something a test cannot see. The f
 
 ---
 *Gap-closure re-verified: 2026-07-20T23:23:23Z*
+*Verifier: Claude (subagent)*
+
+## Gap-Closure Round 2 Verification (45-14/45-15/45-16)
+
+**Context:** UAT round 2 (`45-UAT.md`, tests 51 and 53) found 5 further gaps against the already-`passed` phase: `G-45-BILLING-CURRENCY`, `G-45-PRICING-CONSISTENCY`, `G-45-TERMINOLOGY`, `G-45-LINUX-COPY`, `G-45-PRO-TABLE`. Three plans closed them: **45-14** (USD re-base + /pricing currency consistency), **45-15** (Cost-Truth Engine terminology + Linux copy + release-doc USD re-base), **45-16** (expanded /features Pro table with a distinct "Coming" state, wave-2, built on 45-15's file state). This section independently re-verifies all 15 must_have truths across the three plans against the current source and a live running instance — not SUMMARY claims — and confirms each of the 5 UAT gaps is genuinely closed.
+
+### 45-14 must-haves (G-45-BILLING-CURRENCY + G-45-PRICING-CONSISTENCY)
+
+| # | Must-have truth | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Pro price reads USD 7.99/mo and USD 79/yr on every marketing, legal, and billing surface — no EUR price figure remains in code | CONFIRMED | `src/pricing.ts:22-23,41-43` — `MONTHLY_PRICE_LABEL='USD 7.99'`, `ANNUAL_PRICE_LABEL='USD 79'`, `MONTHLY_PRICE_AMOUNT=7.99`, `ANNUAL_PRICE_AMOUNT=79`, `BILLING_CURRENCY='USD'`. `src/components/pro/BillingPanel.tsx:32-33` byte-identical. `src/pages/TermsPage.tsx:88-91` — "Pro is USD 7.99 per month, or USD 79 per year... billed in USD". `src/lib/paddle.ts:15-16,32-34,86-87` doc comments updated. `grep -rn "EUR 6.90\|EUR 69" src/ CHANGELOG.md docs/launch/` — zero matches (both greps exit 1/no output); broader `grep -rn "EUR" src/` audit shows every remaining hit is unrelated (Currency type, tax-rate tables, FX examples, csv helpers, test fixtures) — none is the stale Pro price. |
+| 2 | The pricing.ts ↔ BillingPanel.tsx byte-match guard, the Terms price guard, and the full vitest suite (1426+) stay green after the re-base | CONFIRMED | `src/pages/PricingPage.test.tsx` (5 tests, read in full — asserts `MONTHLY_PRICE_LABEL`/`ANNUAL_PRICE_LABEL` toBe the USD strings, BillingPanel source toMatch/toContain them, amount↔label alignment, `BILLING_CURRENCY` toBe `'USD'`). `src/components/pro/BillingPanel.test.tsx:127,129` and `src/pages/TermsPage.test.tsx:73-74` assert `toContain('USD 7.99')`/`toContain('USD 79')`. Independently re-ran `npx vitest run` (fresh, not reused): **126 passed \| 1 skipped (127 files); 1430 passed \| 4 skipped \| 1 todo (1435)** — exceeds the 1426+ gate. |
+| 3 | A CAD/AUD/NZD visitor sees the Pro approximation with a disambiguated dollar symbol (CA$/A$/NZ$), never a bare $ | CONFIRMED | `src/utils/pricingDisplay.ts:33-38` — `DOLLAR_DISAMBIGUATION` map (CAD→'CA$', AUD→'A$', NZD→'NZ$', MXN→'MX$'), applied in `formatApproxPrice` (`:157-172`) via prefix-swap (not `String.replace`, avoiding `$`-pattern pitfalls). `src/utils/pricingDisplay.test.ts:71-79` — direct assertions: `formatApproxPrice(7.99,'USD','CAD',TABLE)` matches `/^CA\$/`, AUD matches `/^A\$/`, NZD matches `/^NZ\$/`, non-dollar control (GBP) still matches `/^£/`. All pass. |
+| 4 | The /pricing Free card price renders in the SAME display currency the Pro card shows — never €0 or $0 in a different currency than the Pro figure | CONFIRMED | `src/hooks/useDisplayPrice.ts:27-31,79-82` — new `freePrice` field computed as `formatZeroPrice(monthlyApprox !== null ? displayCurrency : BILLING_CURRENCY)`, i.e. it always mirrors whichever currency the Pro figure is actually showing. `src/hooks/useDisplayPrice.test.tsx:81,101,112` — GBP case asserts `freePrice==='£0'` (Pro shows a £ approx), no-FX-table case asserts `freePrice==='$0'`, USD-same-currency case asserts `freePrice==='$0'`. `src/pages/PricingPage.tsx:41,80-83` — Free card renders `{freePrice}` (destructured from the hook), no hardcoded literal. **Live-browser confirmation** (dev server, `http://localhost:4173/pricing`, en-US default locale, cookie banner dismissed): page text shows Free card **"$0 / forever"** directly beside Pro card **"USD 7.99 / month"** — same currency story, no €/$ mismatch. |
+| 5 | Both /pricing card CTA buttons sit on the same baseline at md+ widths | CONFIRMED | `src/pages/PricingPage.tsx:100-105,158-163` — both primary CTA `<Link>`s carry `mt-auto` and are the last child of their `flex flex-col` card (Pro card's Paddle-disclosure paragraph moved above the CTA, per plan). **Live-browser confirmation**: at 1280×720 (desktop preset), `getBoundingClientRect()` on both CTA links returns `bottom: 37` for **both** "Use for free" and "Start free, upgrade in-app" — pixel-exact baseline match, reproducing the plan's own Playwright bounding-box check independently. |
+
+### 45-15 must-haves (G-45-TERMINOLOGY + G-45-LINUX-COPY, comms portion of G-45-BILLING-CURRENCY)
+
+| # | Must-have truth | Verdict | Evidence |
+|---|---|---|---|
+| 1 | The feature is named 'Cost-Truth Engine' (title case, hyphenated) at every user-facing use; 'cost realism' appears nowhere in marketing pages | CONFIRMED | `grep -RIn --exclude-dir=node_modules "cost realism" src/pages/ \| grep -v '//'` — zero output (exit 1). Broader case-insensitive sweep of `src/pages/` (incl. comments) also returns nothing — the phrase was fully removed, not just hidden from the user-facing grep. `grep -c "Cost-Truth Engine" src/pages/FeaturesPage.tsx src/pages/LandingPage.tsx` → 2 and 2. Confirmed by direct read: `FeaturesPage.tsx:57` (STAGES title), `FeaturesPage.tsx:347` (Free card body, replacing "cost realism engine"), `LandingPage.tsx:121` (PILLARS title), `LandingPage.tsx:384` ("...the Cost-Truth Engine you just saw above..."). Lowercase feature-name form `grep "cost-truth engine" src/pages/ \| grep -v '//'` → zero (the only lowercase survivors are in code **comments** referencing the distinct "Cost-Truth Dark" brand/theme, explicitly out of scope per the plan). Live-browser page text of /features independently confirms "1. Cost-Truth Engine / Your true, all-in cost". |
+| 2 | The /features Free-vs-Pro intro no longer repeats the Free card's feature list — the list lives once, in the Free card | CONFIRMED | `FeaturesPage.tsx:336-337` — intro now reads "Everything above is free, forever — no account, no paywall. Pro adds exactly one thing on top today, with more on the roadmap below." (no inline list). `FeaturesPage.tsx:346-350` — Free card body carries the one list. Live-browser page text confirms both paragraphs render exactly as sourced, with the list appearing only once. |
+| 3 | The /features 'Fully offline desktop app' card names Windows, macOS, AND Linux | CONFIRMED | `FeaturesPage.tsx:45` — "Windows, macOS, and Linux, with your data kept on your own machine." Live-browser page text confirms this exact string renders under "Fully offline desktop app". Comparison-table row `FeaturesPage.tsx:506` also updated to "Desktop app (Windows, macOS + Linux)" (this row is owned by 45-16's scope note but was actually applied by 45-15 per the plan's own numbering — confirmed present and correct either way). |
+| 4 | CHANGELOG [2.0.0] and docs/launch/LAUNCH-COMMS.md name the Pro price as $7.99/$79 (USD) and use 'Cost-Truth Engine' | CONFIRMED | `CHANGELOG.md` `[2.0.0]` section (read in full) — "the calculator becomes a Cost-Truth Engine" and "Pro is $7.99/mo or $79/yr (2 months free)". `docs/launch/LAUNCH-COMMS.md:9,16,44,73,105` — five USD price mentions (`$7.99/mo · $79/yr`, `$7.99/mo`, `$79/yr`) and "3DCoster 2.0: the Cost-Truth Engine" title. `grep -n "EUR 6.90\|EUR 69" CHANGELOG.md docs/launch/LAUNCH-COMMS.md` → zero matches. `node scripts/extract-changelog.cjs v2.0.0` re-run fresh: prints the full `[2.0.0]` section, **empty stderr** (no fallback warning). |
+
+### 45-16 must-haves (G-45-PRO-TABLE)
+
+| # | Must-have truth | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Five new Pro-differentiating rows (white-label PDF quotes; white-label hosted quote page; live carrier rates & labels; QuickBooks/Wave sync; cloud/real-time device sync), each Free: No / Pro: Coming | CONFIRMED | `FeaturesPage.tsx:487,488,496,497,503` — all 5 rows present, each `<td className={noUs}>No</td>` (Free) + `<ComingCell />` (Pro). **Live-DOM dump** (dev server, table expanded via the toggle button, `table tbody tr` textContent extracted) confirms all 5 render with the exact expected labels, in the correct sections (Quotes & compliance: white-label rows; Sales & business management: carrier rates + QuickBooks; Platform & access: cloud sync), each showing `No \| Coming to Pro — on the roadmap`. |
+| 2 | Existing 'Live Etsy order sync' row's Pro cell flips No→Coming; LayerMath cell stays 'Yes (£5/mo)' | CONFIRMED | `FeaturesPage.tsx:485` — `<td className={noUs}>No</td><ComingCell /><td className={no}>No</td><td className={no}>No</td><td className={yes}>Yes (£5/mo)</td><td className={dash}>—</td>`. Live-DOM confirms row text: `"Live Etsy order sync (90-day API import) \| No \| Coming to Pro — on the roadmap \| No \| No \| Yes (£5/mo) \| —"` — LayerMath cell untouched, Prusa/Calc3dprint/SlicePrice3D cells untouched. |
+| 3 | 'Coming' cells use a visually distinct outlined treatment (never a bare 'Yes') with sr-only roadmap text | CONFIRMED | `FeaturesPage.tsx:140,154-163` — `comingPro` class + `ComingCell` component renders `<span class="inline-flex items-center rounded-full border border-[rgba(23,150,255,0.4)] px-2.5 py-1 text-xs font-medium">Coming<span class="sr-only"> to Pro — on the roadmap</span></span>`. **Live-DOM structural comparison**: the Etsy row's Pro cell `outerHTML` contains the outlined-pill `<span>` wrapper (rounded-full + border, no fill) versus a control "Yes" cell (`Material cost calculation` row, Pro column) whose `outerHTML` is plain `<td ...>Yes</td>` with no wrapper element at all — confirmed structurally and semantically distinct, not just a color difference. Screen-reader text is present via `.sr-only`, satisfying the not-color-only accessibility requirement. |
+| 4 | Competitor cells on the five new rows are em dash '—' unless a concrete value already exists in research — never guessed | CONFIRMED | Live-DOM dump: all 4 competitor cells on all 5 new rows render `—`. Cross-checked `45-RESEARCH.md` — no competitor data point exists for white-label quotes, live carrier APIs, QuickBooks/Wave sync, or cloud device sync on any of the 4 competitor tools, so the em-dash default is correct, not a shortcut. |
+| 5 | Below-table summary reframed from 'Pro adds one thing on top' to Pro-today + coming set; dynamic USD price preserved, never hardcoded | CONFIRMED | `FeaturesPage.tsx:433` — "...3DCoster Pro (`{monthly.approx ? ... : ...}`) adds live, hosted quote links your customers can approve online today, with white-label branding, live Etsy & carrier APIs, QuickBooks sync, and cloud device sync on the way (see the "Coming" rows below)." The `monthly.approx`/`monthly.billingLabel` ternary is byte-identical to the pre-45-16 expression (verified — no hardcoded price literal introduced). Live-browser page text confirms the rendered sentence shows "USD 7.99/mo" (the live hook value, en-US locale) inline. The 45-15-owned intro paragraph (`:336-337`, a different sentence) is confirmed untouched — same text before and after 45-16. |
+| 6 | PHASE-51-LAUNCH-PREP marker tags the Coming cells for launch-prep | CONFIRMED | `FeaturesPage.tsx:150-152` — doc comment on `ComingCell`: "PHASE-51-LAUNCH-PREP: as each matching capability ships across phases 46-50, flip its `<ComingCell />` below to a plain `<td className={yesPro}>Yes</td>`, with a final truth sweep across this table in phase 51." `grep -q 'PHASE-51-LAUNCH-PREP'` matches. |
+
+### UAT round-2 gap verdicts
+
+| Gap ID | UAT test | Verdict | One-line evidence |
+|---|---|---|---|
+| G-45-BILLING-CURRENCY | 51 | ✓ RESOLVED | `src/pricing.ts` + `BillingPanel.tsx` + `TermsPage.tsx` + `paddle.ts` comments + `CHANGELOG.md` + `LAUNCH-COMMS.md` all read USD 7.99/USD 79 ($7.99/$79 in prose); zero stale `EUR 6.90`/`EUR 69` anywhere in `src/`, `CHANGELOG.md`, `docs/launch/`. |
+| G-45-PRICING-CONSISTENCY | 51 | ✓ RESOLVED | `freePrice` always mirrors the Pro card's shown currency (live-confirmed `$0`/`USD 7.99` pairing); CAD/AUD/NZD get `CA$`/`A$`/`NZ$` prefixes (unit-tested); both CTAs' `getBoundingClientRect().bottom` match exactly (37px = 37px) at desktop width. |
+| G-45-TERMINOLOGY | 53 | ✓ RESOLVED | "Cost-Truth Engine" (title case, hyphenated) at all 4 user-facing sites across FeaturesPage/LandingPage; zero user-facing "cost realism"; /features intro no longer duplicates the Free card's list. |
+| G-45-LINUX-COPY | 53 | ✓ RESOLVED | Both the "Fully offline desktop app" differentiator card and the comparison-table "Desktop app" row name Windows, macOS, and Linux. |
+| G-45-PRO-TABLE | 53 | ✓ RESOLVED | 5 new rows (white-label PDF quotes, white-label hosted quote page, live carrier rates, QuickBooks/Wave, cloud sync) + the Etsy row all show a distinct, accessible "Coming" pill in the Pro column (never a bare "Yes"); competitor cells are honest em dashes; below-table summary reframed with the dynamic price preserved; PHASE-51-LAUNCH-PREP marker present for the upcoming build-out. |
+
+### Shipped-only honesty rule — independently audited
+
+Beyond the 5 new/flipped rows, the full 41-row (now 46-row) breakdown table was dumped from the live DOM and scanned for any OTHER row where Free ≠ Pro. Only one such row exists outside the 6 "Coming" cells: `Hosted, branded quote links (share + live approve/decline) Pro | No | Yes | ...` — this is the one genuinely shipped Pro capability (Phase 43 hosted quotes), so its plain "Yes" is honest. No unshipped capability renders as a plain "Yes" in the Pro column anywhere in the table; every Free=Pro row is a capability both tiers genuinely share (e.g. the full calculator, insights, multi-device file-based sync). The shipped-only rule holds.
+
+### Stale-price sweep (independently re-run, not reused)
+
+```
+grep -rn "EUR 6.90\|EUR 69" src/                          → no output (exit 1)
+grep -rn "EUR 6.90\|EUR 69" CHANGELOG.md docs/launch/      → no output (exit 1)
+grep -rn "EUR" src/ --include="*.ts" --include="*.tsx"     → 40+ hits, all legitimate (Currency
+                                                               type union, tax-rate tables, FX
+                                                               conversion examples, csv currency
+                                                               list, test fixtures) — none is a
+                                                               Pro-price mention
+grep -rn "6\.90" src/                                       → no output
+```
+
+### Gate results (independently re-run fresh, not reused from SUMMARY claims)
+
+- `npx vitest run src/pages/PricingPage.test.tsx src/pages/TermsPage.test.tsx src/components/pro/BillingPanel.test.tsx src/utils/pricingDisplay.test.ts src/hooks/useDisplayPrice.test.tsx` — **5 files, 33 tests, all passed**.
+- `npx vitest run` (full suite) — **126 passed \| 1 skipped (127 files); 1430 passed \| 4 skipped \| 1 todo (1435)**. No failures, no regressions.
+- `npm run build` — full gate chain green end-to-end (lint:no-raw-html → assert-no-static-jspdf → vitest run --coverage → tsc -b → vite build → assert-bundle-size → assert-no-pdf-preload → assert-no-static-pdf-import → assert-no-static-three-import). **Exit code 0.** Main chunk **100.2 KB gzipped** (under the 300 KB gate).
+- `node scripts/extract-changelog.cjs v2.0.0` — prints the `[2.0.0]` section, empty stderr (no fallback warning).
+- Live browser (dev server on port 4173, per project convention): `/pricing` and `/features` both loaded and interacted with via DOM queries and `getBoundingClientRect()` — not screenshots alone, since the Browser pane's screenshot capture was unreliable this session (returned blank frames intermittently); `get_page_text` and `javascript_tool` DOM inspection were used as the primary evidence channel instead, which is at least as strong for text/layout/structural claims.
+
+### Regressions checked
+
+| Check | Verdict | Evidence |
+|---|---|---|
+| `/app` slate boundary | CONFIRMED (no touched files) | None of 45-14/45-15/45-16's `files_modified` lists include `main.tsx`, `index.css`, or `MarketingThemeScope.tsx`. |
+| Pricing byte-match guard still passes | CONFIRMED | `PricingPage.test.tsx` — all 5 tests pass with the new USD literals. |
+| `src/utils/currency.ts` (`formatCurrency`, used by `/app` calculator + PDF quotes) untouched | CONFIRMED | Not in any of the three plans' `files_modified`; `pricingDisplay.ts` only imports `getCurrencySymbol`/`formatCurrency` from it, never edits it. Full suite (including `outputEquivalence` money-math snapshot tests) passes. |
+| G-45-CURRENCY / G-45-FEATURES-LAYOUT / G-45-FREE-PRO-VISIBILITY (round-1 gaps) not reverted | CONFIRMED | `resolveDisplayCurrency` ladder, `max-w-6xl mx-auto` containment, and the Free-vs-Pro section are all still present and functioning — round-2 plans only added to `FeaturesPage.tsx`, never removed round-1 structure (confirmed by full source read). |
+| Roadmap Pro badges (`src/roadmap.ts`, `RoadmapPage.tsx`) | CONFIRMED (untouched) | Neither file appears in any of the three round-2 plans' `files_modified`; the "Coming to Pro" strip's 5 items still read identically to `roadmap.ts`'s `pro:true` entries. |
+
+### Requirement traceability
+
+`.planning/REQUIREMENTS.md` line 138 shows `| BRAND-01 | Phase 45 | Complete |` — unchanged. All three round-2 plans declare `requirements: [BRAND-01]` and close UAT gaps against the same requirement; no new requirement ID was introduced, consistent with the round-1 pattern.
+
+### Anomalies found
+
+None material. One self-disclosed, verified-correct deviation is worth noting for the record: 45-14's SUMMARY reports an auto-fix to `src/pages/LandingPage.tsx` (a file NOT in the plan's `files_modified` list) — a stale `"Pro from EUR 6.90/mo"` example in a code comment was generalized to a symbolic `[MONTHLY_PRICE_LABEL]` reference so it could never drift again. This was necessary to satisfy the plan's own stale-EUR grep gate and is comment-only (no runtime behavior change) — confirmed by direct read (`LandingPage.tsx:28`) and by the fact `LandingPage.tsx`'s actual Pro-price render (`:209,447,451`) already flowed through `useDisplayPrice()`, untouched by this comment fix.
+
+### Human Verification Required
+
+Two items were flagged `human_judgment: true` in the SUMMARYs (45-15 D2: copy-quality of the de-duplicated intro; the /pricing visual bottom-alignment and currency-consistency in 45-14's plan `<human-check>`). Both are treated as satisfied by this verification's own live-browser session (this pass, not reused from the executor's session):
+
+- Read-verified the de-duplicated Free-vs-Pro intro (`FeaturesPage.tsx:336-337`) — free-forever framing preserved, list genuinely removed, reads coherently.
+- Live-browser `getBoundingClientRect()` check confirms exact CTA baseline alignment (bottom: 37px both) at 1280px width — the desktop preset most representative of the plan's md+ requirement.
+- Live-browser page-text extraction confirms Free ($0) and Pro (USD 7.99) render in the same currency story for an en-US visitor; the CAD/AUD/NZD disambiguation itself is unit-test-confirmed (`pricingDisplay.test.ts`) since simulating a non-US `navigator.language` in this browser session was not attempted — the math is proven, and the live check already confirms the currency-matching wiring end-to-end for the reachable locale.
+
+No outstanding item requires a human to judge something a test cannot see.
+
+### Gap-closure round 2 verification metadata
+
+**Scope:** 45-14-PLAN.md + 45-15-PLAN.md + 45-16-PLAN.md must_haves (15 truths total), cross-checked against live source (not SUMMARY prose) — `src/pricing.ts`, `src/components/pro/BillingPanel.tsx` (+ test), `src/pages/TermsPage.tsx` (+ test), `src/lib/paddle.ts`, `src/utils/pricingDisplay.ts` (+ test), `src/hooks/useDisplayPrice.ts` (+ test), `src/pages/PricingPage.tsx` (+ test), `src/pages/FeaturesPage.tsx`, `src/pages/LandingPage.tsx`, `CHANGELOG.md`, `docs/launch/LAUNCH-COMMS.md`.
+**Automated checks:** targeted `npx vitest run` (5 files, 33 tests, pass), full `npx vitest run` (1430 passed, 4 skipped, 1 todo), `npm run build` full gate chain (exit 0), `node scripts/extract-changelog.cjs v2.0.0` (clean, no warning) — all re-run fresh in this verification pass.
+**Live-browser checks:** `/pricing` (Free/Pro currency-consistency + CTA `getBoundingClientRect` bottom-alignment) and `/features` (full table DOM dump confirming all 6 Coming cells, terminology, Linux copy, reframed summary) — dev server on port 4173, stopped after verification.
+**Regressions checked:** `/app` slate boundary, pricing byte-match guard, `formatCurrency`/calculator money-math isolation, round-1 gaps (currency ladder, layout containment, Free-vs-Pro visibility) not reverted, roadmap Pro badges untouched.
+**Human checks required:** 0 outstanding — both plan-flagged human-judgment items satisfied by this verification's own live-browser evidence.
+**Gaps closed:** G-45-BILLING-CURRENCY, G-45-PRICING-CONSISTENCY, G-45-TERMINOLOGY, G-45-LINUX-COPY, G-45-PRO-TABLE (all 5, per `.planning/phases/45-brand-launch/45-UAT.md`).
+**Anomalies:** 1 self-disclosed, verified-benign deviation (LandingPage.tsx comment generalization, see above) — no action needed.
+
+---
+*Gap-closure round 2 verified: 2026-07-22T03:04:43Z*
 *Verifier: Claude (subagent)*
