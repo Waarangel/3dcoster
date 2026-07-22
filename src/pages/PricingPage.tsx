@@ -38,7 +38,7 @@ const PRO_FEATURES = [
 ];
 
 export function PricingPage() {
-  const { monthly, annual } = useDisplayPrice();
+  const { monthly, annual, freePrice } = useDisplayPrice();
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
@@ -78,7 +78,7 @@ export function PricingPage() {
                   <p className="text-[var(--ink-faint)]">Everything, forever</p>
                 </div>
                 <p className="text-3xl font-bold text-[var(--ink)] mb-6">
-                  €0
+                  {freePrice}
                   <span className="text-base font-normal text-[var(--ink-faint)]"> / forever</span>
                 </p>
                 <ul className="space-y-3 mb-8 flex-1">
@@ -99,7 +99,7 @@ export function PricingPage() {
                 </ul>
                 <Link
                   to="/app"
-                  className="rounded-xl bg-[var(--surface-2)] border border-[var(--hairline-strong)] text-[var(--ink)] font-semibold text-center px-6 py-3 transition hover:-translate-y-0.5 hover:border-[rgba(23,150,255,0.4)] active:scale-[0.98]"
+                  className="mt-auto rounded-xl bg-[var(--surface-2)] border border-[var(--hairline-strong)] text-[var(--ink)] font-semibold text-center px-6 py-3 transition hover:-translate-y-0.5 hover:border-[rgba(23,150,255,0.4)] active:scale-[0.98]"
                 >
                   Use for free
                 </Link>
@@ -151,16 +151,16 @@ export function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to="/app"
-                  className="relative rounded-xl bg-[var(--brand)] text-white font-semibold text-center px-6 py-3 shadow-[0_8px_24px_var(--brand-glow)] transition hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:scale-[0.98]"
-                >
-                  Start free, upgrade in-app
-                </Link>
-                <p className="text-xs text-[var(--ink-faint)] mt-3 relative">
+                <p className="text-xs text-[var(--ink-faint)] mb-3 relative">
                   Billed by Paddle, our Merchant of Record. Upgrade any time from Settings once you hit
                   the free ceiling — no sign-up required just to try the calculator.
                 </p>
+                <Link
+                  to="/app"
+                  className="mt-auto relative rounded-xl bg-[var(--brand)] text-white font-semibold text-center px-6 py-3 shadow-[0_8px_24px_var(--brand-glow)] transition hover:-translate-y-0.5 hover:bg-[var(--brand-soft)] active:scale-[0.98]"
+                >
+                  Start free, upgrade in-app
+                </Link>
               </div>
             </Reveal>
           </div>
