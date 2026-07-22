@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 45
 current_phase_name: brand-launch
 status: executing
-stopped_at: Completed 45-14-PLAN.md (gap closure G-45-BILLING-CURRENCY + G-45-PRICING-CONSISTENCY)
-last_updated: "2026-07-22T01:33:38.292Z"
-last_activity: 2026-07-21
-last_activity_desc: Phase 45 execution started
+stopped_at: Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
+last_updated: "2026-07-22T01:38:51.717Z"
+last_activity: 2026-07-22
+last_activity_desc: Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 54
-  completed_plans: 52
+  completed_plans: 53
   percent: 88
 ---
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 45 (brand-launch) — EXECUTING
-Plan: 2 of 16
-Status: Ready to execute
-Last activity: 2026-07-21 — Phase 45 execution started
+Plan: 15 of 16 (gap-closure plans 14-16 appended after original 13-plan phase; 16 not yet run)
+Status: Ready to execute plan 16
+Last activity: 2026-07-22 — Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
 
 ## v2.0 Phase Order Reference
 
@@ -83,6 +83,7 @@ Last activity: 2026-07-21 — Phase 45 execution started
 | Phase 45 P12 | 20min | 3 tasks | 9 files |
 | Phase 45 P13 | 5min | 3 tasks | 3 files |
 | Phase 45 P14 | 31min | 3 tasks | 13 files |
+| Phase 45 P15 | 6min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 45]: 45-13: Coming to Pro strip on /features is a plain string array kept in lockstep by comment cross-reference with roadmap.ts's pro:true items, not imported directly (roadmap descriptions are longer-form than the compact strip UI)
 - [Phase ?]: [Phase 45]: 45-14: Pro price re-based EUR 6.90/EUR 69 -> USD 7.99/USD 79 (founder decision, company is Canadian, bill in USD); USD deliberately excluded from the dollar-disambiguation table since it is the billing base, shown only via its ISO-code label
 - [Phase ?]: [Phase 45]: 45-14: Free-card zero on /pricing derives its currency from whichever branch the Pro card actually renders (approx vs USD billing fallback), never from displayCurrency alone -- closes G-45-PRICING-CONSISTENCY
+- [Phase ?]: [Phase 45]: 45-15: Free-vs-Pro intro paragraph on /features rewritten to drop its inline feature list entirely (kept free-forever + one-thing-added framing) rather than trimming it, since the full list already lives in the Free card ten lines below
+- [Phase ?]: [Phase 45]: 45-15: STAGES table header title kept at full 'Cost-Truth Engine' length without shortening the blurb -- the workflow-coverage table already sits inside an overflow-x-auto/min-w-[640px] wrapper, so the longer title cannot visually crowd the header
 
 ### Pending Todos
 
@@ -224,8 +227,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-22T01:33:38.284Z
-Stopped at: Completed 45-14-PLAN.md (gap closure G-45-BILLING-CURRENCY + G-45-PRICING-CONSISTENCY)
+Last session: 2026-07-22T01:38:51.708Z
+Stopped at: Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
 Resume file: None
 
 ## Operator Next Steps
