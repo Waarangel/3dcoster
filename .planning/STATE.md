@@ -5,16 +5,16 @@ milestone_name: Cost-Truth & Insight
 current_phase: 45
 current_phase_name: brand-launch
 status: executing
-stopped_at: Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
-last_updated: "2026-07-22T01:38:51.717Z"
+stopped_at: Completed 45-16-PLAN.md (gap closure G-45-PRO-TABLE — /features Pro table expanded with Coming rows)
+last_updated: "2026-07-22T02:51:27.799Z"
 last_activity: 2026-07-22
 last_activity_desc: Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 54
-  completed_plans: 53
-  percent: 88
+  completed_plans: 54
+  percent: 100
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 45 (brand-launch) — EXECUTING
-Plan: 15 of 16 (gap-closure plans 14-16 appended after original 13-plan phase; 16 not yet run)
+Plan: 16 of 16 (gap-closure plans 14-16 appended after original 13-plan phase; 16 not yet run)
 Status: Ready to execute plan 16
 Last activity: 2026-07-22 — Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
 
@@ -84,6 +84,7 @@ Last activity: 2026-07-22 — Completed 45-15-PLAN.md (gap closure G-45-TERMINOL
 | Phase 45 P13 | 5min | 3 tasks | 3 files |
 | Phase 45 P14 | 31min | 3 tasks | 13 files |
 | Phase 45 P15 | 6min | 2 tasks | 4 files |
+| Phase 45 P16 | 12min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -212,6 +213,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 45]: 45-14: Free-card zero on /pricing derives its currency from whichever branch the Pro card actually renders (approx vs USD billing fallback), never from displayCurrency alone -- closes G-45-PRICING-CONSISTENCY
 - [Phase ?]: [Phase 45]: 45-15: Free-vs-Pro intro paragraph on /features rewritten to drop its inline feature list entirely (kept free-forever + one-thing-added framing) rather than trimming it, since the full list already lives in the Free card ten lines below
 - [Phase ?]: [Phase 45]: 45-15: STAGES table header title kept at full 'Cost-Truth Engine' length without shortening the blurb -- the workflow-coverage table already sits inside an overflow-x-auto/min-w-[640px] wrapper, so the longer title cannot visually crowd the header
+- [Phase ?]: [Phase 45]: 45-16: comingPro cell class deliberately matches yesPro's tint (tdPro base + brand-soft text) so the Pro column reads as one visual group — the 'not shipped yet' signal lives entirely in the ComingCell outlined pill, not the cell background
+- [Phase ?]: [Phase 45]: 45-16: Competitor cells on all five new /features Pro rows default to em dash — no concrete data point exists in 45-RESEARCH.md for white-label quotes, live carrier APIs, QuickBooks/Wave sync, or cloud device sync on any competitor
 
 ### Pending Todos
 
@@ -227,8 +230,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-22T01:38:51.708Z
-Stopped at: Completed 45-15-PLAN.md (gap closure G-45-TERMINOLOGY + G-45-LINUX-COPY + G-45-BILLING-CURRENCY comms)
+Last session: 2026-07-22T02:51:27.790Z
+Stopped at: Completed 45-16-PLAN.md (gap closure G-45-PRO-TABLE — /features Pro table expanded with Coming rows)
 Resume file: None
 
 ## Operator Next Steps
