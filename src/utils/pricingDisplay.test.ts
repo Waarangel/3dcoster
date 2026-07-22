@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { resolveDisplayCurrency, formatApproxPrice, regionFromLanguageTag } from './pricingDisplay';
+import {
+  resolveDisplayCurrency,
+  formatApproxPrice,
+  regionFromLanguageTag,
+  formatZeroPrice,
+} from './pricingDisplay';
 import type { FxRateTable } from './fxConvert';
 
 // ---------------------------------------------------------------------------
@@ -7,12 +12,15 @@ import type { FxRateTable } from './fxConvert';
 //
 // Pure resolution-ladder + approx-price formatter. See useDisplayPrice.test.tsx
 // for the hook-level wiring coverage (stored preference + FX table + React).
+//
+// Phase 45-14 (G-45-PRICING-CONSISTENCY) — dollar-collision disambiguation
+// (CA$/A$/NZ$/MX$) and formatZeroPrice added; billing base is now USD.
 // ---------------------------------------------------------------------------
 
 const TABLE: FxRateTable = {
   base: 'USD',
   date: '2026-07-01',
-  rates: { EUR: 0.92, GBP: 0.79, USD: 1 },
+  rates: { EUR: 0.92, GBP: 0.79, USD: 1, CAD: 1.36, AUD: 1.5, NZD: 1.65 },
 };
 
 describe('regionFromLanguageTag', () => {
@@ -58,5 +66,27 @@ describe('formatApproxPrice', () => {
     const result = formatApproxPrice(6.9, 'EUR', 'USD', TABLE);
     expect(result).not.toBeNull();
     expect(result).toMatch(/^\$/);
+  });
+
+  it('disambiguates dollar-collision currencies with a prefixed symbol', () => {
+    expect(formatApproxPrice(7.99, 'USD', 'CAD', TABLE)).toMatch(/^CA\$/);
+    expect(formatApproxPrice(7.99, 'USD', 'AUD', TABLE)).toMatch(/^A\$/);
+    expect(formatApproxPrice(7.99, 'USD', 'NZD', TABLE)).toMatch(/^NZ\$/);
+  });
+
+  it('leaves a non-dollar display currency unchanged (control)', () => {
+    expect(formatApproxPrice(7.99, 'USD', 'GBP', TABLE)).toMatch(/^£/);
+  });
+});
+
+describe('formatZeroPrice', () => {
+  it('returns a decimal-free zero prefixed with the currency symbol', () => {
+    expect(formatZeroPrice('EUR')).toBe('€0');
+    expect(formatZeroPrice('GBP')).toBe('£0');
+    expect(formatZeroPrice('USD')).toBe('$0');
+  });
+
+  it('disambiguates dollar-collision currencies', () => {
+    expect(formatZeroPrice('CAD')).toBe('CA$0');
   });
 });

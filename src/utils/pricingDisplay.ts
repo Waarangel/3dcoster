@@ -1,18 +1,41 @@
 import type { Currency } from '../types';
-import { formatCurrency } from './currency';
+import { formatCurrency, getCurrencySymbol } from './currency';
 import { convert, type FxRateTable } from './fxConvert';
 
 // ---------------------------------------------------------------------------
 // pricingDisplay — Phase 45-12 (G-45-CURRENCY, BRAND-01).
 //
 // Pure (no React, no IO) currency-resolution + display-conversion layer for
-// the marketing Pro price. Billing truth stays a fixed EUR constant
+// the marketing Pro price. Billing truth stays a fixed USD constant
 // (src/pricing.ts, mirrored from BillingPanel.tsx) — this module only
 // decides which currency to APPROXIMATE that fixed price in, and formats the
 // approximation. Callers (src/hooks/useDisplayPrice.ts) always pair the
-// approximation with the verbatim EUR billing label; never render one
+// approximation with the verbatim USD billing label; never render one
 // without the other (T-45-12-01).
+//
+// Phase 45-14 (G-45-PRICING-CONSISTENCY) — dollar-collision currencies
+// (CAD/AUD/NZD/MXN) format with a leading bare '$' via src/utils/currency.ts,
+// which reads identically to the USD billing base. formatApproxPrice
+// disambiguates those with a prefixed symbol (CA$/A$/NZ$/MX$); formatZeroPrice
+// gives the Free-card zero the same treatment so it never renders €0/$0 next
+// to a Pro figure shown in a different currency (T-45-14-02). This module
+// deliberately never touches src/utils/currency.ts's formatCurrency, which
+// the /app calculator and PDF quotes rely on.
 // ---------------------------------------------------------------------------
+
+/**
+ * Dollar-collision display currencies: src/utils/currency.ts formats each of
+ * these with a bare leading '$' (identical to USD), which would be
+ * ambiguous next to the USD billing label. USD itself is deliberately
+ * OMITTED — it is the billing base and is shown only via the ISO-code
+ * label, never as an approx symbol, so its display stays a bare '$'.
+ */
+const DOLLAR_DISAMBIGUATION: Partial<Record<Currency, string>> = {
+  CAD: 'CA$',
+  AUD: 'A$',
+  NZD: 'NZ$',
+  MXN: 'MX$',
+};
 
 /**
  * ISO 3166-1 alpha-2 region → supported Currency. Direct country matches from
@@ -88,7 +111,7 @@ export function regionFromLanguageTag(tag: string | undefined): string | undefin
 }
 
 /**
- * Resolve which currency to APPROXIMATE the fixed EUR billing price in, per
+ * Resolve which currency to APPROXIMATE the fixed USD billing price in, per
  * the founder-confirmed ladder: stored app currency preference → locale
  * inference → USD fallback. This choice affects the DISPLAY currency ONLY —
  * it never alters the billing amount itself.
@@ -119,10 +142,15 @@ export function resolveDisplayCurrency(
  * ALWAYS the secondary value: callers pair it with the verbatim billing
  * label (never call this without also rendering billing) per T-45-12-01.
  *
+ * Dollar-collision display currencies (CAD/AUD/NZD/MXN) get a disambiguated
+ * prefix (CA$/A$/NZ$/MX$) so the approximation can never be mistaken for the
+ * USD billing amount shown alongside it.
+ *
  * Examples:
- *   formatApproxPrice(6.9, 'EUR', 'EUR', table) → null           // same currency
- *   formatApproxPrice(6.9, 'EUR', 'GBP', null)  → null           // no table
- *   formatApproxPrice(6.9, 'EUR', 'USD', table) → '$7.50'        // converted
+ *   formatApproxPrice(7.99, 'USD', 'USD', table) → null           // same currency
+ *   formatApproxPrice(7.99, 'USD', 'GBP', null)  → null           // no table
+ *   formatApproxPrice(7.99, 'USD', 'GBP', table) → '£6.31'        // converted
+ *   formatApproxPrice(7.99, 'USD', 'CAD', table) → 'CA$10.87'     // disambiguated
  *
  * Returns: string (formatted approx price) or null (no approximation to show)
  */
@@ -135,5 +163,25 @@ export function formatApproxPrice(
   if (displayCurrency === billingCurrency) return null;
   const converted = convert(billingAmount, billingCurrency, displayCurrency, table);
   if (converted === null) return null;
-  return formatCurrency(converted, displayCurrency);
+  const formatted = formatCurrency(converted, displayCurrency);
+  const disambiguated = DOLLAR_DISAMBIGUATION[displayCurrency];
+  // These currencies all format with a leading '$' for the positive prices
+  // this layer handles — strip index 0 and prepend the disambiguated symbol.
+  // Avoid String.replace to sidestep '$'-pattern interpretation.
+  return disambiguated ? disambiguated + formatted.slice(1) : formatted;
+}
+
+/**
+ * A decimal-free zero in the given currency, disambiguated the same way as
+ * formatApproxPrice. Needs no FX table — zero is zero in every currency.
+ *
+ * Examples:
+ *   formatZeroPrice('EUR') → '€0'
+ *   formatZeroPrice('CAD') → 'CA$0'
+ *   formatZeroPrice('USD') → '$0'
+ *
+ * Returns: string
+ */
+export function formatZeroPrice(currency: Currency): string {
+  return `${DOLLAR_DISAMBIGUATION[currency] ?? getCurrencySymbol(currency)}0`;
 }

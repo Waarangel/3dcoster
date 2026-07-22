@@ -78,6 +78,7 @@ describe('useDisplayPrice', () => {
     expect(latest!.monthly.approx).toMatch(/^£/);
     expect(latest!.monthly.billingLabel).toBe('USD 7.99');
     expect(latest!.annual.billingLabel).toBe('USD 79');
+    expect(latest!.freePrice).toBe('£0');
   });
 
   it('stored preference wins over locale', async () => {
@@ -97,6 +98,7 @@ describe('useDisplayPrice', () => {
     expect(latest!.annual.approx).toBeNull();
     expect(latest!.monthly.billingLabel).toBe('USD 7.99');
     expect(latest!.annual.billingLabel).toBe('USD 79');
+    expect(latest!.freePrice).toBe('$0');
   });
 
   it('USD visitor sees the billing label alone (same-currency, no approx)', async () => {
@@ -107,5 +109,6 @@ describe('useDisplayPrice', () => {
     expect(latest!.displayCurrency).toBe('USD');
     expect(latest!.monthly.approx).toBeNull();
     expect(latest!.monthly.billingLabel).toBe('USD 7.99');
+    expect(latest!.freePrice).toBe('$0');
   });
 });
