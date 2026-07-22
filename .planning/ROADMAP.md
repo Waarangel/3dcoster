@@ -352,14 +352,31 @@ Plans:
 
 ### Phase 46: White-label quotes
 
-**Goal:** Pro users can present quotes under their own brand — white-label PDF quotes and a white-label hosted quote page (maker's brand only, no 3DCoster powered-by footer) — flipping the first two /features "Coming" pills to shipped. (Founder est: days.)
-**Requirements**: TBD
+**Goal:** Pro users can present quotes under their own brand — white-label PDF quotes and a white-label hosted quote page (maker's brand only, no 3DCoster powered-by footer) — flipping the first two /features "Coming" pills to shipped. Scope-expanded (founder, discussion 2026-07-22) to include desktop Pro sign-in via email OTP so white-label works on desktop too. (Founder est: days → ~1 wk with desktop-auth expansion.)
+**Requirements**: D-01..D-15 (46-CONTEXT.md locked decisions — no formal REQ IDs; Phase 46 is a post-v2.0-roadmap addition not yet folded into REQUIREMENTS.md)
 **Depends on:** Phase 45
-**Plans:** 0 plans
+**Plans:** 7 plans in 4 waves
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 46 to break down)
+**Wave 1**
+
+- [ ] 46-01-PLAN.md — Logo foundation: `UserProfile.logoDataUrl` + strict data-URL validator (XSS allowlist) + Canvas resize helper, zero new deps (D-01)
+- [ ] 46-02-PLAN.md — Desktop Pro auth infra: un-gate Supabase on Tauri, email-OTP `verifyOtp` code entry, `*.supabase.co` CSP + `VITE_SUPABASE_*` CI env (D-08)
+- [ ] 46-03-PLAN.md — GDPR inventory-first: logo-in-snapshot added to DATA-FLOW-INVENTORY.md then Privacy Policy, before any code transmits it (D-11)
+
+**Wave 2**
+
+- [ ] 46-04-PLAN.md — White-label PDF: branding-aware generator (logo header, no footer) + cached-offline entitlement + PrintQuoteModal injection (D-04/D-05/D-06/D-07/D-10)
+- [ ] 46-06-PLAN.md — Branding Settings section (upload/preview/remove, Pro-chipped for free users) + one bundle pitch modal + desktop sign-in gate flips (D-01/D-02/D-03/D-06/D-08/D-13/D-14)
+
+**Wave 3** *(after 46-04 — shares PrintQuoteModal.tsx)*
+
+- [ ] 46-05-PLAN.md — White-label hosted page: validated logo into frozen publish snapshot + server-side render + D-09 powered-by-until-logo footer + mirrored XSS allowlist + first `api/q/[token]` test (D-05/D-09/D-10/D-11/D-12)
+
+**Wave 4** *(shipped-only honesty — after the capability works)*
+
+- [ ] 46-07-PLAN.md — Marketing flips: two white-label /features pills → shipped Pro, /pricing Pro card + white-label, remove from /roadmap + Coming-to-Pro strip (D-15)
 
 ### Phase 47: Cloud sync
 
