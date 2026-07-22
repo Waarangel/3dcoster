@@ -137,7 +137,30 @@ const noUs = `${tdUs} text-[var(--ink-faint)]`;
 const dash = `${td} text-[var(--ink-faint)]`;
 const tdPro = 'py-4 px-4 text-center bg-[rgba(23,150,255,0.05)] border-x border-[rgba(23,150,255,0.14)]';
 const yesPro = `${tdPro} text-[var(--brand-soft)]`;
-const noPro = `${tdPro} text-[var(--ink-faint)]`;
+const comingPro = `${tdPro} text-[var(--brand-soft)]`;
+
+/**
+ * ComingCell — Pro-column cell for a launch-scope capability that is on the
+ * roadmap but not yet shipped (phases 46-50: white-label quotes, live Etsy/
+ * carrier APIs, QuickBooks sync, cloud device sync). Renders an outlined
+ * pill (never a solid "Yes") so it stays visually and semantically distinct
+ * from a shipped capability, with sr-only text making the roadmap status
+ * explicit for screen readers too (shipped-only honesty rule).
+ *
+ * PHASE-51-LAUNCH-PREP: as each matching capability ships across phases
+ * 46-50, flip its `<ComingCell />` below to a plain `<td className={yesPro}>Yes</td>`,
+ * with a final truth sweep across this table in phase 51.
+ */
+function ComingCell() {
+  return (
+    <td className={comingPro}>
+      <span className="inline-flex items-center rounded-full border border-[rgba(23,150,255,0.4)] px-2.5 py-1 text-xs font-medium">
+        Coming
+        <span className="sr-only"> to Pro — on the roadmap</span>
+      </span>
+    </td>
+  );
+}
 
 export function FeaturesPage() {
   const [showTable, setShowTable] = useState(false);
@@ -459,8 +482,10 @@ export function FeaturesPage() {
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Customer library (CRUD + CSV import)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={yes}>Yes</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Save jobs with sales history per job</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>Limited (quote storage)</td><td className={no}>Limited (SKU manager, Pro)</td><td className={yes}>Yes</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Marketplace fees (Etsy / eBay / Amazon Handmade)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>Limited (Etsy)</td><td className={yes}>Yes (Etsy/eBay/Amazon)</td><td className={no}>Limited (channel presets)</td></tr>
-                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Live Etsy order sync (90-day API import)</td><td className={noUs}>No</td><td className={noPro}>No</td><td className={no}>No</td><td className={no}>No</td><td className={yes}>Yes (£5/mo)</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Live Etsy order sync (90-day API import)</td><td className={noUs}>No</td><ComingCell /><td className={no}>No</td><td className={no}>No</td><td className={yes}>Yes (£5/mo)</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Shipping management (8 carriers + local delivery)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>Limited (cost field only)</td><td className={no}>Limited (cost field only)</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Live carrier rates &amp; printable labels (real-time API)</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">QuickBooks/Wave accounting sync</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Tax / VAT (region default + per-job override)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={yes}>Yes (Pro)</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Editable tags + free-text search across jobs</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={dash}>—</td></tr>
 
@@ -468,11 +493,14 @@ export function FeaturesPage() {
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Printable PDF quotes (auto-numbered, valid-until date)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>Limited (PDF export, no auto-#)</td><td className={no}>No</td><td className={yes}>Yes (auto-# + expiry)</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Quote &rarr; Sale conversion (with status tracking)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>Limited (orders + fulfillment)</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Hosted, branded quote links (share + live approve/decline) <span className="text-[var(--brand-soft)] text-xs font-medium">Pro</span></td><td className={noUs}>No</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">White-label PDF quotes (your logo, no “Made with 3DCoster” footer)</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">White-label hosted quote page (your branding, not 3DCoster’s)</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Etsy ToS compliance helper</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
 
                     <tr className="bg-[var(--surface)] border-b border-[var(--hairline)]"><td colSpan={7} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-[var(--brand-soft)]">Platform &amp; access</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Filament library management</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={yes}>Yes (Pro)</td><td className={yes}>Yes</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Multi-device sync (file-based, no account required)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Cloud / real-time device sync (hosted, always-on)</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">STL / 3MF instant quote (local mesh-volume estimate)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Works offline (PWA + IndexedDB)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>Web only</td><td className={yes}>Yes (local parsing)</td><td className={no}>Web only</td><td className={no}>Web only (account)</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Desktop app (Windows, macOS + Linux)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
