@@ -19,10 +19,10 @@
 
 import type { Currency } from './types';
 
-export const MONTHLY_PRICE_LABEL = 'EUR 6.90';
-export const ANNUAL_PRICE_LABEL = 'EUR 69';
+export const MONTHLY_PRICE_LABEL = 'USD 7.99';
+export const ANNUAL_PRICE_LABEL = 'USD 79';
 
-/** "EUR 6.90/mo · EUR 69/yr" — reused across the 3 marketing pricing spots. */
+/** "USD 7.99/mo · USD 79/yr" — reused across the 3 marketing pricing spots. */
 export const PRO_PRICE_SUMMARY = `${MONTHLY_PRICE_LABEL}/mo · ${ANNUAL_PRICE_LABEL}/yr`;
 
 // ---------------------------------------------------------------------------
@@ -31,8 +31,13 @@ export const PRO_PRICE_SUMMARY = `${MONTHLY_PRICE_LABEL}/mo · ${ANNUAL_PRICE_LA
 // BillingPanel.tsx and the byte-match guard). These give the home-currency
 // approximation layer (src/utils/pricingDisplay.ts, src/hooks/useDisplayPrice.ts)
 // numbers to convert from, without ever hardcoding a converted figure.
+//
+// Phase 45-14 (G-45-BILLING-CURRENCY) — re-based from the prior Euro-billed
+// price to USD 7.99/USD 79 (founder decision, UAT chat 2026-07-20: the
+// company is Canadian; bill in USD). Paddle (Merchant of Record) will
+// localize checkout later — nothing Paddle-side to code here.
 // ---------------------------------------------------------------------------
 
-export const MONTHLY_PRICE_AMOUNT = 6.9;
-export const ANNUAL_PRICE_AMOUNT = 69;
-export const BILLING_CURRENCY: Currency = 'EUR';
+export const MONTHLY_PRICE_AMOUNT = 7.99;
+export const ANNUAL_PRICE_AMOUNT = 79;
+export const BILLING_CURRENCY: Currency = 'USD';

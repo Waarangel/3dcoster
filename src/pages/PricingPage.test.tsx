@@ -27,13 +27,13 @@ const BILLING_PANEL_SRC = readFileSync(
 
 describe('pricing constants (src/pricing.ts)', () => {
   it('exports the locked Pro price labels', () => {
-    expect(MONTHLY_PRICE_LABEL).toBe('EUR 6.90');
-    expect(ANNUAL_PRICE_LABEL).toBe('EUR 69');
+    expect(MONTHLY_PRICE_LABEL).toBe('USD 7.99');
+    expect(ANNUAL_PRICE_LABEL).toBe('USD 79');
   });
 
   it("BillingPanel.tsx still contains the byte-identical price literals (catches drift)", () => {
-    expect(BILLING_PANEL_SRC).toMatch(/EUR 6\.90/);
-    expect(BILLING_PANEL_SRC).toMatch(/EUR 69/);
+    expect(BILLING_PANEL_SRC).toMatch(/USD 7\.99/);
+    expect(BILLING_PANEL_SRC).toMatch(/USD 79/);
   });
 
   it('src/pricing.ts values equal the literals BillingPanel.tsx defines', () => {
@@ -49,7 +49,7 @@ describe('pricing constants (src/pricing.ts)', () => {
     expect(ANNUAL_PRICE_LABEL).toContain(String(ANNUAL_PRICE_AMOUNT));
   });
 
-  it('BILLING_CURRENCY is EUR', () => {
-    expect(BILLING_CURRENCY).toBe('EUR');
+  it('BILLING_CURRENCY is USD', () => {
+    expect(BILLING_CURRENCY).toBe('USD');
   });
 });

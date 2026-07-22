@@ -76,8 +76,8 @@ describe('useDisplayPrice', () => {
     expect(latest!.displayCurrency).toBe('GBP');
     expect(latest!.monthly.approx).not.toBeNull();
     expect(latest!.monthly.approx).toMatch(/^£/);
-    expect(latest!.monthly.billingLabel).toBe('EUR 6.90');
-    expect(latest!.annual.billingLabel).toBe('EUR 69');
+    expect(latest!.monthly.billingLabel).toBe('USD 7.99');
+    expect(latest!.annual.billingLabel).toBe('USD 79');
   });
 
   it('stored preference wins over locale', async () => {
@@ -95,17 +95,17 @@ describe('useDisplayPrice', () => {
 
     expect(latest!.monthly.approx).toBeNull();
     expect(latest!.annual.approx).toBeNull();
-    expect(latest!.monthly.billingLabel).toBe('EUR 6.90');
-    expect(latest!.annual.billingLabel).toBe('EUR 69');
+    expect(latest!.monthly.billingLabel).toBe('USD 7.99');
+    expect(latest!.annual.billingLabel).toBe('USD 79');
   });
 
-  it('EUR visitor sees the billing label alone (same-currency, no approx)', async () => {
-    stubLanguage('de-DE');
+  it('USD visitor sees the billing label alone (same-currency, no approx)', async () => {
+    stubLanguage('en-US');
     await setFxRateTable(TABLE_EUR_GBP);
     await render();
 
-    expect(latest!.displayCurrency).toBe('EUR');
+    expect(latest!.displayCurrency).toBe('USD');
     expect(latest!.monthly.approx).toBeNull();
-    expect(latest!.monthly.billingLabel).toBe('EUR 6.90');
+    expect(latest!.monthly.billingLabel).toBe('USD 7.99');
   });
 });

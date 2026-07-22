@@ -25,9 +25,10 @@ import { useDisplayPrice } from '../hooks/useDisplayPrice';
 //      insights/printer-ROI). v2.0 secrecy expires at launch.
 //   5. CTA.
 //   6. Pro teaser (D-07, spot 2 of 3) — leads with the free-forever floor,
-//      then a compact "Pro from EUR 6.90/mo" card (price from src/pricing.ts,
-//      never re-typed — guarded by PricingPage.test.tsx) linking to
-//      /pricing. No donation ask; Pro is the only paid-tier mention here.
+//      then a compact "Pro from [MONTHLY_PRICE_LABEL]/mo" card (price from
+//      src/pricing.ts, never re-typed — guarded by PricingPage.test.tsx)
+//      linking to /pricing. No donation ask; Pro is the only paid-tier
+//      mention here.
 //
 // Phase 37's a11y hardening (`<main>` landmark, `aria-labelledby` on every
 // section, `aria-hidden="true"` on decorative icons) is re-applied throughout

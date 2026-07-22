@@ -9,7 +9,8 @@ import { TermsPage } from './TermsPage';
 // Phase 43-02 — the price-absence guard below was intentionally INVERTED:
 // Phase 42 blocked a price leak until pricing was finalized (D-06); Phase 43
 // is the phase that finalizes it, so this test now asserts the real price
-// IS present and matches the locked D-02/D-03 values (EUR 6.90/mo, EUR 69/yr).
+// IS present and matches the locked D-02/D-03 values (re-based to USD in
+// plan 45-14: USD 7.99/mo, USD 79/yr).
 //
 // Follows the project's component-mount test harness (createRoot + act,
 // no @testing-library/react — see ScrollToTop.test.tsx / App.test.tsx).
@@ -67,9 +68,10 @@ describe('TermsPage', () => {
 
     const text = document.body.textContent ?? '';
     // Phase 43-02: the real, final price (D-02/D-03) must now be present —
-    // this is the inverse of the Phase 42 price-leak guard.
-    expect(text).toContain('EUR 6.90');
-    expect(text).toContain('EUR 69');
+    // this is the inverse of the Phase 42 price-leak guard. Re-based to USD
+    // in plan 45-14 (G-45-BILLING-CURRENCY).
+    expect(text).toContain('USD 7.99');
+    expect(text).toContain('USD 79');
     expect(text).toMatch(/Merchant of Record/i);
     expect(text).toMatch(/Paddle/i);
   });

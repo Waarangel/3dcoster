@@ -4,14 +4,19 @@ import { Footer } from '../components/Footer';
 
 // Phase 42 GDPR-03 — Terms of Service page.
 // Phase 43-02 — Pro-tier section replaced with concrete billing terms (D-06
-// carry-forward): price EUR 6.90/month and EUR 69/year, billed by Paddle as
-// Merchant of Record (D-01), no free trial (D-04), lapse-safe existing
-// hosted-quote links (D-11). These values must stay identical to the Paddle
-// SKUs and billing-panel copy configured in plan 43-06.
+// carry-forward): price billed by Paddle as Merchant of Record (D-01), no
+// free trial (D-04), lapse-safe existing hosted-quote links (D-11). These
+// values must stay identical to the Paddle SKUs and billing-panel copy
+// configured in plan 43-06.
+//
+// Phase 45-14 (G-45-BILLING-CURRENCY) — price re-based from the prior
+// Euro-billed monthly/annual figures to USD 7.99/month and USD 79/year
+// (founder decision, UAT chat 2026-07-20: the company is Canadian; bill in
+// USD). Effective date bumped for this material price change.
 //
 // Free-tier terms are fully concrete (D-06). 100% developer-authored static
 // JSX — no dangerouslySetInnerHTML, no user-supplied content.
-const EFFECTIVE_DATE = 'July 14, 2026';
+const EFFECTIVE_DATE = 'July 21, 2026';
 
 export function TermsPage() {
   return (
@@ -80,9 +85,9 @@ export function TermsPage() {
               </p>
               <ul className="list-disc list-inside space-y-2">
                 <li>
-                  <strong>Price.</strong> Pro is EUR 6.90 per month, or EUR 69 per
+                  <strong>Price.</strong> Pro is USD 7.99 per month, or USD 79 per
                   year (paid annually, equivalent to roughly two months free versus
-                  the monthly price). Prices are shown and billed in EUR regardless
+                  the monthly price). Prices are shown and billed in USD regardless
                   of your local currency.
                 </li>
                 <li>

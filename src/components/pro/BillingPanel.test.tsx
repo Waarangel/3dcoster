@@ -11,8 +11,8 @@ import { ToastProvider } from '../ui';
 // billing state renders without a Supabase client or a Paddle account.
 //
 // Locked assertions:
-//   - Prices are EUR 6.90 (monthly) and EUR 69 (annual) — byte-identical to
-//     the ToS values from plan 43-02.
+//   - Prices are USD 7.99 (monthly) and USD 79 (annual) — byte-identical to
+//     the ToS values from plan 43-02 (re-based to USD in plan 45-14).
 //   - NO trial copy anywhere, in any state (D-04).
 //   - Renders nothing under __IS_TAURI__ (D-12 desktop degrade).
 //   - Cancel copy states existing shared links stay live (D-11 lapse-safe).
@@ -124,9 +124,9 @@ describe('BillingPanel', () => {
     await renderPanel();
 
     const text = container!.textContent ?? '';
-    expect(text).toContain('EUR 6.90');
+    expect(text).toContain('USD 7.99');
     expect(text).toContain('per month');
-    expect(text).toContain('EUR 69');
+    expect(text).toContain('USD 79');
     expect(text).toContain('per year');
     expect(text).toContain('2 months free');
     // D-04: no trial state, no trial copy — the free tier is the trial.

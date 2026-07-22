@@ -12,8 +12,8 @@ import { initializePaddle, type Paddle } from '@paddle/paddle-js';
 //
 // Config is env-driven and PUBLIC-only (Pitfall 4 / T-43-02):
 //   VITE_PADDLE_CLIENT_TOKEN      — client-side token, safe to bundle
-//   VITE_PADDLE_PRICE_ID_MONTHLY  — the EUR 6.90/mo price id (public)
-//   VITE_PADDLE_PRICE_ID_ANNUAL   — the EUR 69/yr price id (public)
+//   VITE_PADDLE_PRICE_ID_MONTHLY  — the USD 7.99/mo price id (public)
+//   VITE_PADDLE_PRICE_ID_ANNUAL   — the USD 79/yr price id (public)
 // The Paddle API key / webhook secret / service-role key are SERVER-only
 // and must never appear in src/ or with a VITE_ prefix.
 //
@@ -30,7 +30,7 @@ const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefi
 
 /**
  * Public Paddle price ids for the two Pro plans (D-03: monthly + annual).
- * The displayed prices (EUR 6.90/mo, EUR 69/yr) live in BillingPanel and
+ * The displayed prices (USD 7.99/mo, USD 79/yr) live in BillingPanel and
  * MUST stay identical to the ToS values from plan 43-02 — the price ids
  * here only tell Paddle which SKU to charge.
  */
@@ -83,8 +83,8 @@ function getPaddle(): Promise<Paddle | undefined> {
  * mapping mechanism; the client never writes entitlements itself.
  *
  * Examples:
- *   openCheckout(PADDLE_PRICE_IDS.monthly!, { userId, email }) → overlay opens for EUR 6.90/mo
- *   openCheckout(PADDLE_PRICE_IDS.annual!, { userId, email })  → overlay opens for EUR 69/yr
+ *   openCheckout(PADDLE_PRICE_IDS.monthly!, { userId, email }) → overlay opens for USD 7.99/mo
+ *   openCheckout(PADDLE_PRICE_IDS.annual!, { userId, email })  → overlay opens for USD 79/yr
  *   openCheckout(priceId, { userId }) with no Paddle env       → rejects ("not available yet")
  *
  * Throws when billing is unconfigured or Paddle.js fails to load — callers

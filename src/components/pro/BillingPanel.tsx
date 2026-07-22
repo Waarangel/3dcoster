@@ -9,8 +9,9 @@ import { Button, useToast } from '../ui';
 // (Phase 43-06, PRO-04). Mounted in UserProfileModal's Account & Pro
 // section (the slot plan 43-03 reserved), signed-in branch only.
 //
-// Prices shown here (EUR 6.90/mo, EUR 69/yr) MUST stay byte-identical to
-// the ToS values from plan 43-02 (D-02 price band, D-03 monthly+annual).
+// Prices shown here (USD 7.99/mo, USD 79/yr — re-based from EUR in plan
+// 45-14, G-45-BILLING-CURRENCY) MUST stay byte-identical to the ToS values
+// from plan 43-02 (D-02 price band, D-03 monthly+annual).
 // There is NO trial state or trial copy anywhere (D-04).
 //
 // D-11 lapse-safe: cancellation never takes down already-published quote
@@ -28,8 +29,8 @@ import { Button, useToast } from '../ui';
 // Paddle).
 // ---------------------------------------------------------------------------
 
-const MONTHLY_PRICE_LABEL = 'EUR 6.90';
-const ANNUAL_PRICE_LABEL = 'EUR 69';
+const MONTHLY_PRICE_LABEL = 'USD 7.99';
+const ANNUAL_PRICE_LABEL = 'USD 79';
 
 /** Paddle-hosted cancel/portal link (public). Optional until the operator
  * creates the Paddle seller account; without it we point at Paddle's
