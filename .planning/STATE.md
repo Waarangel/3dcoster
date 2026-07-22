@@ -223,6 +223,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Backend choice is locked (Supabase eu-central-1) but Supabase auth implementation details need a concrete plan at Phase 43 planning time.
 - Pro tier pricing: three placeholder spots exist. Founder must set actual price before Phase 45 ships. Anchor: 3DPrintQuote €9.90/mo.
 - Tax threshold data for LIFE-02 is MEDIUM confidence — the UI must show "data current as of [date]" and "consult a qualified accountant" disclaimer.
+- PRE-LAUNCH (phase 51, after Paddle SKUs exist): swap marketing FX approximation for Paddle PricePreview (real localized price in visitor's currency) and remove/demote the "Billed as USD 7.99" line — founder decision 2026-07-22. Details: .planning/todos/pending/paddle-price-preview-localized-pricing.md
 
 ### Blockers/Concerns
 
