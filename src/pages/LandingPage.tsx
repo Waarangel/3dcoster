@@ -118,7 +118,7 @@ const FEATURES: Feature[] = [
 // hero never covers them.
 const PILLARS: Feature[] = [
   {
-    title: 'Cost-truth engine',
+    title: 'Cost-Truth Engine',
     description:
       'Empirical failure rates, time-of-use electricity pricing, and printer wear/maintenance amortization — the numbers the hero just added up, running on every quote you make.',
     icon: (
@@ -381,7 +381,7 @@ export function LandingPage() {
                 What&apos;s new in 3DCoster
               </h2>
               <p className="mt-4 text-[var(--ink-soft)] leading-relaxed [text-wrap:pretty]">
-                Four pillars, all shipped, all free: the cost-truth engine you just saw above, plus
+                Four pillars, all shipped, all free: the Cost-Truth Engine you just saw above, plus
                 sync, instant STL quotes, and the insights that turn your history into pricing decisions.
               </p>
             </Reveal>

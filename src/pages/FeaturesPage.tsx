@@ -42,7 +42,7 @@ const ONLY_IN_3DCOSTER: Differentiator[] = [
   { title: 'Quote → Sale tracking', description: 'Turn a quote into a tracked sale with status, all in one place.', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7l2 2 4-4" /> },
   { title: 'Customer library', description: 'Store customers (CSV import included) and tie every job to them.', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a3 3 0 10-2-5.24" /> },
   { title: 'Nozzle & parts wear amortization', description: 'The consumable cost every other calculator quietly forgets — logged into a cost-per-hour with a next-swap prediction.', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" /> },
-  { title: 'Fully offline desktop app', description: 'Windows + macOS, with your data kept on your own machine.', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /> },
+  { title: 'Fully offline desktop app', description: 'Windows, macOS, and Linux, with your data kept on your own machine.', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /> },
   { title: 'Open source under MIT', description: 'MIT-licensed and fully open — inspect the code, fork it, or self-host.', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /> },
 ];
 
@@ -54,7 +54,7 @@ const ONLY_IN_3DCOSTER: Differentiator[] = [
 type Cover = 'full' | 'partial' | 'none';
 
 const STAGES = [
-  { title: 'Cost truth', blurb: 'Your true, all-in cost' },
+  { title: 'Cost-Truth Engine', blurb: 'Your true, all-in cost' },
   { title: 'Quote', blurb: 'Send a branded quote' },
   { title: 'Sell', blurb: 'Fees, shipping & tax' },
   { title: 'Track & grow', blurb: 'Customers, sales, break-even' },
@@ -310,8 +310,8 @@ export function FeaturesPage() {
             <div className="max-w-2xl mb-10">
               <h2 id="free-vs-pro-heading" className="font-display text-3xl font-bold text-[var(--ink)]">Free vs Pro</h2>
               <p className="mt-3 text-[var(--ink-soft)] leading-relaxed [text-wrap:balance]">
-                Everything above — the full calculator, cost realism, insights, and selling workflow —
-                is free, forever. Pro adds one thing on top today, with more direction of travel below.
+                Everything above is free, forever — no account, no paywall. Pro adds exactly one thing
+                on top today, with more on the roadmap below.
               </p>
             </div>
 
@@ -321,7 +321,7 @@ export function FeaturesPage() {
                 <h3 className="font-display text-xl font-bold text-[var(--ink)]">Free</h3>
                 <p className="mt-1 text-sm text-[var(--ink-faint)]">Everything, forever</p>
                 <p className="mt-4 text-[var(--ink-soft)] leading-relaxed">
-                  The full cost calculator, cost realism engine, insights, customer library, PDF
+                  The full cost calculator, Cost-Truth Engine, insights, customer library, PDF
                   quotes, sales tracking, and file-based device sync — no account, no paywall. See the
                   full feature-by-feature breakdown below.
                 </p>
@@ -475,7 +475,7 @@ export function FeaturesPage() {
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Multi-device sync (file-based, no account required)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">STL / 3MF instant quote (local mesh-volume estimate)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Works offline (PWA + IndexedDB)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>Web only</td><td className={yes}>Yes (local parsing)</td><td className={no}>Web only</td><td className={no}>Web only (account)</td></tr>
-                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Desktop app (Windows + macOS)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Desktop app (Windows, macOS + Linux)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Open source</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">No account required</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={yes}>Yes</td><td className={yes}>Yes</td><td className={no}>Free: yes / Paid: no</td><td className={no}>Calc: yes / App: no</td></tr>
                     <tr>
