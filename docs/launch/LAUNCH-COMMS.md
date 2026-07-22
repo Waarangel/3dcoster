@@ -6,14 +6,14 @@
 > the `v2.0.0` tag is pushed (see `.github/workflows/release.yml`'s `notify-discord` job),
 > so it is *not* included below.
 >
-> One monetization voice throughout: 3DCoster Pro (EUR 6.90/mo · EUR 69/yr, early-supporter
+> One monetization voice throughout: 3DCoster Pro ($7.99/mo · $79/yr, early-supporter
 > launch price). No donation ask anywhere in this kit.
 
 ---
 
 ## 1. Changelog-highlight writeup (blog / announcement post)
 
-**Suggested title:** 3DCoster 2.0: the cost-truth engine
+**Suggested title:** 3DCoster 2.0: the Cost-Truth Engine
 
 3DCoster started as a straightforward question: what does this print actually cost me?
 Version 2.0 is the biggest step yet toward answering it honestly — and it adds a way to
@@ -41,7 +41,7 @@ to kick off a quote in seconds instead of measuring by hand.
 
 **5. 3DCoster Pro.** For makers who sell to real customers: publish a quote as a hosted,
 shareable link your customer can view and approve online, instead of emailing a PDF back
-and forth. Pro is EUR 6.90/mo or EUR 69/yr (2 months free) — an early-supporter launch
+and forth. Pro is $7.99/mo or $79/yr (2 months free) — an early-supporter launch
 price, because the earliest users are the ones taking a chance on something new.
 Everything else in 3DCoster — the entire cost calculator, every feature above — stays
 free, forever, no account required. Pro is optional, additive, and never a paywall on the
@@ -70,7 +70,7 @@ products actually make money, printer payback/ROI), an STL-upload instant quote,
 sync across devices via a folder you already own — no account needed for any of that.
 
 Still free, still local-first, still no account required for the core calculator. This
-release also adds 3DCoster Pro (EUR 6.90/mo) for makers who want to send customers a
+release also adds 3DCoster Pro ($7.99/mo) for makers who want to send customers a
 hosted, live quote link instead of a PDF — that's the only thing behind it, everything
 above stays free forever.
 
@@ -102,7 +102,7 @@ filament cost is the only cost they're actually looking at. v2.0 goes further �
 learns your *real* failure rate and electricity cost from your own data instead of asking
 you to guess.
 
-Free floor, forever. Pro is optional: EUR 6.90/mo for hosted quote links, launch pricing
+Free floor, forever. Pro is optional: $7.99/mo for hosted quote links, launch pricing
 for early supporters. https://3dcoster.com/pricing
 
 ---

@@ -25,7 +25,7 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [2.0.0] - 2026-07-20
 
-**Cost-Truth & Insight** — the calculator becomes a cost-truth engine, adds decision-grade
+**Cost-Truth & Insight** — the calculator becomes a Cost-Truth Engine, adds decision-grade
 insights, and 3DCoster Pro launches for makers who want hosted, shareable quotes. The
 biggest release yet, ground up on a fresh "Cost-Truth Dark" brand.
 
@@ -74,8 +74,8 @@ biggest release yet, ground up on a fresh "Cost-Truth Dark" brand.
   of Service pages spell out exactly what's collected and why (short answer: very little,
   and never before you say yes).
 - **3DCoster Pro.** Publish a quote as a hosted, shareable link your customer can view and
-  approve online — no more "did you get my PDF?" back-and-forth. Pro is EUR 6.90/mo or
-  EUR 69/yr (2 months free), an early-supporter launch price. Everything else in 3DCoster
+  approve online — no more "did you get my PDF?" back-and-forth. Pro is $7.99/mo or
+  $79/yr (2 months free), an early-supporter launch price. Everything else in 3DCoster
   stays free, forever — no account, no paywall on the core calculator.
 - **A brand-new look.** The marketing site has a completely new "Cost-Truth Dark" design —
   calmer, clearer, and honest about what the product actually does, including a dedicated
