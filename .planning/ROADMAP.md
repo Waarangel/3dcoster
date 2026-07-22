@@ -345,7 +345,7 @@ Plans:
 
 **Wave 8** *(gap closure round 2 — from 45-UAT.md, 2026-07-21; parallel, no shared files)*
 
-- [ ] 45-14-PLAN.md — USD re-base ($7.99/mo, $79/yr) across pricing.ts + BillingPanel byte-match + Terms + guard tests; /pricing consistency: display-currency Free-card zero, CA$/A$/NZ$ dollar disambiguation, bottom-aligned CTAs (G-45-BILLING-CURRENCY, G-45-PRICING-CONSISTENCY)
+- [x] 45-14-PLAN.md — USD re-base ($7.99/mo, $79/yr) across pricing.ts + BillingPanel byte-match + Terms + guard tests; /pricing consistency: display-currency Free-card zero, CA$/A$/NZ$ dollar disambiguation, bottom-aligned CTAs (G-45-BILLING-CURRENCY, G-45-PRICING-CONSISTENCY)
 - [ ] 45-15-PLAN.md — "Cost-Truth Engine" terminology standardization + de-duplicated /features intro + Linux in the desktop-app card/table + $7.99 price in CHANGELOG/launch-comms (G-45-TERMINOLOGY, G-45-LINUX-COPY, G-45-BILLING-CURRENCY comms)
 
 **UI hint**: yes

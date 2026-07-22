@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
-current_phase: 42
-current_phase_name: GDPR & Onboarding
-status: planning
-stopped_at: Completed 45-13-PLAN.md (gap closure G-45-FEATURES-LAYOUT + G-45-FREE-PRO-VISIBILITY)
-last_updated: "2026-07-20T23:25:33.307Z"
-last_activity: 2026-07-20
-last_activity_desc: Phase 45 complete, transitioned to Phase 42
+current_phase: 45
+current_phase_name: brand-launch
+status: executing
+stopped_at: Completed 45-14-PLAN.md (gap closure G-45-BILLING-CURRENCY + G-45-PRICING-CONSISTENCY)
+last_updated: "2026-07-22T01:33:38.292Z"
+last_activity: 2026-07-21
+last_activity_desc: Phase 45 execution started
 progress:
   total_phases: 8
-  completed_phases: 8
-  total_plans: 51
-  completed_plans: 51
-  percent: 100
+  completed_phases: 7
+  total_plans: 54
+  completed_plans: 52
+  percent: 88
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 
 ## Current Position
 
-Phase: 42 — GDPR & Onboarding
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-20 — Phase 45 complete, transitioned to Phase 42
+Phase: 45 (brand-launch) — EXECUTING
+Plan: 2 of 16
+Status: Ready to execute
+Last activity: 2026-07-21 — Phase 45 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -82,6 +82,7 @@ Last activity: 2026-07-20 — Phase 45 complete, transitioned to Phase 42
 | Phase 45 P11 | 35min | 3 tasks | 2 files |
 | Phase 45 P12 | 20min | 3 tasks | 9 files |
 | Phase 45 P13 | 5min | 3 tasks | 3 files |
+| Phase 45 P14 | 31min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -206,6 +207,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 45-12: useDisplayPrice reads stored userProfile currency via getSetting(null default), never getUserProfile's CAD DEFAULT_PROFILE — a never-set visitor falls through to locale inference instead of being silently treated as Canadian
 - [Phase ?]: [Phase 45]: 45-13: Hero inner block wrapped in an additional outer max-w-6xl mx-auto Reveal for structural consistency with sibling sections, even though it was not visually full-bleed beforehand
 - [Phase ?]: [Phase 45]: 45-13: Coming to Pro strip on /features is a plain string array kept in lockstep by comment cross-reference with roadmap.ts's pro:true items, not imported directly (roadmap descriptions are longer-form than the compact strip UI)
+- [Phase ?]: [Phase 45]: 45-14: Pro price re-based EUR 6.90/EUR 69 -> USD 7.99/USD 79 (founder decision, company is Canadian, bill in USD); USD deliberately excluded from the dollar-disambiguation table since it is the billing base, shown only via its ISO-code label
+- [Phase ?]: [Phase 45]: 45-14: Free-card zero on /pricing derives its currency from whichever branch the Pro card actually renders (approx vs USD billing fallback), never from displayCurrency alone -- closes G-45-PRICING-CONSISTENCY
 
 ### Pending Todos
 
@@ -221,8 +224,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-20T23:15:14.575Z
-Stopped at: Completed 45-13-PLAN.md (gap closure G-45-FEATURES-LAYOUT + G-45-FREE-PRO-VISIBILITY)
+Last session: 2026-07-22T01:33:38.284Z
+Stopped at: Completed 45-14-PLAN.md (gap closure G-45-BILLING-CURRENCY + G-45-PRICING-CONSISTENCY)
 Resume file: None
 
 ## Operator Next Steps
