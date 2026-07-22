@@ -350,6 +350,72 @@ Plans:
 
 **UI hint**: yes
 
+### Phase 46: White-label quotes
+
+**Goal:** Pro users can present quotes under their own brand — white-label PDF quotes and a white-label hosted quote page (maker's brand only, no 3DCoster powered-by footer) — flipping the first two /features "Coming" pills to shipped. (Founder est: days.)
+**Requirements**: TBD
+**Depends on:** Phase 45
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 46 to break down)
+
+### Phase 47: Cloud sync
+
+**Goal:** Pro cloud/real-time multi-device sync ceiling on Supabase — file-based sync stays the free floor (architecture-as-feature) — with GDPR data-inventory (docs/DATA-FLOW-INVENTORY.md) and privacy-policy updates BEFORE any new user data goes server-side (inventory first, policy second). (Founder est: 1–2 wk.)
+**Requirements**: TBD
+**Depends on:** Phase 46
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 47 to break down)
+
+### Phase 48: Live Etsy order sync
+
+**Goal:** Pro live Etsy 90-day order sync via the Etsy API feeding the existing sales records. EXTERNAL GATE: Etsy developer app registration + review (founder starts registration now, in parallel). (Founder est: 2 wk+.)
+**Requirements**: TBD
+**Depends on:** Phase 47
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 48 to break down)
+
+### Phase 49: Live carrier rates
+
+**Goal:** Pro live shipping rates and printable labels via ONE aggregator (EasyPost/Shippo-class — single integration, not per-carrier). EXTERNAL GATE: aggregator account (founder opens now, in parallel). (Founder est: 1–2 wk.)
+**Requirements**: TBD
+**Depends on:** Phase 48
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 49 to break down)
+
+### Phase 50: QuickBooks Wave accounting sync
+
+**Goal:** Pro accounting sync/export to QuickBooks and/or Wave. EXTERNAL GATE: Intuit developer app registration + review (founder starts registration now, in parallel). (Founder est: 1–2 wk.)
+**Requirements**: TBD
+**Depends on:** Phase 49
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 50 to break down)
+
+### Phase 51: Launch-prep redux
+
+**Goal:** v2.0 actually launches: flip every shipped /features "Coming" pill (grep PHASE-51-LAUNCH-PREP markers), create Paddle SKUs then swap marketing FX approximation for Paddle PricePreview localized pricing and retire the "Billed as USD" line (todo: paddle-price-preview-localized-pricing, resolves_phase: 51), re-check bundle pricing vs USD 7.99/79 with early-supporter lock BEFORE this phase closes, full-diff code-review gate, run the v2.0 Launch-Day Checklist (docs/PRO-SECURITY-REVIEW.md Part 5, item 0 = Phase 42 test 4 live consent gate), founder-approved v2.0.0 tag + DEPLOY_OK=1 deploy.
+**Requirements**: TBD
+**Depends on:** Phase 50
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 51 to break down)
+
 ---
 
 ## Progress
@@ -396,8 +462,6 @@ Plans:
 | 26. v1.3 cleanup (INSERTED)                          | v1.3      | 4/4    | Complete | 2026-05-28  |
 
 </details>
-
----
 
 ## Backlog (carried forward)
 

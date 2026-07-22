@@ -98,6 +98,7 @@ Last activity: 2026-07-21 — Phase 45 complete, transitioned to Phase 42
 - v1.8 Phases 27–32 shipped (Inventory & Sales Reporting, 2026-06-25) — GSD revived; desktop tag `v1.8.0`. Phase 33 on in-flight branch.
 - v1.9 Phases 34–37 shipped (Hardening, 2026-07-03) — desktop tag `v1.9.0`. 14/15 requirements (PERF-11 deferred to v2.0).
 - **v2.0 Phases 38–45 roadmapped 2026-07-03** — 8 phases, 27 requirements, 100% coverage. Wave structure: Foundation → Cost Realism + Insight + Quick Wins → GDPR (hard gate) → Pro Backend → Sync + STL → Brand.
+- **Phases 46–51 added 2026-07-22** (founder launch-scope expansion 2026-07-20 — full Pro build before launch): 46 White-label quotes → 47 Cloud sync (+ GDPR inventory/policy updates) → 48 Live Etsy order sync (EXTERNAL: Etsy app review) → 49 Live carrier rates (EXTERNAL: aggregator account) → 50 QuickBooks/Wave sync (EXTERNAL: Intuit app review) → 51 Launch-prep redux (Coming-pill flips, Paddle SKUs + PricePreview, launch checklist, v2.0.0 tag + deploy). Founder operator actions in parallel NOW: Etsy dev app, Intuit dev app, aggregator account.
 
 ### Decisions
 
