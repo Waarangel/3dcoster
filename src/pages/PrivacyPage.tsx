@@ -67,13 +67,17 @@ export function PrivacyPage() {
                   snapshot of any quote you choose to publish as a hosted link, and
                   your Pro subscription billing details (handled entirely by our
                   payment provider, Paddle &mdash; we never see or store your card
-                  details). When a customer views one of your hosted quote links and
-                  records an approve/decline decision, we transmit that customer only
-                  their <strong>first name</strong> &mdash; never their email, address,
-                  or any other identifying detail &mdash; and we send you (the Pro
-                  account holder) a notification email about the decision via Resend.
-                  None of this happens unless you explicitly create a Pro account and
-                  publish a hosted quote.
+                  details). If you set up white-label branding, that published
+                  hosted-quote snapshot also includes <strong>your own business logo
+                  image</strong> &mdash; this is your own brand asset, not your
+                  customer&apos;s data, and it is only included if you have chosen to
+                  upload a logo. When a customer views one of your hosted quote links
+                  and records an approve/decline decision, we transmit that customer
+                  only their <strong>first name</strong> &mdash; never their email,
+                  address, or any other identifying detail &mdash; and we send you
+                  (the Pro account holder) a notification email about the decision via
+                  Resend. None of this happens unless you explicitly create a Pro
+                  account and publish a hosted quote.
                 </li>
               </ul>
               <p className="mt-3">
@@ -177,9 +181,10 @@ export function PrivacyPage() {
                 <li>
                   <strong>Supabase</strong> (hosted in the EU, Frankfurt &mdash;
                   <code>eu-central-1</code>) &mdash; stores Pro account data: your
-                  account email, the hosted-quote pricing snapshot, and any customer
-                  approval/decline decision. Only used for Pro accounts, on contract
-                  necessity grounds.
+                  account email, the hosted-quote pricing snapshot (including your
+                  business logo image if you have set one for white-label branding),
+                  and any customer approval/decline decision. Only used for Pro
+                  accounts, on contract necessity grounds.
                 </li>
                 <li>
                   <strong>Paddle</strong> &mdash; our Merchant of Record for Pro

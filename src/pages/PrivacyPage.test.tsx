@@ -60,6 +60,20 @@ describe('PrivacyPage', () => {
     expect(text).toContain('Supabase');
   });
 
+  it('discloses the maker logo as part of a published hosted quote', async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/privacy']}>
+          <PrivacyPage />
+        </MemoryRouter>,
+      );
+    });
+
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('business logo');
+    expect(text).toContain('white-label branding');
+  });
+
   it('names the privacy contact address', async () => {
     await act(async () => {
       root.render(
