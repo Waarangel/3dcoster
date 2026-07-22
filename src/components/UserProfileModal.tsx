@@ -31,11 +31,13 @@ export function UserProfileModal({
     <SidePanel isOpen={isOpen} onClose={onClose} title="Profile" size="md">
       <div className="p-4 space-y-6">
           {/* Account & Pro (Phase 43-03, D-09: account/billing status lives in
-              the existing profile area — no new chrome anywhere else). Web
-              only: the Tauri desktop build renders no Pro/auth UI at all
-              (D-12), so this whole section is compiled out under __IS_TAURI__. */}
-          {!__IS_TAURI__ && (
-            <div>
+              the existing profile area — no new chrome anywhere else). Sign-in
+              + entitlement now work on desktop too (D-08 reverses Phase 43's
+              D-12 web-first scoping) — useProAuth is a safe no-op if Supabase
+              is unavailable. BillingPanel below still self-gates on
+              __IS_TAURI__ (billing/checkout management stays web-only, same
+              narrower D-08 scope as ShareQuoteButton). */}
+          <div>
               <h3 className="text-sm font-medium text-slate-300 mb-3">Account &amp; Pro</h3>
               {isSignedIn ? (
                 <div className="space-y-3">
@@ -73,8 +75,7 @@ export function UserProfileModal({
                   </Button>
                 </div>
               )}
-            </div>
-          )}
+          </div>
 
           {/* Basic Info */}
           <div>

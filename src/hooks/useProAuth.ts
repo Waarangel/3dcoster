@@ -19,7 +19,7 @@ export type ProAuthStatus =
   | 'unavailable'   // supabase client is null (Tauri / unconfigured web)
   | 'signed-out'
   | 'sending-link'  // signInWithEmail in flight
-  | 'link-sent'     // magic link email dispatched — waiting on the user
+  | 'link-sent'     // magic link email + OTP code dispatched — waiting on the user
   | 'signed-in';
 
 export interface ProAuth {
@@ -33,6 +33,14 @@ export interface ProAuth {
    * when the client is unavailable.
    */
   signInWithEmail: (email: string) => Promise<string | null>;
+  /**
+   * Exchange the 6-digit email code (delivered in the SAME email as the
+   * magic link, D-08 desktop OTP entry) for a session. Resolves to an error
+   * message on failure, or null on success — the session itself arrives via
+   * the existing onAuthStateChange subscription, same as the web magic-link
+   * flow. No-op (returns null) when the client is unavailable.
+   */
+  verifyEmailCode: (email: string, code: string) => Promise<string | null>;
   /** Sign out and clear the persisted session. No-op when unavailable. */
   signOut: () => Promise<void>;
 }
@@ -101,6 +109,20 @@ export function useProAuth(): ProAuth {
     }
   }, []);
 
+  const verifyEmailCode = useCallback(async (email: string, code: string): Promise<string | null> => {
+    if (!supabase) return null; // no-op on Tauri / unconfigured web
+    try {
+      const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+      if (error) return error.message;
+      // Success: onAuthStateChange fires SIGNED_IN and flips status/session —
+      // no extra state juggling needed here (mirrors signInWithEmail).
+      return null;
+    } catch (err) {
+      console.error('[useProAuth] verifyOtp failed:', err);
+      return err instanceof Error ? err.message : 'Could not verify the code.';
+    }
+  }, []);
+
   const signOut = useCallback(async (): Promise<void> => {
     if (!supabase) return; // no-op on Tauri / unconfigured web
     try {
@@ -121,6 +143,7 @@ export function useProAuth(): ProAuth {
     isSignedIn: session !== null,
     status,
     signInWithEmail,
+    verifyEmailCode,
     signOut,
   };
 }

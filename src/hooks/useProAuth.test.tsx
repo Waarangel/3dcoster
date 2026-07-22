@@ -22,6 +22,7 @@ interface MockClient {
     getSession: ReturnType<typeof vi.fn>;
     onAuthStateChange: ReturnType<typeof vi.fn>;
     signInWithOtp: ReturnType<typeof vi.fn>;
+    verifyOtp: ReturnType<typeof vi.fn>;
     signOut: ReturnType<typeof vi.fn>;
   };
   /** Test helper: fire the captured onAuthStateChange callback. */
@@ -51,6 +52,7 @@ function makeMockClient(options?: { persistedSession?: Session | null }): MockCl
         return { data: { subscription: { unsubscribe } } };
       }),
       signInWithOtp: vi.fn(async () => ({ error: null })),
+      verifyOtp: vi.fn(async () => ({ data: { session: null }, error: null })),
       signOut: vi.fn(async () => ({ error: null })),
     },
     fireAuthChange: (event, session) => callback?.(event, session),
@@ -126,6 +128,15 @@ describe('useProAuth — unavailable client (Tauri / unconfigured web)', () => {
     });
     expect(result).toBeNull();
     expect(latest.status).toBe('unavailable');
+
+    // verifyEmailCode (D-08 desktop OTP) is likewise a safe no-op when the
+    // client is unavailable — never touches a null supabase.
+    let codeResult: string | null = 'unset';
+    await act(async () => {
+      codeResult = await latest.verifyEmailCode('maker@example.com', '123456');
+    });
+    expect(codeResult).toBeNull();
+    expect(latest.status).toBe('unavailable');
   });
 });
 
@@ -197,6 +208,63 @@ describe('useProAuth — web client', () => {
 
     expect(result).toBe('Email rate limit exceeded');
     expect(latest.status).toBe('signed-out');
+  });
+
+  it('verifyEmailCode calls verifyOtp with type: email and the typed code as token', async () => {
+    mockSupabase = makeMockClient();
+    await renderProbe();
+
+    let result: string | null = 'unset';
+    await act(async () => {
+      result = await latest.verifyEmailCode('maker@example.com', '123456');
+    });
+
+    expect(result).toBeNull();
+    expect(mockSupabase.auth.verifyOtp).toHaveBeenCalledWith({
+      email: 'maker@example.com',
+      token: '123456',
+      type: 'email',
+    });
+  });
+
+  it('verifyEmailCode surfaces an error message on a wrong/expired code', async () => {
+    mockSupabase = makeMockClient();
+    mockSupabase.auth.verifyOtp.mockResolvedValueOnce({
+      data: { session: null },
+      error: { message: 'Token has expired or is invalid' },
+    });
+    await renderProbe();
+
+    let result: string | null = null;
+    await act(async () => {
+      result = await latest.verifyEmailCode('maker@example.com', '000000');
+    });
+
+    expect(result).toBe('Token has expired or is invalid');
+  });
+
+  it('verifyEmailCode success flips status to signed-in via onAuthStateChange', async () => {
+    mockSupabase = makeMockClient();
+    await renderProbe();
+
+    const session = makeSession('pro@example.com');
+    // Supabase's real verifyOtp() fires onAuthStateChange('SIGNED_IN', ...)
+    // as a side effect of a successful exchange — the hook relies on the
+    // SAME subscription already used for the magic-link flow, no extra
+    // state juggling (plan Task 2 action).
+    mockSupabase.auth.verifyOtp.mockImplementationOnce(async () => {
+      mockSupabase!.fireAuthChange('SIGNED_IN', session);
+      return { data: { session }, error: null };
+    });
+
+    let result: string | null = 'unset';
+    await act(async () => {
+      result = await latest.verifyEmailCode('pro@example.com', '654321');
+    });
+
+    expect(result).toBeNull();
+    expect(latest.status).toBe('signed-in');
+    expect(latest.isSignedIn).toBe(true);
   });
 
   it('signOut clears the session eagerly', async () => {

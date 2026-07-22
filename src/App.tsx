@@ -355,15 +355,15 @@ function App() {
         }}
       />
 
-      {/* Pro magic-link sign-in (Phase 43-03, PRO-01). Web only — the Tauri
-          desktop build ships no auth UI at all (D-12), so the mount itself is
-          compiled out under __IS_TAURI__. */}
-      {!__IS_TAURI__ && (
-        <SignInModal
-          isOpen={showSignInModal}
-          onClose={() => setShowSignInModal(false)}
-        />
-      )}
+      {/* Pro magic-link + OTP-code sign-in (Phase 43-03/46-02, PRO-01, D-08).
+          Desktop is no longer gated off (D-08 reverses Phase 43's D-12
+          web-first scoping) — SignInModal collects the same email on both
+          platforms, and useProAuth is a safe no-op if Supabase is
+          unavailable. */}
+      <SignInModal
+        isOpen={showSignInModal}
+        onClose={() => setShowSignInModal(false)}
+      />
 
       {/* Settings Modal */}
       <SettingsModal
