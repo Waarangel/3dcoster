@@ -430,7 +430,7 @@ export function FeaturesPage() {
             </button>
 
             <p className="mt-3 text-xs text-[var(--ink-faint)] max-w-2xl">
-              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({monthly.approx ? `${monthly.approx}/mo, billed as ${monthly.billingLabel}` : `${monthly.billingLabel}/mo`}) adds one thing on top: live, hosted quote links your customers can approve online.
+              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({monthly.approx ? `${monthly.approx}/mo, billed as ${monthly.billingLabel}` : `${monthly.billingLabel}/mo`}) adds live, hosted quote links your customers can approve online today, with white-label branding, live Etsy &amp; carrier APIs, QuickBooks sync, and cloud device sync on the way (see the “Coming” rows below).
             </p>
 
             {showTable && (
