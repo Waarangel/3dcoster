@@ -592,6 +592,15 @@ export interface Sale {
 export interface UserProfile {
   currency: Currency;
   name?: string;
+  // Phase 46 D-01/D-02: white-label maker logo, stored as a validated
+  // `data:image/(png|jpeg|webp);base64,...` URL produced by
+  // src/utils/imageResize.ts and checked by src/utils/logoDataUrl.ts's
+  // isValidLogoDataUrl. Additive, non-indexed, no Dexie version bump (DB is
+  // at v12, mirrors the taxJurisdiction/onboardingStep precedent). Kept
+  // locally even when the subscription lapses (D-06). NEVER store a Blob —
+  // backupSchema.ts flattens through JSON.stringify and a Blob cannot
+  // round-trip; a string data URL is already JSON-safe.
+  logoDataUrl?: string;
   // Labor rate (what your time is worth)
   laborHourlyRate: number;
   // Default profit margin (%) applied to new jobs and on clear/save
