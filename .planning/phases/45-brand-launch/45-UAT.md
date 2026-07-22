@@ -3,7 +3,7 @@ status: diagnosed
 phase: 45-brand-launch
 source: [45-12-SUMMARY.md, 45-13-SUMMARY.md, 45-01-SUMMARY.md, 45-02-SUMMARY.md, 45-03-SUMMARY.md, 45-04-SUMMARY.md, 45-05-SUMMARY.md, 45-06-SUMMARY.md, 45-07-SUMMARY.md, 45-08-SUMMARY.md, 45-09-SUMMARY.md, 45-10-SUMMARY.md, 45-11-SUMMARY.md]
 started: 2026-07-20T21:47:31Z
-updated: 2026-07-21T15:53:43Z
+updated: 2026-07-21T16:17:40Z
 ---
 
 ## Current Test
@@ -366,7 +366,7 @@ result: pass
 ### 53. Free vs Pro section visible without expanding
 expected: /features shows a "Free vs Pro" section without clicking Expand: Free = everything forever; Pro = hosted quote links + early-supporter price (via the currency display); below it a "Coming to Pro" strip lists white-label, live Etsy sync, carrier rates, QuickBooks, cloud sync — each clearly "on the roadmap", linking to /roadmap.
 result: issue
-reported: "We sometimes say 'Cost Truth Engine', other times 'Cost Realism engine', sometimes 'cost realism'. Standardize on Cost Truth Engine. Don't just search-and-replace — read the content and eliminate redundancy."
+reported: "(2nd report) Expanded table still shows no real reason for Pro — add white-label, API, and database elements. (1st report) We sometimes say 'Cost Truth Engine', other times 'Cost Realism engine', sometimes 'cost realism'. Standardize on Cost Truth Engine. Don't just search-and-replace — read the content and eliminate redundancy."
 severity: minor
 
 ### 54. Roadmap Pro badges
@@ -530,4 +530,21 @@ blocked: 0
     - "Rewrite FeaturesPage Free-vs-Pro intro to drop its feature list (the Free card 10 lines below carries it) — eliminate the redundancy, keep the free-forever + Pro-adds-one-thing framing"
     - "Sweep remaining marketing surfaces (pricing, roadmap, changelog, FAQ) for stray 'cost realism' / lowercase engine references"
   debug_session: "diagnosed inline during UAT (grep + content read of both pages)"
+- gap_id: G-45-PRO-TABLE
+  truth: "The expanded /features breakdown table carries the full Pro offering so a comparison-shopper sees a real reason to pay: white-label rows (white-label PDF quotes; white-label hosted quote page branding), live-API rows (live Etsy 90-day order sync; live carrier rates & printable labels; QuickBooks/Wave accounting sync), and cloud/database rows (cloud / real-time multi-device sync). Unshipped items show a clearly-marked 'Coming' state in the Pro column (Free: No), flipped to Yes by each of phases 46-50 as they ship; phase 51 launch-prep does the final truth sweep."
+  status: failed
+  reason: "User reported: on the expanded Features section I still don't see any real reason to get pro over free. We need to add all the white label elements and all the API elements as well as the database elements."
+  severity: major
+  test: 53
+  root_cause: "The 41-row breakdown table was built under the shipped-only rule when Pro had exactly one shipped ceiling — so Free and Pro columns are identical except hosted quote links, and the existing 'Live Etsy order sync' row reads No/No. The founder has since expanded launch scope to the full Pro build (phases 46-51), so the table must present the whole launch-Pro bundle with truthful Coming markers pre-ship."
+  artifacts:
+    - path: "src/pages/FeaturesPage.tsx"
+      issue: "breakdown table missing white-label / live-API / cloud-sync Pro rows; Etsy row Pro column stuck at No; below-table summary sentence says Pro adds 'one thing'"
+  missing:
+    - "New rows (Free: No, Pro: Coming): white-label PDF quotes; white-label hosted quote page branding; live carrier rates & printable labels; QuickBooks/Wave accounting sync; cloud / real-time device sync"
+    - "Existing 'Live Etsy order sync' row: Pro column No -> Coming (LayerMath comparison cell stays Yes (GBP 5/mo))"
+    - "Distinct visual treatment for 'Coming' cells (not a bare Yes) consistent with the Coming to Pro strip"
+    - "Update the below-table summary sentence (currently 'Pro adds one thing on top') to reflect Pro today + the coming set — coordinate with 45-15's nearby copy edits"
+    - "Competitor cells for new rows filled from existing research only; unknown -> em dash, never guessed"
+  debug_session: "diagnosed inline during UAT round 2 continuation (founder review of expanded table)"
 
