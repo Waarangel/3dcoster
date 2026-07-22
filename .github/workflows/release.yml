@@ -99,12 +99,19 @@ jobs:
         run: npm run build
         env:
           TAURI_ENV_PLATFORM: ${{ matrix.tauri_platform }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_ENV_PLATFORM: ${{ matrix.tauri_platform }}
+          # tauri-action's beforeBuildCommand re-runs `npm run build`, so these
+          # must be present here too (Pitfall 3) — not baked in by the earlier
+          # "Build frontend with Tauri flag" step alone.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '3DCoster ${{ github.ref_name }}'

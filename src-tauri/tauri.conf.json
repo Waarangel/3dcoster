@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev https://api.frankfurter.dev https://formspree.io;"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev https://api.frankfurter.dev https://formspree.io https://*.supabase.co;"
     }
   },
   "bundle": {
