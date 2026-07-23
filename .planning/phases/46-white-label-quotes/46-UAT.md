@@ -8,11 +8,7 @@ updated: 2026-07-23T19:30:00Z
 
 ## Current Test
 
-number: 18
-name: Desktop hosted-link retrievability live check (46-11 D5)
-expected: |
-  On desktop (Tauri), with a published quote: the quote row (JobsManager) and the quote edit view (PrintQuoteModal footer) show Copy-link and Open icon buttons next to the "Live link" badge. Copy either truly copies the URL (paste somewhere to confirm) or shows a PERSISTENT toast with the full URL (no auto-dismiss) — never a false "copied" claim. Open launches the hosted quote page in the default browser.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -112,22 +108,36 @@ coverage_id: 46-10/D3
 
 ### 18. Desktop hosted-link retrievability live check (46-11 D5)
 expected: On desktop (Tauri), with a published quote: the quote row (JobsManager) and the quote edit view (PrintQuoteModal footer) show Copy-link and Open icon buttons next to the "Live link" badge. Copy either truly copies the URL (paste somewhere to confirm) or shows a PERSISTENT toast with the full URL (no auto-dismiss) — never a false "copied" claim. Open launches the hosted quote page in the default browser.
-result: [pending]
+result: issue
+reported: "copy works. When I click the link, it goes to a blank page. Console says 'installHook.js:1 No routes matched location \"/q/f83da8d4-e8df-4d33-be95-d546ce2e2918\"' — we should make sure there is a user friendly message for this"
+severity: major
+note: "Copy affordance confirmed working. Issue is the Open destination: the URL resolves to the SPA, which has no /q/:token route (blank page, router console error) and no user-friendly fallback."
 
 ## Summary
 
 total: 18
 passed: 16
-issues: 1
-pending: 1
+issues: 2
+pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
+- gap_id: G-46-18
+  truth: "Opening a published hosted-quote link shows the hosted quote page (customer view); if a hosted-quote URL cannot be served, the user sees a friendly message — never a blank page."
+  status: failed
+  reason: "User reported: copy works. When I click the link, it goes to a blank page. Console says 'No routes matched location /q/f83da8d4-e8df-4d33-be95-d546ce2e2918' — we should make sure there is a user friendly message for this"
+  severity: major
+  test: 18
+  artifacts: []  # Filled by diagnosis
+  missing: []    # Filled by diagnosis
+
 - gap_id: G-46-6R
   truth: "After publishing a quote on desktop or web, the hosted-quote link stays retrievable — the user can copy it on demand and find it again later from the quote row, not only in a transient toast."
-  status: failed
+  status: resolved
+  resolved_by: 46-11-PLAN.md
+  resolved_at: 2026-07-23
   reason: "User reported: Share Quote shows and it generates a quote link, which shows up in toast for about 3 seconds then disappears. I have no idea where the link is, or how to get to it in the future"
   severity: major
   test: 6
