@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 46-white-label-quotes
-source: [46-VERIFICATION.md]
+source: [46-VERIFICATION.md, 46-08-SUMMARY.md, 46-09-SUMMARY.md, 46-10-SUMMARY.md]
 started: 2026-07-23T09:20:00Z
-updated: 2026-07-23T16:50:00Z
+updated: 2026-07-23T17:30:00Z
 ---
 
 ## Current Test
@@ -18,9 +18,8 @@ result: pass
 
 ### 2. Desktop session persistence across relaunch
 expected: After test 1, fully quit and relaunch the desktop app — still signed in, no re-auth prompt (WebView localStorage persistence, RESEARCH A1).
-result: issue
-reported: "hmmm, I got this email [Supabase Auth 'Confirm your email address' with a confirmation link, from noreply@mail.app.supabase.io]. I clicked to confirm my email and it opened 3D Coster but free version"
-severity: major
+result: pass
+note: "Re-verified live by founder during the 46-08 checkpoint (2026-07-23): fresh never-before-seen email → one-time code received (not link-only) → code entered in SignInModal → signed in → full quit + relaunch → still signed in. Founder typed 'approved'. (Original issue was the link-only 'Confirm signup' email for new users — fixed live via Management API, G-46-2 resolved.)"
 
 ### 3. Signed-out desktop network silence (free floor)
 expected: Signed OUT on desktop, with devtools/network attached to the WebView: normal calculator use fires zero requests to *.supabase.co.
@@ -36,84 +35,126 @@ note: "Pro entitlement seeded via scripts/seed-pro-entitlement-uat.sql (2026-07-
 expected: Under the same Pro session, a >5MB file or a non-image file shows a friendly error toast and stores nothing.
 result: pass
 
-### 6. Desktop Pro surface visual check
-expected: On desktop, Settings → Profile shows Account & Pro AND the Branding section; the Share-quote button is PRESENT on quote rows (publishing works on both web and desktop per G-46-6 / D-08).
+### 6. Desktop Pro surface visual check (re-verify after G-46-6 fix)
+expected: On desktop, Settings → Profile shows Account & Pro AND the Branding section; the Share-quote button is PRESENT on quote rows — both the signed-out "Share quote [Pro]" pitch chip and the signed-in Share/Unpublish control (publishing works on both web and desktop per G-46-6 / D-08).
 result: issue
-reported: "I keep discussing this - ALL Pro features need to work on web and desktop for v2.0 launch. No exceptions."
+reported: "yes, Share Quote shows and it generates a quote link, which shows up in toast for about 3 seconds then disappears. I have no idea where the link is, or how to get to it in the future"
 severity: major
+note: "Parity itself confirmed (button present, publish works on desktop) — the issue is link retrievability after the transient toast."
+
+### 7. First-time sign-in copy accuracy (46-09 D5)
+expected: The "Sign in for Pro" modal's intro copy says a one-time code is emailed and that a brand-new account may need to confirm before the code works — no unconditional "magic link and one-time code" over-promise. Reads accurately and clearly.
+result: pass
+
+### 8. Production 'Confirm signup' template live fix (46-08 D3)
+expected: Production 'Confirm signup' Supabase email template patched live to include {{ .Token }}, applied via Management API with founder approval, byte-for-byte GET-confirmed.
+result: pass
+note: "Manual-procedural verification recorded in 46-08-SUMMARY: founder approval ('Apply it for me') + Management API PATCH + GET re-read confirmation, 2026-07-23. Not re-presented — already human-verified."
+coverage_id: 46-08/D3
+
+### 9. Email templates captured as config-as-code (46-08 D1)
+expected: docs/SUPABASE-EMAIL-TEMPLATES.md captures both production auth email templates (Magic Link + Confirm Signup) byte-for-byte, with launch-checklist item in docs/PRO-SECURITY-REVIEW.md.
+result: pass
+source: automated
+coverage_id: 46-08/D1
+
+### 10. supabase/config.toml production-reality annotations (46-08 D2)
+expected: supabase/config.toml [auth.email] annotated with production-reality notes (no local-dev value changes).
+result: pass
+source: automated
+coverage_id: 46-08/D2
+
+### 11. resetSignIn() user-driven exit from link-sent (46-09 D1)
+expected: resetSignIn() returns useProAuth.status from 'link-sent' to 'signed-out' (or 'unavailable' with a null client), and is a guaranteed no-op while signed in.
+result: pass
+source: automated
+coverage_id: 46-09/D1
+
+### 12. shouldCreateUser explicit (46-09 D2)
+expected: signInWithEmail passes shouldCreateUser: true explicitly to signInWithOtp.
+result: pass
+source: automated
+coverage_id: 46-09/D2
+
+### 13. All SignInModal close gestures reset identically (46-09 D3)
+expected: X/backdrop/Escape/email-step Cancel/code-step Cancel all route through the same resetAndClose, leaving an editable, empty email step on reopen.
+result: pass
+source: automated
+coverage_id: 46-09/D3
+
+### 14. "Use a different email" recovery affordance (46-09 D4)
+expected: 'Use a different email' on the code step returns to the editable email step without closing the modal.
+result: pass
+source: automated
+coverage_id: 46-09/D4
+
+### 15. ShareQuoteButton renders on desktop (46-10 D1)
+expected: ShareQuoteButton renders on desktop (Tauri) for the signed-in Share/Unpublish control and the signed-out Pro pitch chip, with the __IS_TAURI__ gate removed.
+result: pass
+source: automated
+coverage_id: 46-10/D1
+
+### 16. Web Share-quote behaviors unchanged (46-10 D2)
+expected: Existing signed-out (Pro chip → pitch modal) and signed-in (publish/unpublish/error toast) web behaviors remain unchanged after the gate removal.
+result: pass
+source: automated
+coverage_id: 46-10/D2
+
+### 17. UAT test-6 expectation corrected (46-10 D3)
+expected: 46-UAT.md test-6 expected text corrected to assert the Share-quote button is PRESENT on desktop.
+result: pass
+source: automated
+coverage_id: 46-10/D3
 
 ## Summary
 
-total: 6
-passed: 4
-issues: 2
+total: 17
+passed: 16
+issues: 1
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
+- gap_id: G-46-6R
+  truth: "After publishing a quote on desktop or web, the hosted-quote link stays retrievable — the user can copy it on demand and find it again later from the quote row, not only in a transient toast."
+  status: failed
+  reason: "User reported: Share Quote shows and it generates a quote link, which shows up in toast for about 3 seconds then disappears. I have no idea where the link is, or how to get to it in the future"
+  severity: major
+  test: 6
+  artifacts: []  # Filled by diagnosis
+  missing: []    # Filled by diagnosis
+
 - gap_id: G-46-2
   truth: "After signing in once on desktop, quitting and relaunching the app keeps the user signed in with no re-auth prompt (WebView localStorage persistence)."
-  status: failed
+  status: resolved
+  resolved_by: 46-08-PLAN.md (primary — live template fix), 46-09-PLAN.md (client half — shouldCreateUser + copy)
+  resolved_at: 2026-07-23
   reason: "User reported: got a Supabase 'Confirm your email address' link email (default confirmation template, not the OTP code template); clicking the link opened 3DCoster in a free (signed-out) state instead of a signed-in Pro desktop session."
   severity: major
   test: 2
   root_cause: "For a NEW email, signInWithOtp (default shouldCreateUser: true) takes GoTrue's signup path and sends the 'Confirm signup' dashboard template, which still contains only {{ .ConfirmationURL }} — no {{ .Token }}. The 46-02 live fix (2026-07-22) patched only the 'Magic link or OTP' template, so existing users get link+code while new users get a link-only email. The link opens the default browser (no PKCE code_verifier there), so no session is created anywhere. Proven by production auth logs: 13:32 mail_type 'confirmation' (fail) vs 13:41 same user, mail_type 'magic_link' → OTP login success via the same UI. Session persistence is NOT a defect (Pro session survived full relaunch during test 4)."
-  artifacts:
-    - path: "Supabase dashboard (fqidldxuwpfvhsejalbd) → Authentication → Email Templates → 'Confirm signup'"
-      issue: "missing {{ .Token }} — primary fault"
-    - path: "src/hooks/useProAuth.ts"
-      issue: "shouldCreateUser left at default true without accounting for the signup-template branch; emailRedirectTo sends desktop link-clicks to a browser that can never complete PKCE (secondary)"
-    - path: "src/components/pro/SignInModal.tsx"
-      issue: "copy promises link+code unconditionally; code step renders even when the sent email had no code (cosmetic)"
-    - path: "supabase/config.toml"
-      issue: "local [auth.email] drifts from production (confirmations, otp_length); templates not captured as config-as-code (contributing)"
-  missing:
-    - "Add {{ .Token }} to the 'Confirm signup' template (mirror the 46-02 Magic Link fix); live-verify with a fresh email"
-    - "Decide shouldCreateUser explicitly; adjust first-time modal copy; document production email templates in repo to stop drift"
   debug_session: .planning/debug/new-user-otp-email-template.md
 
 - gap_id: G-46-4
   truth: "Reopening the Sign in for Pro modal after an abandoned attempt lets the user start over (enter an email and request a new code)."
-  status: failed
+  status: resolved
+  resolved_by: 46-09-PLAN.md
+  resolved_at: 2026-07-23
   reason: "User reported: email field is restricted/disabled, modal stuck waiting for the verification code from a previous attempt."
   severity: major
   test: 4
   root_cause: "useProAuth.status is trapped at 'link-sent' with no user-driven exit, and SignInModal (which owns that hook instance) is permanently mounted — App.tsx:363-366 renders it unconditionally and Modal.tsx:67 unmounts only the Modal's children on close. The only exits from 'link-sent' are a real Supabase auth event or an app restart. On reopen, codeStepVisible (SignInModal.tsx:58) disables the email input (line 115); resetAndClose (61-65) clears local email/code but cannot touch status — hence the EMPTY yet disabled email field. Close paths are inconsistent: code-step Cancel → resetAndClose; X/backdrop/Escape → raw onClose (stale email survives). Tests missed it because SignInModal.test.tsx mocks useProAuth with a frozen status (24-34), making transitions inexpressible."
-  artifacts:
-    - path: "src/hooks/useProAuth.ts"
-      issue: "status state machine has no user-driven exit from 'link-sent'; no reset action in the ProAuth interface"
-    - path: "src/components/pro/SignInModal.tsx"
-      issue: "derives email-input disabled from trapped status (58, 115); resetAndClose can't reset status (61-65); X/backdrop/Escape bypass reset (93)"
-    - path: "src/App.tsx"
-      issue: "permanent SignInModal mount (363-366) — nothing self-heals on close"
-    - path: "src/components/pro/SignInModal.test.tsx"
-      issue: "frozen-status mock erases the exact integration seam that broke"
-  missing:
-    - "resetSignIn() action in useProAuth (setStatus('signed-out') when not signed in)"
-    - "route ALL SignInModal close paths through one handler that calls it (pass resetAndClose as the Modal's onClose)"
-    - "'Use a different email' affordance on the code step; lifecycle tests with transitionable status: send → close (each path) → reopen ⇒ editable email step"
   debug_session: .planning/debug/signin-modal-stuck-link-sent.md
 
 - gap_id: G-46-6
   truth: "ALL Pro features — including Share-quote publishing — work on BOTH web and desktop for v2.0 launch. No web-only Pro features."
-  status: failed
+  status: resolved
+  resolved_by: 46-10-PLAN.md
+  resolved_at: 2026-07-23
   reason: "User reported (repeated product decision): 'I keep discussing this - ALL Pro features need to work on web and desktop for v2.0 launch. No exceptions.' The phase shipped Share-quote publishing as web-only (button absent on desktop); that scoping contradicts the launch requirement."
   severity: major
   test: 6
-  root_cause: "A single deliberate self-gate — `if (__IS_TAURI__) return null; // D-12: Pro is web-only` at ShareQuoteButton.tsx:38 — kept in place by an explicit 46-02 planner scope decision (46-02-PLAN.md:49: 'Do not remove ShareQuoteButton's gate'), which resolved 46-RESEARCH Open Question 1 narrowly and conflicts with the founder's standing parity requirement. All three mount sites are unconditional; desktop plumbing (auth, entitlement, CSP for *.supabase.co, VITE_SUPABASE_* in release.yml, usePublishedQuote.refreshStatuses) already works on desktop. Browser-API audit found no blocker (clipboard call is try/catch-guarded with toast fallback; no window.open in the publish flow). ShareQuoteButton.test.tsx:100-105 pins the wrong behavior and must be inverted. NOTE: BillingPanel.tsx:50 is a second, separate web-only Pro gate (Paddle billing) — not required for Share-quote parity but implicated by the literal 'no web-only Pro features' rule; founder decision needed."
-  artifacts:
-    - path: "src/components/pro/ShareQuoteButton.tsx"
-      issue: "line 38 — the sole desktop gate for Share-quote (plus stale D-12 comment block, lines 11-23)"
-    - path: "src/components/pro/ShareQuoteButton.test.tsx"
-      issue: "lines 100-105 — asserts 'renders nothing under __IS_TAURI__'; must be inverted"
-    - path: "src/components/pro/BillingPanel.tsx"
-      issue: "line 50 — separate deliberate web-only billing gate; needs founder call, out of this gap's minimal scope"
-    - path: ".planning/phases/46-white-label-quotes/46-02-PLAN.md"
-      issue: "line 49 — the documented scope decision this fix supersedes"
-  missing:
-    - "Remove the ShareQuoteButton __IS_TAURI__ gate and rewrite the D-12 comment"
-    - "Invert the desktop test; record that G-46-6 supersedes 46-02-PLAN's 'Do not remove' instruction"
-    - "Optional polish: tauri-plugin-clipboard-manager; 'open hosted page' via @tauri-apps/plugin-shell open() (UpdateBanner.tsx:70-83 pattern, shell:default already granted)"
+  root_cause: "A single deliberate self-gate — `if (__IS_TAURI__) return null; // D-12: Pro is web-only` at ShareQuoteButton.tsx:38 — kept in place by an explicit 46-02 planner scope decision (46-02-PLAN.md:49: 'Do not remove ShareQuoteButton's gate'), which resolved 46-RESEARCH Open Question 1 narrowly and conflicts with the founder's standing parity requirement. All three mount sites are unconditional; desktop plumbing (auth, entitlement, CSP for *.supabase.co, VITE_SUPABASE_* in release.yml, usePublishedQuote.refreshStatuses) already works on desktop. Browser-API audit found no blocker. ShareQuoteButton.test.tsx pinned the wrong behavior — inverted by 46-10. NOTE: BillingPanel.tsx:50 is a second, separate web-only Pro gate (Paddle billing) — OPEN FOUNDER QUESTION, tracked in 46-10-SUMMARY, not part of this gap's fix."
   debug_session: .planning/debug/desktop-share-quote-parity.md
