@@ -5,16 +5,16 @@ milestone_name: Cost-Truth & Insight
 current_phase: 46
 current_phase_name: white-label-quotes
 status: executing
-stopped_at: "Paused at 46-08 Task 2 (blocking human-verify checkpoint): Confirm signup email template fix + live verification pending"
-last_updated: "2026-07-23T15:48:20.558Z"
+stopped_at: Completed 46-08-PLAN.md (checkpoint approved, G-46-2 closed)
+last_updated: "2026-07-23T17:49:34.851Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 14
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 64
-  completed_plans: 63
-  percent: 57
+  completed_plans: 64
+  percent: 64
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 46 (white-label-quotes) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 46 execution started
 
@@ -94,6 +94,7 @@ Last activity: 2026-07-23 — Phase 46 execution started
 | Phase 46 P07 | 8min | 2 tasks | 3 files |
 | Phase 46 P09 | 7min | 2 tasks | 4 files |
 | Phase 46 P10 | 2min | 2 tasks | 3 files |
+| Phase 46 P08 | 65min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -237,6 +238,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase ?]: 46-07: PricingPage PRO_FEATURES gained a white-label bullet; roadmap.ts white-label item removed per its own ship-and-remove contract, keeping /roadmap in lockstep with the /features Coming-to-Pro strip; src/pricing.ts and price strings untouched
 - [Phase ?]: 46-09: resetSignIn() gates on session (not status) to guarantee a signed-in user can never be reset to signed-out; SignInModal test mock replaced with a transitionable module-level mock (frozen-status mock could never express a lifecycle transition)
 - [Phase ?]: [Phase 46]: 46-10: G-46-6/D-08 supersedes 46-02-PLAN.md:49's web-only ShareQuoteButton scope decision — removed the __IS_TAURI__ gate so hosted-quote publishing works on both platforms; BillingPanel.tsx:50's separate web-only billing gate flagged as an open founder question, not touched
+- [Phase ?]: 46-08: Confirm-signup template fix applied via Supabase Management API (PATCH .../config/auth, mailer_templates_confirmation_content) with explicit founder approval during the Task 2 checkpoint, not the dashboard UI; GET re-read confirmed byte-for-byte before live verification (G-46-2 closed).
+- [Phase ?]: 46-08: docs/SUPABASE-EMAIL-TEMPLATES.md corrected from secondhand-reconstructed template bodies to authoritative byte-for-byte Management API reads after the live GET showed the production 'Confirm signup' stock body differed from the doc's reconstruction (both templates corrected, commit 2689f02).
 
 ### Pending Todos
 
@@ -249,13 +252,13 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-- Plan 46-08 paused at Task 2 (checkpoint:human-verify, gate=blocking): production 'Confirm signup' Supabase email template needs {{ .Token }} added and live-verified with a fresh email before desktop new-user sign-in works (G-46-2). See docs/SUPABASE-EMAIL-TEMPLATES.md and 46-08-PLAN.md Task 2.
+- None active from Phase 46. (Plan 46-08's checkpoint — production 'Confirm signup' Supabase email template — resolved 2026-07-23: fix applied via Management API with founder approval, byte-for-byte GET-confirmed, and live-verified with a fresh email; G-46-2 closed. Reminder: delete scripts/seed-pro-entitlement-uat.sql-seeded entitlement rows before real billing/launch testing.)
 
 ## Session Continuity
 
-Last session: 2026-07-23T15:48:20.548Z
-Stopped at: Paused at 46-08 Task 2 (blocking human-verify checkpoint): Confirm signup email template fix + live verification pending
-Resume file: .planning/phases/46-white-label-quotes/46-08-PLAN.md
+Last session: 2026-07-23T17:49:34.840Z
+Stopped at: Completed 46-08-PLAN.md (checkpoint approved, G-46-2 closed)
+Resume file: None
 
 ## Operator Next Steps
 
