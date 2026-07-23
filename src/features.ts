@@ -51,6 +51,10 @@ export const featureReleases: Record<string, Date> = {
   // NEW_FEATURE_MAX_AGE_DAYS at the eventual v2.0 tag.
   'sync-devices': new Date('2026-07-17'),
   'stl-estimate': new Date('2026-07-17'),
+  // v2.0 Phase 46 — White-label quotes (D-01..D-03): Settings → Profile
+  // Branding section (Pro upload/preview/remove; free Pro-chip → bundle
+  // pitch modal). One badge for the whole section, not per-path.
+  'white-label-branding': new Date('2026-07-23'),
   // Add new features here with their release date
 };
 
