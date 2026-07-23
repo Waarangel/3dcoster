@@ -384,7 +384,7 @@ Plans:
 - [x] 46-09-PLAN.md — G-46-4 + G-46-2 client: `resetSignIn()` exit from the trapped `link-sent` state, all SignInModal close paths + "Use a different email" affordance, accurate first-time copy, lifecycle tests (D-08/D-09)
 - [x] 46-10-PLAN.md — G-46-6: remove ShareQuoteButton desktop gate (Pro parity on web + desktop), invert the desktop test, correct UAT test-6; supersedes 46-02-PLAN's "web-only" scope; BillingPanel gate flagged open (D-08)
 - [x] 46-11-PLAN.md — G-46-6R: persistent Copy-link + Open-hosted-page affordance on published quote rows/edit view (reads the already-persisted quote.publishedUrl) + honest clipboard toast (no false "copied"); link retrievability on web + desktop, existing token never re-minted (D-08/D-13)
-- [ ] 46-12-PLAN.md — G-46-18: vercel.json `/q/:token → /api/q/:token` rewrite (closes latent post-deploy 404) + lazy themed NotFound catch-all in the web router (no more blank page) + routing test + launch-day preview-deploy checklist item (D-12/D-13)
+- [x] 46-12-PLAN.md — G-46-18: vercel.json `/q/:token → /api/q/:token` rewrite (closes latent post-deploy 404) + lazy themed NotFound catch-all in the web router (no more blank page) + routing test + launch-day preview-deploy checklist item (D-12/D-13)
 
 ### Phase 47: Cloud sync
 
