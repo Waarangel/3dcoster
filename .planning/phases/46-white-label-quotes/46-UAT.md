@@ -130,8 +130,21 @@ blocked: 0
   reason: "User reported: copy works. When I click the link, it goes to a blank page. Console says 'No routes matched location /q/f83da8d4-e8df-4d33-be95-d546ce2e2918' — we should make sure there is a user friendly message for this"
   severity: major
   test: 18
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "The published link itself is correct (usePublishedQuote.ts:160 hard-codes canonical https://3dcoster.com/q/{token}) and HostedLinkActions' Open handler correctly launches the system browser. The blank page has TWO causes. (1) LIVE PRODUCTION: 3dcoster.com still runs the pre-Phase-43 deployment (v2.0 unpushed by design), whose old catch-all rewrite serves the SPA index.html with HTTP 200 for /q/* — and the SPA web branch has no /q route and NO '*' catch-all (src/main.tsx:106-123; only the Tauri branch has one), so React Router renders null → blank page. (2) LATENT POST-DEPLOY BUG: vercel.json:3 only EXCLUDES q/ from the SPA rewrite but never MAPS /q/:token to /api/q/:token — Vercel serves api/q/[token].ts at /api/q/{token} only, so after the v2.0 deploy, /q/{token} would hit a Vercel platform 404 instead of the branded hosted page. The deferred 43-VALIDATION preview-deploy check (43-VALIDATION.md:87, unchecked) would have caught this; 43-VERIFICATION.md:39 marked it VERIFIED from the regex pattern alone. Bug predates 46-11 (same URL copied by ShareQuoteButton since 43-04); the transient toast just made it unlikely anyone clicked it."
+  artifacts:
+    - path: "vercel.json"
+      issue: "missing rewrite /q/:token → /api/q/:token (latent production 404 that survives the v2.0 deploy)"
+    - path: "src/main.tsx"
+      issue: "web branch (:106-123) lacks a friendly '*' NotFound catch-all — any unmatched location renders a blank page"
+    - path: "src/hooks/usePublishedQuote.ts"
+      issue: "correct — canonical URL construction, no change needed"
+    - path: "src/components/pro/HostedLinkActions.tsx"
+      issue: "correct — Open handler works, no change needed"
+  missing:
+    - "Add { source: '/q/:token', destination: '/api/q/:token' } to vercel.json rewrites"
+    - "Add a lazy web path='*' NotFound page in src/main.tsx (friendly message, never a blank page)"
+    - "Run the deferred 43-VALIDATION preview-deploy check: 200 + branded page for a published token; byte-identical branded 404 + noindex/no-store otherwise (launch-day item — production stays pre-v2.0 until founder pushes)"
+  debug_session: .planning/debug/hosted-link-open-blank-page.md
 
 - gap_id: G-46-6R
   truth: "After publishing a quote on desktop or web, the hosted-quote link stays retrievable — the user can copy it on demand and find it again later from the quote row, not only in a transient toast."
