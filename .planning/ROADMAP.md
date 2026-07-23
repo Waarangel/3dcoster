@@ -372,7 +372,7 @@ Plans:
 
 **Wave 3** *(after 46-04 — shares PrintQuoteModal.tsx)*
 
-- [ ] 46-05-PLAN.md — White-label hosted page: validated logo into frozen publish snapshot + server-side render + D-09 powered-by-until-logo footer + mirrored XSS allowlist + first `api/q/[token]` test (D-05/D-09/D-10/D-11/D-12)
+- [x] 46-05-PLAN.md — White-label hosted page: validated logo into frozen publish snapshot + server-side render + D-09 powered-by-until-logo footer + mirrored XSS allowlist + first `api/q/[token]` test (D-05/D-09/D-10/D-11/D-12)
 
 **Wave 4** *(shipped-only honesty — after the capability works)*
 
