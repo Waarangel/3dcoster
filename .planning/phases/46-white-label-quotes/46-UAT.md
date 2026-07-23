@@ -37,7 +37,7 @@ expected: Under the same Pro session, a >5MB file or a non-image file shows a fr
 result: pass
 
 ### 6. Desktop Pro surface visual check
-expected: On desktop, Settings → Profile shows Account & Pro AND the Branding section; the Share-quote button stays ABSENT everywhere on desktop (publishing remains web-only).
+expected: On desktop, Settings → Profile shows Account & Pro AND the Branding section; the Share-quote button is PRESENT on quote rows (publishing works on both web and desktop per G-46-6 / D-08).
 result: issue
 reported: "I keep discussing this - ALL Pro features need to work on web and desktop for v2.0 launch. No exceptions."
 severity: major
