@@ -173,12 +173,26 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
+# LOCAL DEV ONLY — this value governs the local Supabase stack, not production.
+# PRODUCTION (fqidldxuwpfvhsejalbd) has confirmation effectively ON for any
+# brand-new email: signInWithOtp() auto-creates the user and GoTrue routes
+# through the "Confirm signup" template rather than "Magic link or OTP" for
+# that first sign-in. This drove G-46-2 (see docs/SUPABASE-EMAIL-TEMPLATES.md
+# and .planning/debug/new-user-otp-email-template.md). Do not "fix" this local
+# value to match production — local dev intentionally skips confirmation.
 enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
 # Number of characters used in the email OTP.
+# LOCAL DEV ONLY — production (fqidldxuwpfvhsejalbd) issues 8-DIGIT codes, not
+# 6, per a per-project dashboard setting independent of this file (confirmed
+# live 2026-07-22 when SignInModal's hardcoded 6-digit assumption broke on a
+# real production code — see 46-02-SUMMARY "Post-checkpoint deviation"). The
+# client validates 6-10 digit codes to stay config-drift-agnostic; this local
+# value is correct for local dev and does not need to match production.
+# See docs/SUPABASE-EMAIL-TEMPLATES.md for the full production-vs-local drift.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
