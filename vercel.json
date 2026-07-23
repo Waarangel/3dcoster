@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/q/:token", "destination": "/api/q/:token" },
     { "source": "/((?!q/|api/).*)", "destination": "/" }
   ],
   "headers": [
