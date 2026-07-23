@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 46
 current_phase_name: white-label-quotes
 status: executing
-stopped_at: "Completed 46-02-PLAN.md (checkpoint resolved: approved with deferrals)"
-last_updated: "2026-07-22T22:27:16.223Z"
+stopped_at: Completed 46-04-PLAN.md
+last_updated: "2026-07-23T12:00:58.647Z"
 last_activity: 2026-07-22
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 14
   completed_phases: 8
   total_plans: 61
-  completed_plans: 57
+  completed_plans: 58
   percent: 57
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 46 (white-label-quotes) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-07-22 — Phase 46 execution started
 
@@ -88,6 +88,7 @@ Last activity: 2026-07-22 — Phase 46 execution started
 | Phase 46 P01 | 10min | 3 tasks | 5 files |
 | Phase 46 P03 | 8min | 2 tasks | 3 files |
 | Phase 46 P02 | 35min | 3 tasks | 10 files |
+| Phase 46 P04 | 25min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -222,6 +223,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 46-01: logoDataUrl placed directly below UserProfile.name (brand identity co-located); MAX_LOGO_DATA_URL_LENGTH=205,000 chars and MAX_LOGO_UPLOAD_BYTES=5MB pre-decode cap; zero new npm dependency (vanilla Canvas)
 - [Phase ?]: 46-03: Logo disclosure rides the EXISTING Supabase hosted-quote row/flow, not a new destination — joins the existing hosted_quotes.snapshot jsonb column (RESEARCH A3, no new migration)
 - [Phase ?]: 46-02: Desktop Supabase client un-gated (D-08 reverses Phase 43 D-12); OTP verifyEmailCode added to useProAuth/SignInModal; checkpoint approved with deferrals — production Magic Link template + GitHub Actions secrets fixed live, full desktop-UI round trip/session persistence/signed-out network silence deferred to Phase UAT; launch checklist gained custom-SMTP item
+- [Phase ?]: 46-04: generateQuotePdf(quote, branding?) — QuoteBranding injected by PrintQuoteModal from live isPro + userProfile at download time (D-10 asymmetry vs frozen hosted-page snapshot); module stays pure, no Dexie/UserProfile import
+- [Phase ?]: 46-04: useEntitlement caches last-known-good status per-user-id in localStorage, written on every successful read (any status) and read only as a fallback on a failed read when userId is present — signed-out never reads the cache (D-07/D-06)
 
 ### Pending Todos
 
@@ -238,8 +241,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-22T22:27:16.212Z
-Stopped at: Completed 46-02-PLAN.md (checkpoint resolved: approved with deferrals)
+Last session: 2026-07-23T12:00:58.638Z
+Stopped at: Completed 46-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
