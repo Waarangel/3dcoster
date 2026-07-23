@@ -42,7 +42,7 @@ const EMAIL_SHAPE = /^\S+@\S+\.\S+$/;
 const CODE_SHAPE = /^\d{6,10}$/;
 
 export function SignInModal({ isOpen, onClose }: SignInModalProps) {
-  const { signInWithEmail, verifyEmailCode, status } = useProAuth();
+  const { signInWithEmail, verifyEmailCode, status, resetSignIn } = useProAuth();
   const toast = useToast();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -58,10 +58,25 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
   const codeStepVisible = status === 'link-sent';
   const looksLikeCode = CODE_SHAPE.test(code.trim());
 
+  // The ONLY user-driven exit from the trapped 'link-sent' status (G-46-4).
+  // Clears BOTH local email/code state AND the hook's status, so every close
+  // gesture (X, backdrop, Escape, either Cancel button) leaves the flow in
+  // the identical clean state on reopen — no stale email, no stuck code step.
   const resetAndClose = () => {
+    resetSignIn();
     setEmail('');
     setCode('');
     onClose();
+  };
+
+  // Returns to the editable email step WITHOUT closing the modal — for a
+  // typo'd email or an abandoned code entry. Clears only the code field;
+  // the email step's own text stays so the user isn't forced to retype it,
+  // but resetSignIn() flips status back to 'signed-out' which is what
+  // actually re-enables the (currently disabled) email input.
+  const useDifferentEmail = () => {
+    resetSignIn();
+    setCode('');
   };
 
   const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -90,13 +105,15 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Sign in for Pro" initialFocusRef={emailRef}>
+    <Modal isOpen={isOpen} onClose={resetAndClose} title="Sign in for Pro" initialFocusRef={emailRef}>
       <form onSubmit={handleEmailSubmit} className="p-4 space-y-4">
         <p className="text-sm text-slate-400">
-          Enter your email and we&apos;ll send you a magic link and a
-          one-time code — no password needed. Click the link (web) or type
-          the code below (any platform). The free calculator never requires
-          an account; signing in only unlocks Pro features.
+          Enter your email and we&apos;ll send you a one-time code (plus a
+          magic link on web) — no password needed. Click the link (web) or
+          type the code below (any platform). First time signing in? A
+          brand-new account may need to confirm your email before the code
+          works. The free calculator never requires an account; signing in
+          only unlocks Pro features.
         </p>
         <div>
           <label htmlFor="pro-signin-email" className="block text-xs text-slate-400 mb-1">
@@ -117,7 +134,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
         </div>
         {!codeStepVisible && (
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={onClose} aria-label="Cancel sign-in">
+            <Button type="button" variant="secondary" onClick={resetAndClose} aria-label="Cancel sign-in">
               Cancel
             </Button>
             <Button
@@ -150,18 +167,29 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
               maxLength={10}
             />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={resetAndClose} aria-label="Cancel sign-in">
-              Cancel
-            </Button>
+          <div className="flex justify-between items-center gap-2">
             <Button
-              type="submit"
-              variant="primary"
-              disabled={!looksLikeCode || isVerifying}
-              aria-label="Verify code"
+              type="button"
+              variant="ghost"
+              btnSize="sm"
+              onClick={useDifferentEmail}
+              aria-label="Use a different email address"
             >
-              {isVerifying ? 'Verifying…' : 'Verify code'}
+              Use a different email
             </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" onClick={resetAndClose} aria-label="Cancel sign-in">
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={!looksLikeCode || isVerifying}
+                aria-label="Verify code"
+              >
+                {isVerifying ? 'Verifying…' : 'Verify code'}
+              </Button>
+            </div>
           </div>
         </form>
       )}
