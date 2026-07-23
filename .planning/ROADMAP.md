@@ -376,7 +376,7 @@ Plans:
 
 **Wave 4** *(shipped-only honesty — after the capability works)*
 
-- [ ] 46-07-PLAN.md — Marketing flips: two white-label /features pills → shipped Pro, /pricing Pro card + white-label, remove from /roadmap + Coming-to-Pro strip (D-15)
+- [x] 46-07-PLAN.md — Marketing flips: two white-label /features pills → shipped Pro, /pricing Pro card + white-label, remove from /roadmap + Coming-to-Pro strip (D-15)
 
 ### Phase 47: Cloud sync
 
