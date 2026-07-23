@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 46
 current_phase_name: white-label-quotes
 status: executing
-stopped_at: Completed 46-08-PLAN.md (checkpoint approved, G-46-2 closed)
-last_updated: "2026-07-23T17:49:34.851Z"
+stopped_at: Completed 46-11-PLAN.md (gap closure G-46-6R closed)
+last_updated: "2026-07-23T18:41:10.494Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 14
   completed_phases: 9
-  total_plans: 64
-  completed_plans: 64
+  total_plans: 65
+  completed_plans: 65
   percent: 64
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 46 (white-label-quotes) — EXECUTING
-Plan: 4 of 10
+Plan: 2 of 11
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 46 execution started
 
@@ -95,6 +95,7 @@ Last activity: 2026-07-23 — Phase 46 execution started
 | Phase 46 P09 | 7min | 2 tasks | 4 files |
 | Phase 46 P10 | 2min | 2 tasks | 3 files |
 | Phase 46 P08 | 65min | 2 tasks | 4 files |
+| Phase 46 P11 | 30min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -240,6 +241,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 46]: 46-10: G-46-6/D-08 supersedes 46-02-PLAN.md:49's web-only ShareQuoteButton scope decision — removed the __IS_TAURI__ gate so hosted-quote publishing works on both platforms; BillingPanel.tsx:50's separate web-only billing gate flagged as an open founder question, not touched
 - [Phase ?]: 46-08: Confirm-signup template fix applied via Supabase Management API (PATCH .../config/auth, mailer_templates_confirmation_content) with explicit founder approval during the Task 2 checkpoint, not the dashboard UI; GET re-read confirmed byte-for-byte before live verification (G-46-2 closed).
 - [Phase ?]: 46-08: docs/SUPABASE-EMAIL-TEMPLATES.md corrected from secondhand-reconstructed template bodies to authoritative byte-for-byte Management API reads after the live GET showed the production 'Confirm signup' stock body differed from the doc's reconstruction (both templates corrected, commit 2689f02).
+- [Phase 46]: 46-11: HostedLinkActions mounted at both persistent published-quote surfaces (JobsManager row + PrintQuoteModal footer), keyed directly on publishStatus/publishedUrl rather than nested inside ShareQuoteButton, so the declined+published case (no ShareQuoteButton row) still surfaces its link — Closes G-46-6R; copyToClipboard() util shared between HostedLinkActions and ShareQuoteButton's publish toast eliminates the navigator.clipboard optional-chain false-positive on desktop WebViews
 
 ### Pending Todos
 
@@ -256,8 +258,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-07-23T17:49:34.840Z
-Stopped at: Completed 46-08-PLAN.md (checkpoint approved, G-46-2 closed)
+Last session: 2026-07-23T18:41:10.484Z
+Stopped at: Completed 46-11-PLAN.md (gap closure G-46-6R closed)
 Resume file: None
 
 ## Operator Next Steps
