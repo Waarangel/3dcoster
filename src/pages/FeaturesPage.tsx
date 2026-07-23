@@ -112,7 +112,6 @@ interface HiddenCost {
    this strip and /roadmap always tell the same story.
    ───────────────────────────────────────────────────────────────────────── */
 const COMING_TO_PRO: string[] = [
-  'White-label, branded hosted quotes',
   'Live Etsy order sync (90-day API import)',
   'Live carrier rates & shipping labels',
   'QuickBooks accounting sync',
@@ -141,14 +140,15 @@ const comingPro = `${tdPro} text-[var(--brand-soft)]`;
 
 /**
  * ComingCell — Pro-column cell for a launch-scope capability that is on the
- * roadmap but not yet shipped (phases 46-50: white-label quotes, live Etsy/
- * carrier APIs, QuickBooks sync, cloud device sync). Renders an outlined
- * pill (never a solid "Yes") so it stays visually and semantically distinct
- * from a shipped capability, with sr-only text making the roadmap status
+ * roadmap but not yet shipped (phases 47-50: live Etsy/carrier APIs,
+ * QuickBooks sync, cloud device sync — white-label quotes shipped in Phase
+ * 46, see the two flipped `yesPro` rows below). Renders an outlined pill
+ * (never a solid "Yes") so it stays visually and semantically distinct from
+ * a shipped capability, with sr-only text making the roadmap status
  * explicit for screen readers too (shipped-only honesty rule).
  *
  * PHASE-51-LAUNCH-PREP: as each matching capability ships across phases
- * 46-50, flip its `<ComingCell />` below to a plain `<td className={yesPro}>Yes</td>`,
+ * 47-50, flip its ComingCell usage below to a plain `<td className={yesPro}>Yes</td>`,
  * with a final truth sweep across this table in phase 51.
  */
 function ComingCell() {
@@ -333,8 +333,8 @@ export function FeaturesPage() {
             <div className="max-w-2xl mb-10">
               <h2 id="free-vs-pro-heading" className="font-display text-3xl font-bold text-[var(--ink)]">Free vs Pro</h2>
               <p className="mt-3 text-[var(--ink-soft)] leading-relaxed [text-wrap:balance]">
-                Everything above is free, forever — no account, no paywall. Pro adds exactly one thing
-                on top today, with more on the roadmap below.
+                Everything above is free, forever — no account, no paywall. Pro adds live, hosted
+                quote links and white-label branding on top today, with more on the roadmap below.
               </p>
             </div>
 
@@ -430,7 +430,7 @@ export function FeaturesPage() {
             </button>
 
             <p className="mt-3 text-xs text-[var(--ink-faint)] max-w-2xl">
-              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({monthly.approx ? `${monthly.approx}/mo, billed as ${monthly.billingLabel}` : `${monthly.billingLabel}/mo`}) adds live, hosted quote links your customers can approve online today, with white-label branding, live Etsy &amp; carrier APIs, QuickBooks sync, and cloud device sync on the way (see the “Coming” rows below).
+              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({monthly.approx ? `${monthly.approx}/mo, billed as ${monthly.billingLabel}` : `${monthly.billingLabel}/mo`}) adds live, hosted quote links your customers can approve online today, with white-label branding on your PDF and hosted quotes, and live Etsy &amp; carrier APIs, QuickBooks sync, and cloud device sync on the way (see the “Coming” rows below).
             </p>
 
             {showTable && (
@@ -493,8 +493,8 @@ export function FeaturesPage() {
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Printable PDF quotes (auto-numbered, valid-until date)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>Limited (PDF export, no auto-#)</td><td className={no}>No</td><td className={yes}>Yes (auto-# + expiry)</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Quote &rarr; Sale conversion (with status tracking)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>Limited (orders + fulfillment)</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Hosted, branded quote links (share + live approve/decline) <span className="text-[var(--brand-soft)] text-xs font-medium">Pro</span></td><td className={noUs}>No</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={dash}>—</td></tr>
-                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">White-label PDF quotes (your logo, no “Made with 3DCoster” footer)</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
-                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">White-label hosted quote page (your branding, not 3DCoster’s)</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">White-label PDF quotes (your logo, no “Made with 3DCoster” footer)</td><td className={noUs}>No</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">White-label hosted quote page (your branding, not 3DCoster’s)</td><td className={noUs}>No</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Etsy ToS compliance helper</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
 
                     <tr className="bg-[var(--surface)] border-b border-[var(--hairline)]"><td colSpan={7} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-[var(--brand-soft)]">Platform &amp; access</td></tr>
