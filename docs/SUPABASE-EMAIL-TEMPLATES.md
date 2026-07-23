@@ -8,18 +8,15 @@ templates anywhere. That silence is exactly how the 46-02 Magic Link fix
 document exists to close (G-46-2). Both templates are captured here so the
 next drift is visible in code review, not discovered live by a user.
 
-**Provenance note:** These bodies are reconstructed from the best available
-evidence — the Supabase dashboard has no export/API read path wired into this
-repo's tooling, so nothing here is a byte-for-byte dashboard dump. The "Magic
-link or OTP" body reflects the line documented as added, verbatim, in
-[`46-02-SUMMARY.md`](../.planning/phases/46-white-label-quotes/46-02-SUMMARY.md)
-("Checkpoint Resolution", item 1) plus Supabase's stock default markup (the
-part nobody touched). The "Confirm signup" body's *current* (broken) state is
-reconstructed from the user's literal description of the received email
-("Confirm your email address" with only a link — see
-[`new-user-otp-email-template.md`](../.planning/debug/new-user-otp-email-template.md))
-plus Supabase's stock default template, which matches exactly. The *corrected*
-Confirm-signup body below is the mirror-image fix Task 2 applies live.
+**Provenance note:** Both bodies below are **byte-for-byte reads from the
+production auth config** (`GET https://api.supabase.com/v1/projects/{ref}/config/auth`,
+fields `mailer_templates_magiclink_content` /
+`mailer_templates_confirmation_content`, read 2026-07-23). An earlier revision
+of this document reconstructed them from secondhand evidence because no API
+read path was wired up at the time; the live read showed both reconstructions
+had drifted from Supabase's actual stock markup (different headings and link
+copy), so they were replaced with the authoritative bodies — exactly the kind
+of drift this document exists to make visible.
 
 ---
 
@@ -30,13 +27,14 @@ GoTrue sends this template when `signInWithOtp` is called for an email that
 **already has a confirmed Supabase Auth user**.
 
 ```html
-<h2>Magic Link</h2>
-<p><a href="{{ .ConfirmationURL }}">Log In</a></p>
+<h2>Your sign-in link</h2>
+
+<p>Follow the link below to sign in. This link expires shortly and can only be used once.</p>
+<p><a href="{{ .ConfirmationURL }}">Sign in</a></p>
 <p>Or enter this one-time sign-in code in the 3DCoster app: {{ .Token }}</p>
 ```
 
-The third line is the fix: it was appended to Supabase's stock two-line
-default. `{{ .Token }}` renders the numeric one-time code (8 digits on this
+The final line is the fix: it was appended to Supabase's stock default. `{{ .Token }}` renders the numeric one-time code (8 digits on this
 production project — see `otp_length` note in `supabase/config.toml` below).
 Live-verified end-to-end 2026-07-22: an 8-digit code (`74359066`) was sent,
 typed into `SignInModal`, and exchanged via `supabase.auth.verifyOtp` — session
@@ -47,21 +45,25 @@ acquired then revoked to leave no live session behind (46-02-SUMMARY,
 
 ## Template: "Confirm signup"
 
-**Status: BROKEN in production as of 2026-07-23 (G-46-2) — corrected body
-below is applied live by Task 2 of this plan, NOT by this document.**
+**Status: FIXED live 2026-07-23** (G-46-2; applied via the Management API with
+founder approval during the 46-08 Task 2 checkpoint — live fresh-email
+verification per that checkpoint).
 GoTrue sends this template when `signInWithOtp` is called for an email that
 has **no existing Supabase Auth user** — the call auto-creates the account and
 routes through the signup-confirmation path instead of the magic-link path,
 even though the client made the exact same `signInWithOtp` call in both cases.
 
-### Current (broken) body — no code, link-only dead end
+### Pre-fix (broken) body — no code, link-only dead end
 
 ```html
-<h2>Confirm your signup</h2>
-<p><a href="{{ .ConfirmationURL }}">Confirm your email address</a></p>
+<h2>Confirm your email address</h2>
+
+<p>Follow the link below to confirm this email address and finish signing up.</p>
+<p><a href="{{ .ConfirmationURL }}">Confirm email address</a></p>
 ```
 
-This is Supabase's stock default template, untouched. On desktop, clicking
+This was Supabase's stock default template, untouched (byte-for-byte API read
+before the fix was applied). On desktop, clicking
 this link opens the **default OS browser** (not the Tauri WebView), where the
 PKCE `code_verifier` — stored in the WebView's own localStorage when
 `signInWithOtp` ran — does not exist. `detectSessionInUrl`'s exchange fails
@@ -69,11 +71,13 @@ silently, and the browser lands on `http://localhost:4173/app` signed out
 ("free version"). See `.planning/debug/new-user-otp-email-template.md` for the
 full production auth-log timeline that confirmed this root cause.
 
-### Corrected body — mirrors the Magic Link fix exactly
+### Corrected body (LIVE since 2026-07-23) — mirrors the Magic Link fix exactly
 
 ```html
-<h2>Confirm your signup</h2>
-<p><a href="{{ .ConfirmationURL }}">Confirm your email address</a></p>
+<h2>Confirm your email address</h2>
+
+<p>Follow the link below to confirm this email address and finish signing up.</p>
+<p><a href="{{ .ConfirmationURL }}">Confirm email address</a></p>
 <p>Or enter this one-time sign-in code in the 3DCoster app: {{ .Token }}</p>
 ```
 
@@ -135,8 +139,9 @@ mailer_templates_confirmation_content
 field set to the corrected HTML body above, authenticated with a Management
 API personal access token — see
 https://supabase.com/docs/reference/api/introduction for the current PATCH
-config auth endpoint shape.) **This document does not apply that PATCH.**
-Applying the fix — by either path — is a founder/human action gated by Task 2
-of this plan (`checkpoint:human-verify`, `gate="blocking"`), matching the
-same live-verification discipline the 46-02 Magic Link fix used. The sibling
-field for the already-fixed template is `mailer_templates_magiclink_content`.
+config auth endpoint shape.) **This is the path the fix was actually applied
+through on 2026-07-23** — with explicit founder approval during the 46-08
+Task 2 checkpoint, followed by a GET re-read confirming the field, and the
+live fresh-email desktop verification required by that checkpoint. The
+sibling field for the already-fixed template is
+`mailer_templates_magiclink_content`.
