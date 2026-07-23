@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Quote, JobCustomer, Currency } from '../types';
-import { generateQuotePdfBytes, generateQuotePdf } from './generateQuotePdf';
+import { generateQuotePdfBytes, generateQuotePdf, type QuoteBranding } from './generateQuotePdf';
 
 // Mock Tauri plugin modules at the top level — required for the writeFile error mapping tests.
 // These are hoisted by Vitest's module mock system and only take effect when __IS_TAURI__ is stubbed true.
@@ -596,6 +596,92 @@ describe('generateQuotePdf', () => {
 
       await expect(generateQuotePdf(makeQuote())).resolves.toBeUndefined();
       expect(vi.mocked(writeFile)).not.toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 46 D-04/D-05/D-06/D-10 — white-label branding
+  // -------------------------------------------------------------------------
+
+  describe('white-label branding', () => {
+    // 1x1 red pixel PNG — a tiny valid raster fixture for isValidLogoDataUrl.
+    const VALID_LOGO_PNG =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+    function rawPdfBytesToString(bytes: Uint8Array): string {
+      let s = '';
+      for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+      return s;
+    }
+
+    it('isWhiteLabel:true with a valid logo + businessName renders the logo image + business name, and drops the 3DCoster footer', async () => {
+      const branding: QuoteBranding = {
+        isWhiteLabel: true,
+        logoDataUrl: VALID_LOGO_PNG,
+        businessName: 'Acme 3D',
+      };
+      const bytes = await generateQuotePdfBytes(makeQuote(), branding);
+      const text = pdfExtractText(bytes);
+      const raw = rawPdfBytesToString(bytes);
+
+      expect(raw).toContain('/Subtype /Image');
+      expect(text).toContain('Acme 3D');
+      expect(text).not.toContain('Made with 3DCoster');
+      expect(text).not.toContain('3DCoster');
+    });
+
+    it('isWhiteLabel:false renders the unchanged 3DCoster wordmark header and keeps the footer', async () => {
+      const branding: QuoteBranding = { isWhiteLabel: false };
+      const bytes = await generateQuotePdfBytes(makeQuote(), branding);
+      const text = pdfExtractText(bytes);
+
+      expect(text).toContain('3DCoster');
+      expect(text).toContain('Made with 3DCoster');
+    });
+
+    it('no branding argument defaults to isWhiteLabel:false (backward-compatible)', async () => {
+      const bytes = await generateQuotePdfBytes(makeQuote());
+      const text = pdfExtractText(bytes);
+
+      expect(text).toContain('3DCoster');
+      expect(text).toContain('Made with 3DCoster');
+    });
+
+    it('isWhiteLabel:true with an INVALID logoDataUrl still drops the footer and renders businessName, but omits the logo image', async () => {
+      const branding: QuoteBranding = {
+        isWhiteLabel: true,
+        logoDataUrl: 'javascript:alert(1)',
+        businessName: 'Acme 3D',
+      };
+      const bytes = await generateQuotePdfBytes(makeQuote(), branding);
+      const text = pdfExtractText(bytes);
+      const raw = rawPdfBytesToString(bytes);
+
+      expect(raw).not.toContain('/Subtype /Image');
+      expect(text).toContain('Acme 3D');
+      expect(text).not.toContain('Made with 3DCoster');
+    });
+
+    it('isWhiteLabel:true with an ABSENT logoDataUrl still drops the footer and renders businessName', async () => {
+      const branding: QuoteBranding = { isWhiteLabel: true, businessName: 'Acme 3D' };
+      const bytes = await generateQuotePdfBytes(makeQuote(), branding);
+      const text = pdfExtractText(bytes);
+
+      expect(text).toContain('Acme 3D');
+      expect(text).not.toContain('Made with 3DCoster');
+    });
+
+    it('generateQuotePdf (the save/download entry point) also accepts the branding argument', async () => {
+      // Sanity check that the second exported function shares the same signature
+      // as generateQuotePdfBytes. Web branch: __IS_TAURI__ false triggers doc.save().
+      vi.stubGlobal('__IS_TAURI__', false);
+      try {
+        await expect(
+          generateQuotePdf(makeQuote(), { isWhiteLabel: false }),
+        ).resolves.toBeUndefined();
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
   });
 
