@@ -36,6 +36,7 @@
  */
 
 import { callRpc } from '../lib/supabaseRest';
+import { isValidLogoDataUrl } from '../lib/logoDataUrl';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,6 +74,15 @@ interface HostedSnapshot {
   notes?: string;
   terms?: string;
   businessName?: string;
+  /**
+   * D-11: baked into the snapshot at publish time by
+   * src/hooks/usePublishedQuote.ts, ALREADY validated client-side via
+   * src/utils/logoDataUrl.ts. Re-validated here via the lockstep
+   * api/lib/logoDataUrl.ts copy before ever reaching the rendered HTML
+   * (Pitfall 4 defense-in-depth — a tampered/malformed Supabase row can
+   * never produce an <img src="..."> or bypass the D-09 footer rule).
+   */
+  logoDataUrl?: string;
   variantsSnapshot?: {
     quantities: number[];
     unitPrices: number[];
@@ -141,7 +151,12 @@ function formatDate(iso: string | null): string {
   return d.toISOString().split('T')[0];
 }
 
-function pageShell(title: string, bodyHtml: string): string {
+/**
+ * D-09: `showFooter` defaults to true (unchanged for every existing caller,
+ * including the D-16 unavailable page) and is only ever set to false by
+ * `renderHostedQuotePage` when a valid logo is present on the snapshot.
+ */
+function pageShell(title: string, bodyHtml: string, showFooter = true): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -203,7 +218,7 @@ function pageShell(title: string, bodyHtml: string): string {
 <body>
 <div class="wrap">
 ${bodyHtml}
-<p class="footer">Powered by <a href="https://3dcoster.com">3DCoster</a></p>
+${showFooter ? '<p class="footer">Powered by <a href="https://3dcoster.com">3DCoster</a></p>' : ''}
 </div>
 </body>
 </html>`;
@@ -316,11 +331,24 @@ function renderHostedQuotePage(row: HostedQuoteRow): string {
     ? `<p class="eyebrow">${escapeHtml(snapshot.businessName)}</p>`
     : '';
 
+  // D-09/Pitfall 4: re-validate the snapshot's logo through the lockstep
+  // server allowlist. A tampered/malformed row (javascript:, svg, an
+  // attribute-breakout string, or one over the length cap) fails here and
+  // is treated identically to "no logo" — no <img>, footer stays.
+  const hasLogo = isValidLogoDataUrl(snapshot.logoDataUrl);
+  // The allowlist regex IS the escaping for this attribute+scheme case
+  // (base64-alphabet-only, no quotes/angle-brackets can pass) — only ever
+  // interpolate the value once `hasLogo` has confirmed it matched.
+  const logoLine = hasLogo
+    ? `<img src="${snapshot.logoDataUrl}" alt="${escapeHtml(snapshot.businessName ?? 'Maker logo')}" style="max-width:180px;max-height:64px;margin-bottom:12px;" />`
+    : '';
+
   const decisionSection = row.decision ? renderLockedDecision(row) : renderDecisionForm();
 
   return pageShell(
     `Quote — ${snapshot.jobTitle ?? '3DCoster'}`,
     `<div class="card">
+  ${logoLine}
   ${businessLine}
   <h1>Prepared for ${preparedFor}</h1>
   ${renderLineItemsTable(snapshot)}
@@ -328,6 +356,8 @@ function renderHostedQuotePage(row: HostedQuoteRow): string {
   ${renderNotesAndTerms(snapshot)}
   ${decisionSection}
 </div>`,
+    // D-09: the footer disappears ONLY when a valid logo is actually present.
+    !hasLogo,
   );
 }
 
