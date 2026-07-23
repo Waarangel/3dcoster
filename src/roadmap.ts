@@ -44,13 +44,6 @@ export const roadmapItems: RoadmapItem[] = [
     pro: true,
   },
   {
-    title: 'White-label, branded hosted quotes',
-    description:
-      'Put your own logo and business branding on the hosted quote page your customers open and approve — today’s hosted quotes carry the 3DCoster brand.',
-    stage: 'research',
-    pro: true,
-  },
-  {
     title: 'QuickBooks accounting sync',
     description:
       'Push sales and fees straight into QuickBooks so your books reconcile without re-entering every order by hand. Scoping which QuickBooks API tier this needs.',
