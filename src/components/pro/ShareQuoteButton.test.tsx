@@ -119,7 +119,7 @@ describe('ShareQuoteButton — signed-out / non-Pro (D-10)', () => {
       btn!.click();
     });
 
-    expect(document.body.textContent).toContain('Share a live quote link');
+    expect(document.body.textContent).toContain('Unlock 3DCoster Pro');
     expect(publish).not.toHaveBeenCalled();
   });
 

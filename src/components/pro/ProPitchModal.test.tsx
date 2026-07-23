@@ -45,10 +45,12 @@ describe('ProPitchModal', () => {
     expect(document.body.querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('explains what a hosted quote link does', () => {
+  it('presents the full Pro bundle: hosted quote links AND white-label branding', () => {
     renderModal();
-    expect(document.body.textContent).toContain('Share a live quote link');
+    expect(document.body.textContent).toContain('Unlock 3DCoster Pro');
     expect(document.body.textContent).toContain('Approve or Decline');
+    expect(document.body.textContent).toContain('white-label branding');
+    expect(document.body.textContent).toContain('Made with 3DCoster');
   });
 
   it('"Not now" closes without signing in', async () => {
