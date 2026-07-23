@@ -10,9 +10,16 @@ import { useProAuth } from '../../hooks/useProAuth';
 // Pro" entry — D-09 contextual sign-in): signed-out users browsing the free
 // floor never see auth chrome. Works on BOTH web and desktop (D-08 reverses
 // Phase 43's web-only D-12 scoping): the SAME email dispatches a magic link
-// (web click-through) AND a 6-digit code (desktop/either-platform entry) —
+// (web click-through) AND a one-time code (desktop/either-platform entry) —
 // this step is additive and never branches on __IS_TAURI__ (Pitfall 2/D-08).
 // useProAuth is no-op-safe when the client is unavailable on either shell.
+//
+// Code length: Supabase's email-OTP length is a per-project dashboard
+// setting, NOT a fixed constant — the production project (fqidldxuwpfvhsejalbd)
+// currently issues 8-digit codes (live-verified 2026-07-22), not the 6-digit
+// default assumed when this modal first shipped (46-02). The input below
+// accepts 6-10 digits so it stays correct across dashboard config drift
+// instead of hardcoding whatever the server happens to issue today.
 //
 // Note for dev/testing: magic-link/code emails go through Supabase's built-in
 // email service until a custom SMTP sender is configured (plan 43-06 /
@@ -28,8 +35,11 @@ interface SignInModalProps {
 // This just keeps the CTA disabled until the input plausibly is an email.
 const EMAIL_SHAPE = /^\S+@\S+\.\S+$/;
 
-// The email-OTP code Supabase issues is always 6 digits.
-const CODE_SHAPE = /^\d{6}$/;
+// Supabase's email-OTP code length is a per-project dashboard setting (not
+// a fixed constant) — accept 6-10 digits so this stays correct regardless of
+// how the project is configured (currently 8 digits in production, see the
+// module comment above).
+const CODE_SHAPE = /^\d{6,10}$/;
 
 export function SignInModal({ isOpen, onClose }: SignInModalProps) {
   const { signInWithEmail, verifyEmailCode, status } = useProAuth();
@@ -62,7 +72,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
       toast.error(`Could not send the magic link: ${error}`);
       return;
     }
-    toast.success('Check your email — click the link, or enter the 6-digit code below.');
+    toast.success('Check your email — click the link, or enter the one-time code below.');
   };
 
   const handleCodeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -83,10 +93,10 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
     <Modal isOpen={isOpen} onClose={onClose} title="Sign in for Pro" initialFocusRef={emailRef}>
       <form onSubmit={handleEmailSubmit} className="p-4 space-y-4">
         <p className="text-sm text-slate-400">
-          Enter your email and we&apos;ll send you a magic link and a 6-digit
-          code — no password needed. Click the link (web) or type the code
-          below (any platform). The free calculator never requires an
-          account; signing in only unlocks Pro features.
+          Enter your email and we&apos;ll send you a magic link and a
+          one-time code — no password needed. Click the link (web) or type
+          the code below (any platform). The free calculator never requires
+          an account; signing in only unlocks Pro features.
         </p>
         <div>
           <label htmlFor="pro-signin-email" className="block text-xs text-slate-400 mb-1">
@@ -125,19 +135,19 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
         <form onSubmit={handleCodeSubmit} className="px-4 pb-4 space-y-4">
           <div>
             <label htmlFor="pro-signin-code" className="block text-xs text-slate-400 mb-1">
-              6-digit code
+              One-time code
             </label>
             <Input
               ref={codeRef}
               id="pro-signin-code"
               type="text"
               value={code}
-              onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
               placeholder="123456"
-              aria-label="6-digit sign-in code"
+              aria-label="One-time sign-in code"
               autoComplete="one-time-code"
               inputMode="numeric"
-              maxLength={6}
+              maxLength={10}
             />
           </div>
           <div className="flex justify-end gap-2">

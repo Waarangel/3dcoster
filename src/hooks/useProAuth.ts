@@ -34,11 +34,15 @@ export interface ProAuth {
    */
   signInWithEmail: (email: string) => Promise<string | null>;
   /**
-   * Exchange the 6-digit email code (delivered in the SAME email as the
-   * magic link, D-08 desktop OTP entry) for a session. Resolves to an error
-   * message on failure, or null on success — the session itself arrives via
-   * the existing onAuthStateChange subscription, same as the web magic-link
-   * flow. No-op (returns null) when the client is unavailable.
+   * Exchange the email OTP code (delivered in the SAME email as the magic
+   * link, D-08 desktop OTP entry) for a session. The code length is a
+   * per-project Supabase dashboard setting — 6-10 digits depending on
+   * config, currently 8 digits in production (live-verified 2026-07-22) —
+   * so this hook does not assume a fixed length; that's the caller's (UI)
+   * concern. Resolves to an error message on failure, or null on success —
+   * the session itself arrives via the existing onAuthStateChange
+   * subscription, same as the web magic-link flow. No-op (returns null)
+   * when the client is unavailable.
    */
   verifyEmailCode: (email: string, code: string) => Promise<string | null>;
   /** Sign out and clear the persisted session. No-op when unavailable. */

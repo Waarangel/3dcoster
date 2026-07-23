@@ -227,6 +227,23 @@ describe('useProAuth — web client', () => {
     });
   });
 
+  it('verifyEmailCode passes an 8-digit code through untouched (hook is length-agnostic — production issues 8 digits)', async () => {
+    mockSupabase = makeMockClient();
+    await renderProbe();
+
+    let result: string | null = 'unset';
+    await act(async () => {
+      result = await latest.verifyEmailCode('maker@example.com', '74359066');
+    });
+
+    expect(result).toBeNull();
+    expect(mockSupabase.auth.verifyOtp).toHaveBeenCalledWith({
+      email: 'maker@example.com',
+      token: '74359066',
+      type: 'email',
+    });
+  });
+
   it('verifyEmailCode surfaces an error message on a wrong/expired code', async () => {
     mockSupabase = makeMockClient();
     mockSupabase.auth.verifyOtp.mockResolvedValueOnce({
