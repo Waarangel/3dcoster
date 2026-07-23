@@ -8,3 +8,5 @@ export { CloseIcon } from './CloseIcon';
 export { CheckIcon } from './CheckIcon';
 export { TrendingUpIcon } from './TrendingUpIcon';
 export { SlidersIcon } from './SlidersIcon';
+export { LinkIcon } from './LinkIcon';
+export { ExternalLinkIcon } from './ExternalLinkIcon';
