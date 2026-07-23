@@ -55,6 +55,45 @@ interface EntitlementRow {
   current_period_end: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// D-07 — last-known-good entitlement cache.
+//
+// An offline paying user must still get a white-label PDF (D-07 explicitly
+// accepts the small window where a just-canceled user generates a few
+// white-label PDFs before their next successful read reverts them, D-06).
+// The cache is scoped per-user-id in localStorage and is ONLY ever:
+//   - written after a SUCCESSFUL read (Pro or not — a successful non-Pro
+//     read overwrites/clears a stale Pro cache, D-06 lapse-revert)
+//   - read as a fallback after a FAILED read, and only when a userId is
+//     present (a signed-out user never reads the cache — no phantom Pro
+//     can leak into the free floor, T-46-10).
+// ---------------------------------------------------------------------------
+
+const ENTITLEMENT_CACHE_PREFIX = 'entitlement-cache:';
+
+function cacheKey(userId: string): string {
+  return `${ENTITLEMENT_CACHE_PREFIX}${userId}`;
+}
+
+function readCache(userId: string): EntitlementRow | null {
+  try {
+    const raw = localStorage.getItem(cacheKey(userId));
+    if (!raw) return null;
+    return JSON.parse(raw) as EntitlementRow;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(userId: string, row: EntitlementRow | null): void {
+  try {
+    localStorage.setItem(cacheKey(userId), JSON.stringify(row));
+  } catch {
+    // Storage unavailable/full — the cache is a best-effort offline aid,
+    // never a correctness requirement while online reads keep working.
+  }
+}
+
 export function useEntitlement(): Entitlement {
   const { user } = useProAuth();
   const userId = user?.id ?? null;
@@ -75,11 +114,19 @@ export function useEntitlement(): Entitlement {
         .maybeSingle();
       if (error) {
         console.error('[useEntitlement] read failed:', error.message);
+        // D-07: fall back to the last-known-good cached status for THIS user
+        // rather than collapsing to not-Pro when the read fails (offline).
+        setRow(readCache(userId));
         return;
       }
-      setRow((data as EntitlementRow | null) ?? null);
+      const nextRow = (data as EntitlementRow | null) ?? null;
+      setRow(nextRow);
+      // Successful read (Pro or not) is the new last-known-good — a
+      // successful non-Pro read overwrites a stale Pro cache (D-06).
+      writeCache(userId, nextRow);
     } catch (err) {
       console.error('[useEntitlement] read failed:', err);
+      setRow(readCache(userId));
     }
   }, [userId]);
 
