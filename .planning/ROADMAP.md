@@ -382,7 +382,7 @@ Plans:
 
 - [ ] 46-08-PLAN.md — G-46-2: Supabase "Confirm signup" email template fix (add `{{ .Token }}`) so new desktop users get a usable code; config-as-code capture + launch-checklist item + blocking fresh-email live-verify (D-08)
 - [x] 46-09-PLAN.md — G-46-4 + G-46-2 client: `resetSignIn()` exit from the trapped `link-sent` state, all SignInModal close paths + "Use a different email" affordance, accurate first-time copy, lifecycle tests (D-08/D-09)
-- [ ] 46-10-PLAN.md — G-46-6: remove ShareQuoteButton desktop gate (Pro parity on web + desktop), invert the desktop test, correct UAT test-6; supersedes 46-02-PLAN's "web-only" scope; BillingPanel gate flagged open (D-08)
+- [x] 46-10-PLAN.md — G-46-6: remove ShareQuoteButton desktop gate (Pro parity on web + desktop), invert the desktop test, correct UAT test-6; supersedes 46-02-PLAN's "web-only" scope; BillingPanel gate flagged open (D-08)
 
 ### Phase 47: Cloud sync
 

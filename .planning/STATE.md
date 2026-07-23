@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 46
 current_phase_name: white-label-quotes
 status: executing
-stopped_at: Completed 46-09-PLAN.md (G-46-4 stuck link-sent reset + G-46-2 client copy fix)
-last_updated: "2026-07-23T15:39:50.271Z"
+stopped_at: Completed 46-10-PLAN.md (G-46-6 desktop Share-quote parity gap closure)
+last_updated: "2026-07-23T15:44:33.688Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 14
   completed_phases: 8
   total_plans: 64
-  completed_plans: 62
+  completed_plans: 63
   percent: 57
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 46 (white-label-quotes) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 46 execution started
 
@@ -93,6 +93,7 @@ Last activity: 2026-07-23 — Phase 46 execution started
 | Phase 46 P05 | continuation | 2 tasks | 7 files |
 | Phase 46 P07 | 8min | 2 tasks | 3 files |
 | Phase 46 P09 | 7min | 2 tasks | 4 files |
+| Phase 46 P10 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -235,6 +236,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 46]: 46-07: Only the two white-label /features rows flipped (Etsy/carrier/QuickBooks/cloud-sync ComingCell rows untouched, ship in Phases 47-50); ComingCell doc comment corrected from 46-50 to 47-50 phase range
 - [Phase ?]: [Phase ?]: 46-07: PricingPage PRO_FEATURES gained a white-label bullet; roadmap.ts white-label item removed per its own ship-and-remove contract, keeping /roadmap in lockstep with the /features Coming-to-Pro strip; src/pricing.ts and price strings untouched
 - [Phase ?]: 46-09: resetSignIn() gates on session (not status) to guarantee a signed-in user can never be reset to signed-out; SignInModal test mock replaced with a transitionable module-level mock (frozen-status mock could never express a lifecycle transition)
+- [Phase ?]: [Phase 46]: 46-10: G-46-6/D-08 supersedes 46-02-PLAN.md:49's web-only ShareQuoteButton scope decision — removed the __IS_TAURI__ gate so hosted-quote publishing works on both platforms; BillingPanel.tsx:50's separate web-only billing gate flagged as an open founder question, not touched
 
 ### Pending Todos
 
@@ -251,8 +253,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-23T15:39:50.261Z
-Stopped at: Completed 46-09-PLAN.md (G-46-4 stuck link-sent reset + G-46-2 client copy fix)
+Last session: 2026-07-23T15:44:33.678Z
+Stopped at: Completed 46-10-PLAN.md (G-46-6 desktop Share-quote parity gap closure)
 Resume file: None
 
 ## Operator Next Steps
