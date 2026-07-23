@@ -76,7 +76,11 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
   // Phase 43-04 (PRO-02): Share/Unpublish for the quote currently being
   // edited. D-13: only edit-mode has an already-created Quote to publish —
   // create-mode's Quote doesn't exist yet until Create Quote is clicked.
-  const { publish: publishQuote, unpublish: unpublishQuote } = usePublishedQuote(userProfile.name, updateQuote);
+  const { publish: publishQuote, unpublish: unpublishQuote } = usePublishedQuote(
+    userProfile.name,
+    userProfile.logoDataUrl,
+    updateQuote,
+  );
   // Phase 46-04 (D-04/D-05/D-06/D-07): live entitlement drives the PDF
   // white-label branding injected below — safe to call unconditionally
   // (no-op/not-Pro when Supabase is null; cache-backed for offline Pro users).

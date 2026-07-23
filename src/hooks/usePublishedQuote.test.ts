@@ -102,20 +102,25 @@ vi.mock('./useProAuth', () => ({
 const { usePublishedQuote } = await import('./usePublishedQuote');
 type Hook = ReturnType<typeof usePublishedQuote>;
 
+// A tiny valid 1x1 PNG data URL — passes isValidLogoDataUrl's allowlist.
+const VALID_LOGO_DATA_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+const INVALID_LOGO_DATA_URL = 'javascript:alert(1)';
+
 let latest: Hook;
 let updateQuoteSpy: ReturnType<typeof vi.fn<(quote: Quote) => Promise<void>>>;
 
-function Probe({ businessName }: { businessName?: string }) {
-  latest = usePublishedQuote(businessName, updateQuoteSpy);
+function Probe({ businessName, logoDataUrl }: { businessName?: string; logoDataUrl?: string }) {
+  latest = usePublishedQuote(businessName, logoDataUrl, updateQuoteSpy);
   return null;
 }
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
 
-async function renderProbe(businessName?: string): Promise<void> {
+async function renderProbe(businessName?: string, logoDataUrl?: string): Promise<void> {
   await act(async () => {
-    root!.render(createElement(Probe, { businessName }));
+    root!.render(createElement(Probe, { businessName, logoDataUrl }));
   });
 }
 
@@ -232,6 +237,75 @@ describe('usePublishedQuote — publish', () => {
     });
 
     expect(insertPayload?.snapshot).not.toHaveProperty('businessName');
+  });
+
+  // Phase 46-05 (D-11): logo bakes into the frozen publish snapshot.
+  it('includes logoDataUrl in the snapshot when a valid logo is provided', async () => {
+    mockAuth = { session: makeSession('user-42') };
+    let insertPayload: Record<string, unknown> | undefined;
+    const fromSpy = vi.fn((table: string) => {
+      if (table === 'entitlements') return makeBuilder({ data: { status: 'active' } });
+      const builder = makeBuilder({ error: null });
+      builder.insert = vi.fn((payload: Record<string, unknown>) => {
+        insertPayload = payload;
+        return builder;
+      });
+      return builder;
+    });
+    mockSupabase = { from: fromSpy };
+    await renderProbe('Acme Prints', VALID_LOGO_DATA_URL);
+
+    await act(async () => {
+      await latest.publish(makeQuote());
+    });
+
+    expect(insertPayload?.snapshot).toMatchObject({ logoDataUrl: VALID_LOGO_DATA_URL });
+  });
+
+  // Phase 46-05 (D-09): an invalid/malformed logo must never reach the snapshot —
+  // the powered-by-until-logo rule holds server-side only when this is omitted.
+  it('omits logoDataUrl from the snapshot when the logo is invalid', async () => {
+    mockAuth = { session: makeSession() };
+    let insertPayload: Record<string, unknown> | undefined;
+    const fromSpy = vi.fn((table: string) => {
+      if (table === 'entitlements') return makeBuilder({ data: { status: 'active' } });
+      const builder = makeBuilder({ error: null });
+      builder.insert = vi.fn((payload: Record<string, unknown>) => {
+        insertPayload = payload;
+        return builder;
+      });
+      return builder;
+    });
+    mockSupabase = { from: fromSpy };
+    await renderProbe('Acme Prints', INVALID_LOGO_DATA_URL);
+
+    await act(async () => {
+      await latest.publish(makeQuote());
+    });
+
+    expect(insertPayload?.snapshot).not.toHaveProperty('logoDataUrl');
+  });
+
+  it('omits logoDataUrl from the snapshot when none is provided', async () => {
+    mockAuth = { session: makeSession() };
+    let insertPayload: Record<string, unknown> | undefined;
+    const fromSpy = vi.fn((table: string) => {
+      if (table === 'entitlements') return makeBuilder({ data: { status: 'active' } });
+      const builder = makeBuilder({ error: null });
+      builder.insert = vi.fn((payload: Record<string, unknown>) => {
+        insertPayload = payload;
+        return builder;
+      });
+      return builder;
+    });
+    mockSupabase = { from: fromSpy };
+    await renderProbe('Acme Prints', undefined);
+
+    await act(async () => {
+      await latest.publish(makeQuote());
+    });
+
+    expect(insertPayload?.snapshot).not.toHaveProperty('logoDataUrl');
   });
 });
 

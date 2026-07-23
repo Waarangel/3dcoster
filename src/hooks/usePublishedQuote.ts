@@ -3,6 +3,7 @@ import type { Quote } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useProAuth } from './useProAuth';
 import { isProStatus } from './useEntitlement';
+import { isValidLogoDataUrl } from '../utils/logoDataUrl';
 
 // ---------------------------------------------------------------------------
 // usePublishedQuote — publish/unpublish a hosted quote link + pull hosted
@@ -96,6 +97,14 @@ async function hasActiveEntitlement(userId: string): Promise<boolean> {
 
 export function usePublishedQuote(
   businessName: string | undefined,
+  /**
+   * D-11: the maker's CURRENT logo, injected the same way as `businessName`
+   * (dependency injection — this hook never reads useUserProfile itself).
+   * Validated via `isValidLogoDataUrl` before it ever reaches the publish
+   * snapshot (client half of Pitfall 4's defense-in-depth; the server half
+   * lives in api/lib/logoDataUrl.ts, a lockstep copy).
+   */
+  logoDataUrl: string | undefined,
   updateQuote: (quote: Quote) => Promise<void>,
 ): UsePublishedQuoteResult {
   const { session } = useProAuth();
@@ -119,10 +128,18 @@ export function usePublishedQuote(
 
       const token = newToken();
       const trimmedBusinessName = businessName?.trim();
+      // D-11: the logo is captured HERE, at publish time, from whatever is
+      // CURRENTLY on the injected `logoDataUrl` — it freezes into this row
+      // and a later profile logo change never touches already-published
+      // rows. D-09: an invalid/absent logo is silently omitted (never a
+      // malformed value), which is what lets the hosted page fall back to
+      // the powered-by footer server-side.
+      const validLogoDataUrl = isValidLogoDataUrl(logoDataUrl) ? logoDataUrl : undefined;
       const snapshot: Record<string, unknown> = {
         ...quote.lineItemsSnapshot,
         ...(trimmedBusinessName ? { businessName: trimmedBusinessName } : {}),
         ...(quote.variantsSnapshot ? { variantsSnapshot: quote.variantsSnapshot } : {}),
+        ...(validLogoDataUrl ? { logoDataUrl: validLogoDataUrl } : {}),
       };
 
       const insertPayload: HostedQuoteInsert = {
@@ -152,7 +169,7 @@ export function usePublishedQuote(
 
       return publishedUrl;
     },
-    [session, businessName, updateQuote],
+    [session, businessName, logoDataUrl, updateQuote],
   );
 
   const unpublish = useCallback(

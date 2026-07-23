@@ -1186,7 +1186,7 @@ export function JobsManager({ jobs, isLoading, materials, shippingConfig, market
   // via the same prop-chain pattern as updateQuoteFromHook above (mirrors
   // PERF-09; a per-row hook call would add a Supabase round-trip per row).
   const { publish: publishQuote, unpublish: unpublishQuote, refreshStatuses } =
-    usePublishedQuote(userProfile.name, updateQuoteFromHook);
+    usePublishedQuote(userProfile.name, userProfile.logoDataUrl, updateQuoteFromHook);
 
   // D-07: pull hosted approve/decline status back into the app once when the
   // Jobs surface mounts. Safe to call unconditionally — refreshStatuses is a
