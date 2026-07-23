@@ -12,6 +12,7 @@ import { formatQuoteNumber } from '../utils/format';
 import { usePublishedQuote } from '../hooks/usePublishedQuote';
 import { useEntitlement } from '../hooks/useEntitlement';
 import { ShareQuoteButton } from './pro/ShareQuoteButton';
+import { HostedLinkActions } from './pro/HostedLinkActions';
 import { useSupportNudge } from './SupportNudge';
 import type { QuoteBranding } from '../pdf/generateQuotePdf';
 
@@ -615,9 +616,15 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
         {/* Footer */}
         <div className="flex items-center justify-between gap-2 p-4 pt-2 border-t border-slate-700">
           {/* D-13: only edit-mode has an already-created Quote to share — create-mode's Quote doesn't exist until Create Quote is clicked. */}
-          <div>
+          <div className="flex items-center gap-2">
             {editingQuote && (
               <ShareQuoteButton quote={editingQuote} publish={publishQuote} unpublish={unpublishQuote} />
+            )}
+            {/* G-46-6R: this modal's ShareQuoteButton row has no "Live link"
+                badge next to it (unlike JobsManager), so the Copy/Open
+                affordance is mounted here directly. */}
+            {editingQuote?.publishStatus === 'published' && editingQuote.publishedUrl && (
+              <HostedLinkActions url={editingQuote.publishedUrl} label={formatQuoteNumber(editingQuote.quoteNumber)} />
             )}
           </div>
           <div className="flex gap-2">

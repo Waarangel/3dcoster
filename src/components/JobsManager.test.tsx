@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import type { Quote, PrintJob, Sale, PrinterInstance, PrinterConfig, Material } from '../types';
 import { reconcileFixedCostsAtSave } from '../db/backfill';
+import { ToastProvider } from './ui';
 
 // ---------------------------------------------------------------------------
 // JobsManager Orders section — Phase 16 second extension (D-23..D-32).
@@ -269,6 +270,57 @@ describe('OrdersQuoteRows — Declined row (D-28, D-29)', () => {
     expect(payload.status).toBe('sent');
     expect(payload.decisionAt).toBeUndefined();
     expect(payload.declineReason).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HostedLinkActions retrievability — G-46-6R (gap closure)
+// ---------------------------------------------------------------------------
+
+describe('OrdersQuoteRows — HostedLinkActions retrievability (G-46-6R)', () => {
+  it('renders Copy-link + Open controls next to the "Live link" badge for a published quote', async () => {
+    const q = makeQuote({
+      status: 'sent',
+      quoteNumber: 7,
+      publishStatus: 'published',
+      publishedUrl: 'https://3dcoster.com/q/abc123',
+      hostedToken: 'abc123',
+    });
+    quotesFixture = [q];
+    await act(async () => {
+      root!.render(
+        <ToastProvider>
+          <OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />
+        </ToastProvider>,
+      );
+    });
+
+    const copyBtn = Array.from(container!.querySelectorAll('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? '') === 'Copy link for Q-0007',
+    );
+    const openBtn = Array.from(container!.querySelectorAll('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? '') === 'Open hosted page for Q-0007',
+    );
+    expect(copyBtn).toBeDefined();
+    expect(openBtn).toBeDefined();
+    expect(container!.textContent ?? '').toContain('Live link');
+  });
+
+  it('omits HostedLinkActions for an unpublished quote', async () => {
+    const q = makeQuote({ status: 'sent', quoteNumber: 8, publishStatus: undefined });
+    quotesFixture = [q];
+    await act(async () => {
+      root!.render(
+        <ToastProvider>
+          <OrdersQuoteRows jobId="job-1" quotesForJob={[q]} updateQuote={updateQuoteSpy} />
+        </ToastProvider>,
+      );
+    });
+
+    const copyBtn = Array.from(container!.querySelectorAll('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? '') === 'Copy link for Q-0008',
+    );
+    expect(copyBtn).toBeUndefined();
   });
 });
 

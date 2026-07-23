@@ -445,6 +445,58 @@ describe('PrintQuoteModal — edit mode (D-27)', () => {
     // Restore original mock for sibling tests
     (useDb as { useQuotes: typeof original }).useQuotes = original;
   });
+
+  it('renders HostedLinkActions (Copy link + Open) in the footer for a published editingQuote (G-46-6R)', async () => {
+    const editingQuote: Quote = {
+      id: 'quote-published',
+      quoteNumber: 9,
+      printJobId: 'job-test',
+      customerId: undefined,
+      customerSnapshot: { name: 'Pre-Filled', email: 'pre@filled.test' },
+      lineItemsSnapshot: {
+        jobTitle: 'Test Print',
+        sellingPrice: 100,
+        shippingCost: 5,
+        resolvedTaxRate: 13,
+        taxAmount: 13,
+        currency: 'USD',
+        notes: '',
+        terms: '',
+        countryAtSendTime: undefined,
+      },
+      status: 'sent',
+      createdAt: new Date('2026-04-01'),
+      sentAt: new Date('2026-04-01'),
+      publishStatus: 'published',
+      publishedUrl: 'https://3dcoster.com/q/xyz789',
+      hostedToken: 'xyz789',
+    };
+
+    await act(async () => {
+      root!.render(
+        <ToastProvider>
+          <PrintQuoteModal
+            job={makeJob()}
+            userProfile={makeUserProfile()}
+            shippingConfig={makeShippingConfig()}
+            isOpen={true}
+            onClose={vi.fn()}
+            onQuoteCreated={vi.fn()}
+            editingQuote={editingQuote}
+          />
+        </ToastProvider>,
+      );
+    });
+
+    const copyBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? '') === 'Copy link for Q-0009',
+    );
+    const openBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? '') === 'Open hosted page for Q-0009',
+    );
+    expect(copyBtn).toBeDefined();
+    expect(openBtn).toBeDefined();
+  });
 });
 
 describe('PrintQuoteModal — CONN-03 Quantity variants (D-05..D-08)', () => {

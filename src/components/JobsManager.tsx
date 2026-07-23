@@ -5,6 +5,7 @@ import type { PrintJob, Material, Sale, ShippingConfig, Currency, UserProfile, Q
 import { useSales, useAllSales, useQuotes } from '../hooks/useDatabase';
 import { usePublishedQuote, type PublishOptions } from '../hooks/usePublishedQuote';
 import { ShareQuoteButton } from './pro/ShareQuoteButton';
+import { HostedLinkActions } from './pro/HostedLinkActions';
 import { db } from '../db/database';
 import { Button, EditButton, DeleteButton, IconButton, Input, EmptyState, Skeleton, shouldShowEmptyState, Modal, useToast } from './ui';
 import { ClipboardListIcon } from './ui/icons';
@@ -318,6 +319,13 @@ function QuoteRow({ quote, pillKind, onConvert, onEdit, onDecline, onReopen, pub
             <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-700/30 text-blue-300">
               Live link
             </span>
+          )}
+          {/* G-46-6R: the hosted link must stay retrievable for EVERY published
+              quote regardless of pillKind (declined+published has no
+              ShareQuoteButton row), so this mount is keyed off publishStatus
+              directly rather than living inside ShareQuoteButton. */}
+          {quote.publishStatus === 'published' && quote.publishedUrl && (
+            <HostedLinkActions url={quote.publishedUrl} label={formatQuoteNumber(quote.quoteNumber)} />
           )}
         </div>
         <div className="text-xs text-slate-400">
