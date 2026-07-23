@@ -129,7 +129,7 @@ status: complete
 
 Each task was committed atomically:
 
-1. **Task 1: Branding-aware PDF generator (logo header + conditional footer)** - `d33fde9` (test, RED) → `e59fe4e` (feat, GREEN)
+1. **Task 1: Branding-aware PDF generator (logo header + conditional footer)** - `d33fde9` (test, RED) → `e59fe4e` (feat, GREEN) → `af50e7c` (fix, test-hygiene deviation — see below)
 2. **Task 2: Cache last-known-good entitlement for offline white-label (D-07)** - `e26142f` (test, RED) → `ae78a65` (feat, GREEN)
 3. **Task 3: Inject branding into the PDF download from PrintQuoteModal** - `d534606` (feat, includes test additions — task was `type="auto"` without `tdd="true"`)
 
@@ -151,7 +151,22 @@ _TDD tasks (1 and 2) each have a test commit followed by an implementation commi
 
 ## Deviations from Plan
 
-None - plan executed exactly as written. All three tasks matched their `<action>`/`<behavior>`/`<acceptance_criteria>` blocks with no scope changes. The worktree coordination note (RESEARCH Pitfall 5) was checked first: `.claude/worktrees/cool-kowalevski-9831d4` was confirmed clean and at the same commit as `main` (no live edits to `generateQuotePdf.ts`), so no coordination was needed.
+All three tasks matched their `<action>`/`<behavior>`/`<acceptance_criteria>` blocks with no scope changes. The worktree coordination note (RESEARCH Pitfall 5) was checked first: `.claude/worktrees/cool-kowalevski-9831d4` was confirmed clean and at the same commit as `main` (no live edits to `generateQuotePdf.ts`), so no coordination was needed.
+
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Self-authored test wrote a real PDF to the repo root**
+- **Found during:** Task 1 (self-review after the first full test-suite run)
+- **Issue:** An extra sanity-check test I added (`generateQuotePdf accepts the branding argument`) called the real web `.save()` branch (`__IS_TAURI__` false). jsPDF's Node build performs `fs.writeFileSync` when no browser download API is present, leaving a stray `Quote-Q-0042.pdf` at the repo root on every test run — a real bug in test hygiene that would have polluted every future CI run.
+- **Fix:** Rewrote the test to exercise the already-mocked Tauri branch (same `@tauri-apps/plugin-dialog`/`plugin-fs` mock pattern as the pre-existing "writeFile error mapping" describe block), asserting the same `generateQuotePdf(quote, branding)` call signature without ever touching disk.
+- **Files modified:** src/pdf/generateQuotePdf.test.ts
+- **Verification:** `npm run test -- src/pdf/generateQuotePdf.test.ts` (37/37 pass) followed by a full suite run (1469 passed) with `git status --short` confirming no stray file was created.
+- **Committed in:** af50e7c
+
+---
+
+**Total deviations:** 1 auto-fixed (1 bug)
+**Impact on plan:** Self-contained test-hygiene fix; no production code or behavior changed.
 
 ## Issues Encountered
 
@@ -173,4 +188,4 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-All 6 created/modified source files verified present on disk; all 5 task commits (d33fde9, e59fe4e, e26142f, ae78a65, d534606) verified present in git log.
+All 6 created/modified source files verified present on disk; all 6 commits (d33fde9, e59fe4e, e26142f, ae78a65, d534606, af50e7c) verified present in git log. Full suite re-verified green after the af50e7c fix: 1469 passed, 4 skipped, 1 todo (129 test files), with `git status --short` confirming no stray artifacts.
