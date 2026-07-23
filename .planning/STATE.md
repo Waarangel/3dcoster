@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: Cost-Truth & Insight
 current_phase: 46
 current_phase_name: white-label-quotes
-status: verifying
-stopped_at: Completed 46-07-PLAN.md (phase 46 white-label-quotes now fully executed, 7/7 plans)
-last_updated: "2026-07-23T13:12:16.200Z"
-last_activity: 2026-07-22
+status: executing
+stopped_at: Completed 46-09-PLAN.md (G-46-4 stuck link-sent reset + G-46-2 client copy fix)
+last_updated: "2026-07-23T15:39:50.271Z"
+last_activity: 2026-07-23
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 14
-  completed_phases: 9
-  total_plans: 61
-  completed_plans: 61
-  percent: 64
+  completed_phases: 8
+  total_plans: 64
+  completed_plans: 62
+  percent: 57
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 46 (white-label-quotes) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
-Last activity: 2026-07-22 — Phase 46 execution started
+Plan: 2 of 10
+Status: Ready to execute
+Last activity: 2026-07-23 — Phase 46 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -92,6 +92,7 @@ Last activity: 2026-07-22 — Phase 46 execution started
 | Phase 46 P06 | 5min | 4 tasks | 7 files |
 | Phase 46 P05 | continuation | 2 tasks | 7 files |
 | Phase 46 P07 | 8min | 2 tasks | 3 files |
+| Phase 46 P09 | 7min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -233,6 +234,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 46]: 46-05: Server-side logo validator (api/lib/logoDataUrl.ts) is a byte-identical lockstep copy of src/utils/logoDataUrl.ts, not an import, since api/ is a separate Vercel Function bundle — re-validated at render time so a tampered Supabase row can never reach the HTML (Pitfall 4)
 - [Phase ?]: [Phase 46]: 46-07: Only the two white-label /features rows flipped (Etsy/carrier/QuickBooks/cloud-sync ComingCell rows untouched, ship in Phases 47-50); ComingCell doc comment corrected from 46-50 to 47-50 phase range
 - [Phase ?]: [Phase ?]: 46-07: PricingPage PRO_FEATURES gained a white-label bullet; roadmap.ts white-label item removed per its own ship-and-remove contract, keeping /roadmap in lockstep with the /features Coming-to-Pro strip; src/pricing.ts and price strings untouched
+- [Phase ?]: 46-09: resetSignIn() gates on session (not status) to guarantee a signed-in user can never be reset to signed-out; SignInModal test mock replaced with a transitionable module-level mock (frozen-status mock could never express a lifecycle transition)
 
 ### Pending Todos
 
@@ -249,8 +251,8 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-23T13:12:16.178Z
-Stopped at: Completed 46-07-PLAN.md (phase 46 white-label-quotes now fully executed, 7/7 plans)
+Last session: 2026-07-23T15:39:50.261Z
+Stopped at: Completed 46-09-PLAN.md (G-46-4 stuck link-sent reset + G-46-2 client copy fix)
 Resume file: None
 
 ## Operator Next Steps
