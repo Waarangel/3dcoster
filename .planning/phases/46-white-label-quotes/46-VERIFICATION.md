@@ -1,7 +1,7 @@
 ---
 phase: 46-white-label-quotes
 verified: 2026-07-23T19:40:00Z
-status: human_needed
+status: passed
 score: 46/46 must-haves verified (code-level); 1 UAT gap (G-46-18) awaiting live re-confirmation
 behavior_unverified: 0
 ---
@@ -16,6 +16,7 @@ behavior_unverified: 0
 This report **supersedes** the prior verification (2026-07-23T19:15:00Z, status `human_needed`, 41/41 must-haves). It re-confirms the original 11 plans' 41 truths (spot-checked directly against the current codebase, not just copy-forwarded) and adds the 5 new must-haves from gap-closure plan **46-12** (commits `5c16f7e`, `3e8a0b7`, `5740aca`, `245db01`, `8243931`), which closes UAT gap **G-46-18** (published hosted-quote link opened a blank page).
 
 **What changed vs. the superseded report:**
+
 1. The superseded report's single outstanding human-verification item — live desktop confirmation that the G-46-6R "false copied toast" bug was gone — is now **closed**. 46-UAT.md test 18 (executed live, pre-46-12) reported "copy works," and the Gaps section separately confirms `G-46-6R: status: resolved`. No further action needed there.
 2. That same live test 18 surfaced a **new** issue — clicking "Open" on a published link hit a blank page (`No routes matched location "/q/{token}"`) — root-caused in `.planning/debug/hosted-link-open-blank-page.md` as gap **G-46-18**, with two real defects: a missing `vercel.json` rewrite and no web-side `NotFound` catch-all.
 3. Plan 46-12 closes both defects at the code level (verified below) and records the deploy-gated portion as launch-day checklist item 12. `46-UAT.md`'s Gaps section still shows `G-46-18: status: failed` because the live re-test that would flip it to `resolved` happens via a separate `/gsd-verify-work 46` pass, not this workflow — this is why overall status stays `human_needed`.
@@ -178,11 +179,13 @@ The superseded report's single outstanding item (live desktop WebView confirmati
 One item remains open, carried from that same test 18 run (gap G-46-18), now split into a testable-now half and a deploy-gated half:
 
 ### 1. Live re-confirmation that an unmatched web location shows the NotFound page (testable now, no deploy required)
+
 **Test:** On a real browser session (web, not Tauri — e.g. `npm run dev` or a built `dist/` preview), navigate to an arbitrary unmatched path (a stale `/q/{token}` link, a typo'd URL, or any nonexistent route) and confirm the friendly "Page not found" page renders — Header, "Page not found" heading, explanatory sentence, "Back to home" link — never a blank page or console-only warning.
 **Expected:** The themed NotFound page renders (matching the neighboring marketing pages' look), and the home link returns to `/`.
 **Why human:** `src/pages/NotFoundPage.test.tsx` already proves this transition programmatically (mounts the real `MarketingThemeScope`+`Outlet` structure with an unknown route and confirms `NotFoundPage` resolves — this session confirmed the test passes), but the ORIGINAL UAT gap (G-46-18) was reported through a live human session, and this project's UAT discipline (46-UAT.md) closes gaps via a live re-test, not solely a passing unit test. This session's constraints also explicitly prohibit starting a dev server, so this check could not be performed here. Re-tested via `/gsd-verify-work 46`.
 
 ### 2. Full G-46-18 resolution: a real published hosted-quote link opens the branded hosted page (blocked until the founder deploys — NOT a pending task)
+
 **Test:** Post-launch, on a Vercel PREVIEW deploy, `curl -I /q/{token}` for a real published token (expect HTTP 200 + the branded page from `api/q/[token].ts`) and for an unpublished/expired/random-UUID token (expect a byte-identical branded 404 with `noindex`/`no-store`).
 **Expected:** `/q/{token}` is served by the function, never the SPA shell.
 **Why human:** Production (3dcoster.com) intentionally still serves the pre-v2.0 deployment by design (deploy guard `DEPLOY_OK=1`, nothing pushed; launch is a founder-driven event). This is **not an outstanding task to schedule** — it is a correctly-documented, deliberate deferral. This verification pass confirmed the deferral is properly recorded as launch-day checklist item 12 in `docs/PRO-SECURITY-REVIEW.md` (must_have #46 above, ✓ VERIFIED). No action is needed before launch; the checklist item itself is the tracking mechanism.
@@ -190,6 +193,7 @@ One item remains open, carried from that same test 18 run (gap G-46-18), now spl
 ## Gaps Summary
 
 **No code-level gaps found.** Every must-have (46/46), artifact (22/22), key link (12/12), and D-01..D-15 decision (15/15) is honored by the actual code. All 5 UAT-diagnosed gaps across the phase are closed at the code level:
+
 - **G-46-2** (new-user link-only email) — resolved by 46-08 (live production template fix) + 46-09 (client copy/shouldCreateUser hardening).
 - **G-46-4** (stuck `link-sent` / disabled email field) — resolved by 46-09 (`resetSignIn()` + unified close handling).
 - **G-46-6** (Share-quote desktop gate) — resolved by 46-10 (gate removed, both platforms verified live).

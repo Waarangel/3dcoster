@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Cost-Truth & Insight
-current_phase: 46
-current_phase_name: white-label-quotes
-status: executing
-stopped_at: Completed 46-12-PLAN.md (gap closure G-46-18 closed)
-last_updated: "2026-07-23T23:10:03.781Z"
+current_phase: 47
+current_phase_name: Cloud sync
+status: planning
+stopped_at: Phase 46 complete (UAT 18/18 passed), ready to plan Phase 47
+last_updated: "2026-07-23T23:56:33.781Z"
 last_activity: 2026-07-23
-last_activity_desc: Phase 46 execution started
+last_activity_desc: Phase 46 complete, transitioned to Phase 47
 progress:
   total_phases: 14
   completed_phases: 9
@@ -21,17 +21,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–45). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
+See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–51). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 46 — white-label-quotes
+**Current focus:** Phase 47 — Cloud sync
 
 ## Current Position
 
-Phase: 46 (white-label-quotes) — EXECUTING
-Plan: 2 of 12
-Status: Ready to execute
-Last activity: 2026-07-23 — Phase 46 execution started
+Phase: 47 — Cloud sync
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-23 — Phase 46 complete, transitioned to Phase 47
 
 ## v2.0 Phase Order Reference
 
@@ -257,12 +257,16 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-- None active from Phase 46. (Plan 46-08's checkpoint — production 'Confirm signup' Supabase email template — resolved 2026-07-23: fix applied via Management API with founder approval, byte-for-byte GET-confirmed, and live-verified with a fresh email; G-46-2 closed. Reminder: delete scripts/seed-pro-entitlement-uat.sql-seeded entitlement rows before real billing/launch testing.)
+- None blocking — Phase 46 closed 2026-07-23 with UAT 18/18 passed (all 4 gap-closure plans executed and re-verified).
+- ⚠️ [Phase 46] Reminder: delete scripts/seed-pro-entitlement-uat.sql-seeded entitlement rows before real billing/launch testing.
+- ⚠️ [Phase 46] BillingPanel.tsx web-only Pro gate (Paddle billing) is an OPEN founder question (tracked in 46-10-SUMMARY) — conflicts with the web+desktop parity rule; decide before Phase 51 launch-prep.
+- ⚠️ [Phase 46] Launch-day checklist item 12 (docs/PRO-SECURITY-REVIEW.md Part 5): real-HTTP preview-deploy verification of the /q/:token rewrite — production stays pre-v2.0 until founder deploys.
+- ⚠️ [Phases 48–50 external gates] Founder operator actions in parallel NOW: Etsy dev app registration, Intuit dev app registration, shipping-aggregator account.
 
 ## Session Continuity
 
-Last session: 2026-07-23T23:10:03.771Z
-Stopped at: Completed 46-12-PLAN.md (gap closure G-46-18 closed)
+Last session: 2026-07-23T23:56:00Z
+Stopped at: Phase 46 complete (UAT 18/18 passed), ready to plan Phase 47
 Resume file: None
 
 ## Operator Next Steps
