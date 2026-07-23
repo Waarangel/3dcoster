@@ -671,16 +671,26 @@ describe('generateQuotePdf', () => {
       expect(text).not.toContain('Made with 3DCoster');
     });
 
-    it('generateQuotePdf (the save/download entry point) also accepts the branding argument', async () => {
+    it('generateQuotePdf (the save/download entry point) also accepts the branding argument (Tauri path — no disk write on the web save() branch)', async () => {
       // Sanity check that the second exported function shares the same signature
-      // as generateQuotePdfBytes. Web branch: __IS_TAURI__ false triggers doc.save().
-      vi.stubGlobal('__IS_TAURI__', false);
+      // as generateQuotePdfBytes. Uses the Tauri branch (mocked plugin-dialog/fs,
+      // same pattern as the "writeFile error mapping" describe block above) so
+      // this never falls through to jsPDF's real doc.save(), which performs an
+      // actual fs.writeFileSync under Node/jsdom (no browser download API here).
+      vi.stubGlobal('__IS_TAURI__', true);
       try {
+        const { save } = await import('@tauri-apps/plugin-dialog');
+        const { writeFile } = await import('@tauri-apps/plugin-fs');
+        vi.mocked(save).mockResolvedValue(null); // cancelled dialog — no write attempted
+        vi.mocked(writeFile).mockClear();
+
         await expect(
-          generateQuotePdf(makeQuote(), { isWhiteLabel: false }),
+          generateQuotePdf(makeQuote(), { isWhiteLabel: true, businessName: 'Acme 3D' }),
         ).resolves.toBeUndefined();
+        expect(vi.mocked(writeFile)).not.toHaveBeenCalled();
       } finally {
         vi.unstubAllGlobals();
+        vi.clearAllMocks();
       }
     });
   });
