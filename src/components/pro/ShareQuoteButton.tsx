@@ -4,6 +4,7 @@ import type { PublishOptions } from '../../hooks/usePublishedQuote';
 import { useProAuth } from '../../hooks/useProAuth';
 import { Button, useToast } from '../ui';
 import { formatQuoteNumber } from '../../utils/format';
+import { copyToClipboard } from '../../utils/clipboard';
 import { NewBadge } from '../NewBadge';
 import { ProPitchModal } from './ProPitchModal';
 import { SignInModal } from './SignInModal';
@@ -75,11 +76,15 @@ export function ShareQuoteButton({ quote, publish, unpublish }: ShareQuoteButton
     setIsBusy(true);
     try {
       const url = await publish(quote);
-      try {
-        await navigator.clipboard?.writeText(url);
+      const copied = await copyToClipboard(url);
+      if (copied) {
         toast.success(`Quote published — link copied to your clipboard: ${url}`);
-      } catch {
-        toast.success(`Quote published: ${url}`);
+      } else {
+        // G-46-6R: copyToClipboard() is truthful — this branch only runs when
+        // the write genuinely did not happen (e.g. desktop WebView with no
+        // clipboard). Never claim "copied" here; keep the url visible until
+        // the user dismisses it instead of letting it vanish in 5s.
+        toast.success(`Quote published: ${url}`, { duration: 0 });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not publish this quote.');

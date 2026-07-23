@@ -28,6 +28,16 @@ vi.mock('../../hooks/useProAuth', () => ({
   }),
 }));
 
+// G-46-6R: the publish-toast's clipboard boundary is mocked at the module
+// level so the honest-toast tests can control the copy outcome without
+// touching navigator.clipboard directly (copyToClipboard itself is unit
+// tested in clipboard.test.ts — this file only checks ShareQuoteButton's
+// wiring to it).
+const mockCopyToClipboard = vi.fn<(text: string) => Promise<boolean>>();
+vi.mock('../../utils/clipboard', () => ({
+  copyToClipboard: (text: string) => mockCopyToClipboard(text),
+}));
+
 const { ShareQuoteButton } = await import('./ShareQuoteButton');
 
 function makeQuote(overrides?: Partial<Quote>): Quote {
@@ -61,6 +71,8 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   mockIsSignedIn = false;
+  mockCopyToClipboard.mockReset();
+  mockCopyToClipboard.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -200,5 +212,43 @@ describe('ShareQuoteButton — signed-in (publish/unpublish)', () => {
     });
 
     expect(document.body.textContent).toContain('An active Pro subscription is required');
+  });
+});
+
+describe('ShareQuoteButton — honest publish-toast clipboard claim (G-46-6R)', () => {
+  it('claims the link was copied when copyToClipboard resolves true', async () => {
+    mockIsSignedIn = true;
+    mockCopyToClipboard.mockResolvedValue(true);
+    const publish = vi.fn<PublishFn>(async () => 'https://3dcoster.com/q/abc');
+    renderButton({ quote: makeQuote({ publishStatus: undefined }), publish });
+
+    await act(async () => {
+      findButtonByLabel('Share quote Q-0007')!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockCopyToClipboard).toHaveBeenCalledWith('https://3dcoster.com/q/abc');
+    const bodyText = document.body.textContent ?? '';
+    expect(bodyText).toContain('https://3dcoster.com/q/abc');
+    expect(bodyText.toLowerCase()).toContain('copied');
+  });
+
+  it('does NOT claim the link was copied when copyToClipboard resolves false (desktop WebView with no clipboard)', async () => {
+    mockIsSignedIn = true;
+    mockCopyToClipboard.mockResolvedValue(false);
+    const publish = vi.fn<PublishFn>(async () => 'https://3dcoster.com/q/abc');
+    renderButton({ quote: makeQuote({ publishStatus: undefined }), publish });
+
+    await act(async () => {
+      findButtonByLabel('Share quote Q-0007')!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockCopyToClipboard).toHaveBeenCalledWith('https://3dcoster.com/q/abc');
+    const bodyText = document.body.textContent ?? '';
+    expect(bodyText).toContain('https://3dcoster.com/q/abc');
+    expect(bodyText.toLowerCase()).not.toContain('copied');
   });
 });
