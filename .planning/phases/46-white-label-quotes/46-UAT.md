@@ -1,9 +1,9 @@
 ---
-status: testing
+status: complete
 phase: 46-white-label-quotes
-source: [46-VERIFICATION.md, 46-08-SUMMARY.md, 46-09-SUMMARY.md, 46-10-SUMMARY.md, 46-11-SUMMARY.md]
+source: [46-VERIFICATION.md, 46-08-SUMMARY.md, 46-09-SUMMARY.md, 46-10-SUMMARY.md, 46-11-SUMMARY.md, 46-12-SUMMARY.md]
 started: 2026-07-23T09:20:00Z
-updated: 2026-07-23T19:30:00Z
+updated: 2026-07-23T23:55:00Z
 ---
 
 ## Current Test
@@ -37,10 +37,8 @@ result: pass
 
 ### 6. Desktop Pro surface visual check (re-verify after G-46-6 fix)
 expected: On desktop, Settings → Profile shows Account & Pro AND the Branding section; the Share-quote button is PRESENT on quote rows — both the signed-out "Share quote [Pro]" pitch chip and the signed-in Share/Unpublish control (publishing works on both web and desktop per G-46-6 / D-08).
-result: issue
-reported: "yes, Share Quote shows and it generates a quote link, which shows up in toast for about 3 seconds then disappears. I have no idea where the link is, or how to get to it in the future"
-severity: major
-note: "Parity itself confirmed (button present, publish works on desktop) — the issue is link retrievability after the transient toast."
+result: pass
+note: "Original report ('link shows in a 3s toast then disappears, no way to get it back') resolved by 46-11 (persistent Copy-link/Open icon buttons on the quote row + edit view, gap G-46-6R). User re-verified in test 18: 'copy works.' Parity was confirmed in the original run (button present, publish works on desktop)."
 
 ### 7. First-time sign-in copy accuracy (46-09 D5)
 expected: The "Sign in for Pro" modal's intro copy says a one-time code is emailed and that a brand-new account may need to confirm before the code works — no unconditional "magic link and one-time code" over-promise. Reads accurately and clearly.
@@ -106,18 +104,16 @@ result: pass
 source: automated
 coverage_id: 46-10/D3
 
-### 18. Desktop hosted-link retrievability live check (46-11 D5)
-expected: On desktop (Tauri), with a published quote: the quote row (JobsManager) and the quote edit view (PrintQuoteModal footer) show Copy-link and Open icon buttons next to the "Live link" badge. Copy either truly copies the URL (paste somewhere to confirm) or shows a PERSISTENT toast with the full URL (no auto-dismiss) — never a false "copied" claim. Open launches the hosted quote page in the default browser.
-result: issue
-reported: "copy works. When I click the link, it goes to a blank page. Console says 'installHook.js:1 No routes matched location \"/q/f83da8d4-e8df-4d33-be95-d546ce2e2918\"' — we should make sure there is a user friendly message for this"
-severity: major
-note: "Copy affordance confirmed working. Issue is the Open destination: the URL resolves to the SPA, which has no /q/:token route (blank page, router console error) and no user-friendly fallback."
+### 18. Friendly NotFound page for unmatched routes (re-verify after G-46-18 fix)
+expected: On the local dev server (http://localhost:4173), navigating to an unmatched URL such as /q/f83da8d4-e8df-4d33-be95-d546ce2e2918 renders a friendly, themed "page not found" page with the site Header/Footer and a link home — NOT a blank page. (The other half of the fix — the vercel.json /q/:token → /api/q/:token rewrite that serves the real hosted quote page in production — is guarded by tests/routing/vercel-rewrites.test.ts and deferred to launch-day checklist item 12, since production stays pre-v2.0 until the founder deploys.)
+result: pass
+note: "User re-verified 2026-07-23 ('pass') against the dev server; Claude pre-verified the same URL renders the themed NotFound page (Header/Footer, Back-to-home). Original 46-11 D5 run: copy affordance confirmed working ('copy works'); issue was the Open destination rendering a blank page (SPA had no /q route and no '*' catch-all). Fixed by 46-12: web NotFound catch-all + /q/:token rewrite. Production /q serving deferred to launch-day checklist item 12."
 
 ## Summary
 
 total: 18
-passed: 16
-issues: 2
+passed: 18
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
@@ -126,7 +122,9 @@ blocked: 0
 
 - gap_id: G-46-18
   truth: "Opening a published hosted-quote link shows the hosted quote page (customer view); if a hosted-quote URL cannot be served, the user sees a friendly message — never a blank page."
-  status: failed
+  status: resolved
+  resolved_by: 46-12-PLAN.md
+  resolved_at: 2026-07-23
   reason: "User reported: copy works. When I click the link, it goes to a blank page. Console says 'No routes matched location /q/f83da8d4-e8df-4d33-be95-d546ce2e2918' — we should make sure there is a user friendly message for this"
   severity: major
   test: 18
