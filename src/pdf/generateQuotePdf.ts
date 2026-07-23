@@ -4,9 +4,17 @@
  *
  * Strict by-value snapshot rule (D-17 G4): PDF reads ONLY from Quote.lineItemsSnapshot
  * + Quote.customerSnapshot — NEVER from PrintJob or UserProfile at render time. The
- * single-argument signature `generateQuotePdf(quote: Quote)` is type-level enforcement
- * of the snapshot rule. Subsequent edits to the source PrintJob/UserProfile do not
- * mutate already-issued quotes.
+ * `generateQuotePdf(quote: Quote, branding?: QuoteBranding)` signature is type-level
+ * enforcement of the snapshot rule. Subsequent edits to the source PrintJob/UserProfile
+ * do not mutate already-issued quotes.
+ *
+ * Phase 46 (D-04/D-05/D-06/D-07/D-10): the OPTIONAL `branding` argument is the sole
+ * white-label seam. It is INJECTED by the caller (PrintQuoteModal) from LIVE
+ * entitlement + UserProfile at download time — this module still imports NEITHER
+ * Dexie NOR useEntitlement, preserving the pure/by-value module contract. Because
+ * branding is evaluated live at download time (not frozen into the Quote snapshot),
+ * a Pro user always gets a white-label PDF and a lapsed user always gets the
+ * 3DCoster-branded one — this is the deliberate PDF-vs-hosted-page asymmetry (D-10).
  */
 
 import jsPDF from 'jspdf';
@@ -15,6 +23,7 @@ import type { Quote } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { formatQuoteNumber, customerNameSlug } from '../utils/format';
 import { taxLabelFor } from '../utils/taxResolution';
+import { isValidLogoDataUrl } from '../utils/logoDataUrl';
 import { notoSansRegularBase64, notoSansBoldBase64 } from './notoSansBase64';
 
 // ---------------------------------------------------------------------------
@@ -23,6 +32,37 @@ import { notoSansRegularBase64, notoSansBoldBase64 } from './notoSansBase64';
 const MARGIN_LEFT = 40;
 const MARGIN_RIGHT = 40;
 const FONT_ID = 'NotoSans';
+
+// ---------------------------------------------------------------------------
+// White-label branding (Phase 46, D-01/D-04/D-05/D-06/D-10)
+// ---------------------------------------------------------------------------
+
+/** Injected by the caller (never read internally from Dexie/UserProfile). */
+export interface QuoteBranding {
+  /** Live entitlement result at download time (D-05 automatic, D-06 reverts on lapse). */
+  isWhiteLabel: boolean;
+  /** Must already be a validated data URL (isValidLogoDataUrl) — re-validated defensively here too. */
+  logoDataUrl?: string;
+  businessName?: string;
+}
+
+/** Backward-compatible default: identical to today's single-arg behavior. */
+const DEFAULT_BRANDING: QuoteBranding = { isWhiteLabel: false };
+
+/** Max bounding box for the header logo — chosen to fit above the y=65 rule alongside the QUOTE/# block. */
+const MAX_LOGO_WIDTH = 90;
+const MAX_LOGO_HEIGHT = 36;
+const LOGO_TOP_Y = 15;
+
+/**
+ * Extract the explicit jsPDF image format from a data URL prefix.
+ * Pattern 1 (RESEARCH.md Pitfall 1): NEVER rely on jsPDF's addImage auto-detection —
+ * it has a documented "does not support files of type 'UNKNOWN'" failure mode.
+ */
+function extractLogoFormat(dataUrl: string): 'PNG' | 'JPEG' | 'WEBP' | null {
+  const match = /^data:image\/(png|jpeg|webp);base64,/.exec(dataUrl);
+  return match ? (match[1].toUpperCase() as 'PNG' | 'JPEG' | 'WEBP') : null;
+}
 
 // ---------------------------------------------------------------------------
 // Font registration (RESEARCH.md Pattern 3)
@@ -50,14 +90,53 @@ function ensureFontsLoaded(doc: jsPDF): void {
 // `quote.customerSnapshot` only. Per D-17 G4, no PrintJob/UserProfile here.
 // ---------------------------------------------------------------------------
 
-function renderHeader(doc: jsPDF, quote: Quote): number {
+/**
+ * White-label header (D-04): maker logo + business name render TOGETHER,
+ * the 3DCoster wordmark does NOT render. Degrades gracefully — an invalid or
+ * absent logo still renders the business name; the logo is only ever passed
+ * to addImage after isValidLogoDataUrl approval (T-46-09 mitigation).
+ */
+function renderWhiteLabelHeader(doc: jsPDF, branding: QuoteBranding): void {
+  let textX = MARGIN_LEFT;
+  let textY = 30;
+
+  if (isValidLogoDataUrl(branding.logoDataUrl)) {
+    const format = extractLogoFormat(branding.logoDataUrl!);
+    if (format) {
+      try {
+        const props = doc.getImageProperties(branding.logoDataUrl!);
+        const scale = Math.min(MAX_LOGO_WIDTH / props.width, MAX_LOGO_HEIGHT / props.height, 1);
+        const w = props.width * scale;
+        const h = props.height * scale;
+        doc.addImage(branding.logoDataUrl!, format, MARGIN_LEFT, LOGO_TOP_Y, w, h);
+        textX = MARGIN_LEFT + w + 10;
+        textY = LOGO_TOP_Y + h / 2 + 4;
+      } catch {
+        // Corrupt image bytes despite passing the regex validator — never let a
+        // bad logo crash PDF generation; fall back to business-name-only.
+      }
+    }
+  }
+
+  if (branding.businessName) {
+    doc.setFont(FONT_ID, 'bold');
+    doc.setFontSize(14);
+    doc.text(branding.businessName, textX, Math.max(textY, 30));
+  }
+}
+
+function renderHeader(doc: jsPDF, quote: Quote, branding: QuoteBranding): number {
   const pageWidth = doc.internal.pageSize.getWidth();
   const quoteNum = formatQuoteNumber(quote.quoteNumber);
 
-  // Wordmark — bold 18pt, top-left
-  doc.setFont(FONT_ID, 'bold');
-  doc.setFontSize(18);
-  doc.text('3DCoster', MARGIN_LEFT, 50);
+  if (branding.isWhiteLabel) {
+    renderWhiteLabelHeader(doc, branding);
+  } else {
+    // Wordmark — bold 18pt, top-left
+    doc.setFont(FONT_ID, 'bold');
+    doc.setFontSize(18);
+    doc.text('3DCoster', MARGIN_LEFT, 50);
+  }
 
   // QUOTE label + Q-NNNN — stacked top-right, right-aligned
   doc.setFontSize(10);
@@ -286,7 +365,11 @@ function renderNotesAndTerms(doc: jsPDF, quote: Quote, startY: number): number {
   return y;
 }
 
-function renderFooter(doc: jsPDF): void {
+function renderFooter(doc: jsPDF, branding: QuoteBranding): void {
+  // D-06/D-10: the footer is dropped for ANY white-label PDF — no exceptions,
+  // no toggle. Free/lapsed users keep the unchanged 3DCoster footer.
+  if (branding.isWhiteLabel) return;
+
   const pageHeight = doc.internal.pageSize.getHeight();
   doc.setFontSize(9);
   doc.setFont(FONT_ID, 'normal');
@@ -309,17 +392,17 @@ function buildFilename(quote: Quote): string {
 // and has been removed.
 // ---------------------------------------------------------------------------
 
-function _buildDoc(quote: Quote): jsPDF {
+function _buildDoc(quote: Quote, branding: QuoteBranding): jsPDF {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   ensureFontsLoaded(doc);
   doc.setFont(FONT_ID, 'normal');
 
-  let y = renderHeader(doc, quote);
+  let y = renderHeader(doc, quote, branding);
   y = renderMetaAndCustomer(doc, quote, y);
   y = renderLineItems(doc, quote, y);
   y = renderTotals(doc, quote, y);
   renderNotesAndTerms(doc, quote, y);
-  renderFooter(doc);
+  renderFooter(doc, branding);
 
   return doc;
 }
@@ -332,8 +415,11 @@ function _buildDoc(quote: Quote): jsPDF {
  * Build the PDF and return its bytes.
  * Used by tests (no disk I/O) and by the Tauri save branch.
  */
-export async function generateQuotePdfBytes(quote: Quote): Promise<Uint8Array> {
-  const doc = _buildDoc(quote);
+export async function generateQuotePdfBytes(
+  quote: Quote,
+  branding: QuoteBranding = DEFAULT_BRANDING,
+): Promise<Uint8Array> {
+  const doc = _buildDoc(quote, branding);
   return new Uint8Array(doc.output('arraybuffer'));
 }
 
@@ -343,8 +429,11 @@ export async function generateQuotePdfBytes(quote: Quote): Promise<Uint8Array> {
  * Tauri path: native save dialog via @tauri-apps/plugin-dialog + writeFile via @tauri-apps/plugin-fs.
  * Tauri imports are DYNAMIC so the Tauri SDK is never bundled into the web chunk.
  */
-export async function generateQuotePdf(quote: Quote): Promise<void> {
-  const doc = _buildDoc(quote);
+export async function generateQuotePdf(
+  quote: Quote,
+  branding: QuoteBranding = DEFAULT_BRANDING,
+): Promise<void> {
+  const doc = _buildDoc(quote, branding);
   const filename = buildFilename(quote);
 
   if (!__IS_TAURI__) {
