@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 46-white-label-quotes
 source: [46-VERIFICATION.md, 46-08-SUMMARY.md, 46-09-SUMMARY.md, 46-10-SUMMARY.md]
 started: 2026-07-23T09:20:00Z
@@ -123,8 +123,21 @@ blocked: 0
   reason: "User reported: Share Quote shows and it generates a quote link, which shows up in toast for about 3 seconds then disappears. I have no idea where the link is, or how to get to it in the future"
   severity: major
   test: 6
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "The hosted-quote URL IS durably persisted on the local Quote record (publishedUrl + hostedToken, written at usePublishedQuote.ts:160-168) but NO UI component ever reads it back — repo-wide, quote.publishedUrl has zero read sites outside the type declaration (types.ts:428) and the hook that writes it. For a published quote the UI renders only an inert 'Live link' text badge (JobsManager.tsx:317-321) and an 'Unpublish'-only button (ShareQuoteButton.tsx:116), so the only link surfaces are a one-shot clipboard write and a 5s auto-dismiss toast (DEFAULT_TOAST_DURATION=5000, toast/types.ts:27; no hover-pause). Desktop twist: ShareQuoteButton.tsx:79 uses `await navigator.clipboard?.writeText(url)` — when WKWebView exposes no navigator.clipboard, the optional chain resolves without throwing and the toast FALSELY claims 'link copied'; when writeText rejects, the catch shows the URL-only fallback toast the user saw. Republish mints a NEW token (D-13), so the old customer URL can't be recovered that way. Web shares the primary gap (link unrecoverable from UI after clipboard overwrite); 46-10's 'toast fallback = parity' assessed publish parity, not link retrievability, which no phase ever scoped."
+  artifacts:
+    - path: "src/components/pro/ShareQuoteButton.tsx"
+      issue: "published state renders only 'Unpublish' (:116); false-positive 'copied' toast via optional-chained clipboard (:79-80); no duration override on the URL toast"
+    - path: "src/components/JobsManager.tsx"
+      issue: "'Live link' badge is inert text, not a link/copy control (:317-321)"
+    - path: "src/hooks/usePublishedQuote.ts"
+      issue: "data layer fine — writes publishedUrl/hostedToken (:160-168); nothing consumes them"
+    - path: "src/components/ui/toast/ToastProvider.tsx"
+      issue: "5s auto-dismiss, no hover-pause, plain-text content (contributing)"
+  missing:
+    - "Persistent 'Copy link' affordance (shared IconButton + descriptive aria-label per project convention) wherever publishStatus === 'published' — next to the Live-link badge and/or paired with Unpublish — reading quote.publishedUrl"
+    - "Optional 'Open hosted page' action reusing the plugin-shell pattern (UpdateBanner.tsx:70-83, shell:default already granted)"
+    - "Fix the false 'copied' claim by guarding on navigator.clipboard existence (consider tauri-plugin-clipboard-manager for reliable desktop copy)"
+  debug_session: .planning/debug/hosted-quote-link-retrievability.md
 
 - gap_id: G-46-2
   truth: "After signing in once on desktop, quitting and relaunching the app keeps the user signed in with no re-auth prompt (WebView localStorage persistence)."
