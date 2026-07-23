@@ -214,3 +214,14 @@ One new operator action was added to the v2.0 Launch-Day Checklist as a result o
 ## Self-Check: PASSED
 
 All key files verified present on disk; all referenced commits (`816a307`, `7818b00`, `43cf989`, `72b3461`) verified present in git log.
+
+## Post-checkpoint deviation (2026-07-23)
+
+**Live `verifyOtp` round trip: PASSED.** The final leg of coverage `D6` deferred above — the actual `verifyOtp` code exchange, blocked at the time by the built-in SMTP hourly rate cap — was retried and completed live on 2026-07-22: an 8-digit code (`74359066`) was sent, typed, and exchanged via `supabase.auth.verifyOtp` against the production project (`fqidldxuwpfvhsejalbd`); a session was acquired and then revoked (sign-out) to leave no live session behind. This closes the "send proven, verify pending" gap noted in Checkpoint Resolution item 3 — **both halves of the headless round trip are now proven live**, not just the send half.
+
+**Defect found during that verification: hardcoded 6-digit assumption.** The production project's OTP length is 8 digits (a per-project Supabase dashboard setting, not a fixed constant), but `SignInModal`'s code input hardcoded 6 digits everywhere (`.slice(0, 6)`, `maxLength={6}`, `CODE_SHAPE = /^\d{6}$/`, plus "6-digit" copy/aria-labels in the modal and a docblock comment in `useProAuth.ts`). A real production code could not be typed into the shipped UI. Fixed: the input and validation now accept 6-10 digits (length-agnostic against dashboard config drift) and user-facing copy says "one-time code" instead of a hardcoded digit count. `SignInModal.test.tsx` was added (did not exist before) covering 6/8/10-digit acceptance, truncation, and submit-enable; `useProAuth.test.tsx` gained an 8-digit pass-through case. Committed as `fix(46-02): accept 6-10 digit OTP codes (production issues 8-digit codes)`.
+
+**Coverage `D6` update — what remains for Phase UAT:** with the headless `verifyOtp` round trip now DONE, only the in-desktop-UI-specific items remain deferred:
+- Full code round trip through the actual desktop `SignInModal` UI (as opposed to the CLI diagnostic / headless call)
+- Desktop session persistence across app relaunch (WebView localStorage)
+- Signed-out desktop network silence (free-floor guarantee)
