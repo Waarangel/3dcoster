@@ -5,8 +5,8 @@ milestone_name: Cost-Truth & Insight
 current_phase: 46
 current_phase_name: white-label-quotes
 status: executing
-stopped_at: Completed 46-10-PLAN.md (G-46-6 desktop Share-quote parity gap closure)
-last_updated: "2026-07-23T15:44:33.688Z"
+stopped_at: "Paused at 46-08 Task 2 (blocking human-verify checkpoint): Confirm signup email template fix + live verification pending"
+last_updated: "2026-07-23T15:48:20.558Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 46 execution started
 progress:
@@ -249,13 +249,13 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-None currently — roadmap created, all requirements mapped, all gates documented.
+- Plan 46-08 paused at Task 2 (checkpoint:human-verify, gate=blocking): production 'Confirm signup' Supabase email template needs {{ .Token }} added and live-verified with a fresh email before desktop new-user sign-in works (G-46-2). See docs/SUPABASE-EMAIL-TEMPLATES.md and 46-08-PLAN.md Task 2.
 
 ## Session Continuity
 
-Last session: 2026-07-23T15:44:33.678Z
-Stopped at: Completed 46-10-PLAN.md (G-46-6 desktop Share-quote parity gap closure)
-Resume file: None
+Last session: 2026-07-23T15:48:20.548Z
+Stopped at: Paused at 46-08 Task 2 (blocking human-verify checkpoint): Confirm signup email template fix + live verification pending
+Resume file: .planning/phases/46-white-label-quotes/46-08-PLAN.md
 
 ## Operator Next Steps
 
