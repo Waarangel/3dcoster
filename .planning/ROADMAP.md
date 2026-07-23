@@ -368,7 +368,7 @@ Plans:
 **Wave 2**
 
 - [x] 46-04-PLAN.md — White-label PDF: branding-aware generator (logo header, no footer) + cached-offline entitlement + PrintQuoteModal injection (D-04/D-05/D-06/D-07/D-10)
-- [ ] 46-06-PLAN.md — Branding Settings section (upload/preview/remove, Pro-chipped for free users) + one bundle pitch modal + desktop sign-in gate flips (D-01/D-02/D-03/D-06/D-08/D-13/D-14)
+- [x] 46-06-PLAN.md — Branding Settings section (upload/preview/remove, Pro-chipped for free users) + one bundle pitch modal + desktop sign-in gate flips (D-01/D-02/D-03/D-06/D-08/D-13/D-14)
 
 **Wave 3** *(after 46-04 — shares PrintQuoteModal.tsx)*
 
