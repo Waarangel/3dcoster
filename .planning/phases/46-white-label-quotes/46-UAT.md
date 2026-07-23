@@ -1,14 +1,18 @@
 ---
-status: diagnosed
+status: testing
 phase: 46-white-label-quotes
-source: [46-VERIFICATION.md, 46-08-SUMMARY.md, 46-09-SUMMARY.md, 46-10-SUMMARY.md]
+source: [46-VERIFICATION.md, 46-08-SUMMARY.md, 46-09-SUMMARY.md, 46-10-SUMMARY.md, 46-11-SUMMARY.md]
 started: 2026-07-23T09:20:00Z
-updated: 2026-07-23T17:30:00Z
+updated: 2026-07-23T19:30:00Z
 ---
 
 ## Current Test
 
-[testing complete]
+number: 18
+name: Desktop hosted-link retrievability live check (46-11 D5)
+expected: |
+  On desktop (Tauri), with a published quote: the quote row (JobsManager) and the quote edit view (PrintQuoteModal footer) show Copy-link and Open icon buttons next to the "Live link" badge. Copy either truly copies the URL (paste somewhere to confirm) or shows a PERSISTENT toast with the full URL (no auto-dismiss) — never a false "copied" claim. Open launches the hosted quote page in the default browser.
+awaiting: user response
 
 ## Tests
 
@@ -106,12 +110,16 @@ result: pass
 source: automated
 coverage_id: 46-10/D3
 
+### 18. Desktop hosted-link retrievability live check (46-11 D5)
+expected: On desktop (Tauri), with a published quote: the quote row (JobsManager) and the quote edit view (PrintQuoteModal footer) show Copy-link and Open icon buttons next to the "Live link" badge. Copy either truly copies the URL (paste somewhere to confirm) or shows a PERSISTENT toast with the full URL (no auto-dismiss) — never a false "copied" claim. Open launches the hosted quote page in the default browser.
+result: [pending]
+
 ## Summary
 
-total: 17
+total: 18
 passed: 16
 issues: 1
-pending: 0
+pending: 1
 skipped: 0
 blocked: 0
 
