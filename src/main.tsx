@@ -24,6 +24,7 @@ const ChangelogPage = lazyWithRetry(() => import('./pages/ChangelogPage.tsx').th
 const PricingPage = lazyWithRetry(() => import('./pages/PricingPage.tsx').then(m => ({ default: m.PricingPage })), 'PricingPage')
 const PrivacyPage = lazyWithRetry(() => import('./pages/PrivacyPage.tsx').then(m => ({ default: m.PrivacyPage })), 'PrivacyPage')
 const TermsPage = lazyWithRetry(() => import('./pages/TermsPage.tsx').then(m => ({ default: m.TermsPage })), 'TermsPage')
+const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage.tsx').then(m => ({ default: m.NotFoundPage })), 'NotFoundPage')
 
 // Layout route wrapping every marketing route in the Cost-Truth Dark token
 // scope. Mounted ONCE across marketing→marketing navigation (not per-page),
@@ -119,6 +120,7 @@ function Root() {
                 <Route path="/changelog" element={<ChangelogPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
             </>
           )}
