@@ -36,7 +36,22 @@ vi.stubGlobal('__IS_TAURI__', false);
 
 // Mocks — must declare before importing the component under test.
 const createQuoteSpy = vi.fn<(input: CreateQuoteInput) => Promise<Quote>>();
-const generateQuotePdfSpy = vi.fn<(quote: Quote) => Promise<void>>();
+const generateQuotePdfSpy = vi.fn<
+  (quote: Quote, branding?: import('../pdf/generateQuotePdf').QuoteBranding) => Promise<void>
+>();
+
+// Phase 46-04: controllable useEntitlement mock — tests set mockEntitlement.isPro
+// before rendering to drive the injected QuoteBranding.isWhiteLabel value.
+const mockEntitlement: { isPro: boolean } = { isPro: false };
+vi.mock('../hooks/useEntitlement', () => ({
+  useEntitlement: () => ({
+    isPro: mockEntitlement.isPro,
+    plan: mockEntitlement.isPro ? 'monthly' : null,
+    status: mockEntitlement.isPro ? 'active' : null,
+    currentPeriodEnd: null,
+    refresh: vi.fn(),
+  }),
+}));
 
 // Customer fixtures referenced by tests
 const seededCustomer: Customer = {
@@ -167,6 +182,7 @@ beforeEach(() => {
   createQuoteSpy.mockImplementation((input: CreateQuoteInput) => Promise.resolve(makeQuoteFromInput(input)));
   generateQuotePdfSpy.mockReset();
   generateQuotePdfSpy.mockImplementation(() => Promise.resolve());
+  mockEntitlement.isPro = false;
   // CONN-03: the Quantity-variants discount defaults persist via localStorage
   // (D-06) — clear between tests so one test's discount edits don't leak into
   // the next test's default-quantities/discounts assertions.
@@ -319,6 +335,10 @@ describe('PrintQuoteModal — happy path (Test 7)', () => {
     expect(generateQuotePdfSpy).toHaveBeenCalledTimes(1);
     const pdfQuote = generateQuotePdfSpy.mock.calls[0][0];
     expect(pdfQuote.customerSnapshot.name).toBe('Alice');
+    // Phase 46-04: a QuoteBranding object is always passed as the 2nd arg.
+    const branding = generateQuotePdfSpy.mock.calls[0][1];
+    expect(branding).toBeDefined();
+    expect(branding!.isWhiteLabel).toBe(false); // default mockEntitlement.isPro = false
 
     expect(onQuoteCreated).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -499,6 +519,51 @@ describe('PrintQuoteModal — CONN-03 Quantity variants (D-05..D-08)', () => {
     await act(async () => { typeIntoInput(discountInput, '250'); });
     // Clamped to 100% discount → unit price 0.00
     expect(document.body.textContent ?? '').toContain('$0.00');
+  });
+});
+
+describe('PrintQuoteModal — Phase 46-04 white-label PDF branding injection', () => {
+  it('passes isWhiteLabel:true + logoDataUrl + businessName from userProfile when isPro is true', async () => {
+    mockEntitlement.isPro = true;
+    const userProfile = makeUserProfile({
+      name: 'Acme 3D Prints',
+      logoDataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    });
+    await renderModal({ userProfile });
+
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    await act(async () => { typeIntoInput(nameInput, 'Bob'); });
+
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
+    ) as HTMLButtonElement;
+    await act(async () => { generateBtn.click(); });
+
+    expect(generateQuotePdfSpy).toHaveBeenCalledTimes(1);
+    const branding = generateQuotePdfSpy.mock.calls[0][1];
+    expect(branding).toEqual({
+      isWhiteLabel: true,
+      logoDataUrl: userProfile.logoDataUrl,
+      businessName: 'Acme 3D Prints',
+    });
+  });
+
+  it('passes isWhiteLabel:false when isPro is false, regardless of a stored logo/name', async () => {
+    mockEntitlement.isPro = false;
+    const userProfile = makeUserProfile({ name: 'Acme 3D Prints' });
+    await renderModal({ userProfile });
+
+    const nameInput = document.body.querySelector('input[placeholder="Jane Doe"]') as HTMLInputElement;
+    await act(async () => { typeIntoInput(nameInput, 'Bob'); });
+
+    const generateBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim().startsWith('Create Quote'),
+    ) as HTMLButtonElement;
+    await act(async () => { generateBtn.click(); });
+
+    expect(generateQuotePdfSpy).toHaveBeenCalledTimes(1);
+    const branding = generateQuotePdfSpy.mock.calls[0][1];
+    expect(branding?.isWhiteLabel).toBe(false);
   });
 });
 

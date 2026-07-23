@@ -10,8 +10,10 @@ import { computeJobShipping } from '../utils/jobShipping';
 import { Button, Input, Textarea, InfoTooltip, Modal } from './ui';
 import { formatQuoteNumber } from '../utils/format';
 import { usePublishedQuote } from '../hooks/usePublishedQuote';
+import { useEntitlement } from '../hooks/useEntitlement';
 import { ShareQuoteButton } from './pro/ShareQuoteButton';
 import { useSupportNudge } from './SupportNudge';
+import type { QuoteBranding } from '../pdf/generateQuotePdf';
 
 // ---------------------------------------------------------------------------
 // CONN-03 Quantity variants (D-05..D-08). Three fixed tier slots, defaulting
@@ -75,6 +77,10 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
   // edited. D-13: only edit-mode has an already-created Quote to publish —
   // create-mode's Quote doesn't exist yet until Create Quote is clicked.
   const { publish: publishQuote, unpublish: unpublishQuote } = usePublishedQuote(userProfile.name, updateQuote);
+  // Phase 46-04 (D-04/D-05/D-06/D-07): live entitlement drives the PDF
+  // white-label branding injected below — safe to call unconditionally
+  // (no-op/not-Pro when Supabase is null; cache-backed for offline Pro users).
+  const { isPro } = useEntitlement();
   // Phase 45 D-03: calm value-moment Pro nudge, self-gated (cooldown + once
   // per session) — safe to call unconditionally on the quote-CREATE path.
   const showSupportNudge = useSupportNudge();
@@ -321,8 +327,21 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
       // Re-download the PDF in both modes (D-27 explicit for edit; existing
       // for create). Tauri shows the native save dialog; web triggers
       // the browser download.
+      //
+      // D-10 white-label injection: branding is built HERE from LIVE
+      // entitlement + userProfile (dependency injection, mirrors the
+      // usePublishedQuote(userProfile.name, ...) injection above) — the
+      // generator itself never reads UserProfile/Dexie. Live entitlement
+      // means the PDF reflects Pro status AT DOWNLOAD TIME, not whatever
+      // was true when the Quote was created (deliberate PDF-vs-hosted-page
+      // asymmetry vs. the frozen hosted-page snapshot).
+      const branding: QuoteBranding = {
+        isWhiteLabel: isPro,
+        logoDataUrl: userProfile.logoDataUrl,
+        businessName: userProfile.name,
+      };
       const { generateQuotePdf } = await import('../pdf/generateQuotePdf');
-      await generateQuotePdf(quote);
+      await generateQuotePdf(quote, branding);
 
       onQuoteCreated?.(quote);
       // Value moment: a NEW quote was created (not an edit) — nudge is self-gated.
