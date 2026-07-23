@@ -190,6 +190,7 @@ describe('useProAuth — web client', () => {
       email: 'maker@example.com',
       options: {
         emailRedirectTo: window.location.origin + '/app',
+        shouldCreateUser: true,
       },
     });
   });
@@ -311,5 +312,50 @@ describe('useProAuth — web client', () => {
     root = null;
 
     expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useProAuth — resetSignIn (G-46-4 user-driven exit from link-sent)', () => {
+  it('returns status to signed-out from link-sent', async () => {
+    mockSupabase = makeMockClient();
+    await renderProbe();
+
+    await act(async () => {
+      await latest.signInWithEmail('maker@example.com');
+    });
+    expect(latest.status).toBe('link-sent');
+
+    act(() => {
+      latest.resetSignIn();
+    });
+
+    expect(latest.status).toBe('signed-out');
+  });
+
+  it('is a no-op while signed in — never knocks a signed-in user back to signed-out', async () => {
+    const session = makeSession();
+    mockSupabase = makeMockClient({ persistedSession: session });
+    await renderProbe();
+    expect(latest.status).toBe('signed-in');
+
+    act(() => {
+      latest.resetSignIn();
+    });
+
+    expect(latest.status).toBe('signed-in');
+    expect(latest.isSignedIn).toBe(true);
+    expect(latest.session).not.toBeNull();
+  });
+
+  it('resolves to unavailable when the client is null', async () => {
+    mockSupabase = null;
+    await renderProbe();
+    expect(latest.status).toBe('unavailable');
+
+    act(() => {
+      latest.resetSignIn();
+    });
+
+    expect(latest.status).toBe('unavailable');
   });
 });

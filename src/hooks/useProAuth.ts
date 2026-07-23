@@ -47,6 +47,15 @@ export interface ProAuth {
   verifyEmailCode: (email: string, code: string) => Promise<string | null>;
   /** Sign out and clear the persisted session. No-op when unavailable. */
   signOut: () => Promise<void>;
+  /**
+   * User-driven exit from the 'link-sent' dead-end — return to the editable
+   * email step. No-op while signed in; no-op-safe when the client is
+   * unavailable. Before this action existed, `status` had no way back to
+   * 'signed-out' short of a real auth event/error or a full app restart, so
+   * an abandoned sign-in (typo'd email, closed modal) left the UI stuck on
+   * a disabled email field forever (G-46-4).
+   */
+  resetSignIn: () => void;
 }
 
 export function useProAuth(): ProAuth {
@@ -98,6 +107,11 @@ export function useProAuth(): ProAuth {
           // Land back on the calculator app after the magic link is clicked;
           // supabase-js (detectSessionInUrl) completes the PKCE exchange there.
           emailRedirectTo: window.location.origin + '/app',
+          // New emails must be able to create an account: this is now a
+          // documented decision, not an accidental supabase-js default. The
+          // 'Confirm signup' template carries {{ .Token }} (46-08 / G-46-2)
+          // so the emailed code works for first-time (new-user) sign-ins too.
+          shouldCreateUser: true,
         },
       });
       if (error) {
@@ -141,6 +155,15 @@ export function useProAuth(): ProAuth {
     setStatus(supabase ? 'signed-out' : 'unavailable');
   }, []);
 
+  const resetSignIn = useCallback((): void => {
+    // Gate on `session` (the same source isSignedIn derives from) rather
+    // than `status`, so a signed-in user can never be knocked back to
+    // signed-out by this action (T-46-4-01) and there's no stale-closure
+    // risk reading `status` inside this callback.
+    if (session !== null) return;
+    setStatus(supabase ? 'signed-out' : 'unavailable');
+  }, [session]);
+
   return {
     session,
     user: session?.user ?? null,
@@ -149,5 +172,6 @@ export function useProAuth(): ProAuth {
     signInWithEmail,
     verifyEmailCode,
     signOut,
+    resetSignIn,
   };
 }
