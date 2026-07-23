@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { UserProfile, Currency } from '../types';
 import { CURRENCY_CONFIG } from '../utils/currency';
 import { Input, Select, Textarea, SidePanel, Button } from './ui';
 import { useProAuth } from '../hooks/useProAuth';
+import { useEntitlement } from '../hooks/useEntitlement';
 import { BillingPanel } from './pro/BillingPanel';
+import { BrandingSection } from './BrandingSection';
+import { ProPitchModal } from './pro/ProPitchModal';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -26,6 +30,12 @@ export function UserProfileModal({
   // below. Safe to call unconditionally — the hook is a no-op when the
   // Supabase client is null (Tauri desktop, or unconfigured web build).
   const { user, isSignedIn, signOut } = useProAuth();
+  // Phase 46 (D-13): the Branding section's free path opens the ONE bundle
+  // pitch modal (D-14), never a second upsell surface. onSignIn defers to
+  // the existing App-level SignInModal via onOpenSignIn (D-09 — the sign-in
+  // flow replaces this panel rather than stacking a second dialog).
+  const { isPro } = useEntitlement();
+  const [showPitch, setShowPitch] = useState(false);
 
   return (
     <SidePanel isOpen={isOpen} onClose={onClose} title="Profile" size="md">
@@ -88,6 +98,16 @@ export function UserProfileModal({
                   value={userProfile.name || ''}
                   onChange={e => onProfileChange({ ...userProfile, name: e.target.value || undefined })}
                   placeholder="Your name"
+                />
+              </div>
+              <div>
+                {/* Phase 46 (D-03): the single management home for white-label
+                    branding sits alongside the existing Name field. */}
+                <BrandingSection
+                  profile={userProfile}
+                  onProfileChange={onProfileChange}
+                  isPro={isPro}
+                  onOpenPitch={() => setShowPitch(true)}
                 />
               </div>
               <div>
@@ -218,6 +238,19 @@ export function UserProfileModal({
             </Link>
           </div>
         </div>
+
+      {/* Phase 46 (D-14): the ONE Pro bundle pitch modal, reached from
+          BrandingSection's free-user Pro-chip above. onSignIn defers to the
+          existing App-level sign-in flow rather than mounting a second
+          SignInModal here (D-09). */}
+      <ProPitchModal
+        isOpen={showPitch}
+        onClose={() => setShowPitch(false)}
+        onSignIn={() => {
+          setShowPitch(false);
+          onOpenSignIn();
+        }}
+      />
     </SidePanel>
   );
 }

@@ -67,15 +67,18 @@ afterEach(() => {
   delete (globalThis as { createImageBitmap?: unknown }).createImageBitmap;
 });
 
+type OnProfileChangeFn = (profile: UserProfile) => void;
+type OnOpenPitchFn = () => void;
+
 function renderSection(props: {
   profile?: UserProfile;
-  onProfileChange?: ReturnType<typeof vi.fn>;
+  onProfileChange?: ReturnType<typeof vi.fn<OnProfileChangeFn>>;
   isPro?: boolean;
-  onOpenPitch?: ReturnType<typeof vi.fn>;
+  onOpenPitch?: ReturnType<typeof vi.fn<OnOpenPitchFn>>;
 } = {}) {
   const profile = props.profile ?? makeProfile();
-  const onProfileChange = props.onProfileChange ?? vi.fn();
-  const onOpenPitch = props.onOpenPitch ?? vi.fn();
+  const onProfileChange = props.onProfileChange ?? vi.fn<OnProfileChangeFn>();
+  const onOpenPitch = props.onOpenPitch ?? vi.fn<OnOpenPitchFn>();
   act(() => {
     root!.render(
       <ToastProvider>
