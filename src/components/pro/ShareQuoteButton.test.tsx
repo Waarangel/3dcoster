@@ -96,13 +96,27 @@ function findButtonByLabel(label: string): HTMLButtonElement | null {
   return document.body.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
 }
 
-describe('ShareQuoteButton — desktop gate (D-12)', () => {
-  it('renders nothing under __IS_TAURI__', () => {
+describe('ShareQuoteButton — desktop parity (G-46-6)', () => {
+  afterEach(() => {
+    vi.stubGlobal('__IS_TAURI__', false);
+  });
+
+  it('renders the signed-in Share control under the Tauri global', () => {
     vi.stubGlobal('__IS_TAURI__', true);
     mockIsSignedIn = true;
     renderButton();
-    expect(container!.textContent).toBe('');
-    vi.stubGlobal('__IS_TAURI__', false);
+    const btn = findButtonByLabel('Share quote Q-0007');
+    expect(btn).not.toBeNull();
+    expect(container!.textContent).not.toBe('');
+  });
+
+  it('renders the signed-out Pro pitch chip under the Tauri global', () => {
+    vi.stubGlobal('__IS_TAURI__', true);
+    mockIsSignedIn = false;
+    renderButton();
+    const btn = findButtonByLabel('Share quote Q-0007 (Pro feature)');
+    expect(btn).not.toBeNull();
+    expect(container!.textContent).not.toBe('');
   });
 });
 
