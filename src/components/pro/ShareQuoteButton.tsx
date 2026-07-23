@@ -12,9 +12,14 @@ import { SignInModal } from './SignInModal';
 // ShareQuoteButton — publish/unpublish a hosted quote link (Phase 43-04,
 // PRO-02) or, for a signed-out user, the D-10 Pro chip + one pitch modal.
 //
-// D-12: web-first — renders nothing under __IS_TAURI__ regardless of caller
-// (self-contained gate, so every mount site stays correct even if a future
-// caller forgets to gate it).
+// D-08 / G-46-6: works on BOTH web and desktop. The earlier 46-02-PLAN.md:49
+// scope decision ("Hosted-quote PUBLISHING stays web-only … Do not remove
+// ShareQuoteButton's gate") is superseded by the founder's standing product
+// rule that ALL Pro features must work on both platforms for v2.0 launch —
+// no exceptions. Desktop auth, entitlement, the *.supabase.co CSP allowance,
+// and usePublishedQuote (publish/unpublish/refreshStatuses) are all already
+// platform-agnostic; this component's own `__IS_TAURI__` early return was
+// the only thing hiding the button on desktop.
 //
 // `publish`/`unpublish` are injected from a SINGLE `usePublishedQuote()` call
 // at the container level (JobsManager / PrintQuoteModal), not called here —
@@ -34,8 +39,6 @@ export function ShareQuoteButton({ quote, publish, unpublish }: ShareQuoteButton
   const [showPitch, setShowPitch] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
-
-  if (__IS_TAURI__) return null; // D-12: Pro is web-only
 
   const isPublished = quote.publishStatus === 'published';
   const label = formatQuoteNumber(quote.quoteNumber);
