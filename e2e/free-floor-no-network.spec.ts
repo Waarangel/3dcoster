@@ -67,8 +67,23 @@ test.describe('Free floor is backend-silent when signed out (PRO-01)', () => {
     await saveButton.click();
     await expect(page.getByText('Job saved.')).toBeVisible();
 
-    // The PRO-01 guarantee: the entire signed-out load + enter + save flow
-    // produced ZERO requests to the Supabase origin.
+    // Phase 47-07 (SYNC-02, D-04): CloudSyncSetup now mounts in Settings →
+    // Data alongside the pre-existing file-sync SyncSetup. Open it here,
+    // still within the same signed-out session and the same request
+    // listener/route-abort harness, to prove that mounting it — merely
+    // rendering the component tree, not submitting a passphrase — adds NO
+    // Supabase-origin requests on top of the free-floor calculator flow
+    // above.
+    await page.getByRole('button', { name: 'Open settings' }).click();
+    await page.getByRole('tab', { name: 'Data' }).click();
+
+    // Confirm CloudSyncSetup actually mounted (its free/signed-out Pro-chip
+    // state) — proves the zero-requests assertion below is exercising the
+    // real component, not a no-op from a missed selector.
+    await expect(page.getByRole('heading', { name: 'Cloud sync' })).toBeVisible();
+
+    // The PRO-01 guarantee: the entire signed-out load + enter + save +
+    // open-Settings-Data flow produced ZERO requests to the Supabase origin.
     expect(supabaseRequests).toEqual([]);
   });
 });
