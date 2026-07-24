@@ -1,0 +1,35 @@
+-- Migration: 0004_pro_backend_anon_revoke
+-- Phase 43 (Pro Backend) hardening follow-up, applied 2026-07-24 —
+-- extends the Phase 47 zero-anon-access discipline (see
+-- 0003_cloud_sync_anon_revoke.sql and
+-- .planning/phases/47-cloud-sync/47-02-SUMMARY.md) back to the two
+-- Phase 43 tables. This file reproduces the live-applied migration
+-- `pro_backend_anon_revoke` (version 20260724144740) verbatim so the
+-- repo migration chain matches the live database exactly.
+--
+-- ROOT CAUSE (same mechanism 0003 documents): Supabase's
+-- default-privileges rule grants `anon` table privileges directly,
+-- per-role, at CREATE time. 0001_pro_backend.sql issued targeted
+-- revokes (`revoke select, insert, update, delete ... from anon` on
+-- hosted_quotes; `revoke select ... from anon` on entitlements), which
+-- left residual anon ACL bits behind:
+--   entitlements  anon=awdDxtm  (INSERT/UPDATE/DELETE/TRUNCATE/
+--                                REFERENCES/TRIGGER/MAINTAIN)
+--   hosted_quotes anon=Dxtm     (TRUNCATE/REFERENCES/TRIGGER/MAINTAIN)
+--
+-- Practical risk of the residue: LOW / not exploitable today. RLS is
+-- enabled on both tables with zero anon policies (denies all anon row
+-- DML regardless of the ACL), and TRUNCATE/REFERENCES/TRIGGER/MAINTAIN
+-- are not reachable through PostgREST. Closed anyway for
+-- defense-in-depth, so the zero-anon-access invariant established for
+-- sync_blobs holds literally across all Pro tables.
+--
+-- NOT touched (intentional): the anon EXECUTE grants on the two
+-- SECURITY DEFINER RPCs get_hosted_quote(uuid) and
+-- approve_quote_decision(uuid, text, text). Those are the designed
+-- anon-reachable data paths for the hosted quote page (Control 1/6 of
+-- docs/PRO-SECURITY-REVIEW.md) and keep working after this migration
+-- because SECURITY DEFINER executes with the owner's table privileges.
+
+revoke all on table public.entitlements from anon;
+revoke all on table public.hosted_quotes from anon;
