@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 47
 current_phase_name: cloud-sync
 status: executing
-stopped_at: Completed 47-05-PLAN.md
-last_updated: "2026-07-24T03:06:14.000Z"
+stopped_at: Completed 47-06-PLAN.md
+last_updated: "2026-07-24T03:18:03.703Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 14
   completed_phases: 9
   total_plans: 74
-  completed_plans: 71
+  completed_plans: 72
   percent: 64
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](
 ## Current Position
 
 Phase: 47 (cloud-sync) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 47 execution started
 
@@ -102,6 +102,7 @@ Last activity: 2026-07-23 — Phase 47 execution started
 | Phase 47 P03 | 6min | 2 tasks | 6 files |
 | Phase 47 P04 | 12min | 2 tasks | 2 files |
 | Phase 47 P05 | 22min | 2 tasks | 4 files |
+| Phase 47 P06 | 12min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -261,6 +262,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 47-05: syncMeta.deviceId for the cloud channel is generated in-memory only (not a 5th settings key) since computeMerge never reads it and the plan's Artifacts section names exactly 4 settings keys
 - [Phase ?]: 47-05: cloud ciphertext base64<->bytes conversion implemented locally in useCloudSync.ts since sync_blobs.ciphertext is base64 TEXT (not bytea, which PostgREST hex-encodes and would break decrypt)
 - [Phase ?]: 47-05: uploadWithRetry's CAS-conflict callback re-merges best-effort and re-encrypts rather than re-running the confirm gate a second time — the outer bounded 3-attempt retry remains the guarantee against a silent lost write
+- [Phase ?]: [Phase 47]: 47-06: CloudSyncSetup owns its own ProPitchModal state + onOpenSignIn prop (mirrors BrandingSection/UserProfileModal D-13/D-14); wrong-passphrase/decrypt-failure messaging renders useCloudSync's existing cloud.error verbatim rather than re-deriving it; D-14 level-2 delete confirmation counts live hosted quotes via local Dexie .filter() (publishStatus is unindexed) instead of a network round trip
 
 ### Pending Todos
 
@@ -281,8 +283,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-07-24T03:06:13.990Z
-Stopped at: Completed 47-05-PLAN.md
+Last session: 2026-07-24T03:18:03.694Z
+Stopped at: Completed 47-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

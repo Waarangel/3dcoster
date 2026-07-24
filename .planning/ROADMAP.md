@@ -411,7 +411,7 @@ Plans:
 
 **Wave 4**
 
-- [ ] 47-06-PLAN.md — CloudSyncSetup UI (Pro-chip → ProPitchModal, passphrase setup/entry, quiet status, restore, two-level delete) + ProPitchModal copy + NEW badge (D-06/D-07/D-10/D-12/D-14/D-15)
+- [x] 47-06-PLAN.md — CloudSyncSetup UI (Pro-chip → ProPitchModal, passphrase setup/entry, quiet status, restore, two-level delete) + ProPitchModal copy + NEW badge (D-06/D-07/D-10/D-12/D-14/D-15)
 
 **Wave 5**
 
