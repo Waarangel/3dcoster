@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 47
 current_phase_name: cloud-sync
 status: executing
-stopped_at: Completed 47-01-PLAN.md
-last_updated: "2026-07-24T01:58:21.006Z"
+stopped_at: Completed 47-02-PLAN.md
+last_updated: "2026-07-24T02:35:20.371Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 14
   completed_phases: 9
   total_plans: 74
-  completed_plans: 67
+  completed_plans: 68
   percent: 64
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](
 ## Current Position
 
 Phase: 47 (cloud-sync) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 47 execution started
 
@@ -98,6 +98,7 @@ Last activity: 2026-07-23 — Phase 47 execution started
 | Phase 46 P11 | 30min | 3 tasks | 13 files |
 | Phase 46 P12 | 12min | 3 tasks | 6 files |
 | Phase 47 P01 | 20min | 2 tasks | 3 files |
+| Phase 47 P02 | continuation | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -247,6 +248,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 46-12: vercel.json /q/:token rewrite placed first, ahead of the SPA catch-all (non-conflicting, SPA source already excludes q/ and api/)
 - [Phase ?]: 46-12: NotFoundPage noindex-meta effect creates/removes its own element instance per run, inherently StrictMode-safe without querySelector dedup
 - [Phase ?]: [Phase 47]: 47-01: Inventory row lists exactly the 4 D-08 fields; cloud sync disclosed as an extension of the existing Supabase processor entry (no new processor row, no new connect-src origin — Realtime reuses *.supabase.co)
+- [Phase ?]: [Phase 47]: 47-02: Task 3 checkpoint resolved live via Supabase MCP apply_migration — a Realtime tenant bootstrap probe (anon channel-subscribe) was needed before first apply since the project's Realtime service had never been used; two anon-revoke residues (RPC EXECUTE + table ACL) found live and closed via follow-up migrations, reconciled into the repo as 0003_cloud_sync_anon_revoke.sql so the repo migration chain matches production exactly
 
 ### Pending Todos
 
@@ -267,8 +269,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-07-24T01:58:20.996Z
-Stopped at: Completed 47-01-PLAN.md
+Last session: 2026-07-24T02:35:20.361Z
+Stopped at: Completed 47-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
