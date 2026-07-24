@@ -11,7 +11,7 @@ behavior_unverified: 0
 **Phase Goal:** Pro users can present quotes under their own brand — white-label PDF quotes and a white-label hosted quote page (maker's brand only, no 3DCoster powered-by footer) — flipping the first two /features "Coming" pills to shipped. Scope-expanded (founder, discussion 2026-07-22) to include desktop Pro sign-in via email OTP so white-label works on desktop too.
 
 **Verified:** 2026-07-23T19:40:00Z
-**Status:** human_needed
+**Status:** passed — canonicalized 2026-07-24 by `/gsd-verify-work 46` after 46-UAT.md test 18 passed live (G-46-18 resolved); the "human_needed" narrative below is historical
 
 This report **supersedes** the prior verification (2026-07-23T19:15:00Z, status `human_needed`, 41/41 must-haves). It re-confirms the original 11 plans' 41 truths (spot-checked directly against the current codebase, not just copy-forwarded) and adds the 5 new must-haves from gap-closure plan **46-12** (commits `5c16f7e`, `3e8a0b7`, `5740aca`, `245db01`, `8243931`), which closes UAT gap **G-46-18** (published hosted-quote link opened a blank page).
 

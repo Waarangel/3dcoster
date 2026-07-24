@@ -469,7 +469,7 @@ Plans:
 
 ## Progress
 
-### v2.0 Cost-Truth & Insight (Phases 38–45) — Active
+### v2.0 Cost-Truth & Insight (Phases 38–51) — Active
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -481,6 +481,7 @@ Plans:
 | 43. Pro Backend | 7/7 | Complete    | 2026-07-16 |
 | 44. Sync & STL Instant Quote | 6/6 | Complete    | 2026-07-19 |
 | 45. Brand & Launch | 11/11 | Complete    | 2026-07-20 |
+| 46. White-label quotes | 12/12 | Complete    | 2026-07-24 |
 
 <details>
 <summary>✅ v1.9 Hardening progress (Phases 34–37) — all complete</summary>
