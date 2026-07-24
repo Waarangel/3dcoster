@@ -5,16 +5,16 @@ milestone_name: Cost-Truth & Insight
 current_phase: 47
 current_phase_name: cloud-sync
 status: executing
-stopped_at: Completed 47-06-PLAN.md
-last_updated: "2026-07-24T03:18:03.703Z"
-last_activity: 2026-07-23
-last_activity_desc: Phase 47 execution started
+stopped_at: Completed 47-08-PLAN.md (47-07 SUMMARY pending from parallel UAT session)
+last_updated: "2026-07-24T17:37:48.000Z"
+last_activity: 2026-07-24
+last_activity_desc: 47-08 marketing flips executed
 progress:
   total_phases: 14
   completed_phases: 9
   total_plans: 74
-  completed_plans: 72
-  percent: 64
+  completed_plans: 73
+  percent: 65
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](
 ## Current Position
 
 Phase: 47 (cloud-sync) — EXECUTING
-Plan: 7 of 8
-Status: Ready to execute
-Last activity: 2026-07-23 — Phase 47 execution started
+Plan: 8 of 8 executed (47-07 SUMMARY pending from parallel UAT session)
+Status: Awaiting 47-07 wrap-up, then phase verification
+Last activity: 2026-07-24 — 47-08 marketing flips executed (D-16)
 
 ## v2.0 Phase Order Reference
 
