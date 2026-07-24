@@ -20,6 +20,7 @@
 // network short-circuits to a safe no-op/empty result when `supabase` is
 // null (unconfigured deploy) or no user is signed in. Cloud sync is a
 // signed-in Pro path; the free floor must never make a network call here.
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { getSetting, setSetting } from '../db/database';
 
@@ -153,6 +154,126 @@ export async function resetCloudBlob(): Promise<void> {
   await setLastKnownVersion(0);
 }
 
+// ---------------------------------------------------------------------------
+// Realtime channel plumbing (UAT gap-closure, 47-07 Task 3).
+//
+// Root causes verified by reading the installed @supabase/supabase-js /
+// @supabase/realtime-js source (not guessed):
+//
+// 1. `client.channel(topic, params)` (RealtimeClient.channel()) ALREADY
+//    dedupes by topic string — it returns the SAME channel instance if one
+//    is already registered for that topic. So the OLD code's
+//    broadcastBlobUpdated, called after every publish, was NOT creating a
+//    second independent channel — it was re-using the SAME channel object
+//    subscribeToCloudPeers had already joined, then calling
+//    `supabase.removeChannel(channel)` on it. That tore down the account's
+//    ONLY listening channel after the very first publish in a session,
+//    permanently killing real-time propagation for the rest of that session
+//    on both ends (the exact "never appears on the other device" symptom).
+// 2. `RealtimeChannel.subscribe(cb)` reads `this.socket.accessTokenValue`
+//    SYNCHRONOUSLY when building the join payload. That value starts `null`
+//    and is only populated by an async, un-awaited `_setAuthSafely('connect')`
+//    kicked off from `RealtimeClient.connect()` — a real race: the FIRST
+//    channel join of a session can go out before the signed-in JWT has been
+//    fetched, joining as anon and getting silently rejected by
+//    `realtime.messages`' `auth.uid()`-scoped RLS policy (T-47-05).
+// 3. `RealtimeChannel.subscribe(cb)` is a silent no-op (never invokes `cb`
+//    at all) when the channel is already joining/joined (`!isClosed()`) —
+//    calling it a second time on the shared channel (as broadcastBlobUpdated
+//    did) hangs forever with no resolve/reject, which is what tripped
+//    withSyncLock's 30s critical-section watchdog on first sync.
+//
+// Fix shape: ONE shared, persistent channel per topic (never destroyed by a
+// broadcast — only the peer-listener's own unsubscribe releases it),
+// explicit `realtime.setAuth()` before every join, and a bounded join
+// timeout so a hung/rejected join surfaces quickly instead of relying on the
+// 30s outer watchdog.
+// ---------------------------------------------------------------------------
+
+/** Live Realtime channel per topic (`sync:<userId>`), shared between
+ *  subscribeToCloudPeers (long-lived peer listener) and broadcastBlobUpdated
+ *  (per-publish notifier) so neither call site can tear down the other's
+ *  channel. */
+const activeChannels = new Map<string, RealtimeChannel>();
+
+/** In-flight/settled JOIN promise per channel — ensures only ONE `.subscribe()`
+ *  call is ever made per channel object; a second call on an already
+ *  non-closed channel is realtime-js's documented silent no-op. A rejected
+ *  join is removed from this map so a later caller can retry a fresh join
+ *  rather than replaying the same rejection forever. */
+const channelJoinPromises = new WeakMap<RealtimeChannel, Promise<void>>();
+
+/** Bounded wait for a channel join to settle (SUBSCRIBED / CHANNEL_ERROR /
+ *  TIMED_OUT / CLOSED) — never hang the caller indefinitely even if the
+ *  realtime server never replies at all. Comfortably below the 30s
+ *  withSyncLock watchdog so a join failure surfaces on its own. */
+const CHANNEL_JOIN_TIMEOUT_MS = 8_000;
+
+function getSyncTopic(userId: string): string {
+  return `sync:${userId}`;
+}
+
+function getOrCreateChannel(client: NonNullable<typeof supabase>, userId: string): RealtimeChannel {
+  const topic = getSyncTopic(userId);
+  let channel = activeChannels.get(topic);
+  if (!channel) {
+    channel = client.channel(topic, { config: { private: true } });
+    activeChannels.set(topic, channel);
+  }
+  return channel;
+}
+
+function releaseChannel(client: NonNullable<typeof supabase>, userId: string): void {
+  const topic = getSyncTopic(userId);
+  const channel = activeChannels.get(topic);
+  if (channel) {
+    activeChannels.delete(topic);
+    channelJoinPromises.delete(channel);
+    void client.removeChannel(channel);
+  }
+}
+
+/**
+ * Pushes the current session's access token onto the Realtime socket BEFORE
+ * a private-channel join. Best-effort: signed-out / token-fetch failure
+ * leaves the join to fail on its own (surfaced via joinChannel's callback),
+ * never throws.
+ */
+async function ensureRealtimeAuth(client: NonNullable<typeof supabase>): Promise<void> {
+  const { data } = await client.auth.getSession();
+  const token = data.session?.access_token;
+  if (token) {
+    await client.realtime.setAuth(token);
+  }
+}
+
+/** Joins `channel` at most once (cached by channel identity), rejecting on
+ *  CHANNEL_ERROR/TIMED_OUT/CLOSED or after CHANNEL_JOIN_TIMEOUT_MS. */
+function joinChannel(channel: RealtimeChannel): Promise<void> {
+  let promise = channelJoinPromises.get(channel);
+  if (!promise) {
+    promise = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Realtime channel join timed out after ${CHANNEL_JOIN_TIMEOUT_MS}ms`));
+      }, CHANNEL_JOIN_TIMEOUT_MS);
+      channel.subscribe((status: string, err?: Error) => {
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(timer);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          clearTimeout(timer);
+          reject(err ?? new Error(`Realtime channel subscribe failed: ${status}`));
+        }
+      });
+    });
+    channelJoinPromises.set(channel, promise);
+    promise.catch(() => {
+      channelJoinPromises.delete(channel);
+    });
+  }
+  return promise;
+}
+
 /**
  * Broadcasts `{ version, updatedAt }` on the caller's private `sync:<userId>`
  * Realtime channel after a successful upload — the cloud analog of
@@ -160,6 +281,10 @@ export async function resetCloudBlob(): Promise<void> {
  * on the account instead of just same-origin tabs on one device. The
  * payload carries ONLY version + updatedAt (D-08 minimal envelope) — the
  * ciphertext is NEVER broadcast. No-op when `supabase` is null.
+ *
+ * Never throws — this is best-effort notification only (D-08); a failed
+ * join or send is swallowed so it can never block/fail the caller's publish
+ * (useCloudSync.ts already treats this as fire-and-forget outside its lock).
  */
 export async function broadcastBlobUpdated(
   userId: string,
@@ -167,23 +292,22 @@ export async function broadcastBlobUpdated(
   updatedAt: string,
 ): Promise<void> {
   if (!supabase) return;
+  const client = supabase;
+  const channel = getOrCreateChannel(client, userId);
 
-  const channel = supabase.channel(`sync:${userId}`, { config: { private: true } });
-
-  await new Promise<void>((resolve, reject) => {
-    channel.subscribe((status: string, err?: Error) => {
-      if (status === 'SUBSCRIBED') {
-        resolve();
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        reject(err ?? new Error(`Realtime channel subscribe failed: ${status}`));
-      }
-    });
-  });
+  try {
+    await ensureRealtimeAuth(client);
+    await joinChannel(channel);
+  } catch {
+    return;
+  }
 
   const payload: CloudBlobUpdatedPayload = { version, updatedAt };
   await channel.send({ type: 'broadcast', event: 'blob-updated', payload });
-
-  await supabase.removeChannel(channel);
+  // Deliberately NOT removed: this channel is shared with
+  // subscribeToCloudPeers' long-lived peer listener (same topic, deduped by
+  // supabase-js itself) — removing it here would kill that listener, which
+  // was exactly the bug this fix closes.
 }
 
 /**
@@ -192,23 +316,36 @@ export async function broadcastBlobUpdated(
  * learn when a new blob version has been uploaded elsewhere. Returns an
  * unsubscribe function (mirrors `syncLock.ts`'s subscribeToPeers contract).
  * No-op (callable, does-nothing unsubscribe) when `supabase` is null.
+ *
+ * `onError` (optional) is invoked with a friendly message if the channel
+ * join fails or times out — the caller surfaces this into the hook's error
+ * state instead of failing silently (UAT gap-closure 47-07).
  */
 export function subscribeToCloudPeers(
   userId: string,
   cb: (payload: CloudBlobUpdatedPayload) => void,
+  onError?: (message: string) => void,
 ): () => void {
   if (!supabase) return () => {};
 
   const client = supabase;
-  const channel = client.channel(`sync:${userId}`, { config: { private: true } });
+  const channel = getOrCreateChannel(client, userId);
   channel.on(
     'broadcast',
     { event: 'blob-updated' },
     ({ payload }: { payload: CloudBlobUpdatedPayload }) => cb(payload),
   );
-  channel.subscribe();
+
+  void (async () => {
+    try {
+      await ensureRealtimeAuth(client);
+      await joinChannel(channel);
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : 'Cloud sync real-time connection failed.');
+    }
+  })();
 
   return () => {
-    void client.removeChannel(channel);
+    releaseChannel(client, userId);
   };
 }
