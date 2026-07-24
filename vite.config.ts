@@ -169,6 +169,20 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/three/') || id.includes('/three-stdlib/')) {
             return 'three';
           }
+          // Route cloud-sync passphrase-crypto deps (hash-wasm's Argon2id WASM
+          // binary + zxcvbn-ts's strength checker and its dictionary/language
+          // packages) to their own lazily-loaded chunk (Phase 47-07, SYNC-02).
+          // CRITICAL ORDER: must run BEFORE the node_modules block below — same
+          // discipline as the pdf/three checks above. syncCrypto.ts already
+          // dynamic-import()s these (Phase 47-03) so they only load when a Pro
+          // user actually submits a cloud-sync passphrase; without this explicit
+          // routing, Rollup's generic node_modules bucket below would still fold
+          // them into the eager 'vendor' chunk regardless of that dynamic import
+          // point, busting both the PRO-01 free-floor bundle budget and the PWA
+          // service worker's 2 MiB precache-per-file limit.
+          if (id.includes('/hash-wasm/') || id.includes('/@zxcvbn-ts/')) {
+            return 'cloud-sync-crypto';
+          }
           if (id.includes('node_modules')) {
             // PERF-05 (Phase 25): explicitly route ALL react-* packages and their core
             // companions into react-vendor. Previously only /react/ + /react-dom/ were caught,

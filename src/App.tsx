@@ -4,6 +4,7 @@ import { useAssets, useAllSettings, useJobs, usePrinters, usePrinterInstances, u
 import { useFxRates } from './hooks/useFxRates';
 import { useFailureEvents } from './hooks/useFailureEvents';
 import { useSyncFolder } from './hooks/useSyncFolder';
+import { useCloudSync } from './hooks/useCloudSync';
 import type { PrintJob } from './types';
 import { AssetLibrary } from './components/AssetLibrary';
 import { PrinterSettings } from './components/PrinterSettings';
@@ -200,6 +201,17 @@ function App() {
     void checkOnLaunch();
   }, [checkOnLaunch]);
 
+  // Phase 47-07 (SYNC-02, D-04/D-10): the cloud-sync equivalent of the
+  // file-sync launch check above. checkOnLaunch() is itself a no-op when
+  // cloud sync isn't active (not signed in / not Pro / not enabled — PRO-01
+  // free floor), and this hook instance also drives the debounced auto-write
+  // + Realtime peer subscription for the app's lifetime (module-scoped
+  // external store, same pattern as useSyncFolder).
+  const { pendingMerge: cloudPendingMerge, confirmMerge: confirmCloudMerge, cancelMerge: cancelCloudMerge, checkOnLaunch: checkCloudOnLaunch } = useCloudSync();
+  useEffect(() => {
+    void checkCloudOnLaunch();
+  }, [checkCloudOnLaunch]);
+
   // Handle saving a job and updating printer hours
   const handleSaveJob = async (job: PrintJob, printHours: number) => {
     // Capture hours BEFORE the update (printerInstances holds pre-update values)
@@ -379,6 +391,12 @@ function App() {
         onMarketplaceFeesChange={updateMarketplaceFees}
         onResetMarketplaceFees={resetMarketplaceFees}
         onUserProfileChange={updateUserProfile}
+        onOpenSignIn={() => {
+          // D-09: same profile-panel-replaces-with-sign-in pattern, reached
+          // this time from the Data tab's CloudSyncSetup free-chip.
+          setShowSettingsModal(false);
+          setShowSignInModal(true);
+        }}
       />
 
       {/* Maintenance Alert Modal */}
@@ -402,6 +420,21 @@ function App() {
             plan={syncPendingMerge.plan}
             onConfirm={() => void confirmSyncMerge()}
             onCancel={cancelSyncMerge}
+          />
+        </div>
+      )}
+
+      {/* Phase 47-07 (SYNC-02, D-10): the cloud-sync equivalent — a
+          first-connect or risky cloud merge never auto-commits either. Reuses
+          the same SyncMergeSummary component; in practice the two never
+          render simultaneously (different channels, each guards its own
+          pending state), but each is independently confirm-gated. */}
+      {cloudPendingMerge && (
+        <div className="max-w-6xl mx-auto px-4 pt-4">
+          <SyncMergeSummary
+            plan={cloudPendingMerge.plan}
+            onConfirm={() => void confirmCloudMerge()}
+            onCancel={cancelCloudMerge}
           />
         </div>
       )}

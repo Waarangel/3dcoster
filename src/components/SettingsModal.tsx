@@ -29,6 +29,9 @@ interface SettingsModalProps {
   onMarketplaceFeesChange: (fees: MarketplaceFees) => void;
   onResetMarketplaceFees: () => void;
   onUserProfileChange: (profile: UserProfile) => void;
+  /** Phase 47-07 (D-04/D-09): opens the App-level Pro sign-in modal from the
+   *  Data tab's CloudSyncSetup free/signed-out Pro-chip path. */
+  onOpenSignIn: () => void;
 }
 
 export function SettingsModal({
@@ -44,6 +47,7 @@ export function SettingsModal({
   onMarketplaceFeesChange,
   onResetMarketplaceFees,
   onUserProfileChange,
+  onOpenSignIn,
 }: SettingsModalProps) {
   const currencySymbol = CURRENCY_CONFIG[userCurrency].symbol;
   const distanceUnit = getDistanceUnit(userCurrency);
@@ -1188,7 +1192,7 @@ export function SettingsModal({
               file (this modal sits at the 800-line cap). */}
           {activeTab === 'data' && (
             <div className="space-y-6">
-              <BackupRestoreSection />
+              <BackupRestoreSection onOpenSignIn={onOpenSignIn} />
 
               {/* Phase 42 GDPR-01 (D-02) — web-only cookie/privacy control.
                   Desktop ships zero analytics (D-03): nothing to consent to,

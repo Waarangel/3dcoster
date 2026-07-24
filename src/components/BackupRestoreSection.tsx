@@ -3,6 +3,7 @@ import type Dexie from 'dexie';
 import { db } from '../db/database';
 import { Button } from './ui';
 import { SyncSetup } from './SyncSetup';
+import { CloudSyncSetup } from './CloudSyncSetup';
 import { downloadBackup } from '../utils/backupExport';
 import { restoreBackup, validateBackupFile } from '../utils/backupRestore';
 import { MAX_BACKUP_BYTES, type BackupStoreName } from '../utils/backupSchema';
@@ -60,11 +61,19 @@ async function readCurrentCounts(database: Dexie): Promise<CountSummary> {
 export function BackupRestoreSection({
   database = db,
   reload = () => window.location.reload(),
+  // Phase 47-07 (D-04): opens the App-level Pro sign-in modal from
+  // CloudSyncSetup's free/signed-out Pro-chip path. Defaulted to a no-op so
+  // pre-existing BackupRestoreSection tests (which predate cloud sync) don't
+  // need to thread it through — mirrors the `reload` injectable-default
+  // pattern already established in this component.
+  onOpenSignIn = () => {},
 }: {
   /** Injectable for tests; defaults to the app database. */
   database?: Dexie;
   /** Injectable for tests; defaults to a full page reload. */
   reload?: () => void;
+  /** Opens the app-level Pro sign-in modal (D-09); injectable for tests. */
+  onOpenSignIn?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -233,8 +242,12 @@ export function BackupRestoreSection({
         )}
       </div>
 
-      {/* Sync (Phase 44-06, SYNC-01 D-03) — third subsection, below Restore. */}
+      {/* Sync (Phase 44-06, SYNC-01 D-03) — third subsection, below Restore.
+          Phase 47-07 (D-04): cloud sync mounts directly below file sync,
+          both under the one "Backup, Restore & Sync" heading above — no new
+          tab, file sync stays first, cloud sync second. */}
       <SyncSetup database={database} />
+      <CloudSyncSetup database={database} onOpenSignIn={onOpenSignIn} />
     </div>
   );
 }

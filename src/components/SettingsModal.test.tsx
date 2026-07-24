@@ -100,6 +100,7 @@ function renderModal(overrides: Partial<MarketplaceFees> = {}) {
         onMarketplaceFeesChange={vi.fn()}
         onResetMarketplaceFees={vi.fn()}
         onUserProfileChange={vi.fn()}
+        onOpenSignIn={vi.fn()}
       />
     );
   });
@@ -411,6 +412,7 @@ function renderModalWithElectricity(electricity: ElectricityConfig, onElectricit
         onMarketplaceFeesChange={vi.fn()}
         onResetMarketplaceFees={vi.fn()}
         onUserProfileChange={vi.fn()}
+        onOpenSignIn={vi.fn()}
       />
     );
   });
