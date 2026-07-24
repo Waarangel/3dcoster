@@ -55,6 +55,12 @@ export const featureReleases: Record<string, Date> = {
   // Branding section (Pro upload/preview/remove; free Pro-chip → bundle
   // pitch modal). One badge for the whole section, not per-path.
   'white-label-branding': new Date('2026-07-23'),
+  // v2.0 Phase 47 — Cloud sync (D-15, SYNC-02): Settings → Data →
+  // "Backup, Restore & Sync" CloudSyncSetup subsection (Pro passphrase
+  // setup/entry/status/reset/delete; free Pro-chip → bundle pitch modal).
+  // One badge for the whole Data-tab subsection, not per-path. Re-confirm
+  // this date is still within NEW_FEATURE_MAX_AGE_DAYS at the v2.0 tag.
+  'cloud-sync': new Date('2026-07-23'),
   // Add new features here with their release date
 };
 

@@ -2,12 +2,13 @@ import { Modal, Button } from '../ui';
 
 // ---------------------------------------------------------------------------
 // ProPitchModal — the ONE pitch surface for the full Pro bundle (Phase 43-04
-// D-10, extended Phase 46 D-14).
+// D-10, extended Phase 46 D-14, extended again Phase 47 D-15).
 //
-// Opens from BOTH ShareQuoteButton's signed-out/non-Pro branch AND
-// BrandingSection's free-user Pro-chip (D-13) — one monetization voice for
-// the whole Pro story, not a per-entry-point pitch. Explains what the Pro
-// bundle contains (hosted quote links + white-label branding) in one short
+// Opens from ShareQuoteButton's signed-out/non-Pro branch, BrandingSection's
+// free-user Pro-chip (D-13), AND CloudSyncSetup's free-user Pro-chip (D-15)
+// — one monetization voice for the whole Pro story, not a per-entry-point
+// pitch. Explains what the Pro bundle contains (hosted quote links,
+// white-label branding, and end-to-end-encrypted cloud sync) in one short
 // paragraph and hands off to the existing contextual sign-in flow (D-09) —
 // this modal does not itself collect an email; it defers to SignInModal via
 // `onSignIn`.
@@ -39,7 +40,9 @@ export function ProPitchModal({ isOpen, onClose, onSignIn }: ProPitchModalProps)
           can Approve or Decline right there (you see the result in the app
           the moment they respond), and full white-label branding — your
           logo on PDF quotes and hosted pages, with the &quot;Made with
-          3DCoster&quot; footer removed.
+          3DCoster&quot; footer removed — and real-time cloud sync across
+          all your devices, end-to-end encrypted so we can&apos;t read your
+          data.
         </p>
         <p className="text-sm text-slate-400">
           Sign in to get started — there&apos;s no separate account signup,
