@@ -42,7 +42,7 @@ export function SyncSetup({ database = db }: { database?: Dexie }) {
     <div className="border-t border-slate-700 pt-6 space-y-3">
       <div className="relative inline-block">
         <h3 className="text-sm font-semibold text-white mb-1">Sync</h3>
-        <NewBadge feature="sync-devices" className="absolute -top-1 -right-4 pointer-events-none" />
+        <NewBadge feature="sync-devices" className="absolute top-0 left-full ml-2 pointer-events-none" />
       </div>
       <p className="text-sm text-slate-400">
         Keep your data in sync across devices using a shared folder (Dropbox, Google Drive,
