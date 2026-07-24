@@ -115,7 +115,6 @@ const COMING_TO_PRO: string[] = [
   'Live Etsy order sync (90-day API import)',
   'Live carrier rates & shipping labels',
   'QuickBooks accounting sync',
-  'Cloud / real-time device sync',
 ];
 
 const HIDDEN_COSTS: HiddenCost[] = [
@@ -140,15 +139,15 @@ const comingPro = `${tdPro} text-[var(--brand-soft)]`;
 
 /**
  * ComingCell — Pro-column cell for a launch-scope capability that is on the
- * roadmap but not yet shipped (phases 47-50: live Etsy/carrier APIs,
- * QuickBooks sync, cloud device sync — white-label quotes shipped in Phase
- * 46, see the two flipped `yesPro` rows below). Renders an outlined pill
+ * roadmap but not yet shipped (phases 48-50: live Etsy/carrier APIs,
+ * QuickBooks sync — white-label quotes shipped in Phase 46 and cloud device
+ * sync shipped in Phase 47, see the flipped `yesPro` rows below). Renders an outlined pill
  * (never a solid "Yes") so it stays visually and semantically distinct from
  * a shipped capability, with sr-only text making the roadmap status
  * explicit for screen readers too (shipped-only honesty rule).
  *
  * PHASE-51-LAUNCH-PREP: as each matching capability ships across phases
- * 47-50, flip its ComingCell usage below to a plain `<td className={yesPro}>Yes</td>`,
+ * 48-50, flip its ComingCell usage below to a plain `<td className={yesPro}>Yes</td>`,
  * with a final truth sweep across this table in phase 51.
  */
 function ComingCell() {
@@ -430,7 +429,7 @@ export function FeaturesPage() {
             </button>
 
             <p className="mt-3 text-xs text-[var(--ink-faint)] max-w-2xl">
-              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({monthly.approx ? `${monthly.approx}/mo, billed as ${monthly.billingLabel}` : `${monthly.billingLabel}/mo`}) adds live, hosted quote links your customers can approve online today, with white-label branding on your PDF and hosted quotes, and live Etsy &amp; carrier APIs, QuickBooks sync, and cloud device sync on the way (see the “Coming” rows below).
+              Everything above is free, forever — no account, no paywall. <Link to="/pricing" className="text-[var(--brand-soft)] hover:underline">3DCoster Pro</Link> ({monthly.approx ? `${monthly.approx}/mo, billed as ${monthly.billingLabel}` : `${monthly.billingLabel}/mo`}) adds live, hosted quote links your customers can approve online today, white-label branding on your PDF and hosted quotes, and real-time cloud sync across your devices (end-to-end encrypted), with live Etsy &amp; carrier APIs and QuickBooks sync on the way (see the “Coming” rows below).
             </p>
 
             {showTable && (
@@ -500,7 +499,7 @@ export function FeaturesPage() {
                     <tr className="bg-[var(--surface)] border-b border-[var(--hairline)]"><td colSpan={7} className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-[var(--brand-soft)]">Platform &amp; access</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Filament library management</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={yes}>Yes (Pro)</td><td className={yes}>Yes</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Multi-device sync (file-based, no account required)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
-                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Cloud / real-time device sync (hosted, always-on)</td><td className={noUs}>No</td><ComingCell /><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
+                    <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Cloud / real-time device sync (hosted, end-to-end encrypted)</td><td className={noUs}>No</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">STL / 3MF instant quote (local mesh-volume estimate)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td><td className={dash}>—</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Works offline (PWA + IndexedDB)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>Web only</td><td className={yes}>Yes (local parsing)</td><td className={no}>Web only</td><td className={no}>Web only (account)</td></tr>
                     <tr className="border-b border-[var(--hairline)]"><td className="py-4 px-4 text-[var(--ink-soft)]">Desktop app (Windows, macOS + Linux)</td><td className={yesUs}>Yes</td><td className={yesPro}>Yes</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td><td className={no}>No</td></tr>
