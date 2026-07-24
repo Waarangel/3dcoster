@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import Dexie from 'dexie';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { MergePlan } from '../utils/syncMerge';
+import { BACKUP_STORES } from '../utils/backupSchema';
 
 // ---------------------------------------------------------------------------
 // CloudSyncSetup — Phase 47 Plan 06 (D-06, D-07, D-10, D-12, D-14, D-15).
@@ -17,6 +18,16 @@ import type { MergePlan } from '../utils/syncMerge';
 // Dexie `quotes` table is injected so the D-14 level-2 live-hosted-quote
 // count reads real data, not a mock.
 // ---------------------------------------------------------------------------
+
+// NewBadge's own visibility is date-gated (features.ts release date +
+// NEW_FEATURE_MAX_AGE_DAYS/SEEN_HOURS) — mocked here so the badge-position
+// test below is deterministic regardless of wall-clock date, and asserts
+// only on the className CloudSyncSetup passes to it.
+vi.mock('./NewBadge', () => ({
+  NewBadge: ({ className }: { className?: string }) => (
+    <span data-testid="new-badge" className={className} />
+  ),
+}));
 
 let mockIsPro = false;
 vi.mock('../hooks/useEntitlement', () => ({
@@ -308,6 +319,92 @@ describe('CloudSyncSetup — D-14 self-serve deletion, confirm-gated', () => {
     const dialog = Array.from(document.querySelectorAll('[role="dialog"]')).find(d => d.textContent?.includes('Delete account?'));
     expect(dialog).toBeTruthy();
     expect(dialog!.textContent).toContain('2 live hosted quote links');
+  });
+});
+
+/** A syntactically-complete MergePlan with every store zeroed — real enough
+ *  for SyncMergeSummary to render without crashing on an undefined
+ *  `plan.summary[store]` lookup. */
+function makeEmptyMergePlan(): MergePlan {
+  const summary = {} as MergePlan['summary'];
+  for (const store of BACKUP_STORES) {
+    summary[store] = { added: 0, updated: 0, deleted: 0, conflicts: 0 };
+  }
+  return {
+    winnersByStore: {} as MergePlan['winnersByStore'],
+    deleteIdsByStore: {} as MergePlan['deleteIdsByStore'],
+    tombstonesToWrite: [],
+    summary,
+  };
+}
+
+describe('CloudSyncSetup — pending merge visibility (UAT gap-closure 47-07)', () => {
+  it('renders the pending-merge review ABOVE the Sync now / Restore buttons, not below them', () => {
+    mockIsPro = true;
+    mockCloudState = {
+      ...defaultCloudState(),
+      isEnabled: true,
+      pendingMerge: {
+        plan: makeEmptyMergePlan(),
+        remoteVersion: 2,
+        isFirstConnect: true,
+      },
+      conflictNote: '1 added',
+    };
+    renderSetup();
+
+    const reviewHeading = Array.from(container!.querySelectorAll('h3')).find(h => h.textContent === 'Review sync changes');
+    const syncNowBtn = Array.from(container!.querySelectorAll('button')).find(b => b.textContent?.includes('Sync now'));
+    expect(reviewHeading).toBeTruthy();
+    expect(syncNowBtn).toBeTruthy();
+
+    // DOM order: the review panel's position precedes the Sync now button's.
+    const position = reviewHeading!.compareDocumentPosition(syncNowBtn!);
+    // eslint-disable-next-line no-bitwise
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('disables "Sync now" while a merge is pending, with an explanatory hint (no silent no-op, UAT bug #2)', () => {
+    mockIsPro = true;
+    mockCloudState = {
+      ...defaultCloudState(),
+      isEnabled: true,
+      pendingMerge: {
+        plan: makeEmptyMergePlan(),
+        remoteVersion: 2,
+        isFirstConnect: true,
+      },
+    };
+    renderSetup();
+
+    const syncNowBtn = Array.from(container!.querySelectorAll('button')).find(b => b.textContent?.includes('Sync now'));
+    expect(syncNowBtn!.disabled).toBe(true);
+    expect(document.body.textContent).toContain('Review the pending sync changes above before syncing again.');
+  });
+});
+
+describe('CloudSyncSetup — off switch reachable from the locked (needsPassphrase) state too (UAT bug #7)', () => {
+  it('shows "Turn off cloud sync & delete cloud copy" even before this device has unlocked cloud sync', () => {
+    mockIsPro = true;
+    mockCloudState = { ...defaultCloudState(), isEnabled: true, needsPassphrase: true };
+    renderSetup();
+
+    const turnOffBtn = container!.querySelector<HTMLButtonElement>('button[aria-label="Turn off cloud sync and delete cloud copy"]');
+    expect(turnOffBtn).not.toBeNull();
+  });
+});
+
+describe('CloudSyncSetup — NEW badge does not overlap the heading (UAT bug #9)', () => {
+  it('positions the badge to the side of the heading (left-full offset), not a negative-right overlay', () => {
+    renderSetup();
+    const badge = container!.querySelector('[data-testid="new-badge"]');
+    // The fix replaces the overlapping `-right-N` offset with a `left-full`
+    // side-anchor — the badge's left edge sits at the heading box's right
+    // edge, so it can never render on top of the heading text regardless of
+    // heading length.
+    expect(badge).not.toBeNull();
+    expect(badge?.className).toContain('left-full');
+    expect(badge?.className).not.toMatch(/-right-\d/);
   });
 });
 

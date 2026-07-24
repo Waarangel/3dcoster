@@ -141,11 +141,23 @@ export function CloudSyncSetup({ database = db, onOpenSignIn }: CloudSyncSetupPr
     <div className="border-t border-slate-700 pt-6 space-y-3">
       <div className="relative inline-block">
         <h3 className="text-sm font-semibold text-white mb-1">Cloud sync</h3>
-        <NewBadge feature="cloud-sync" className="absolute -top-1 -right-4 pointer-events-none" />
+        <NewBadge feature="cloud-sync" className="absolute top-0 left-full ml-2 pointer-events-none" />
       </div>
       <p className="text-sm text-slate-400">
         Real-time sync across all your devices — end-to-end encrypted, so we can&apos;t read your data.
       </p>
+
+      {/* D-10: a pending first-connect/risky merge is the most important
+          thing on this screen when it exists — render it FIRST, above the
+          status/action buttons below, so it's never mistaken for a buried
+          footnote (UAT gap-closure 47-07). */}
+      {cloud.pendingMerge && (
+        <SyncMergeSummary
+          plan={cloud.pendingMerge.plan}
+          onConfirm={() => void cloud.confirmMerge()}
+          onCancel={cloud.cancelMerge}
+        />
+      )}
 
       {!isPro ? (
         <>
@@ -240,17 +252,27 @@ export function CloudSyncSetup({ database = db, onOpenSignIn }: CloudSyncSetupPr
                 : 'Not yet synced'}
           </p>
           <div className="flex gap-2 flex-wrap">
-            <Button btnSize="sm" variant="secondary" onClick={() => void cloud.syncNow()} disabled={isSyncing}>
+            <Button
+              btnSize="sm"
+              variant="secondary"
+              onClick={() => void cloud.syncNow()}
+              disabled={isSyncing || cloud.pendingMerge !== null}
+            >
               Sync now
             </Button>
             <Button btnSize="sm" variant="ghost" onClick={() => void cloud.restorePreMerge()} disabled={isSyncing}>
               Restore pre-merge state
             </Button>
           </div>
+          {cloud.pendingMerge && (
+            <p className="text-xs text-amber-300">
+              Review the pending sync changes above before syncing again.
+            </p>
+          )}
         </div>
       )}
 
-      {cloud.conflictNote && (
+      {cloud.conflictNote && !cloud.pendingMerge && (
         <p className="text-xs text-slate-500">{cloud.conflictNote}</p>
       )}
 
@@ -260,27 +282,27 @@ export function CloudSyncSetup({ database = db, onOpenSignIn }: CloudSyncSetupPr
         </div>
       )}
 
-      {cloud.pendingMerge && (
-        <SyncMergeSummary
-          plan={cloud.pendingMerge.plan}
-          onConfirm={() => void cloud.confirmMerge()}
-          onCancel={cloud.cancelMerge}
-        />
+      {/* D-07/D-14: reachable from EITHER the locked (needsPassphrase) or
+          fully-synced state — not gated behind the synced-only branch above
+          — and placed directly under the primary status/action area (not
+          buried past error/pendingMerge) so it's actually discoverable
+          (UAT gap-closure 47-07: founder could not find this control). */}
+      {isPro && cloud.isEnabled && (
+        <div className="border-t border-slate-700/50 pt-3 flex flex-wrap items-center gap-2">
+          <Button
+            btnSize="sm"
+            variant="ghost"
+            onClick={() => setShowTurnOffConfirm(true)}
+            aria-label="Turn off cloud sync and delete cloud copy"
+            className="text-slate-400 hover:text-slate-200"
+          >
+            Turn off cloud sync &amp; delete cloud copy
+          </Button>
+        </div>
       )}
 
       {isPro && (
-        <div className="border-t border-slate-700/50 pt-3 flex flex-col items-start gap-2">
-          {cloud.isEnabled && (
-            <Button
-              btnSize="sm"
-              variant="ghost"
-              onClick={() => setShowTurnOffConfirm(true)}
-              aria-label="Turn off cloud sync and delete cloud copy"
-              className="text-slate-400 hover:text-slate-200"
-            >
-              Turn off cloud sync &amp; delete cloud copy
-            </Button>
-          )}
+        <div className={`flex flex-col items-start gap-2 ${cloud.isEnabled ? '' : 'border-t border-slate-700/50 pt-3'}`}>
           <Button
             btnSize="sm"
             variant="ghost"
