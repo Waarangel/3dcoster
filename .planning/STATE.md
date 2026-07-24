@@ -5,15 +5,15 @@ milestone_name: Cost-Truth & Insight
 current_phase: 47
 current_phase_name: cloud-sync
 status: executing
-stopped_at: Completed 47-03-PLAN.md
-last_updated: "2026-07-24T02:43:49.315Z"
+stopped_at: Completed 47-04-PLAN.md
+last_updated: "2026-07-24T02:52:19.315Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 14
   completed_phases: 9
   total_plans: 74
-  completed_plans: 69
+  completed_plans: 70
   percent: 64
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](
 ## Current Position
 
 Phase: 47 (cloud-sync) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 47 execution started
 
@@ -100,6 +100,7 @@ Last activity: 2026-07-23 — Phase 47 execution started
 | Phase 47 P01 | 20min | 2 tasks | 3 files |
 | Phase 47 P02 | continuation | 3 tasks | 4 files |
 | Phase 47 P03 | 6min | 2 tasks | 6 files |
+| Phase 47 P04 | 12min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -253,6 +254,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 47]: 47-03: Package-legitimacy gate for @zxcvbn-ts/language-common resolved — [SUS] flag was an automated too-new-version heuristic, not a legitimacy problem (same GitHub monorepo/maintainer as pre-approved @zxcvbn-ts/core, zero lifecycle scripts, MIT, 989k weekly downloads); founder approved all 4 packages after independent orchestrator re-verification
 - [Phase ?]: [Phase 47]: 47-03: ARGON2ID_PARAMS shipped as a fixed exported constant (m=64MiB, t=3, p=1) with a never-silently-bump code comment; checkPassphraseStrength floor set at zxcvbn score >= 3
 - [Phase ?]: [Phase 47]: 47-03: hash-wasm's bare-Uint8Array argon2id return needed re-wrapping (new Uint8Array(rawKey)) before crypto.subtle.importKey to satisfy tsc -b's stricter BufferSource<ArrayBuffer> check — vitest's esbuild transform doesn't catch this, only tsc -b does
+- [Phase ?]: [Phase 47]: 47-04: cloudBlobIO's getLastKnownVersion/setLastKnownVersion deliberately skip the supabase-null/signed-out guard — they are pure local settings-store reads/writes with no network component regardless of session state
+- [Phase ?]: [Phase 47]: 47-04: broadcastBlobUpdated opens a fresh Realtime channel per call (subscribe -> send -> removeChannel) rather than holding a persistent channel, keeping the module a pure non-hook transport layer
 
 ### Pending Todos
 
@@ -273,8 +276,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-07-24T02:43:49.305Z
-Stopped at: Completed 47-03-PLAN.md
+Last session: 2026-07-24T02:52:19.305Z
+Stopped at: Completed 47-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

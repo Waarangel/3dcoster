@@ -403,7 +403,7 @@ Plans:
 
 **Wave 2**
 
-- [ ] 47-04-PLAN.md — Cloud transport (cloudBlobIO): CAS upload + re-merge/retry, download, reset, Realtime private-channel notify (D-01/D-02/D-07)
+- [x] 47-04-PLAN.md — Cloud transport (cloudBlobIO): CAS upload + re-merge/retry, download, reset, Realtime private-channel notify (D-01/D-02/D-07)
 
 **Wave 3**
 
