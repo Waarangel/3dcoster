@@ -389,13 +389,37 @@ Plans:
 ### Phase 47: Cloud sync
 
 **Goal:** Pro cloud/real-time multi-device sync ceiling on Supabase — file-based sync stays the free floor (architecture-as-feature) — with GDPR data-inventory (docs/DATA-FLOW-INVENTORY.md) and privacy-policy updates BEFORE any new user data goes server-side (inventory first, policy second). (Founder est: 1–2 wk.)
-**Requirements**: TBD
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15, D-16 (resolves REQUIREMENTS.md SYNC-02 — Supabase custom sync; CRDTs stay declined)
 **Depends on:** Phase 46
-**Plans:** 0 plans
+**Plans:** 8 plans in 6 waves
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 47 to break down)
+**Wave 1** *(parallel — no file overlap; GDPR inventory-first lands before any transmit code)*
+
+- [ ] 47-01-PLAN.md — GDPR inventory-first + privacy policy (encrypted sync-blob flow, minimal envelope, 90-day retention) (D-08/D-13)
+- [ ] 47-02-PLAN.md — Backend: sync_blobs table + owner RLS + version CAS RPC + Realtime RLS + pg_cron 90-day retention + delete-account edge fn + [BLOCKING] apply + enumerability test (D-01/D-05/D-08/D-13/D-14)
+- [ ] 47-03-PLAN.md — Zero-knowledge crypto: AES-256-GCM + Argon2id KDF + deterministic account salt + zxcvbn strength + non-extractable key cache; package-legitimacy [SUS] gate (D-05/D-06/D-07)
+
+**Wave 2**
+
+- [ ] 47-04-PLAN.md — Cloud transport (cloudBlobIO): CAS upload + re-merge/retry, download, reset, Realtime private-channel notify (D-01/D-02/D-07)
+
+**Wave 3**
+
+- [ ] 47-05-PLAN.md — useCloudSync hook + cloudSyncGates (compose crypto+transport with UNCHANGED merge core; silent LWW + risky/first-connect gates + rolling snapshots + lapse pause + 3–5s debounce) (D-02/D-03/D-04/D-09/D-10/D-11/D-13)
+
+**Wave 4**
+
+- [ ] 47-06-PLAN.md — CloudSyncSetup UI (Pro-chip → ProPitchModal, passphrase setup/entry, quiet status, restore, two-level delete) + ProPitchModal copy + NEW badge (D-06/D-07/D-10/D-12/D-14/D-15)
+
+**Wave 5**
+
+- [ ] 47-07-PLAN.md — Wiring: mount in Settings→Data + App.tsx launch-merge & modal + free-floor E2E extension + [BLOCKING] two-device human-verify (D-04/D-10)
+
+**Wave 6** *(shipped-only honesty — after the capability works)*
+
+- [ ] 47-08-PLAN.md — D-16 marketing flips: /features ComingCell→shipped Pro, /pricing Pro card + zero-knowledge line, remove /roadmap item (price constants untouched) (D-16)
 
 ### Phase 48: Live Etsy order sync
 
