@@ -41,7 +41,10 @@ const IV_LENGTH_BYTES = 12;
  * reused with the same key — and is prepended to the returned ciphertext
  * (the IV is not secret; it must travel with the ciphertext to decrypt).
  */
-export async function encryptSyncFile(bytes: Uint8Array, key: CryptoKey): Promise<Uint8Array> {
+export async function encryptSyncFile(
+  bytes: Uint8Array<ArrayBuffer>,
+  key: CryptoKey,
+): Promise<Uint8Array<ArrayBuffer>> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH_BYTES));
   const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes);
 
@@ -57,7 +60,10 @@ export async function encryptSyncFile(bytes: Uint8Array, key: CryptoKey): Promis
  * tampered with — AES-GCM's authentication tag makes a wrong-key or
  * corrupted decrypt fail loudly rather than silently returning garbage.
  */
-export async function decryptSyncFile(combined: Uint8Array, key: CryptoKey): Promise<Uint8Array> {
+export async function decryptSyncFile(
+  combined: Uint8Array<ArrayBuffer>,
+  key: CryptoKey,
+): Promise<Uint8Array<ArrayBuffer>> {
   const iv = combined.slice(0, IV_LENGTH_BYTES);
   const ciphertext = combined.slice(IV_LENGTH_BYTES);
   const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
@@ -72,7 +78,7 @@ export async function decryptSyncFile(combined: Uint8Array, key: CryptoKey): Pro
  * share a uid, and it needs zero new server-stored columns (D-06/D-08
  * resolution, RESEARCH.md Architecture Pattern 2 / Assumption A2).
  */
-export async function deriveSaltFromAccountId(accountId: string): Promise<Uint8Array> {
+export async function deriveSaltFromAccountId(accountId: string): Promise<Uint8Array<ArrayBuffer>> {
   const encoded = new TextEncoder().encode(accountId);
   const hash = await crypto.subtle.digest('SHA-256', encoded);
   return new Uint8Array(hash);
@@ -85,7 +91,10 @@ export async function deriveSaltFromAccountId(accountId: string): Promise<Uint8A
  * Don't-Hand-Roll). The `extractable` flag is `false`: even a successful XSS
  * cannot exfiltrate the raw key bytes, only use the key via WebCrypto calls.
  */
-export async function deriveKeyFromPassphrase(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
+export async function deriveKeyFromPassphrase(
+  passphrase: string,
+  salt: Uint8Array<ArrayBuffer>,
+): Promise<CryptoKey> {
   const { argon2id } = await import('hash-wasm');
   const rawKey = await argon2id({
     password: passphrase,
@@ -96,7 +105,13 @@ export async function deriveKeyFromPassphrase(passphrase: string, salt: Uint8Arr
     hashLength: ARGON2ID_PARAMS.hashLength,
     outputType: 'binary',
   });
-  return crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  // hash-wasm's own .d.ts declares a bare `Uint8Array` return (resolves to
+  // Uint8Array<ArrayBufferLike> under this project's lib) — re-wrap into a
+  // fresh Uint8Array<ArrayBuffer> so it satisfies WebCrypto's BufferSource.
+  return crypto.subtle.importKey('raw', new Uint8Array(rawKey), { name: 'AES-GCM' }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
 }
 
 /**
@@ -145,6 +160,9 @@ export async function checkPassphraseStrength(passphrase: string): Promise<Passp
   return {
     score: result.score,
     ok: result.score >= MIN_PASSPHRASE_SCORE,
-    feedback: result.feedback,
+    feedback: {
+      warning: result.feedback.warning ?? '',
+      suggestions: result.feedback.suggestions,
+    },
   };
 }
