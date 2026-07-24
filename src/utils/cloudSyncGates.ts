@@ -98,6 +98,26 @@ export function needsRiskyConfirmation(
 }
 
 /**
+ * True when a computed cloud MergePlan has zero adds/updates/deletes across
+ * every BACKUP_STORES table — genuinely nothing to review. First-connect and
+ * risky merges (D-09/D-10) must never surface a "Review sync changes" panel
+ * for an empty plan (UAT gap-closure, 47-07 — a founder hit a review panel
+ * reading "No changes to merge" on first connect); an empty plan applies
+ * silently instead, same as a routine merge.
+ *
+ * Examples:
+ *   isMergePlanEmpty(planWithNoChanges) → true
+ *   isMergePlanEmpty(planWithOneAdd) → false
+ */
+export function isMergePlanEmpty(plan: MergePlan): boolean {
+  for (const store of BACKUP_STORES) {
+    const counts = plan.summary[store];
+    if (counts.added > 0 || counts.updated > 0 || counts.deleted > 0) return false;
+  }
+  return true;
+}
+
+/**
  * Appends `entry` to `existing`, prunes entries older than
  * PRE_MERGE_SNAPSHOT_TTL_HOURS relative to `now`, then caps the result to the
  * newest MAX_PRE_MERGE_SNAPSHOTS entries (oldest dropped first) — the D-11

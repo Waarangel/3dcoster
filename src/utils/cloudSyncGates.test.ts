@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   needsRiskyConfirmation,
   pushPreMergeSnapshot,
+  isMergePlanEmpty,
   RISKY_DELETION_THRESHOLD,
   RISKY_DIVERGENCE_DAYS,
   MAX_PRE_MERGE_SNAPSHOTS,
@@ -70,6 +71,24 @@ describe('needsRiskyConfirmation', () => {
     // change at all) must NOT trip this looser cloud-sync gate.
     const plan = makePlan({ jobs: { added: 1, updated: 1 } });
     expect(needsRiskyConfirmation(plan, new Date(), new Date())).toBe(false);
+  });
+});
+
+describe('isMergePlanEmpty', () => {
+  it('returns true for a plan with zero adds/updates/deletes across every store', () => {
+    expect(isMergePlanEmpty(makePlan())).toBe(true);
+  });
+
+  it('returns false when any single store has an add', () => {
+    expect(isMergePlanEmpty(makePlan({ jobs: { added: 1 } }))).toBe(false);
+  });
+
+  it('returns false when any single store has an update', () => {
+    expect(isMergePlanEmpty(makePlan({ customers: { updated: 1 } }))).toBe(false);
+  });
+
+  it('returns false when any single store has a delete', () => {
+    expect(isMergePlanEmpty(makePlan({ sales: { deleted: 1 } }))).toBe(false);
   });
 });
 

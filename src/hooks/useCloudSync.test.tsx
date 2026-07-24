@@ -426,6 +426,117 @@ describe('useCloudSync — needsPassphrase (Pitfall 5)', () => {
   });
 });
 
+describe('useCloudSync — empty merge plan gate (UAT gap-closure 47-07)', () => {
+  it('an empty first-connect plan never surfaces pendingMerge — applies silently and completes the publish', async () => {
+    const database = makeTestDb();
+    mockUser = { id: 'user-1' };
+    mockIsSignedIn = true;
+    mockIsPro = true;
+    settingsStore.set('cloudSyncEnabled', JSON.stringify(true));
+    // cloudSyncFirstConnectDone left unset — this IS a first connect.
+    mockGetCachedDerivedKey.mockResolvedValue({ __fakeKey: true } as unknown as CryptoKey);
+    // Remote blob with NO jobs/tombstones — identical to the empty local DB,
+    // so computeMerge produces zero adds/updates/deletes across every store.
+    const remote = makeRemoteBlob({ jobs: [], tombstones: [], version: 1 });
+    mockDownloadBlob.mockResolvedValue(remote);
+
+    render(database);
+    await flush();
+
+    await act(async () => {
+      await api().checkOnLaunch();
+    });
+
+    expect(api().pendingMerge).toBeNull();
+    expect(api().error).toBeNull();
+    // Silent-apply path was taken (same as a routine merge) — the device
+    // still publishes its own snapshot.
+    expect(mockUploadWithRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('a NON-empty first-connect plan still surfaces pendingMerge (empty-plan gate does not weaken D-10)', async () => {
+    const database = makeTestDb();
+    mockUser = { id: 'user-1' };
+    mockIsSignedIn = true;
+    mockIsPro = true;
+    settingsStore.set('cloudSyncEnabled', JSON.stringify(true));
+    mockGetCachedDerivedKey.mockResolvedValue({ __fakeKey: true } as unknown as CryptoKey);
+    const remote = makeRemoteBlob({ jobs: [{ id: 'job-remote', name: 'Remote', updatedAt: nowIso() }] });
+    mockDownloadBlob.mockResolvedValue(remote);
+
+    render(database);
+    await flush();
+
+    await act(async () => {
+      await api().checkOnLaunch();
+    });
+
+    expect(api().pendingMerge).not.toBeNull();
+    expect(mockUploadWithRetry).not.toHaveBeenCalled();
+  });
+});
+
+describe('useCloudSync — peer notify is fire-and-forget outside the lock (UAT gap-closure 47-07)', () => {
+  it('a hung broadcastBlobUpdated does not block syncNow from completing (prevents the 30s critical-section watchdog trip)', async () => {
+    const database = makeTestDb();
+    await database.table('jobs').put({ id: 'job-1', name: 'Local Job', updatedAt: new Date('2026-07-01T00:00:00.000Z') });
+
+    mockUser = { id: 'user-1' };
+    mockIsSignedIn = true;
+    mockIsPro = true;
+    settingsStore.set('cloudSyncEnabled', JSON.stringify(true));
+    mockGetCachedDerivedKey.mockResolvedValue({ __fakeKey: true } as unknown as CryptoKey);
+    mockDownloadBlob.mockResolvedValue(null); // nothing uploaded yet — this device publishes first
+
+    // Simulate a hung Realtime channel join — this promise never settles.
+    mockBroadcastBlobUpdated.mockImplementation(() => new Promise(() => {}));
+
+    render(database);
+    await flush();
+
+    await act(async () => {
+      await api().syncNow();
+    });
+
+    // syncNow's own promise resolved WITHOUT waiting for the hung broadcast —
+    // withSyncLock released, status back to idle, no error surfaced.
+    expect(api().status).toBe('idle');
+    expect(api().error).toBeNull();
+  });
+});
+
+describe('useCloudSync — realtime subscribe failure surfacing (UAT gap-closure 47-07)', () => {
+  it('surfaces a subscribeToCloudPeers onError callback into the hook error state', async () => {
+    const database = makeTestDb();
+    mockUser = { id: 'user-1' };
+    mockIsSignedIn = true;
+    mockIsPro = true;
+    settingsStore.set('cloudSyncEnabled', JSON.stringify(true));
+    mockGetCachedDerivedKey.mockResolvedValue({ __fakeKey: true } as unknown as CryptoKey);
+    mockDownloadBlob.mockResolvedValue(null);
+
+    let capturedOnError: ((message: string) => void) | undefined;
+    mockSubscribeToCloudPeers.mockImplementation(
+      (_userId: string, _cb: () => void, onError?: (message: string) => void) => {
+        capturedOnError = onError;
+        return () => {};
+      },
+    );
+
+    render(database);
+    await flush();
+
+    expect(capturedOnError).toBeTypeOf('function');
+
+    act(() => {
+      capturedOnError!('Realtime channel join timed out after 8000ms');
+    });
+
+    expect(api().error).toMatch(/Real-time sync connection issue/);
+    expect(api().error).toMatch(/Sync now/);
+  });
+});
+
 describe('useCloudSync — free-floor inertness', () => {
   it('supabase null makes the hook fully inert (zero network) even when other flags are set', async () => {
     cloudMockState.supabase = null;

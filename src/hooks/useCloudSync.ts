@@ -22,7 +22,7 @@ import {
   checkPassphraseStrength,
 } from '../utils/syncCrypto';
 import { cacheDerivedKey, getCachedDerivedKey, clearDerivedKey } from '../utils/syncKeyCache';
-import { needsRiskyConfirmation, pushPreMergeSnapshot } from '../utils/cloudSyncGates';
+import { needsRiskyConfirmation, pushPreMergeSnapshot, isMergePlanEmpty } from '../utils/cloudSyncGates';
 import { validateSyncFile, computeMerge, type MergePlan } from '../utils/syncMerge';
 import { applyMerge } from '../utils/applyMerge';
 import { buildBackupFile } from '../utils/backupExport';
@@ -270,7 +270,7 @@ async function reDeriveCiphertextOnConflict(database: Dexie, key: CryptoKey): Pr
   return buildAndEncryptCurrentSnapshot(database, key);
 }
 
-/** Encrypts+uploads the current local snapshot, then broadcasts the new version to peers (D-02/D-08). */
+/** Encrypts+uploads the current local snapshot, then notifies peers (D-02/D-08). */
 async function publishLocalSnapshot(database: Dexie, key: CryptoKey): Promise<void> {
   const ciphertext = await buildAndEncryptCurrentSnapshot(database, key);
   await uploadWithRetry(ciphertext, () => reDeriveCiphertextOnConflict(database, key));
@@ -279,9 +279,22 @@ async function publishLocalSnapshot(database: Dexie, key: CryptoKey): Promise<vo
   await setSetting(CLOUD_SYNC_LAST_SYNCED_AT_KEY, now);
   setState({ lastSyncedAt: now });
 
+  // D-08: the peer-notify broadcast is NOTIFICATION-ONLY — merge correctness
+  // never depends on it (the CAS upload above is the durable write; a
+  // missed notify still gets picked up by the next launch/manual sync's
+  // download path). Fire it WITHOUT awaiting so a slow/hung Realtime channel
+  // join can never trip withSyncLock's 30s critical-section watchdog — this
+  // function always runs inside that lock (UAT gap-closure 47-07: "Sync
+  // critical section exceeded 30000ms" on first sync). cloudBlobIO.ts's own
+  // bounded channel-join timeout is the transport-side guard for the
+  // broadcast itself.
   if (authContext.userId) {
-    const version = await getLastKnownVersion();
-    await broadcastBlobUpdated(authContext.userId, version, now);
+    const userId = authContext.userId;
+    void getLastKnownVersion()
+      .then(version => broadcastBlobUpdated(userId, version, now))
+      .catch((err: unknown) => {
+        console.warn('[useCloudSync] peer notify broadcast failed (non-fatal):', err);
+      });
   }
 }
 
@@ -350,10 +363,15 @@ async function cloudSyncCycleInner(database: Dexie, key: CryptoKey): Promise<voi
   const firstConnectDone = await getSetting<boolean>(CLOUD_SYNC_FIRST_CONNECT_DONE_KEY, false);
   const isFirstConnect = !firstConnectDone;
   const risky = needsRiskyConfirmation(plan, lastSyncedAtRaw ? new Date(lastSyncedAtRaw) : undefined, now);
+  const planIsEmpty = isMergePlanEmpty(plan);
 
-  if (isFirstConnect || risky) {
+  if ((isFirstConnect || risky) && !planIsEmpty) {
     // D-09/D-10: never auto-commit the first connect on a device, or a
-    // risky merge — surface it for confirmMerge() to apply.
+    // risky merge — surface it for confirmMerge() to apply. An EMPTY plan
+    // (nothing to review) falls through to the silent-apply path below
+    // instead, even on first connect or a risky-labeled reconnect — a
+    // "Review sync changes" panel with nothing in it is a bug, not a gate
+    // (UAT gap-closure, 47-07).
     setState({
       pendingMerge: { plan, remoteVersion: remote.version, isFirstConnect },
       conflictNote: summarizeMergePlan(plan),
@@ -361,9 +379,13 @@ async function cloudSyncCycleInner(database: Dexie, key: CryptoKey): Promise<voi
     return;
   }
 
-  // Routine merge — apply silently (D-09) after taking the D-11 snapshot.
+  // Routine merge, OR a first-connect/risky merge that turned out to be
+  // empty — apply silently (D-09) after taking the D-11 snapshot.
   await takePreMergeSnapshotAndApply(database, plan);
   await publishLocalSnapshot(database, key);
+  if (isFirstConnect) {
+    await setSetting(CLOUD_SYNC_FIRST_CONNECT_DONE_KEY, true);
+  }
 }
 
 async function runCloudSyncCycle(database: Dexie): Promise<void> {
@@ -518,9 +540,19 @@ function ensureCloudPeerSubscription(database: Dexie): void {
   }
   cloudPeerSubscribedUserId = authContext.userId;
   const userId = authContext.userId;
-  cloudPeerUnsubscribe = subscribeToCloudPeers(userId, () => {
-    void runCloudSyncCycle(database);
-  });
+  cloudPeerUnsubscribe = subscribeToCloudPeers(
+    userId,
+    () => {
+      void runCloudSyncCycle(database);
+    },
+    (message: string) => {
+      // Surfaces a real-time channel join failure instead of leaving
+      // propagation silently broken (UAT gap-closure 47-07) — sync itself
+      // still works via the next manual/launch download-based cycle, so
+      // this is informational, not a hard failure of cloud sync.
+      setState({ error: `Real-time sync connection issue: ${message}. Cloud sync still works — try "Sync now".` });
+    },
+  );
 }
 
 /** Refreshes `needsPassphrase` from the device-local key cache WITHOUT touching the network (Pitfall 5). */
