@@ -79,6 +79,21 @@ export function PrivacyPage() {
                   Resend. None of this happens unless you explicitly create a Pro
                   account and publish a hosted quote.
                 </li>
+                <li>
+                  <strong>Cloud sync (Pro, optional)</strong> &mdash; if you turn on
+                  cloud sync as a Pro user, we store an{' '}
+                  <strong>end-to-end encrypted, zero-knowledge</strong> copy of your
+                  full local database at Supabase (eu-central-1) so it can sync
+                  between your devices. The data is encrypted on your device before
+                  it ever leaves, and we cannot read it &mdash; the only metadata
+                  visible to the server is your account id, a version number, an
+                  update timestamp, and the encrypted blob&apos;s size, never the
+                  contents. If your Pro subscription lapses, the encrypted blob is
+                  kept for about 90 days as a grace window and then automatically
+                  deleted; you can also delete it yourself at any time from
+                  Settings &rarr; Data. Your local data on every device is never
+                  affected, sync or no sync.
+                </li>
               </ul>
               <p className="mt-3">
                 We also make a small number of read-only network requests that carry
@@ -137,7 +152,11 @@ export function PrivacyPage() {
                 policy and are only used to respond to you. Pro account data (Supabase)
                 and any hosted quote you publish are retained until you delete your
                 Pro account or the individual quote yourself; billing data is retained
-                by Paddle per its own retention policy as Merchant of Record.
+                by Paddle per its own retention policy as Merchant of Record. If you
+                use cloud sync, the encrypted sync blob is retained while your Pro
+                subscription is active, kept for about 90 days as a grace window after
+                a lapse, then automatically deleted &mdash; and you can self-serve
+                delete it yourself at any time from Settings &rarr; Data.
               </p>
             </section>
 
@@ -183,8 +202,12 @@ export function PrivacyPage() {
                   <code>eu-central-1</code>) &mdash; stores Pro account data: your
                   account email, the hosted-quote pricing snapshot (including your
                   business logo image if you have set one for white-label branding),
-                  and any customer approval/decline decision. Only used for Pro
-                  accounts, on contract necessity grounds.
+                  and any customer approval/decline decision. If you use cloud sync,
+                  Supabase also stores an <strong>end-to-end encrypted, zero-knowledge
+                  </strong> copy of your local database &mdash; ciphertext only, which
+                  Supabase cannot read; the only visible metadata is your account id,
+                  a version number, an update timestamp, and the blob size. Only used
+                  for Pro accounts, on contract necessity grounds.
                 </li>
                 <li>
                   <strong>Paddle</strong> &mdash; our Merchant of Record for Pro

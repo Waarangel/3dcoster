@@ -85,4 +85,26 @@ describe('PrivacyPage', () => {
 
     expect(document.body.textContent ?? '').toContain('privacy@3dcoster.com');
   });
+
+  // Phase 47-01 — cloud sync disclosure drift guard (D-05/D-08/D-13/D-14).
+  // Traces to the docs/DATA-FLOW-INVENTORY.md sync-blob row added in 47-01
+  // Task 1. Fails if the policy ever silently drops the cloud-sync
+  // disclosure, its zero-knowledge/encryption claim, its ~90-day retention
+  // window, or its self-serve deletion affordance.
+  it('discloses the end-to-end encrypted cloud sync blob, retention window, and self-serve deletion', async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/privacy']}>
+          <PrivacyPage />
+        </MemoryRouter>,
+      );
+    });
+
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('cloud sync');
+    expect(text).toMatch(/end-to-end encrypted/i);
+    expect(text).toMatch(/zero-knowledge/i);
+    expect(text).toMatch(/90 days/);
+    expect(text).toMatch(/delete it yourself/i);
+  });
 });
