@@ -399,7 +399,7 @@ Plans:
 
 - [x] 47-01-PLAN.md — GDPR inventory-first + privacy policy (encrypted sync-blob flow, minimal envelope, 90-day retention) (D-08/D-13)
 - [x] 47-02-PLAN.md — Backend: sync_blobs table + owner RLS + version CAS RPC + Realtime RLS + pg_cron 90-day retention + delete-account edge fn + [BLOCKING] apply + enumerability test (D-01/D-05/D-08/D-13/D-14)
-- [ ] 47-03-PLAN.md — Zero-knowledge crypto: AES-256-GCM + Argon2id KDF + deterministic account salt + zxcvbn strength + non-extractable key cache; package-legitimacy [SUS] gate (D-05/D-06/D-07)
+- [x] 47-03-PLAN.md — Zero-knowledge crypto: AES-256-GCM + Argon2id KDF + deterministic account salt + zxcvbn strength + non-extractable key cache; package-legitimacy [SUS] gate (D-05/D-06/D-07)
 
 **Wave 2**
 
