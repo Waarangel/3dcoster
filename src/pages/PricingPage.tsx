@@ -35,6 +35,7 @@ const PRO_FEATURES = [
   'Live, hosted quote links branded with your business — not just a PDF',
   'Customers approve or decline online; you see the result the moment they respond',
   'White-label your quotes — your logo on PDF quotes and hosted quote pages, no "Made with 3DCoster" footer',
+  'Real-time cloud sync across all your devices — end-to-end encrypted, so we can\'t read your data',
   'Cancel anytime — quote links you’ve already shared stay live',
 ];
 

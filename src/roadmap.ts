@@ -65,13 +65,6 @@ export const roadmapItems: RoadmapItem[] = [
     stage: 'planning',
   },
   {
-    title: 'Real-time device sync',
-    description:
-      'File-based sync (Dropbox/Drive) covers most sellers today. A hosted, always-on cloud sync ceiling is next — blocked on confirming an EU-resident sync backend that fits our no-tracking, local-first posture.',
-    stage: 'research',
-    pro: true,
-  },
-  {
     title: 'Green-print nudge',
     description:
       'A grid-carbon-aware suggestion ("run at 2am, save $X and cut carbon") using a free grid-carbon API, so time-of-use pricing can factor in when the grid is cleanest, not just cheapest.',

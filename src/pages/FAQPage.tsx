@@ -98,7 +98,7 @@ const faqs: FAQItem[] = [
   {
     category: 'technical',
     question: 'Will my data sync between devices?',
-    answer: 'Not currently - data is stored locally on each device. Cloud sync is being considered for future versions, but privacy and keeping it free are priorities.',
+    answer: 'Yes. The free version syncs through a shared folder you control (Dropbox, Google Drive, etc.) - no account needed, data stays local-first. 3DCoster Pro adds real-time cloud sync across all your devices, end-to-end encrypted so we can\'t read your data.',
   },
   {
     category: 'technical',
