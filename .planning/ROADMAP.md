@@ -407,7 +407,7 @@ Plans:
 
 **Wave 3**
 
-- [ ] 47-05-PLAN.md — useCloudSync hook + cloudSyncGates (compose crypto+transport with UNCHANGED merge core; silent LWW + risky/first-connect gates + rolling snapshots + lapse pause + 3–5s debounce) (D-02/D-03/D-04/D-09/D-10/D-11/D-13)
+- [x] 47-05-PLAN.md — useCloudSync hook + cloudSyncGates (compose crypto+transport with UNCHANGED merge core; silent LWW + risky/first-connect gates + rolling snapshots + lapse pause + 3–5s debounce) (D-02/D-03/D-04/D-09/D-10/D-11/D-13)
 
 **Wave 4**
 
