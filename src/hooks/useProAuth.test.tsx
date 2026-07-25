@@ -119,23 +119,26 @@ describe('useProAuth — unavailable client (Tauri / unconfigured web)', () => {
     expect(latest.session).toBeNull();
     expect(latest.user).toBeNull();
 
-    // Both actions must resolve without touching anything (D-12: safe to
-    // call unconditionally on desktop).
+    // Actions stay crash-free and network-free (D-12: safe to call
+    // unconditionally on desktop) — but sign-in attempts must SURFACE the
+    // unavailability as an error string, never resolve null like a success
+    // (G-47-1: null was shown to the user as "Check your email" with no
+    // email ever dispatched and no code step revealed).
     let result: string | null = 'unset';
     await act(async () => {
       result = await latest.signInWithEmail('maker@example.com');
       await latest.signOut();
     });
-    expect(result).toBeNull();
+    expect(result).toMatch(/unavailable/i);
     expect(latest.status).toBe('unavailable');
 
-    // verifyEmailCode (D-08 desktop OTP) is likewise a safe no-op when the
-    // client is unavailable — never touches a null supabase.
+    // verifyEmailCode (D-08 desktop OTP) likewise surfaces the error instead
+    // of silently no-opping — never touches a null supabase either way.
     let codeResult: string | null = 'unset';
     await act(async () => {
       codeResult = await latest.verifyEmailCode('maker@example.com', '123456');
     });
-    expect(codeResult).toBeNull();
+    expect(codeResult).toMatch(/unavailable/i);
     expect(latest.status).toBe('unavailable');
   });
 });

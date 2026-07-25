@@ -205,4 +205,19 @@ blocked: 0
 
 ## Gaps
 
-[none yet]
+- gap_id: G-47-1
+  truth: "A sign-in attempt that cannot be dispatched (no Supabase client) tells the user so — it never claims 'Check your email' when no email was or could be sent."
+  status: resolved
+  resolved_by: inline fix (commit below), same session
+  resolved_at: 2026-07-25
+  reason: "User reported (test 2 step 1): clicked Send magic link, got the success toast, but no email arrived and no code-entry field appeared."
+  severity: minor
+  test: 2
+  root_cause: "TWO layers. (1) Test-harness fault, not an app bug: the dev server had been started from the session git worktree, which has no .env (gitignored, main-checkout-only) — so VITE_SUPABASE_* was undefined and the supabase client was null; no request could ever reach the backend (production auth logs empty). Server restarted from the main checkout (launch config 3dcoster-main). (2) Real app bug exposed by (1): useProAuth.signInWithEmail returned null ('no-op') on a null client, but the modal's contract reads null as SUCCESS -> success toast 'Check your email — click the link, or enter the one-time code below' with zero emails dispatched, and status never reached 'link-sent' so codeStepVisible stayed false — no code field. verifyEmailCode had the identical silent no-op. Violates the never-silently-swallow-errors rule."
+  artifacts:
+    - path: "src/hooks/useProAuth.ts"
+      issue: "signInWithEmail + verifyEmailCode returned null (success sentinel) on null client — now return an explicit 'Sign-in is unavailable' error string"
+    - path: "src/hooks/useProAuth.test.tsx"
+      issue: "null-client test codified the silent no-op (expected null); updated to expect the error strings"
+  missing: []
+  note: "SignInModal still renders the email form when status === 'unavailable' (relies on the now-honest error toast). A dedicated 'sign-in unavailable' modal state would be nicer polish — left un-scoped; production web/desktop builds always carry Supabase env, so the surface is dev-misconfig only."

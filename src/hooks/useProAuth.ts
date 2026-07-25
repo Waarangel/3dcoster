@@ -98,7 +98,11 @@ export function useProAuth(): ProAuth {
   }, []);
 
   const signInWithEmail = useCallback(async (email: string): Promise<string | null> => {
-    if (!supabase) return null; // no-op on Tauri / unconfigured web
+    // A null client must surface as an ERROR, not silently resolve like a
+    // success — the caller treats `null` as "email dispatched" and tells the
+    // user to check their inbox (47-UAT G-47-1: false success toast + no
+    // code field when VITE_SUPABASE_* was missing).
+    if (!supabase) return 'Sign-in is unavailable: this build has no Supabase configuration.';
     setStatus('sending-link');
     try {
       const { error } = await supabase.auth.signInWithOtp({
@@ -128,7 +132,9 @@ export function useProAuth(): ProAuth {
   }, []);
 
   const verifyEmailCode = useCallback(async (email: string, code: string): Promise<string | null> => {
-    if (!supabase) return null; // no-op on Tauri / unconfigured web
+    // Same contract as signInWithEmail: a null client is an error the caller
+    // can show, never a silent "success" (G-47-1).
+    if (!supabase) return 'Sign-in is unavailable: this build has no Supabase configuration.';
     try {
       const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
       if (error) return error.message;
