@@ -41,7 +41,7 @@ coverage:
     description: "/features cloud-sync row flips from ComingCell to shipped Pro 'Yes'; COMING_TO_PRO strip and intro paragraph no longer present cloud sync as coming; Etsy/carrier/QuickBooks ComingCell rows untouched"
     requirement: "D-16"
     verification:
-      - kind: automated
+      - kind: other
         ref: "grep: no ComingCell on the cloud-sync row; COMING_TO_PRO = Etsy/carrier/QuickBooks only; full vitest suite 1601 passed"
         status: pass
     human_judgment: false
@@ -49,7 +49,7 @@ coverage:
     description: "/pricing PRO_FEATURES gains the cloud-sync bullet including the zero-knowledge line; price constants untouched"
     requirement: "D-16"
     verification:
-      - kind: automated
+      - kind: other
         ref: "grep 'end-to-end encrypted' in PricingPage.tsx; git diff src/pricing.ts empty (USD 7.99/79 intact)"
         status: pass
     human_judgment: false
@@ -57,7 +57,7 @@ coverage:
     description: "'Real-time device sync' removed from src/roadmap.ts; remaining pro:true entries (Etsy, carrier, QuickBooks) mirror the /features Coming strip"
     requirement: "D-16"
     verification:
-      - kind: automated
+      - kind: other
         ref: "grep 'Real-time device sync' src/roadmap.ts → no match; 3 pro:true entries remain, matching the 3-item COMING_TO_PRO strip"
         status: pass
     human_judgment: false

@@ -51,7 +51,7 @@ coverage:
     description: "CloudSyncSetup mounted in Settings → Data next to SyncSetup; cloud checkOnLaunch + cloud SyncMergeSummary wired in App.tsx"
     requirement: "D-04, D-10"
     verification:
-      - kind: automated
+      - kind: other
         ref: "grep CloudSyncSetup in BackupRestoreSection.tsx + useCloudSync in App.tsx; npm run build green; full vitest suite 1601 passed (2026-07-24)"
         status: pass
     human_judgment: false
@@ -66,10 +66,8 @@ coverage:
   - id: W3
     description: "Real two-device flow: edit on A appears on B within seconds (D-02), first connect confirm-gated (D-10), wrong-passphrase friendly, risky-merge gate + pre-merge restore, file+cloud coexist, self-serve delete"
     requirement: "D-02, D-09, D-10, D-11, D-14, SYNC-02"
-    verification:
-      - kind: manual_procedural
-        ref: "Founder ran the two-device UAT 2026-07-24 (gaps found → all fixed, see Deviations); post-fix re-confirmation NOT recorded in any artifact — route to /gsd-verify-work 47"
-        status: human_needed
+    rationale: "Founder ran the two-device UAT 2026-07-24 (gaps found → all fixed, see Deviations); post-fix re-confirmation NOT recorded in any artifact — this is the phase's primary human UAT test"
+    verification: []
     human_judgment: true
 
 duration: session of 2026-07-24 (executor + live founder UAT); summary reconstructed same day
