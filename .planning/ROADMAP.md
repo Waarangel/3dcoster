@@ -391,7 +391,7 @@ Plans:
 **Goal:** Pro cloud/real-time multi-device sync ceiling on Supabase — file-based sync stays the free floor (architecture-as-feature) — with GDPR data-inventory (docs/DATA-FLOW-INVENTORY.md) and privacy-policy updates BEFORE any new user data goes server-side (inventory first, policy second). (Founder est: 1–2 wk.)
 **Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15, D-16 (resolves REQUIREMENTS.md SYNC-02 — Supabase custom sync; CRDTs stay declined)
 **Depends on:** Phase 46
-**Plans:** 8 plans in 6 waves
+**Plans:** 8/8 plans complete
 
 Plans:
 
@@ -415,11 +415,11 @@ Plans:
 
 **Wave 5**
 
-- [ ] 47-07-PLAN.md — Wiring: mount in Settings→Data + App.tsx launch-merge & modal + free-floor E2E extension + [BLOCKING] two-device human-verify (D-04/D-10)
+- [x] 47-07-PLAN.md — Wiring: mount in Settings→Data + App.tsx launch-merge & modal + free-floor E2E extension + [BLOCKING] two-device human-verify (D-04/D-10)
 
 **Wave 6** *(shipped-only honesty — after the capability works)*
 
-- [ ] 47-08-PLAN.md — D-16 marketing flips: /features ComingCell→shipped Pro, /pricing Pro card + zero-knowledge line, remove /roadmap item (price constants untouched) (D-16)
+- [x] 47-08-PLAN.md — D-16 marketing flips: /features ComingCell→shipped Pro, /pricing Pro card + zero-knowledge line, remove /roadmap item (price constants untouched) (D-16)
 
 ### Phase 48: Live Etsy order sync
 
@@ -482,6 +482,7 @@ Plans:
 | 44. Sync & STL Instant Quote | 6/6 | Complete    | 2026-07-19 |
 | 45. Brand & Launch | 11/11 | Complete    | 2026-07-20 |
 | 46. White-label quotes | 12/12 | Complete    | 2026-07-24 |
+| 47. Cloud sync | 8/8 | Complete    | 2026-07-25 |
 
 <details>
 <summary>✅ v1.9 Hardening progress (Phases 34–37) — all complete</summary>

@@ -1,21 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 47-cloud-sync
 source: [47-01-SUMMARY.md, 47-02-SUMMARY.md, 47-03-SUMMARY.md, 47-04-SUMMARY.md, 47-05-SUMMARY.md, 47-06-SUMMARY.md, 47-07-SUMMARY.md, 47-08-SUMMARY.md]
 started: 2026-07-24T19:05:00Z
-updated: 2026-07-24T19:05:00Z
+updated: 2026-07-25T21:05:00Z
 ---
 
 ## Current Test
 
-number: 2
-name: Two-device cloud sync — full checklist (47-07 Task 3 re-confirmation)
-expected: |
-  See test 2 below — the 7-step two-device checklist (passphrase setup, first-connect
-  gate, real-time propagation, wrong passphrase, file+cloud coexist, risky merge +
-  restore, turn off & delete). Requires the founder with a Pro account on two
-  devices/browser profiles.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -36,12 +29,14 @@ expected: |
   6. Risky merge (delete many records on B while A is offline, reconnect) → risky-merge confirm gate appears (D-09); "Restore pre-merge state" works (D-11).
   7. "Turn off cloud sync & delete cloud copy" → cloud blob gone, local data intact (D-14 level 1).
   NOTE: this is the post-fix re-confirmation of 47-07 Task 3 — the original run found real-time propagation dead (fixed in 066c9c2/539b3f4/169c2b5); no re-test was recorded.
-result: [pending]
+result: pass
+note: "Founder re-ran the full 7-step checklist 2026-07-25 against the live backend (dev server from main checkout with .env after the G-47-1 harness fix): 'All Pass.' Screenshot evidence: first-connect 'Review sync changes' merge summary confirm-gated with per-store counts (Assets 0/89/0, Settings 1/4/0) and a '2 conflicts — newer copy kept' badge — D-10 + D-09 surfaces working as designed. Step-1 initial failure was the env-less worktree dev server (test-harness fault) + the G-47-1 false-success toast bug, both fixed this session."
 coverage_id: 47-07/W3
 
 ### 3. Auto-write cadence (no manual Sync now needed)
 expected: During test 2, edits on a device publish automatically within ~3–5 seconds (debounced auto-write) without pressing any "Sync now" button, and the launch check runs on app open (a device that was closed during remote edits sees them after reopening). (47-05 D5 — unit-tested only; live timing needs real devices.)
-result: [pending]
+result: pass
+note: "Covered in the founder's 2026-07-25 run ('All Pass'): real-time propagation observed within seconds with no manual Sync now; launch-merge review appeared on (re)open."
 coverage_id: 47-05/D5
 
 ### 4. GDPR inventory row for sync blob (47-01 D1)
@@ -197,9 +192,9 @@ coverage_id: 47-08/F3
 ## Summary
 
 total: 28
-passed: 26
+passed: 28
 issues: 0
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
 
