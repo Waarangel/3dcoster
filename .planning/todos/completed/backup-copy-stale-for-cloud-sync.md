@@ -39,3 +39,7 @@ CloudSyncSetup already uses):
 Small copy-only change in `BackupRestoreSection.tsx` (+ its test). No data-flow
 or schema impact. Litmus: user-describable → gets a NEW badge? No — copy
 correction, not a feature.
+
+## Resolved
+
+2026-07-25, same day: state-aware `backupBlurb(cloudSyncOn)` in BackupRestoreSection.tsx keyed on the same `isPro && cloud.isEnabled` signal CloudSyncSetup uses; TDD (RED→GREEN), full suite 1604 green.

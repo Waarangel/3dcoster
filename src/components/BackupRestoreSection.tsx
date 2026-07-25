@@ -4,6 +4,8 @@ import { db } from '../db/database';
 import { Button } from './ui';
 import { SyncSetup } from './SyncSetup';
 import { CloudSyncSetup } from './CloudSyncSetup';
+import { useCloudSync } from '../hooks/useCloudSync';
+import { useEntitlement } from '../hooks/useEntitlement';
 import { downloadBackup } from '../utils/backupExport';
 import { restoreBackup, validateBackupFile } from '../utils/backupRestore';
 import { MAX_BACKUP_BYTES, type BackupStoreName } from '../utils/backupSchema';
@@ -26,6 +28,29 @@ type RestoreStage =
   | { step: 'restoring' };
 
 type CountSummary = Record<BackupStoreName, number>;
+
+/**
+ * Backup-section intro copy, state-aware since Phase 47: "your data lives
+ * only in this browser" is factually wrong once cloud sync is on — but the
+ * backup file stays essential either way (it is the ONLY recovery path if
+ * the sync passphrase is forgotten; the cloud copy is zero-knowledge
+ * ciphertext we cannot decrypt). Exported for direct unit testing.
+ */
+export function backupBlurb(cloudSyncOn: boolean): string {
+  if (cloudSyncOn) {
+    return (
+      'Download your entire 3DCoster database — jobs, sales, assets, customers, quotes, and ' +
+      'settings — as a single file. Your data syncs end-to-end encrypted across your ' +
+      'signed-in devices, but keep a backup file anyway — it is the only way back in if you ' +
+      'ever forget your sync passphrase (we cannot recover it).'
+    );
+  }
+  return (
+    'Download your entire 3DCoster database — jobs, sales, assets, customers, quotes, and ' +
+    'settings — as a single file. Your data lives only in this browser, so a backup is your ' +
+    'safety net against a cleared profile or a new computer.'
+  );
+}
 
 // The stores users think in; the rest restore too but ride under "settings".
 const COUNT_DISPLAY: { store: BackupStoreName; singular: string }[] = [
@@ -88,6 +113,12 @@ export function BackupRestoreSection({
   const [error, setError] = useState<string | null>(null);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Same "cloud sync is on" signal CloudSyncSetup renders from (isPro +
+  // hook isEnabled); the hook is module-guarded, so this extra mount never
+  // duplicates listeners or launch checks.
+  const { isPro } = useEntitlement();
+  const { isEnabled: cloudSyncEnabled } = useCloudSync(database);
 
   const handleDownload = async () => {
     if (isExporting) return;
@@ -177,9 +208,7 @@ export function BackupRestoreSection({
       <div>
         <h3 className="text-sm font-semibold text-white mb-1">Backup</h3>
         <p className="text-sm text-slate-400 mb-3">
-          Download your entire 3DCoster database — jobs, sales, assets, customers, quotes, and
-          settings — as a single file. Your data lives only in this browser, so a backup is your
-          safety net against a cleared profile or a new computer.
+          {backupBlurb(isPro && cloudSyncEnabled)}
         </p>
         <Button btnSize="sm" onClick={handleDownload} disabled={isExporting}>
           Download Backup

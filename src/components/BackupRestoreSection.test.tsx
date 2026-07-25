@@ -15,7 +15,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import Dexie from 'dexie';
-import { BackupRestoreSection } from './BackupRestoreSection';
+import { BackupRestoreSection, backupBlurb } from './BackupRestoreSection';
 import { buildBackupFile, serializeBackup } from '../utils/backupExport';
 import { MAX_BACKUP_BYTES } from '../utils/backupSchema';
 
@@ -195,5 +195,31 @@ describe('BackupRestoreSection', () => {
 
     expect(await db.table('jobs').count()).toBe(2);
     expect(reload).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Backup blurb is state-aware (47 UAT follow-up: "lives only in this browser"
+// is factually wrong once cloud sync is on — the encrypted copy follows the
+// account; backup stays the ONLY passphrase-loss recovery path).
+// ---------------------------------------------------------------------------
+describe('backupBlurb (cloud-sync-aware copy)', () => {
+  it('keeps the local-only copy when cloud sync is off', () => {
+    expect(backupBlurb(false)).toMatch(/lives only in this browser/);
+    expect(backupBlurb(false)).not.toMatch(/passphrase/);
+  });
+
+  it('switches to the synced-but-still-back-up copy when cloud sync is on', () => {
+    const blurb = backupBlurb(true);
+    expect(blurb).toMatch(/end-to-end encrypted/);
+    expect(blurb).toMatch(/forget your sync passphrase/);
+    expect(blurb).not.toMatch(/lives only in this browser/);
+  });
+
+  it('renders the local-only blurb by default (no Pro entitlement in test env)', async () => {
+    const database = makeTestDb();
+    render(<BackupRestoreSection database={database} />);
+    await act(async () => {});
+    expect(container!.textContent).toContain('lives only in this browser');
   });
 });
