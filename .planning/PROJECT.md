@@ -242,6 +242,7 @@ All 53 v1.3 requirements satisfied. Snapshot: [milestones/v1.3-REQUIREMENTS.md](
 | PERF-11 reverted + deferred to v2.0 | Release-diff review caught the dep-trim desyncing profit/margin on consecutive same-field edits — a regression the source-contract tests couldn't see. Correct fix belongs with the CostCalculator God-component split (audit 6.1). | v1.9 | ⚠️ Reverted 2026-06-26; → v2.0 |
 | Asset reset scoped to the active view | UAT surfaced silent data-loss: resetting from a custom-category view cleared ALL materials. Reset All keeps custom categories; per-category reset clears only that category. | v1.9 | ✓ Shipped 2026-07-03 |
 | v1.9 held ~1 week for review + UAT before tag | Founder gate 2026-06-26: build-green ≠ reviewed. The hold caught a pricing regression, a data-loss bug, and 19 CVEs before any user saw them. | v1.9 | ✓ Validated — keep the gate |
+| Pro tier launch price: €7.90/mo | Founder decision 2026-08-27: undercut the 3DPrintQuote anchor (€9.90/mo) at launch. Fills the three placeholder pricing spots; applies to Phase 43 billing setup and Phase 45 marketing-site pricing. | v2.0 | Adopted |
 
 ## Evolution
 

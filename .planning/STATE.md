@@ -90,7 +90,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Phase 38 requires a research spike BEFORE plan creation — useCostDerivedValues dep-array design is the highest-risk decision in the milestone. Run `/gsd:plan-phase 38` with research enabled.
 - PERF-11 is now addressed in Phase 38 (FOUND-02) as part of the CostCalculator split — the correct fix belongs with useCostDerivedValues, not a dep-trim patch.
 - Backend choice is locked (Supabase eu-central-1) but Supabase auth implementation details need a concrete plan at Phase 43 planning time.
-- Pro tier pricing: three placeholder spots exist. Founder must set actual price before Phase 45 ships. Anchor: 3DPrintQuote €9.90/mo.
+- ~~Pro tier pricing~~ RESOLVED 2026-08-27: founder set launch price at **€7.90/mo** (undercuts 3DPrintQuote €9.90 anchor). Logged in PROJECT.md Key Decisions. Apply to the three placeholder spots at Phase 43 (billing) / Phase 45 (marketing site).
 - Tax threshold data for LIFE-02 is MEDIUM confidence — the UI must show "data current as of [date]" and "consult a qualified accountant" disclaimer.
 
 ### Blockers/Concerns
