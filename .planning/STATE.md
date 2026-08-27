@@ -25,9 +25,9 @@ See: .planning/PROJECT.md. Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 3
 ## Current Position
 
 Phase: 38 — Foundation
-Plan: —
-Status: Not started — roadmap created, awaiting `/gsd:plan-phase 38`
-Last activity: 2026-07-03 — v2.0 roadmap created (8 phases, 27 requirements, 100% coverage)
+Plan: 38-01 complete; 38-02..38-05 drafted (pending review)
+Status: Research spike DONE (38-RESEARCH.md — reducer design for the pricing interlink settled, PERF-11 post-mortem, equivalence-test strategy, tab-in-URL design). Plan 38-01 (output-equivalence harness) EXECUTED: 12 mount-based golden scenarios pass against the pre-split component (commit bc6c90c), incl. the consecutive same-field-edit case that caused the v1.9 revert. Plans 38-02..38-05 pre-drafted from the research; review them via `/gsd:plan-phase 38` before executing.
+Last activity: 2026-08-27 — Phase 38 research + harness + plan drafts (on branch claude/status-check-k98qja, needs merge to main)
 
 ## v2.0 Phase Order Reference
 
@@ -99,13 +99,15 @@ None currently — roadmap created, all requirements mapped, all gates documente
 
 ## Session Continuity
 
-Last session: 2026-07-03
-Stopped at: v2.0 roadmap created. ROADMAP.md, STATE.md, REQUIREMENTS.md (traceability) all written.
+Last session: 2026-08-27 (remote session, branch `claude/status-check-k98qja`)
+Stopped at: Phase 38 research spike + equivalence harness (executed, 12/12 green, full suite 831 green) + draft plans 38-02..38-05. Pro price set (€7.90/mo). `feat/linux-desktop-build` assessed: already fully merged into main at v1.7.0 (merge f9c0298) — safe to delete remotely (see notes/linux-desktop-build-branch.md).
 Resume file: None
 
 ## Operator Next Steps
 
-- Run `/gsd:plan-phase 38` with research enabled (research spike required before coding)
+- Merge branch `claude/status-check-k98qja` into main (docs + harness, no app-code changes)
+- Delete the stale remote branch: `git push origin --delete feat/linux-desktop-build` (verified fully merged)
+- Review draft plans via `/gsd:plan-phase 38` (research spike already done — 38-RESEARCH.md), then execute 38-02..38-05
 - Phases 39, 40, 41 can be planned in parallel after Phase 38 completes
 - Phase 42 (GDPR) must complete and be verified live in production before Phase 43 begins
 - Phase 43 needs research spike at plan time (Supabase auth implementation, billing provider)
