@@ -1,4 +1,4 @@
-import type { ManualCostLine } from '../types';
+import type { Asset, AssetCategory, Currency, ManualCostLine } from '../types';
 
 // Phase 47.1: pure helpers for manual one-off cost lines. No React, no Dexie.
 
@@ -89,4 +89,134 @@ export function normalizeManualLinesForSave(lines: readonly ManualCostLine[]): M
     normalized.push(out);
   }
   return { ok: true, lines: normalized };
+}
+
+// ---------------------------------------------------------------------------
+// 47.1-04: Save Job "Add to your asset library?" prompt (D-03 / D-04).
+// Pure decision logic only; the orchestrator performs the writes.
+// ---------------------------------------------------------------------------
+
+export type ManualLineSection = 'postProcessing' | 'packaging';
+
+export interface ManualLinePromptItem {
+  line: ManualCostLine;
+  section: ManualLineSection;
+}
+
+export interface LibraryChoice {
+  lineId: string;
+  section: ManualLineSection;
+  add: boolean;
+  category: AssetCategory;
+}
+
+/** Categories offered for a post-processing one-off (labels match AssetLibrary). */
+export const POST_PROCESSING_ASSET_CATEGORIES: readonly { value: AssetCategory; label: string }[] = [
+  { value: 'tool', label: 'Tools' },
+  { value: 'finishing', label: 'Finishing' },
+  { value: 'consumable', label: 'Consumables' },
+];
+
+/** The founder's motivating item (an auger) is a tool. */
+export const DEFAULT_POST_PROCESSING_ASSET_CATEGORY: AssetCategory = 'tool';
+
+/**
+ * Case-insensitive, trimmed comparison key for a line/asset name.
+ *
+ * Examples:
+ *   normalizeLineName('  Auger ') // 'auger'
+ */
+export function normalizeLineName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+interface PromptableLinesArgs {
+  manualMaterials: readonly ManualCostLine[];
+  manualPackaging: readonly ManualCostLine[];
+  postProcessingLibrary: readonly { name: string }[];
+  packagingLibrary: readonly { name: string }[];
+}
+
+/**
+ * Which one-off lines should the Save Job prompt ask about (D-04)? Skips lines already
+ * asked (libraryPrompted), blank names, names already in THAT section's library list
+ * (case-insensitive), and repeats of the same name within a section. Post-processing
+ * lines come first, then packaging.
+ *
+ * Examples:
+ *   promptableLines({ manualMaterials: [{ id: 'a', name: 'Auger', cost: 200 }], manualPackaging: [],
+ *     postProcessingLibrary: [], packagingLibrary: [] }) // [{ line: {...}, section: 'postProcessing' }]
+ *   promptableLines({ manualMaterials: [{ id: 'a', name: 'small box', cost: 1 }], manualPackaging: [],
+ *     postProcessingLibrary: [{ name: 'Small Box' }], packagingLibrary: [] }) // []
+ *
+ * Returns: ManualLinePromptItem[] (references the input line objects; nothing is copied).
+ */
+export function promptableLines({
+  manualMaterials,
+  manualPackaging,
+  postProcessingLibrary,
+  packagingLibrary,
+}: PromptableLinesArgs): ManualLinePromptItem[] {
+  const items: ManualLinePromptItem[] = [];
+  const collect = (
+    lines: readonly ManualCostLine[],
+    library: readonly { name: string }[],
+    section: ManualLineSection,
+  ) => {
+    const known = new Set(library.map(asset => normalizeLineName(asset.name)));
+    for (const line of lines) {
+      if (line.libraryPrompted === true) continue;
+      const key = normalizeLineName(line.name);
+      if (key === '' || known.has(key)) continue;
+      known.add(key); // also dedupes repeats within the section (first kept)
+      items.push({ line, section });
+    }
+  };
+  collect(manualMaterials, postProcessingLibrary, 'postProcessing');
+  collect(manualPackaging, packagingLibrary, 'packaging');
+  return items;
+}
+
+/**
+ * The library asset created when the user accepts a one-off (D-03: the job's line stays
+ * by value; this asset only serves FUTURE jobs). One "ea" per package at the typed cost.
+ * No stock fields are set (RESEARCH Open Question 6).
+ *
+ * Examples:
+ *   buildLibraryAsset({ id: 'a', name: ' Auger ', cost: 200 }, 'postProcessing', 'tool', 'USD')
+ *     // { id: 'material-…', name: 'Auger', category: 'tool', unit: 'ea', unitsPerPackage: 1, packageCost: 200, costPerUnit: 200, currency: 'USD' }
+ *   buildLibraryAsset({ id: 'p', name: 'Gift wrap', cost: 3 }, 'packaging', 'tool', 'USD').category // 'packaging'
+ *
+ * Returns: Asset.
+ */
+export function buildLibraryAsset(
+  line: ManualCostLine,
+  section: ManualLineSection,
+  category: AssetCategory,
+  currency: Currency,
+): Asset {
+  return {
+    id: `material-${generateLineId()}`,
+    name: line.name.trim(),
+    category: section === 'packaging' ? 'packaging' : category,
+    unit: 'ea',
+    unitsPerPackage: 1,
+    packageCost: line.cost,
+    costPerUnit: line.cost,
+    currency,
+  };
+}
+
+/**
+ * Flags (libraryPrompted: true) every line whose normalized name is in `promptedNames`.
+ * Returns new objects for flagged lines and the same reference for the rest; the input
+ * array and its lines are never mutated.
+ */
+export function markLinesPrompted(
+  lines: readonly ManualCostLine[],
+  promptedNames: ReadonlySet<string>,
+): ManualCostLine[] {
+  return lines.map(line =>
+    promptedNames.has(normalizeLineName(line.name)) ? { ...line, libraryPrompted: true } : line,
+  );
 }
