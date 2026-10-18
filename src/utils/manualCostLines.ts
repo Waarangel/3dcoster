@@ -21,3 +21,17 @@ function generateLineId(): string {
 export function newManualLine(): ManualCostLine {
   return { id: generateLineId(), name: '', cost: 0 };
 }
+
+export type ManualLinesSaveResult =
+  | { ok: true; lines: ManualCostLine[] }
+  | { ok: false; reason: 'missing-name' | 'missing-cost'; lineName?: string };
+
+// RED placeholders (47.1-01 Task 2): signatures only, deliberately wrong behavior
+// so the new tests fail on their assertions. Replaced in the GREEN commit.
+export function sanitizeManualLines(_value: unknown): ManualCostLine[] {
+  return [];
+}
+
+export function normalizeManualLinesForSave(_lines: readonly ManualCostLine[]): ManualLinesSaveResult {
+  return { ok: false, reason: 'missing-cost' };
+}
