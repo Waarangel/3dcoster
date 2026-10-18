@@ -1,20 +1,21 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: "1.0"
 milestone: v2.0
-milestone_name: Cost-Truth & Insight
+milestone_name: Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
 current_phase: 48
 current_phase_name: Live Etsy order sync
 status: planning
 stopped_at: Phase 47 closed (UAT 28/28, verification passed 2026-07-25)
-last_updated: "2026-07-25T20:40:23.085Z"
+last_updated: "2026-10-18T16:58:25.120Z"
 last_activity: 2026-07-25
 last_activity_desc: Phase 47 complete, transitioned to Phase 48
+state_head: 9f11f75beb4dec8b12f126c51ab6e05b1d191f97
 progress:
-  total_phases: 14
+  total_phases: 15
   completed_phases: 10
   total_plans: 74
   completed_plans: 74
-  percent: 71
+  percent: 67
 ---
 
 # Project State
@@ -117,6 +118,7 @@ Last activity: 2026-07-25 — Phase 47 complete, transitioned to Phase 48
 - v1.9 Phases 34–37 shipped (Hardening, 2026-07-03) — desktop tag `v1.9.0`. 14/15 requirements (PERF-11 deferred to v2.0).
 - **v2.0 Phases 38–45 roadmapped 2026-07-03** — 8 phases, 27 requirements, 100% coverage. Wave structure: Foundation → Cost Realism + Insight + Quick Wins → GDPR (hard gate) → Pro Backend → Sync + STL → Brand.
 - **Phases 46–51 added 2026-07-22** (founder launch-scope expansion 2026-07-20 — full Pro build before launch): 46 White-label quotes → 47 Cloud sync (+ GDPR inventory/policy updates) → 48 Live Etsy order sync (EXTERNAL: Etsy app review) → 49 Live carrier rates (EXTERNAL: aggregator account) → 50 QuickBooks/Wave sync (EXTERNAL: Intuit app review) → 51 Launch-prep redux (Coming-pill flips, Paddle SKUs + PricePreview, launch checklist, v2.0.0 tag + deploy). Founder operator actions in parallel NOW: Etsy dev app, Intuit dev app, aggregator account.
+- Phase 47.1 inserted after Phase 47: Manual one-off costs for Post-Processing/Shipping + Save Job prompt to add to asset library (todo: one-off-costs-post-processing-shipping)
 
 ### Decisions
 

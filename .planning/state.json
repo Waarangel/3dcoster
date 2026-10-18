@@ -1,0 +1,63 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v2.0 — Cost-Truth & Insight (Phases 38–45) — IN PROGRESS",
+  "phases": [
+    {
+      "number": "38",
+      "name": "Foundation",
+      "status": "complete"
+    },
+    {
+      "number": "39",
+      "name": "Cost Realism",
+      "status": "complete"
+    },
+    {
+      "number": "40",
+      "name": "Insight Layer",
+      "status": "complete"
+    },
+    {
+      "number": "41",
+      "name": "Quick-Win Features",
+      "status": "complete"
+    },
+    {
+      "number": "42",
+      "name": "GDPR & Onboarding",
+      "status": "complete"
+    },
+    {
+      "number": "43",
+      "name": "Pro Backend",
+      "status": "complete"
+    },
+    {
+      "number": "44",
+      "name": "Sync & STL Instant Quote",
+      "status": "complete"
+    },
+    {
+      "number": "45",
+      "name": "Brand & Launch",
+      "status": "complete"
+    },
+    {
+      "number": "46",
+      "name": "White-label quotes",
+      "status": "complete"
+    },
+    {
+      "number": "47",
+      "name": "Cloud sync",
+      "status": "complete"
+    }
+  ],
+  "next": {
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step (plan phase 48)",
+    "reason": "Phase 12 of 15 — needs a plan"
+  },
+  "updated_at": "2026-10-18T16:58:21.535Z"
+}

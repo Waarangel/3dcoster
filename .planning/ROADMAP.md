@@ -421,6 +421,16 @@ Plans:
 
 - [x] 47-08-PLAN.md — D-16 marketing flips: /features ComingCell→shipped Pro, /pricing Pro card + zero-knowledge line, remove /roadmap item (price constants untouched) (D-16)
 
+### Phase 47.1: Manual one-off costs for Post-Processing materials and Shipping, with Save Job prompt to add to asset library (INSERTED)
+
+**Goal:** Users can add manual one-off cost lines (name + cost) to Post-Processing Materials and Shipping without a library asset; on Save Job a popup offers per-item "add to asset library?". Manual lines persist on the job snapshot, flow through quotes/PDFs, and survive cloud sync (Phase 47). Amortization of reusable tools is out of scope. See SOURCE-TODO.md in the phase directory.
+**Requirements**: TBD
+**Depends on:** Phase 47
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 47.1 to break down)
+
 ### Phase 48: Live Etsy order sync
 
 **Goal:** Pro live Etsy 90-day order sync via the Etsy API feeding the existing sales records. EXTERNAL GATE: Etsy developer app registration + review (founder starts registration now, in parallel). (Founder est: 2 wk+.)
