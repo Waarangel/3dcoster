@@ -165,7 +165,7 @@ describe('ShippingSection: one-off packaging rows (47.1-02)', () => {
     props.manualPackaging = [{ id: 'a', name: 'Gift wrap', cost: 3.5 }];
     mount(<ShippingSection {...props} />);
     const carrier = container!.querySelector<HTMLInputElement>(`[id="${ids.carrierCost}"]`)!;
-    expect(carrier.value).toBe('12');
+    expect(carrier.value).toBe('12.00');
     typeInto(container!.querySelector<HTMLInputElement>('input[aria-label="One-off packaging cost"]')!, '9');
     expect(props.onShippingOverrideCostChange).not.toHaveBeenCalled();
     unmount();

@@ -339,6 +339,7 @@ export function PrinterSettings({
                     <Input
                       id={addCustomPriceId}
                       type="number"
+                      decimals={2}
                       compact
                       value={customModelPrice || ''}
                       onChange={e => setCustomModelPrice(parseFloat(e.target.value) || 0)}
@@ -384,6 +385,7 @@ export function PrinterSettings({
                   <Input
                     id={addPurchasePriceId}
                     type="number"
+                    decimals={2}
                     compact
                     value={newInstancePurchasePrice ?? selectedPrinterConfig?.purchasePrice ?? ''}
                     onChange={e => setNewInstancePurchasePrice(e.target.value ? parseFloat(e.target.value) : undefined)}
@@ -534,6 +536,7 @@ export function PrinterSettings({
                           <Input
                             id={`${editIdBase}-price-${instance.id}`}
                             type="number"
+                            decimals={2}
                             compact
                             value={instance.actualPurchasePrice ?? config?.purchasePrice ?? ''}
                             onChange={e => onUpdateInstance({ ...instance, actualPurchasePrice: e.target.value ? parseFloat(e.target.value) : undefined })}

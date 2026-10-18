@@ -493,6 +493,7 @@ export function RecordSaleModal({
               <Input
                 id={salePriceId}
                 type="number"
+                decimals={2}
                 step="0.01"
                 compact
                 value={salePrice}
@@ -654,6 +655,7 @@ export function RecordSaleModal({
                 <Input
                   id={saleShippingCostId}
                   type="number"
+                  decimals={2}
                   step="0.01"
                   compact
                   value={saleShippingCost}

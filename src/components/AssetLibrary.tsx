@@ -1421,6 +1421,7 @@ export function AssetLibrary({
                   <Input
                     id={purchasePriceId}
                     type="number"
+                    decimals={2}
                     step="0.01"
                     compact
                     value={formData.purchasePrice || ''}
@@ -1457,6 +1458,7 @@ export function AssetLibrary({
                   <Input
                     id={nozzleCostId}
                     type="number"
+                    decimals={2}
                     step="0.01"
                     compact
                     value={formData.nozzleCost || ''}
@@ -1497,6 +1499,7 @@ export function AssetLibrary({
                   <Input
                     id={packageCostId}
                     type="number"
+                    decimals={2}
                     step="0.01"
                     compact
                     value={formData.packageCost || ''}

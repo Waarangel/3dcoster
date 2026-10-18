@@ -383,7 +383,7 @@ describe('RecordSaleModal — convert-from-quote mode (Test 3 — Pitfall 2 lock
     const priceInputs = document.body.querySelectorAll('input[type="number"]');
     // 1st number input = quantity; 2nd = price
     const priceInput = priceInputs[1] as HTMLInputElement;
-    expect(priceInput.value).toBe('150');
+    expect(priceInput.value).toBe('150.00');
   });
 
   it('submit fires db.transaction with rw mode + sales/quotes/jobs tables; addSale NOT called', async () => {
@@ -453,7 +453,7 @@ describe('RecordSaleModal — CONN-03 tier picker (D-08)', () => {
     const qtyInput = numberInputs[0] as HTMLInputElement;
     const priceInput = numberInputs[1] as HTMLInputElement;
     expect(qtyInput.value).toBe('1');
-    expect(priceInput.value).toBe('150');
+    expect(priceInput.value).toBe('150.00');
   });
 
   it('selecting a tier seeds Quantity/Price, and Record Sale records that tier as quantity/unitPrice/totalRevenue', async () => {
@@ -475,7 +475,7 @@ describe('RecordSaleModal — CONN-03 tier picker (D-08)', () => {
 
     const numberInputs = document.body.querySelectorAll('input[type="number"]');
     expect((numberInputs[0] as HTMLInputElement).value).toBe('10');
-    expect((numberInputs[1] as HTMLInputElement).value).toBe('135');
+    expect((numberInputs[1] as HTMLInputElement).value).toBe('135.00');
 
     const recordBtn = findButton('Record Sale');
     await act(async () => { recordBtn!.click(); });
@@ -569,7 +569,7 @@ describe('WR-02 — hydration dep array stability (Phase 22.1 D-09)', () => {
     // 1st number input = quantity; 2nd = price (mirror of Test 3 pattern)
     const numberInputsBefore = document.body.querySelectorAll('input[type="number"]');
     const priceInputBefore = numberInputsBefore[1] as HTMLInputElement;
-    expect(priceInputBefore.value).toBe('50');
+    expect(priceInputBefore.value).toBe('50.00');
 
     // Simulate a useLiveQuery re-emission that mutates job.sellingPrice while
     // the modal is open — the parent re-renders with the same editingSale id
@@ -582,6 +582,6 @@ describe('WR-02 — hydration dep array stability (Phase 22.1 D-09)', () => {
 
     const numberInputsAfter = document.body.querySelectorAll('input[type="number"]');
     const priceInputAfter = numberInputsAfter[1] as HTMLInputElement;
-    expect(priceInputAfter.value).toBe('50');  // NOT '999' — hydration must NOT re-fire
+    expect(priceInputAfter.value).toBe('50.00');  // NOT '999' — hydration must NOT re-fire
   });
 });

@@ -502,6 +502,7 @@ export function PrintQuoteModal({ job, userProfile, shippingConfig, isOpen, onCl
               <Input
                 id="print-quote-shipping"
                 type="number"
+                decimals={2}
                 min="0"
                 step="0.01"
                 inputSize="md"

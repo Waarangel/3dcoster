@@ -154,6 +154,7 @@ export function CostFormSection({
             <Input
               id={ids.modelCost}
               type="number"
+              decimals={2}
               step="0.01"
               min="0"
               compact
@@ -187,6 +188,7 @@ export function CostFormSection({
             <Input
               id={ids.authorMinPrice}
               type="number"
+              decimals={2}
               step="0.01"
               compact
               value={authorMinPrice || ''}

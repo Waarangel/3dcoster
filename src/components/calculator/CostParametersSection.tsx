@@ -246,6 +246,7 @@ export function CostParametersSection({
           <Input
             id="maintenance-cost-per-hour"
             type="number"
+            decimals={2}
             step="0.01"
             min="0"
             compact
@@ -354,6 +355,7 @@ export function CostParametersSection({
                   <span className="text-slate-400 text-sm">{currencySymbol}</span>
                   <Input
                     type="number"
+                    decimals={2}
                     step="0.01"
                     min="0"
                     compact

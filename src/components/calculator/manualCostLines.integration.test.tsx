@@ -259,7 +259,7 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     await remountCalculator(onSaveJob);
     expect(oneOffRows()).toHaveLength(1);
     expect(inputByLabel('One-off item name').value).toBe('Auger');
-    expect(inputByLabel('One-off item cost').value).toBe('200');
+    expect(inputByLabel('One-off item cost').value).toBe('200.00');
 
     await clickSaveKeepingOneOffs();
     const saved = onSaveJob.mock.calls[0][0] as PrintJob;
@@ -306,7 +306,7 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     await mountCalculator(vi.fn(), { editingJob: job, onUpdateJob });
     expect(oneOffRows()).toHaveLength(1);
     expect(inputByLabel('One-off item name').value).toBe('Auger');
-    expect(inputByLabel('One-off item cost').value).toBe('200');
+    expect(inputByLabel('One-off item cost').value).toBe('200.00');
 
     await act(async () => {
       container!.querySelector<HTMLButtonElement>('button[aria-label="Remove Auger"]')!.click();
@@ -508,7 +508,7 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     await mountCalculator(vi.fn(), { editingJob: job, onUpdateJob });
     expect(packagingRows()).toHaveLength(1);
     expect(inputByLabel(PKG_NAME).value).toBe('Gift wrap');
-    expect(inputByLabel(PKG_COST).value).toBe('3.5');
+    expect(inputByLabel(PKG_COST).value).toBe('3.50');
 
     await act(async () => {
       container!.querySelector<HTMLButtonElement>('button[aria-label="Remove Gift wrap"]')!.click();

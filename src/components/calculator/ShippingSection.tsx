@@ -184,6 +184,7 @@ export function ShippingSection({
           <Input
             id={ids.carrierCost}
             type="number"
+            decimals={2}
             step="0.01"
             compact
             value={shippingOverrideCost !== null ? shippingOverrideCost : shippingCost}
@@ -291,6 +292,7 @@ export function ShippingSection({
                   <span className="text-slate-400 text-xs">{currencySymbol}</span>
                   <Input
                     type="number"
+                    decimals={2}
                     step="0.01"
                     min="0"
                     inputSize="sm"

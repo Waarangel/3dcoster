@@ -497,6 +497,7 @@ export function SettingsModal({
                   </label>
                   <Input
                     type="number"
+                    decimals={2}
                     step="0.01"
                     compact
                     value={userProfile.laborHourlyRate || ''}
@@ -514,6 +515,7 @@ export function SettingsModal({
                   </label>
                   <Input
                     type="number"
+                    decimals={2}
                     step="0.01"
                     min="0"
                     compact
@@ -641,6 +643,7 @@ export function SettingsModal({
                       <label className="block text-xs text-slate-400 mb-1">Custom threshold amount ({currencySymbol})</label>
                       <Input
                         type="number"
+                        decimals={2}
                         step="0.01"
                         min="0"
                         compact
@@ -758,6 +761,7 @@ export function SettingsModal({
                     <label className="block text-xs text-slate-400 mb-1">UPS ({currencySymbol})</label>
                     <Input
                       type="number"
+                      decimals={2}
                       step="0.01"
                       compact
                       value={shippingConfig.upsBaseCost}
@@ -768,6 +772,7 @@ export function SettingsModal({
                     <label className="block text-xs text-slate-400 mb-1">FedEx ({currencySymbol})</label>
                     <Input
                       type="number"
+                      decimals={2}
                       step="0.01"
                       compact
                       value={shippingConfig.fedexBaseCost}
@@ -778,6 +783,7 @@ export function SettingsModal({
                     <label className="block text-xs text-slate-400 mb-1">DHL ({currencySymbol})</label>
                     <Input
                       type="number"
+                      decimals={2}
                       step="0.01"
                       compact
                       value={shippingConfig.dhlBaseCost}
@@ -790,6 +796,7 @@ export function SettingsModal({
                         <label className="block text-xs text-slate-400 mb-1">Canada Post ({currencySymbol})</label>
                         <Input
                           type="number"
+                          decimals={2}
                           step="0.01"
                           compact
                           value={shippingConfig.canadaPostBaseCost}
@@ -800,6 +807,7 @@ export function SettingsModal({
                         <label className="block text-xs text-slate-400 mb-1">Purolator ({currencySymbol})</label>
                         <Input
                           type="number"
+                          decimals={2}
                           step="0.01"
                           compact
                           value={shippingConfig.purolatorBaseCost}
@@ -813,6 +821,7 @@ export function SettingsModal({
                       <label className="block text-xs text-slate-400 mb-1">USPS ({currencySymbol})</label>
                       <Input
                         type="number"
+                        decimals={2}
                         step="0.01"
                         compact
                         value={shippingConfig.uspsBaseCost}
@@ -825,6 +834,7 @@ export function SettingsModal({
                       <label className="block text-xs text-slate-400 mb-1">Royal Mail ({currencySymbol})</label>
                       <Input
                         type="number"
+                        decimals={2}
                         step="0.01"
                         compact
                         value={shippingConfig.royalMailBaseCost}
@@ -837,6 +847,7 @@ export function SettingsModal({
                       <label className="block text-xs text-slate-400 mb-1">Australia Post ({currencySymbol})</label>
                       <Input
                         type="number"
+                        decimals={2}
                         step="0.01"
                         compact
                         value={shippingConfig.australiaPostBaseCost}
@@ -867,6 +878,7 @@ export function SettingsModal({
                             />
                             <Input
                               type="number"
+                              decimals={2}
                               step="0.01"
                               min="0"
                               compact
@@ -910,6 +922,7 @@ export function SettingsModal({
                   />
                   <Input
                     type="number"
+                    decimals={2}
                     step="0.01"
                     min="0"
                     compact
@@ -956,6 +969,7 @@ export function SettingsModal({
                     <label className="block text-xs text-slate-400 mb-1">Min Fee ({currencySymbol})</label>
                     <Input
                       type="number"
+                      decimals={2}
                       step="0.01"
                       compact
                       value={marketplaceFees.facebookMinFee}
@@ -1003,6 +1017,7 @@ export function SettingsModal({
                     <label className="block text-xs text-slate-400 mb-1">Payment Fixed ({currencySymbol})</label>
                     <Input
                       type="number"
+                      decimals={2}
                       step="0.01"
                       compact
                       value={marketplaceFees.etsyPaymentFixed}
@@ -1013,6 +1028,7 @@ export function SettingsModal({
                     <label className="block text-xs text-slate-400 mb-1">Listing Fee ({currencySymbol})</label>
                     <Input
                       type="number"
+                      decimals={2}
                       step="0.01"
                       compact
                       value={marketplaceFees.etsyListingFee}
@@ -1050,6 +1066,7 @@ export function SettingsModal({
                     <label className="block text-xs text-slate-400 mb-1">Fixed Fee ({currencySymbol})</label>
                     <Input
                       type="number"
+                      decimals={2}
                       step="0.01"
                       compact
                       value={marketplaceFees.ebayFixedFee}
@@ -1105,6 +1122,7 @@ export function SettingsModal({
                             />
                             <Input
                               type="number"
+                              decimals={2}
                               step="0.01"
                               min="0"
                               compact
@@ -1158,6 +1176,7 @@ export function SettingsModal({
                   />
                   <Input
                     type="number"
+                    decimals={2}
                     step="0.01"
                     min="0"
                     compact

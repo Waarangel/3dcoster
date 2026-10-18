@@ -158,6 +158,7 @@ export function LogMaintenanceModal({
             <Input
               id={costId}
               type="number"
+              decimals={2}
               compact
               min="0"
               value={cost}

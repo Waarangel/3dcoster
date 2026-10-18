@@ -227,7 +227,7 @@ describe('useCostDerivedValues coverage gaps', () => {
     // Should render without throwing, and the seeded sellingPrice should
     // appear in the Selling Price field (fallback branch still seeds price).
     const sellingPriceInputs = Array.from(container!.querySelectorAll('input')).filter(
-      i => i.value === '12'
+      i => i.value === '12.00'
     );
     expect(sellingPriceInputs.length).toBeGreaterThan(0);
   });

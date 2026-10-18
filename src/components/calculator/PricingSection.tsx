@@ -69,6 +69,7 @@ export function PricingSection({
             <Input
               id={ids.targetProfit}
               type="number"
+              decimals={2}
               step="0.01"
               value={targetProfit || ''}
               onChange={e => {
@@ -86,6 +87,7 @@ export function PricingSection({
             <Input
               id={ids.sellingPrice}
               type="number"
+              decimals={2}
               step="0.01"
               value={sellingPrice || ''}
               onChange={e => {
