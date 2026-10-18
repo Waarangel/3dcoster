@@ -424,12 +424,28 @@ Plans:
 ### Phase 47.1: Manual one-off costs for Post-Processing materials and Shipping, with Save Job prompt to add to asset library (INSERTED)
 
 **Goal:** Users can add manual one-off cost lines (name + cost) to Post-Processing Materials and Shipping without a library asset; on Save Job a popup offers per-item "add to asset library?". Manual lines persist on the job snapshot, flow through quotes/PDFs, and survive cloud sync (Phase 47). Amortization of reusable tools is out of scope. See SOURCE-TODO.md in the phase directory.
-**Requirements**: TBD
+**Requirements**: MC-01, MC-02, MC-03, MC-04, MC-05, MC-06, MC-07 (provisional IDs from 47.1-RESEARCH.md; decisions D-01..D-06 in 47.1-CONTEXT.md)
 **Depends on:** Phase 47
-**Plans:** 0 plans
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 47.1 to break down)
+
+**Wave 1** *(tracer-first)*
+
+- [ ] 47.1-01-PLAN.md — Tracer: one-off post-processing cost end-to-end (ManualCostLine type, calculateManualLinesCost, both calculateCost calls, form state, UI row, saved job) + pure sanitize/normalize helpers (TDD) (D-02/D-06)
+
+**Wave 2** *(parallel — no file overlap)*
+
+- [ ] 47.1-02-PLAN.md — Save validation toasts + sanitized restore + draft/edit/clear lifecycle; one-off packaging costs in Shipping → Packaging Materials; NEW badge + section a11y tests (D-01/D-06)
+- [ ] 47.1-03-PLAN.md — Downstream consumers: Duplicate carries lines, what-if reconstruction, Jobs CSV columns (formula-injection safe), quote shipping pre-fill untouched, ledger/backup/sync regression locks, applyMerge date time-bomb fix (D-05)
+
+**Wave 3**
+
+- [ ] 47.1-04-PLAN.md — Pre-save "Add to your asset library?" popup (Keep default, Cancel aborts, libraryPrompted, name-dedupe), onAddAsset wiring, CHANGELOG [Unreleased] (D-03/D-04/D-06)
+
+**Wave 4**
+
+- [ ] 47.1-05-PLAN.md — Phase gate: full `npm run build` + eslint on touched files + dev server on 4173 with the founder's $200-auger UAT script
 
 ### Phase 48: Live Etsy order sync
 
