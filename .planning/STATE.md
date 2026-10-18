@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
 current_phase: "47.1"
 current_phase_name: Manual one-off costs
-status: executing
-stopped_at: Completed 47.1-04-PLAN.md
-last_updated: "2026-10-18T18:19:26.624Z"
+status: verifying
+stopped_at: Completed 47.1-05-PLAN.md (gate green; UAT pending)
+last_updated: "2026-10-18T18:21:33.576Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 47.1 execution started
-state_head: 7ee0f0ffae4d7659b29242f6bbe6aa007b6a3716
+state_head: 1b55057ac62843ea8269cd444b3d5b9e72004ba0
 progress:
   total_phases: 15
   completed_phases: 10
   total_plans: 79
-  completed_plans: 78
+  completed_plans: 79
   percent: 67
 ---
 
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](
 
 Phase: 47.1 (Manual one-off costs) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-18 — Phase 47.1 execution started
 
 ## v2.0 Phase Order Reference
@@ -108,6 +108,7 @@ Last activity: 2026-10-18 — Phase 47.1 execution started
 | Phase 47.1 P02 | 9 min | 3 tasks | 9 files |
 | Phase 47.1 P03 | 7 min | 2 tasks | 10 files |
 | Phase 47.1 P04 | 7 min | 2 tasks | 9 files |
+| Phase 47.1 P05 | 6min | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -297,8 +298,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-10-18T18:19:26.052Z
-Stopped at: Completed 47.1-04-PLAN.md
+Last session: 2026-10-18T18:21:33.012Z
+Stopped at: Completed 47.1-05-PLAN.md (gate green; UAT pending)
 Resume file: None
 
 ## Operator Next Steps
