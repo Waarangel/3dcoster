@@ -345,7 +345,7 @@ export function CostParametersSection({
                 <Input
                   type="text"
                   aria-label="One-off item name"
-                  placeholder="Auger"
+                  placeholder="Thread tap set"
                   value={line.name}
                   onChange={e => onUpdateManualMaterial(line.id, { name: e.target.value })}
                   className="flex-1"

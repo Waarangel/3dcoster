@@ -282,7 +282,7 @@ export function ShippingSection({
                   type="text"
                   inputSize="sm"
                   aria-label="One-off packaging name"
-                  placeholder="Gift wrap"
+                  placeholder="Custom box"
                   value={line.name}
                   onChange={e => onUpdateManualPackaging(line.id, { name: e.target.value })}
                   className="flex-1"
