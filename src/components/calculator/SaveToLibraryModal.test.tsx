@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { SaveToLibraryModal } from './SaveToLibraryModal';
@@ -31,7 +31,7 @@ afterEach(() => {
 type Props = Partial<React.ComponentProps<typeof SaveToLibraryModal>>;
 
 async function renderModal(props: Props = {}) {
-  const onConfirm = props.onConfirm ?? vi.fn<(c: LibraryChoice[]) => Promise<void>>().mockResolvedValue();
+  const onConfirm = (props.onConfirm ?? vi.fn<(c: LibraryChoice[]) => Promise<void>>().mockResolvedValue()) as Mock<(c: LibraryChoice[]) => Promise<void>>;
   const onCancel = props.onCancel ?? vi.fn();
   await act(async () => {
     root!.render(
