@@ -5,16 +5,16 @@ milestone_name: Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
 current_phase: "47.1"
 current_phase_name: Manual one-off costs
 status: executing
-stopped_at: Completed 47.1-02-PLAN.md
-last_updated: "2026-10-18T18:09:38.667Z"
+stopped_at: Completed 47.1-03-PLAN.md
+last_updated: "2026-10-18T18:13:28.043Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 47.1 execution started
-state_head: dd88d153a13c97b590ab37b287b84d526dbb6c25
+state_head: c967c198f417903741387cca5daad53bc5795bed
 progress:
   total_phases: 15
   completed_phases: 10
   total_plans: 79
-  completed_plans: 76
+  completed_plans: 77
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](
 ## Current Position
 
 Phase: 47.1 (Manual one-off costs) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 47.1 execution started
 
@@ -106,6 +106,7 @@ Last activity: 2026-10-18 — Phase 47.1 execution started
 | Phase 47 P06 | 12min | 2 tasks | 4 files |
 | Phase 47.1 P01 | 7 min | 2 tasks | 11 files |
 | Phase 47.1 P02 | 9 min | 3 tasks | 9 files |
+| Phase 47.1 P03 | 7 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -272,6 +273,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 47.1]: 47.1-02: save-time normalization via one local helper normalizeManualLinesOrToast(lines, section) reused for both lists; post-processing checked before packaging
 - [Phase 47.1]: 47.1-02: one-off packaging folded into packagingCost memo (flat, not failure-adjusted, D-07); Carrier Cost and totalShippingCost/trueCost paths untouched (D-01)
 - [Phase 47.1]: 47.1-02: manual-cost-lines NEW-badge date set to 2026-10-18; re-confirm against NEW_FEATURE_MAX_AGE_DAYS at the next release tag
+- [Phase 47.1]: 47.1-03: what-if failure slider leaves one-off lines flat (D-07); manualPackaging stays in the reconciliation residual, not fed to buildCalcInputFromJob
 
 ### Pending Todos
 
@@ -292,8 +294,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-10-18T18:09:38.130Z
-Stopped at: Completed 47.1-02-PLAN.md
+Last session: 2026-10-18T18:13:27.434Z
+Stopped at: Completed 47.1-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
