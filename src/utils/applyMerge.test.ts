@@ -90,7 +90,10 @@ describe('applyMerge — winners + deletes + tombstones', () => {
   it('writes tombstonesToWrite into syncTombstones', async () => {
     const db = makeTestDb();
     const plan = emptyPlan();
-    const tombstone: SyncTombstone = { id: 'm2', store: 'materials', deletedAt: new Date('2026-07-01') };
+    // Relative to the real clock: applyMerge prunes tombstones older than
+    // SYNC_TOMBSTONE_RETENTION_DAYS, so a fixed calendar date eventually expires.
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const tombstone: SyncTombstone = { id: 'm2', store: 'materials', deletedAt: new Date(Date.now() - ONE_DAY_MS) };
     plan.tombstonesToWrite = [tombstone];
 
     await applyMerge(db, plan);
