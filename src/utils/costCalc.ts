@@ -51,6 +51,28 @@ export interface CalcInput {
   // Phase 39 WEAR-02 (D-14): manual maintenance-cost input, $/hour. Undefined/0 =
   // no maintenance cost line (existing behavior, byte-identical).
   maintenanceCostPerHour?: number;
+  // Phase 47.1 (MC-01/MC-03, D-07): manual one-off post-processing cost lines.
+  // Undefined = no lines, output byte-identical. One-off lines are charged FLAT,
+  // outside the failure multiplier: a one-time purchase is not used up again
+  // when a print fails.
+  manualMaterials?: readonly ManualCostInput[];
+}
+
+// Phase 47.1: the only field the cost math reads off a manual one-off line.
+export interface ManualCostInput {
+  cost: number;
+}
+
+// Sum of manual one-off line costs. Defensive against tampered synced/restored
+// records (non-array input) and non-finite / non-positive costs; each cost is
+// rounded to cents before summing (T-47.1-01).
+export function calculateManualLinesCost(lines: readonly ManualCostInput[] | undefined): number {
+  if (!Array.isArray(lines)) return 0;
+  return lines.reduce((sum, line) => {
+    const cost = line?.cost;
+    if (typeof cost !== 'number' || !Number.isFinite(cost) || cost <= 0) return sum;
+    return sum + Math.round(cost * 100) / 100;
+  }, 0);
 }
 
 // Filament cost: Σ row.grams × row.editedPrice across rows with a truthy
@@ -204,7 +226,8 @@ export function calculateTax(
 // Orchestrator. Returns the full CostBreakdown contract, byte-for-byte
 // identical to the useMemo at CostCalculator.tsx:374-446 when the new Phase 39
 // fields (touStartTime, maintenanceCostPerHour) are absent/zero and no
-// abrasive-on-brass condition is met.
+// abrasive-on-brass condition is met. Phase 47.1: manualMaterials (one-off lines)
+// likewise default to neutral, and are charged flat outside the failure multiplier (D-07).
 export function calculateCost(input: CalcInput): CostBreakdown {
   const filamentCost = calculateFilamentCost(input.filamentRows);
   const electricityCost = calculateElectricityCost(
@@ -230,12 +253,20 @@ export function calculateCost(input: CalcInput): CostBreakdown {
     input.laborHourlyRate,
   );
 
-  // Materials cost (consumables - per unit) — matches CostCalculator.tsx:411-415.
-  const materialsCost = input.materialsUsed.reduce((total: number, usage: MaterialUsage) => {
+  // Library materials cost (consumables - per unit) — matches CostCalculator.tsx:411-415.
+  const libraryMaterialsCost = input.materialsUsed.reduce((total: number, usage: MaterialUsage) => {
     const material = input.materials.find(m => m.id === usage.materialId);
     if (!material) return total;
     return total + usage.quantity * (material.costPerUnit ?? 0);
   }, 0);
+
+  // Phase 47.1 (D-02/D-07): manual one-off post-processing lines. The full typed
+  // cost is charged once and FLAT — it shows in the "Post-Processing Materials"
+  // row and Subtotal but is added to failureAdjusted outside the failure
+  // multiplier. With no lines this is 0 and every value below is the original
+  // expression plus 0 (byte-identical).
+  const oneOffCost = calculateManualLinesCost(input.manualMaterials);
+  const materialsCost = libraryMaterialsCost + oneOffCost;
 
   // Per-unit model license cost (if enabled) — matches CostCalculator.tsx:421-422.
   const perUnitModelCost = input.modelCostPerUnit ? input.modelCost : 0;
@@ -259,13 +290,19 @@ export function calculateCost(input: CalcInput): CostBreakdown {
   // When modelCostPerUnit is true, model cost is included here instead of fixed costs.
   // Matches CostCalculator.tsx:425-426, extended additively with maintenanceCost +
   // abrasiveSurcharge (both 0 by default).
-  const perUnitSubtotal = filamentCost + electricityCost + materialsCost + laborCost + perUnitModelCost + maintenanceCost + abrasiveSurcharge;
+  //
+  // Phase 47.1 D-07: scaledSubtotal is the failure-scaled part (library-driven
+  // costs only); the one-off total is added on top, unscaled.
+  const scaledSubtotal = filamentCost + electricityCost + libraryMaterialsCost + laborCost + perUnitModelCost + maintenanceCost + abrasiveSurcharge;
+  const perUnitSubtotal = scaledSubtotal + oneOffCost;
 
   // Failure-adjusted per-unit cost (clamp to 0-99 to prevent division by zero).
   // Clamp lives INSIDE calculateCost per D-02 — matches CostCalculator.tsx:428-431.
   const clampedFailureRate = Math.min(Math.max(input.failureRate, 0), 99);
   const failureMultiplier = 1 / (1 - clampedFailureRate / 100);
-  const failureAdjusted = perUnitSubtotal * failureMultiplier;
+  // Phase 47.1 D-07: only the library-driven per-unit cost is divided by
+  // (1 − failure%); one-off lines are added once, flat.
+  const failureAdjusted = scaledSubtotal * failureMultiplier + oneOffCost;
 
   // Field order matches CostCalculator.tsx:433-446 for diff cleanliness; new
   // Phase 39 fields (touRateUsedPerKwh, maintenanceCost, abrasiveSurcharge)

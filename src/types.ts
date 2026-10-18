@@ -550,6 +550,27 @@ export interface PrintJob {
   // amortization rate applied at save time; undefined = no maintenance
   // amortization was applied (e.g. no logged maintenance history yet).
   maintenanceCostAtSave?: number;
+
+  // Phase 47.1 (MC-01/MC-04) — manual one-off cost lines, entered by name + cost with
+  // no asset-library item behind them. Optional and non-indexed (same schema-extension
+  // pattern as the fields above): the Dexie schema string is unchanged (DB at v13) and
+  // no migration is needed. undefined means no lines — it is written as undefined (never
+  // []) when empty, so jobs without one-off costs stay byte-identical to existing records.
+  // manualPackaging is wired in 47.1-02.
+  manualMaterials?: ManualCostLine[];
+  manualPackaging?: ManualCostLine[];
+}
+
+// Phase 47.1: a one-off cost line charged by value to a single job (D-02).
+export interface ManualCostLine {
+  /** Persisted unique id (never a session-scoped row key). */
+  id: string;
+  /** User-typed label, e.g. "Auger". */
+  name: string;
+  /** Full amount charged to THIS job in the job's currency (D-02, no amortization). */
+  cost: number;
+  /** True once the Save Job library prompt has been answered for this line (D-04). */
+  libraryPrompted?: boolean;
 }
 
 // Sales record for a print job

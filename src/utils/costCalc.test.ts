@@ -9,6 +9,7 @@ import {
   calculateAmortization,
   calculateAbrasiveSurcharge,
   calculateTax,
+  calculateManualLinesCost,
   resolveElectricityRatePerKwh,
 } from './costCalc';
 import { getMaterialDensity } from './gcodeParser';
@@ -662,5 +663,78 @@ describe('calculateCost (Phase 39 integration — byte-identical defaults + new 
     });
     const result = calculateCost(input);
     expect(result.touRateUsedPerKwh).toBeCloseTo(0.08, 4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 47.1 (MC-01/MC-03): manual one-off post-processing cost lines
+// ---------------------------------------------------------------------------
+
+describe('calculateManualLinesCost', () => {
+  it('returns 0 for undefined and for an empty array', () => {
+    expect(calculateManualLinesCost(undefined)).toBe(0);
+    expect(calculateManualLinesCost([])).toBe(0);
+  });
+
+  it('returns 0 for non-array input (tampered synced/restored record)', () => {
+    expect(calculateManualLinesCost('x' as unknown as undefined)).toBe(0);
+    expect(calculateManualLinesCost({ cost: 5 } as unknown as undefined)).toBe(0);
+  });
+
+  it('ignores non-finite, zero, negative and non-numeric costs', () => {
+    const lines = [
+      { cost: NaN },
+      { cost: Infinity },
+      { cost: -5 },
+      { cost: 0 },
+      { cost: '7' as unknown as number },
+      null as unknown as { cost: number },
+    ];
+    expect(calculateManualLinesCost(lines)).toBe(0);
+  });
+
+  it('sums valid lines', () => {
+    expect(calculateManualLinesCost([{ cost: 200 }, { cost: 3.5 }])).toBe(203.5);
+  });
+
+  it('rounds each cost to cents before summing', () => {
+    expect(calculateManualLinesCost([{ cost: 19.999 }, { cost: 0.004 }])).toBe(20);
+  });
+});
+
+describe('calculateCost with manualMaterials (D-07: flat, outside the failure multiplier)', () => {
+  const EPS = 1e-9;
+
+  it.each([0, 5, 50, 99])('failureAdjusted rises by exactly the typed amount at failureRate %i', (failureRate) => {
+    const base = calculateCost(makeCalcInput({ failureRate }));
+    const withLine = calculateCost(makeCalcInput({ failureRate, manualMaterials: [{ cost: 200 }] }));
+    expect(Math.abs(withLine.failureAdjusted - base.failureAdjusted - 200)).toBeLessThan(EPS);
+    expect(Math.abs(withLine.materials - base.materials - 200)).toBeLessThan(EPS);
+    expect(Math.abs(withLine.subtotal - base.subtotal - 200)).toBeLessThan(EPS);
+  });
+
+  it('leaves the "+ Failure Adjustment" amount (failureAdjusted - subtotal) unchanged', () => {
+    const base = calculateCost(makeCalcInput({ failureRate: 5 }));
+    const withLine = calculateCost(makeCalcInput({ failureRate: 5, manualMaterials: [{ cost: 200 }] }));
+    const baseAdj = base.failureAdjusted - base.subtotal;
+    const lineAdj = withLine.failureAdjusted - withLine.subtotal;
+    expect(Math.abs(lineAdj - baseAdj)).toBeLessThan(EPS);
+  });
+
+  it('adds one-off cost on top of library materials without scaling it', () => {
+    const material: Material = { id: 'mat-x', name: 'Epoxy', category: 'consumable', unit: 'unit', costPerUnit: 2, currency: 'USD' };
+    const input = makeCalcInput({
+      failureRate: 50,
+      materials: [makeMaterial('mat-pla', 'PLA'), material],
+      materialsUsed: [{ materialId: 'mat-x', quantity: 1 }],
+    });
+    const base = calculateCost(input);
+    const withLine = calculateCost({ ...input, manualMaterials: [{ cost: 10 }] });
+    expect(Math.abs(withLine.materials - (base.materials + 10))).toBeLessThan(EPS);
+    expect(Math.abs(withLine.failureAdjusted - (base.failureAdjusted + 10))).toBeLessThan(EPS);
+  });
+
+  it('omitting manualMaterials deep-equals an empty array (default-neutral)', () => {
+    expect(calculateCost(makeCalcInput())).toEqual(calculateCost(makeCalcInput({ manualMaterials: [] })));
   });
 });

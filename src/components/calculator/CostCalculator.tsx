@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, MarketplaceFees, FilamentUsage, UserProfile } from '../../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, MarketplaceFees, FilamentUsage, UserProfile, ManualCostLine } from '../../types';
 import { useStockEvents } from '../../hooks/useStockEvents';
 import { useCostForm, nextRowKey, FORM_STORAGE_KEY } from '../../hooks/useCostForm';
 import { useCostDerivedValues } from '../../hooks/useCostDerivedValues';
@@ -10,6 +10,7 @@ import { resolveWeightedCostPerKwh } from '../../utils/touElectricity';
 import { useSupportNudge } from '../SupportNudge';
 import { Button, useToast } from '../ui';
 import { getCurrencySymbol, getDistanceUnit } from '../../utils/currency';
+import { newManualLine } from '../../utils/manualCostLines';
 import type { FxRateTable } from '../../utils/fxConvert';
 import { CostFormSection } from './CostFormSection';
 import { CostParametersSection } from './CostParametersSection';
@@ -106,6 +107,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     postProcessingMinutes, setPostProcessingMinutes,
     failureRate, setFailureRate,
     materialsUsed, setMaterialsUsed,
+    manualMaterials, setManualMaterials,
     taxRateOverride, setTaxRateOverride,
     shippingMethod, setShippingMethod,
     shippingDistanceKm, setShippingDistanceKm,
@@ -207,6 +209,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     userProfile,
     touStartTime,
     maintenanceCostPerHour,
+    manualMaterials,
   });
   const { trueCost, fixedCosts, tax, pricing, dispatchPricing, costs } = derived;
   const { profitMarginPercent, targetProfit, sellingPrice, lastEdited } = pricing;
@@ -313,6 +316,11 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       prepTimeMinutes,
       postProcessingMinutes,
       materialsUsed: materialsUsedToSave,
+      // Phase 47.1 (MC-04): undefined (never []) when empty so jobs without one-off
+      // costs stay byte-identical to existing records; on edit, the spread of
+      // editingJob then sharedFields uses this explicit undefined to clear removed lines.
+      // Save-time trimming/rounding/validation is wired in 47.1-02.
+      manualMaterials: manualMaterials.length > 0 ? manualMaterials : undefined,
       failureRate,
       costPerUnit: trueCost,
       sellingPrice,
@@ -386,6 +394,19 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     setMaterialsUsed(materialsUsed.filter((_, i) => i !== index));
   };
 
+  // Phase 47.1 (MC-01): id-keyed, immutable callbacks for manual one-off lines.
+  const addManualMaterial = () => {
+    setManualMaterials(prev => [...prev, newManualLine()]);
+  };
+
+  const updateManualMaterial = (id: string, patch: Partial<Pick<ManualCostLine, 'name' | 'cost'>>) => {
+    setManualMaterials(prev => prev.map(line => (line.id === id ? { ...line, ...patch } : line)));
+  };
+
+  const removeManualMaterial = (id: string) => {
+    setManualMaterials(prev => prev.filter(line => line.id !== id));
+  };
+
   return (
     <div className="space-y-6">
       {/* Editing Banner */}
@@ -439,6 +460,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         onAddMaterialUsage={addMaterialUsage}
         onUpdateMaterialUsage={updateMaterialUsage}
         onRemoveMaterialUsage={removeMaterialUsage}
+        manualMaterials={manualMaterials}
+        onAddManualMaterial={addManualMaterial}
+        onUpdateManualMaterial={updateManualMaterial}
+        onRemoveManualMaterial={removeManualMaterial}
         ids={ids}
         empiricalFailureRate={empiricalFailureRate}
         // WR-05: honor the field's own 0-99 contract (max="99" + onChange clamp)

@@ -10,7 +10,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { CostParametersSection } from './CostParametersSection';
 import type { CalculatorFieldIds } from './fieldIds';
-import type { Material } from '../../types';
+import type { ManualCostLine, Material } from '../../types';
 
 const ids: CalculatorFieldIds = {
   printName: 'printName',
@@ -52,6 +52,10 @@ function baseProps() {
     onAddMaterialUsage: vi.fn(),
     onUpdateMaterialUsage: vi.fn(),
     onRemoveMaterialUsage: vi.fn(),
+    manualMaterials: [] as ManualCostLine[],
+    onAddManualMaterial: vi.fn(),
+    onUpdateManualMaterial: vi.fn(),
+    onRemoveManualMaterial: vi.fn(),
     ids,
   };
 }

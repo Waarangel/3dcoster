@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect, useReducer, useRef } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, UserProfile } from '../types';
+import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, CostBreakdown, PrintJob, Currency, ShippingConfig, ShippingMethodType, MarketplaceType, MarketplaceFees, UserProfile, ManualCostLine } from '../types';
 import { getStoredValue } from './useCostForm';
 import type { FilamentRow } from './useCostForm';
 import { convert, type FxRateTable } from '../utils/fxConvert';
@@ -195,6 +195,9 @@ export interface UseCostDerivedValuesProps {
   // defaulted so omitting them is byte-identical to pre-Phase-39 behavior.
   touStartTime?: string;
   maintenanceCostPerHour?: number;
+  // Phase 47.1 (MC-01): manual one-off post-processing lines, an ordinary CalcInput
+  // pass-through. Undefined = no lines (byte-identical to before this phase).
+  manualMaterials?: ManualCostLine[];
 }
 
 export function useCostDerivedValues({
@@ -226,6 +229,7 @@ export function useCostDerivedValues({
   userProfile,
   touStartTime,
   maintenanceCostPerHour,
+  manualMaterials,
 }: UseCostDerivedValuesProps) {
   // Convert a stored price from its native currency into the user's currency for
   // display and cost math. Falls back to the raw amount only when no rate table
@@ -353,11 +357,12 @@ export function useCostDerivedValues({
     modelCostPerUnit,
     touStartTime,
     maintenanceCostPerHour,
+    manualMaterials,
   }), [
     materialsInProfile, filamentRowsForCalc, printTimeHours, selectedPrinter, electricity,
     selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
     postProcessingMinutes, failureRate, modelCost, modelCostPerUnit,
-    touStartTime, maintenanceCostPerHour,
+    touStartTime, maintenanceCostPerHour, manualMaterials,
   ]);
 
   const trueCostForReducer = costsForTrueCost.failureAdjusted + totalShippingCost;
@@ -472,11 +477,12 @@ export function useCostDerivedValues({
     modelCostPerUnit,
     touStartTime,
     maintenanceCostPerHour,
+    manualMaterials,
   }), [
     materialsInProfile, filamentRowsForCalc, printTimeHours, selectedPrinter, electricity,
     selectedInstance, materialsUsed, laborHourlyRate, prepTimeMinutes,
     postProcessingMinutes, failureRate, pricing.profitMarginPercent, pricing.targetProfit, pricing.sellingPrice,
-    modelCost, modelCostPerUnit, touStartTime, maintenanceCostPerHour,
+    modelCost, modelCostPerUnit, touStartTime, maintenanceCostPerHour, manualMaterials,
   ]);
 
   // True cost = failure adjusted cost + shipping

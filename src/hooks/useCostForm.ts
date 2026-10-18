@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Material, PrinterInstance, MaterialUsage, PrintJob, Currency, ShippingMethodType, MarketplaceType } from '../types';
+import type { Material, PrinterInstance, MaterialUsage, PrintJob, Currency, ShippingMethodType, MarketplaceType, ManualCostLine } from '../types';
 
 // Session storage key for form persistence
 export const FORM_STORAGE_KEY = 'costCalculatorForm';
@@ -130,6 +130,12 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
   const [postProcessingMinutes, setPostProcessingMinutes] = useState(() => getStoredValue('postProcessingMinutes', 0));
   const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
   const [materialsUsed, setMaterialsUsed] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('materialsUsed', []).map(toMaterialRow));
+  // Phase 47.1 (MC-01): manual one-off post-processing cost lines. Drafts saved before
+  // this phase lack the key and load as []. Ids are persisted-unique (newManualLine),
+  // so unlike the row-keyed lists above there is no view-only key to strip on save.
+  const [manualMaterials, setManualMaterials] = useState<ManualCostLine[]>(
+    () => getStoredValue<ManualCostLine[]>('manualMaterials', [])
+  );
 
   // Phase 39 TOU-02/WEAR-02: touStartTime ("HH:MM", undefined = flat rate) and
   // maintenanceCostPerHour (D-14, the NEW manual maintenance-cost input) are
@@ -194,12 +200,14 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     etsyChecks,
     touStartTime,
     maintenanceCostPerHour,
+    manualMaterials,
   }), [
     printName, filamentRows, selectedInstanceId, printTimeHours, modelCost,
     modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes,
     postProcessingMinutes, failureRate, materialsUsed, taxRateOverride,
     shippingMethod, shippingDistanceKm, shippingOverrideCost,
     packagingMaterials, marketplace, etsyChecks, touStartTime, maintenanceCostPerHour,
+    manualMaterials,
   ]);
 
   // Populate fields when editing an existing job
@@ -216,6 +224,10 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
       setPostProcessingMinutes(editingJob.postProcessingMinutes);
       setFailureRate(editingJob.failureRate);
       setMaterialsUsed(editingJob.materialsUsed.map(toMaterialRow));
+      // Phase 47.1: UNCONDITIONAL restore (NOT the guarded `!== undefined` style used
+      // for packagingMaterials below) — otherwise an unsaved draft's one-off lines
+      // would leak into the job being edited and get saved onto it.
+      setManualMaterials(editingJob.manualMaterials ?? []);
       setTaxRateOverride(editingJob.taxRate);
       setEtsyChecks(editingJob.etsyChecks ?? {});
       // Phase 39 TOU-02/WEAR-02: restore the snapshotted start time (undefined =
@@ -281,6 +293,7 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     setPostProcessingMinutes(0);
     setFailureRate(5);
     setMaterialsUsed([]);
+    setManualMaterials([]);
     // Pricing fields are reset via the pricingReducer's RESET action, dispatched
     // by the orchestrator alongside this call (see CostCalculator.tsx clearForm wiring).
     setTaxRateOverride(undefined);
@@ -310,6 +323,7 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     postProcessingMinutes, setPostProcessingMinutes,
     failureRate, setFailureRate,
     materialsUsed, setMaterialsUsed,
+    manualMaterials, setManualMaterials,
     taxRateOverride, setTaxRateOverride,
     shippingMethod, setShippingMethod,
     shippingDistanceKm, setShippingDistanceKm,

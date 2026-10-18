@@ -1,4 +1,4 @@
-import type { Material, MaterialUsage } from '../../types';
+import type { ManualCostLine, Material, MaterialUsage } from '../../types';
 import { Button, FieldWarning, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import type { MaterialRow } from '../../hooks/useCostForm';
 import type { CalculatorFieldIds } from './fieldIds';
@@ -39,6 +39,12 @@ interface CostParametersSectionProps {
   onAddMaterialUsage: () => void;
   onUpdateMaterialUsage: (index: number, field: keyof MaterialUsage, value: string | number) => void;
   onRemoveMaterialUsage: (index: number) => void;
+  // Phase 47.1 (MC-01): manual one-off post-processing lines (name + cost, no library
+  // asset). Rows are keyed/edited by persisted line.id, never by array index.
+  manualMaterials: ManualCostLine[];
+  onAddManualMaterial: () => void;
+  onUpdateManualMaterial: (id: string, patch: Partial<Pick<ManualCostLine, 'name' | 'cost'>>) => void;
+  onRemoveManualMaterial: (id: string) => void;
   ids: CalculatorFieldIds;
 
   // --- Phase 39 additions (all optional-by-shape via explicit null, never
@@ -89,6 +95,10 @@ export function CostParametersSection({
   onAddMaterialUsage,
   onUpdateMaterialUsage,
   onRemoveMaterialUsage,
+  manualMaterials,
+  onAddManualMaterial,
+  onUpdateManualMaterial,
+  onRemoveManualMaterial,
   ids,
   empiricalFailureRate,
   onApplyEmpiricalFailureRate,
@@ -265,16 +275,24 @@ export function CostParametersSection({
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">Post-Processing Materials</h2>
-          <Button
-            btnSize="sm"
-            onClick={onAddMaterialUsage}
-            disabled={nonFilaments.length === 0}
-          >
-            + Add Material
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              btnSize="sm"
+              onClick={onAddMaterialUsage}
+              disabled={nonFilaments.length === 0}
+            >
+              + Add Material
+            </Button>
+            {/* Phase 47.1: never disabled — it must not inherit "+ Add Material"'s
+                empty-library disable, since users with an empty library benefit most. */}
+            <Button variant="secondary" btnSize="sm" onClick={onAddManualMaterial}>
+              + One-off cost
+            </Button>
+            <InfoTooltip text="Add a one-time cost that isn't in your asset library, like a tool bought for this job. The full amount is added to this job's cost once. Your failure rate doesn't increase it." />
+          </div>
         </div>
 
-        {materialsUsed.length === 0 ? (
+        {materialsUsed.length === 0 && manualMaterials.length === 0 ? (
           <p className="text-slate-500 text-sm">No post-processing materials added yet.</p>
         ) : (
           <div className="space-y-2">
@@ -312,6 +330,37 @@ export function CostParametersSection({
                 </div>
               );
             })}
+            {manualMaterials.map(line => (
+              <div key={line.id} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
+                <span className="text-xs text-slate-400 bg-slate-600/60 rounded px-2 py-0.5">One-off</span>
+                <Input
+                  type="text"
+                  aria-label="One-off item name"
+                  placeholder="Auger"
+                  value={line.name}
+                  onChange={e => onUpdateManualMaterial(line.id, { name: e.target.value })}
+                  className="flex-1"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 text-sm">{currencySymbol}</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    compact
+                    aria-label="One-off item cost"
+                    placeholder="0.00"
+                    value={line.cost || ''}
+                    onChange={e => onUpdateManualMaterial(line.id, { cost: Math.max(parseFloat(e.target.value) || 0, 0) })}
+                    className="text-right"
+                  />
+                </div>
+                <RemoveButton
+                  label={line.name || 'one-off cost'}
+                  onClick={() => onRemoveManualMaterial(line.id)}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>
