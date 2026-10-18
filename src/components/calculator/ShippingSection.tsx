@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { ManualCostLine, Material, MaterialUsage, ShippingConfig, ShippingMethodType, MarketplaceType, Currency } from '../../types';
+import { NewBadge } from '../NewBadge';
 import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import { kmToMiles, milesToKm, type DistanceUnit } from '../../utils/currency';
 import type { MaterialRow } from '../../hooks/useCostForm';
@@ -221,9 +222,12 @@ export function ShippingSection({
               + Add Packaging
             </Button>
             {/* Phase 47.1: never disabled, so it works with an empty library. */}
-            <Button variant="secondary" btnSize="sm" onClick={onAddManualPackaging} className="text-xs">
-              + One-off cost
-            </Button>
+            <span className="relative inline-flex">
+              <Button variant="secondary" btnSize="sm" onClick={onAddManualPackaging} className="text-xs">
+                + One-off cost
+              </Button>
+              <NewBadge feature="manual-cost-lines" className="absolute -top-1.5 -right-1.5 pointer-events-none" />
+            </span>
             <InfoTooltip text="Add a one-time packaging cost that isn't in your asset library. The full amount is added to this job's shipping cost." />
           </div>
         </div>

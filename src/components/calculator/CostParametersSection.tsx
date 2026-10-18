@@ -1,4 +1,5 @@
 import type { ManualCostLine, Material, MaterialUsage } from '../../types';
+import { NewBadge } from '../NewBadge';
 import { Button, FieldWarning, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import type { MaterialRow } from '../../hooks/useCostForm';
 import type { CalculatorFieldIds } from './fieldIds';
@@ -285,9 +286,12 @@ export function CostParametersSection({
             </Button>
             {/* Phase 47.1: never disabled — it must not inherit "+ Add Material"'s
                 empty-library disable, since users with an empty library benefit most. */}
-            <Button variant="secondary" btnSize="sm" onClick={onAddManualMaterial}>
-              + One-off cost
-            </Button>
+            <span className="relative inline-flex">
+              <Button variant="secondary" btnSize="sm" onClick={onAddManualMaterial}>
+                + One-off cost
+              </Button>
+              <NewBadge feature="manual-cost-lines" className="absolute -top-1.5 -right-1.5 pointer-events-none" />
+            </span>
             <InfoTooltip text="Add a one-time cost that isn't in your asset library, like a tool bought for this job. The full amount is added to this job's cost once. Your failure rate doesn't increase it." />
           </div>
         </div>

@@ -61,6 +61,10 @@ export const featureReleases: Record<string, Date> = {
   // One badge for the whole Data-tab subsection, not per-path. Re-confirm
   // this date is still within NEW_FEATURE_MAX_AGE_DAYS at the v2.0 tag.
   'cloud-sync': new Date('2026-07-23'),
+  // v2.0 Phase 47.1 — Manual one-off costs: '+ One-off cost' in Post-Processing
+  // Materials and Shipping → Packaging Materials. One key, rendered on both buttons.
+  // Re-confirm this date is still within NEW_FEATURE_MAX_AGE_DAYS at the next release tag.
+  'manual-cost-lines': new Date('2026-10-18'),
   // Add new features here with their release date
 };
 
