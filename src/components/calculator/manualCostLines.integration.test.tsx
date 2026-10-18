@@ -560,3 +560,255 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     ]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 47.1-04: pre-save "Add to your asset library?" prompt (D-03 / D-04).
+// The modal portals to document.body, so these helpers query the document.
+// ---------------------------------------------------------------------------
+
+const popup = () => document.body.querySelector('[role="dialog"]');
+const popupText = () => popup()?.textContent ?? '';
+const popupButton = (text: string) =>
+  Array.from(popup()?.querySelectorAll('button') ?? []).find(b => b.textContent?.trim() === text) as HTMLButtonElement | undefined;
+const popupSelect = (label: string) => popup()?.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`) ?? null;
+
+async function popupChoose(label: string, value: string) {
+  const select = popupSelect(label);
+  expect(select, `popup select "${label}" must exist`).not.toBeNull();
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!;
+    setter.call(select!, value);
+    select!.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
+async function popupConfirm(label = 'Save job') {
+  const btn = popupButton(label);
+  expect(btn, `popup button "${label}" must exist`).toBeDefined();
+  await act(async () => { btn!.click(); });
+}
+
+describe('Save Job library prompt (47.1-04, D-03/D-04)', () => {
+  it('opens the popup BEFORE saving, with every row defaulting to "Keep as one-off"', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob, { onAddAsset: vi.fn() });
+    await addOneOff('Auger', '200');
+    await clickSave();
+
+    expect(popup()).not.toBeNull();
+    expect(popupText()).toContain('Add to your asset library?');
+    expect(popupText()).toContain('Auger');
+    expect(popupSelect('Library choice for Auger')!.value).toBe('keep');
+    expect(onSaveJob).not.toHaveBeenCalled();
+  });
+
+  it('Cancel closes the popup, does not save, and keeps the one-off line in the form', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    const onAddAsset = vi.fn();
+    await mountCalculator(onSaveJob, { onAddAsset });
+    await addOneOff('Auger', '200');
+    await clickSave();
+    await act(async () => { popupButton('Cancel')!.click(); });
+
+    expect(popup()).toBeNull();
+    expect(onSaveJob).not.toHaveBeenCalled();
+    expect(onAddAsset).not.toHaveBeenCalled();
+    expect(oneOffRows()).toHaveLength(1);
+    expect(inputByLabel('One-off item name').value).toBe('Auger');
+  });
+
+  it('Escape closes the popup without saving', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob, { onAddAsset: vi.fn() });
+    await addOneOff('Auger', '200');
+    await clickSave();
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(popup()).toBeNull();
+    expect(onSaveJob).not.toHaveBeenCalled();
+    expect(oneOffRows()).toHaveLength(1);
+  });
+
+  it('Add to library creates ONE asset, keeps the by-value line, and costs the job exactly like Keep (D-03)', async () => {
+    // --- Keep ---
+    seedDraft();
+    const keepSave = vi.fn();
+    const keepAdd = vi.fn();
+    await mountCalculator(keepSave, { onAddAsset: keepAdd });
+    await addOneOff('Auger', '200');
+    await clickSave();
+    await popupConfirm();
+    expect(keepAdd).not.toHaveBeenCalled();
+    expect(keepSave).toHaveBeenCalledTimes(1);
+    const keepJob = keepSave.mock.calls[0][0] as PrintJob;
+    expect(keepJob.manualMaterials).toEqual([{ id: expect.any(String), name: 'Auger', cost: 200, libraryPrompted: true }]);
+    act(() => { root!.unmount(); });
+    root = createRoot(container!);
+
+    // --- Add ---
+    sessionStorage.clear();
+    seedDraft();
+    const addSave = vi.fn();
+    const onAddAsset = vi.fn().mockResolvedValue(undefined);
+    await mountCalculator(addSave, { onAddAsset });
+    await addOneOff('Auger', '200');
+    await clickSave();
+    await popupChoose('Library choice for Auger', 'add');
+    await popupConfirm();
+
+    expect(onAddAsset).toHaveBeenCalledTimes(1);
+    expect(onAddAsset.mock.calls[0][0]).toMatchObject({
+      name: 'Auger', category: 'tool', unit: 'ea', unitsPerPackage: 1, packageCost: 200, costPerUnit: 200, currency: 'USD',
+    });
+    const newAssetId = (onAddAsset.mock.calls[0][0] as { id: string }).id;
+
+    expect(addSave).toHaveBeenCalledTimes(1);
+    const addJob = addSave.mock.calls[0][0] as PrintJob;
+    expect(addJob.manualMaterials).toEqual([{ id: expect.any(String), name: 'Auger', cost: 200, libraryPrompted: true }]);
+    // D-03: no MaterialUsage references the new asset (no double count, no stock deduction).
+    expect(addJob.materialsUsed.some(m => m.materialId === newAssetId)).toBe(false);
+    expect(addJob.packagingMaterials?.some(m => m.materialId === newAssetId) ?? false).toBe(false);
+    expect(addJob.costPerUnit).toBe(keepJob.costPerUnit);
+  });
+
+  it('lets a post-processing line be added under a chosen category', async () => {
+    seedDraft();
+    const onAddAsset = vi.fn().mockResolvedValue(undefined);
+    await mountCalculator(vi.fn(), { onAddAsset });
+    await addOneOff('Sandpaper', '12');
+    await clickSave();
+    await popupChoose('Library choice for Sandpaper', 'add');
+    await popupChoose('Library category for Sandpaper', 'consumable');
+    await popupConfirm();
+    expect(onAddAsset.mock.calls[0][0]).toMatchObject({ name: 'Sandpaper', category: 'consumable' });
+  });
+
+  it('a packaging one-off is always added as Packaging and offers no category Select', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    const onAddAsset = vi.fn().mockResolvedValue(undefined);
+    await mountCalculator(onSaveJob, { onAddAsset });
+    await addPackagingOneOff('Gift wrap', '3.5');
+    await clickSave();
+    await popupChoose('Library choice for Gift wrap', 'add');
+    expect(popupSelect('Library category for Gift wrap')).toBeNull();
+    await popupConfirm();
+    expect(onAddAsset).toHaveBeenCalledTimes(1);
+    expect(onAddAsset.mock.calls[0][0]).toMatchObject({ name: 'Gift wrap', category: 'packaging', packageCost: 3.5 });
+    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualPackaging).toEqual([
+      { id: expect.any(String), name: 'Gift wrap', cost: 3.5, libraryPrompted: true },
+    ]);
+  });
+
+  it('two lines (one Add, one Keep) call onAddAsset exactly once', async () => {
+    seedDraft();
+    const onAddAsset = vi.fn().mockResolvedValue(undefined);
+    await mountCalculator(vi.fn(), { onAddAsset });
+    await addOneOff('Auger', '200');
+    await addPackagingOneOff('Gift wrap', '3.5');
+    await clickSave();
+    await popupChoose('Library choice for Auger', 'add');
+    await popupConfirm();
+    expect(onAddAsset).toHaveBeenCalledTimes(1);
+    expect(onAddAsset.mock.calls[0][0]).toMatchObject({ name: 'Auger' });
+  });
+
+  it('Keep as one-off never calls onAddAsset and flags the saved line as asked', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    const onAddAsset = vi.fn();
+    await mountCalculator(onSaveJob, { onAddAsset });
+    await addOneOff('Auger', '200');
+    await clickSave();
+    await popupConfirm();
+    expect(onAddAsset).not.toHaveBeenCalled();
+    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualMaterials?.[0].libraryPrompted).toBe(true);
+  });
+
+  it('Update Job with an unasked line asks first (confirm reads "Update job"), then updates with the flag', async () => {
+    const onUpdateJob = vi.fn();
+    const job = makeEditJob({ manualMaterials: [{ id: 'm1', name: 'Auger', cost: 200 }] });
+    await mountCalculator(vi.fn(), { editingJob: job, onUpdateJob, onAddAsset: vi.fn() });
+    await act(async () => { buttonByText('Update Job').click(); });
+    expect(popup()).not.toBeNull();
+    expect(onUpdateJob).not.toHaveBeenCalled();
+    await popupConfirm('Update job');
+    expect(onUpdateJob).toHaveBeenCalledTimes(1);
+    expect((onUpdateJob.mock.calls[0][0] as PrintJob).manualMaterials).toEqual([
+      { id: 'm1', name: 'Auger', cost: 200, libraryPrompted: true },
+    ]);
+  });
+
+  it('Update Job where every line was already asked saves directly with no popup', async () => {
+    const onUpdateJob = vi.fn();
+    const job = makeEditJob({ manualMaterials: [{ id: 'm1', name: 'Auger', cost: 200, libraryPrompted: true }] });
+    await mountCalculator(vi.fn(), { editingJob: job, onUpdateJob, onAddAsset: vi.fn() });
+    await act(async () => { buttonByText('Update Job').click(); });
+    expect(popup()).toBeNull();
+    expect(onUpdateJob).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips a line whose name already exists in the library (case-insensitive) and saves directly', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob, { onAddAsset: vi.fn() });
+    await addOneOff('small box', '1');
+    await clickSave();
+    expect(popup()).toBeNull();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+    const saved = onSaveJob.mock.calls[0][0] as PrintJob;
+    expect(saved.manualMaterials).toEqual([{ id: expect.any(String), name: 'small box', cost: 1 }]);
+    expect('libraryPrompted' in saved.manualMaterials![0]).toBe(false);
+  });
+
+  it('a job with no one-off lines saves with no popup', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob, { onAddAsset: vi.fn() });
+    await clickSave();
+    expect(popup()).toBeNull();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+  });
+
+  it('when adding to the library fails: error toast, job NOT saved, popup closed; retry re-asks', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    const onAddAsset = vi.fn().mockRejectedValue(new Error('db down'));
+    await mountCalculator(onSaveJob, { onAddAsset });
+    await addOneOff('Auger', '200');
+    await clickSave();
+    await popupChoose('Library choice for Auger', 'add');
+    await popupConfirm();
+
+    expect(toastText()).toContain('Could not add to your asset library, so the job was not saved. Please try again.');
+    expect(onSaveJob).not.toHaveBeenCalled();
+    expect(popup()).toBeNull();
+
+    await clickSave();
+    expect(popup()).not.toBeNull();
+  });
+
+  it('when the asset is added but the job write fails: "Could not save the job" toast and Save does NOT re-ask', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn().mockRejectedValueOnce(new Error('write failed')).mockResolvedValue(undefined);
+    const onAddAsset = vi.fn().mockResolvedValue(undefined);
+    await mountCalculator(onSaveJob, { onAddAsset });
+    await addOneOff('Auger', '200');
+    await clickSave();
+    await popupChoose('Library choice for Auger', 'add');
+    await popupConfirm();
+
+    expect(toastText()).toContain('Could not save the job');
+    expect(popup()).toBeNull();
+
+    await clickSave();
+    expect(popup()).toBeNull();
+    expect(onAddAsset).toHaveBeenCalledTimes(1);
+    expect(onSaveJob).toHaveBeenCalledTimes(2);
+    expect((onSaveJob.mock.calls[1][0] as PrintJob).manualMaterials?.[0].libraryPrompted).toBe(true);
+  });
+});
