@@ -102,6 +102,22 @@ describe('applyMerge — winners + deletes + tombstones', () => {
     expect(stored?.store).toBe('materials');
   });
 
+  it('a job winner carrying one-off lines is written verbatim (47.1 MC-06)', async () => {
+    const db = makeTestDb();
+    const manualMaterials = [{ id: 'mm-1', name: 'Auger', cost: 200, libraryPrompted: true }];
+    const manualPackaging = [{ id: 'mp-1', name: 'Gift wrap', cost: 3.5 }];
+    const plan = emptyPlan();
+    plan.winnersByStore.jobs = [{
+      id: 'job-1', name: 'Benchy', createdAt: new Date('2026-06-01'), manualMaterials, manualPackaging,
+    }];
+
+    await applyMerge(db, plan);
+
+    const stored = await db.table('jobs').get('job-1');
+    expect(stored.manualMaterials).toEqual(manualMaterials);
+    expect(stored.manualPackaging).toEqual(manualPackaging);
+  });
+
   it('winners are written VERBATIM — applyMerge does not re-stamp updatedAt', async () => {
     const db = makeTestDb();
     const fixedUpdatedAt = new Date('2020-01-01T00:00:00.000Z');

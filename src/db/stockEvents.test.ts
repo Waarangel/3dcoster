@@ -46,6 +46,28 @@ describe('buildJobStockEvents', () => {
     expect(byAsset).toEqual({ 'resin-clear': -3, 'box-small': -1 });
   });
 
+  it('one-off manual lines never create stock events (47.1 MC-06)', () => {
+    const manualOnly = {
+      ...job({ id: 'j1' }),
+      manualMaterials: [{ id: 'm1', name: 'Auger', cost: 200 }],
+      manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 3.5 }],
+    } as JobStockSource;
+    expect(buildJobStockEvents(manualOnly, NOW)).toEqual([]);
+
+    const library = job({
+      id: 'j2',
+      filaments: [{ filamentId: 'pla', grams: 50 }],
+      materialsUsed: [{ materialId: 'resin-clear', quantity: 2 }],
+      packagingMaterials: [{ materialId: 'box-small', quantity: 1 }],
+    });
+    const withManual = {
+      ...library,
+      manualMaterials: [{ id: 'm1', name: 'Auger', cost: 200 }],
+      manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 3.5 }],
+    } as JobStockSource;
+    expect(buildJobStockEvents(withManual, NOW)).toEqual(buildJobStockEvents(library, NOW));
+  });
+
   it('excludes packaging when includePackaging is false', () => {
     const events = buildJobStockEvents(
       job({ id: 'j1', packagingMaterials: [{ materialId: 'box-small', quantity: 2 }] }),

@@ -135,6 +135,25 @@ describe('restore round-trip fidelity', () => {
     expect(stockEvent.timestamp.getTime()).toBe(new Date('2026-06-01T10:30:00.000Z').getTime());
   });
 
+  it('a job with one-off lines survives export -> restore intact (47.1 MC-06)', async () => {
+    const manualMaterials = [
+      { id: 'mm-1', name: 'Auger', cost: 200, libraryPrompted: true },
+      { id: 'mm-2', name: 'Sandpaper', cost: 3.5 },
+    ];
+    const manualPackaging = [{ id: 'mp-1', name: 'Gift wrap', cost: 3.5, libraryPrompted: true }];
+    const source = makeTestDb();
+    await seedFullDb(source);
+    const seeded = await source.table('jobs').get('job-1');
+    await source.table('jobs').put({ ...seeded, manualMaterials, manualPackaging });
+
+    const target = makeTestDb();
+    await restoreBackup(target, await exportViaJson(source));
+
+    const job = await target.table('jobs').get('job-1');
+    expect(job.manualMaterials).toEqual(manualMaterials);
+    expect(job.manualPackaging).toEqual(manualPackaging);
+  });
+
   it('optional date fields that are absent stay absent', async () => {
     const source = makeTestDb();
     await source.table('quotes').put({

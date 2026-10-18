@@ -72,6 +72,12 @@ describe('export column contracts', () => {
     expect(parseHeaders(csv)).toEqual([...JOBS_EXPORT_COLUMNS]);
   });
 
+  it('jobs columns end with notes, manual_materials, manual_packaging (47.1: appended, positions unchanged)', () => {
+    expect(JOBS_EXPORT_COLUMNS.slice(-3)).toEqual(['notes', 'manual_materials', 'manual_packaging']);
+    expect(JOBS_EXPORT_COLUMNS.indexOf('notes')).toBe(JOBS_EXPORT_COLUMNS.length - 3);
+    expect(JOBS_EXPORT_COLUMNS.indexOf('currency')).toBe(JOBS_EXPORT_COLUMNS.length - 4);
+  });
+
   it('sales CSV header row equals SALES_EXPORT_COLUMNS exactly', async () => {
     const csv = await generateSalesExportCsv([BASE_SALE], new Map([['job-1', BASE_JOB]]));
     expect(parseHeaders(csv)).toEqual([...SALES_EXPORT_COLUMNS]);
@@ -356,5 +362,52 @@ describe('buildExportFilename', () => {
     const scope = 'x'.repeat(80);
     const name = buildExportFilename('assets', scope);
     expect(name).toMatch(/^3dcoster-assets-x{30}-\d{4}-\d{2}-\d{2}\.csv$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 47.1 MC-06 — one-off cost lines flatten to name:cost (2dp) joined by '|'
+// ---------------------------------------------------------------------------
+describe('jobs export — one-off cost columns (47.1)', () => {
+  it('flattens manualMaterials and manualPackaging as name:cost with 2 decimals joined by |', async () => {
+    const job: PrintJob = {
+      ...BASE_JOB,
+      manualMaterials: [
+        { id: 'm1', name: 'Auger', cost: 200 },
+        { id: 'm2', name: 'Sandpaper', cost: 3.5, libraryPrompted: true },
+      ],
+      manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 1.005 }],
+    };
+    const row = parseRows(await generateJobsExportCsv([job], EMPTY_NAMES))[0];
+    expect(row.manual_materials).toBe('Auger:200.00|Sandpaper:3.50');
+    expect(row.manual_packaging).toBe('Gift wrap:1.00');
+  });
+
+  it('writes empty cells when a job has no one-off lines (absent or empty array)', async () => {
+    const absent = parseRows(await generateJobsExportCsv([BASE_JOB], EMPTY_NAMES))[0];
+    expect(absent.manual_materials).toBe('');
+    expect(absent.manual_packaging).toBe('');
+    const empty = parseRows(
+      await generateJobsExportCsv([{ ...BASE_JOB, manualMaterials: [], manualPackaging: [] }], EMPTY_NAMES),
+    )[0];
+    expect(empty.manual_materials).toBe('');
+    expect(empty.manual_packaging).toBe('');
+  });
+
+  it('neutralizes a formula-like first one-off name via sanitizeCsvCell', async () => {
+    const job: PrintJob = {
+      ...BASE_JOB,
+      manualMaterials: [{ id: 'm1', name: '=HYPERLINK("https://evil.com","x")', cost: 5 }],
+      manualPackaging: [{ id: 'p1', name: '+cmd', cost: 2 }],
+    };
+    const row = parseRows(await generateJobsExportCsv([job], EMPTY_NAMES))[0];
+    expect(row.manual_materials.startsWith("'=")).toBe(true);
+    expect(row.manual_packaging.startsWith("'+")).toBe(true);
+  });
+
+  it('does not crash on a malformed non-array value from a synced record', async () => {
+    const job = { ...BASE_JOB, manualMaterials: 'oops' } as unknown as PrintJob;
+    const row = parseRows(await generateJobsExportCsv([job], EMPTY_NAMES))[0];
+    expect(row.manual_materials).toBe('');
   });
 });
