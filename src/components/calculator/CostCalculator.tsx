@@ -1,5 +1,5 @@
-import { useEffect, useId, useMemo, useRef } from 'react';
-import type { Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, MarketplaceFees, FilamentUsage, UserProfile, ManualCostLine } from '../../types';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { Asset, Material, PrinterConfig, PrinterInstance, ElectricityConfig, MaterialUsage, PrintJob, Currency, ShippingConfig, MarketplaceFees, FilamentUsage, UserProfile, ManualCostLine } from '../../types';
 import { useStockEvents } from '../../hooks/useStockEvents';
 import { useCostForm, nextRowKey, FORM_STORAGE_KEY } from '../../hooks/useCostForm';
 import { useCostDerivedValues } from '../../hooks/useCostDerivedValues';
@@ -10,13 +10,23 @@ import { resolveWeightedCostPerKwh } from '../../utils/touElectricity';
 import { useSupportNudge } from '../SupportNudge';
 import { Button, useToast } from '../ui';
 import { getCurrencySymbol, getDistanceUnit } from '../../utils/currency';
-import { newManualLine, normalizeManualLinesForSave } from '../../utils/manualCostLines';
+import {
+  newManualLine,
+  normalizeManualLinesForSave,
+  normalizeLineName,
+  promptableLines,
+  buildLibraryAsset,
+  markLinesPrompted,
+  type LibraryChoice,
+  type ManualLinePromptItem,
+} from '../../utils/manualCostLines';
 import type { FxRateTable } from '../../utils/fxConvert';
 import { CostFormSection } from './CostFormSection';
 import { CostParametersSection } from './CostParametersSection';
 import { ShippingSection } from './ShippingSection';
 import { PricingSection } from './PricingSection';
 import { CostSummaryPanel } from './CostSummaryPanel';
+import { SaveToLibraryModal } from './SaveToLibraryModal';
 
 // Default marketplace fees based on research (to be implemented)
 // Facebook Marketplace: 10% + $0.80 min + 2.9% processing for shipped items
@@ -36,12 +46,22 @@ interface CostCalculatorProps {
   marketplaceFees: MarketplaceFees;
   onSaveJob: (job: PrintJob, printHours: number) => void | Promise<void>;
   onUpdateJob: (job: PrintJob) => void | Promise<void>;
+  /** Creates a library asset via the app's sync-stamped addAsset; used only by the Save Job one-off prompt (Phase 47.1 D-04). */
+  onAddAsset: (asset: Asset) => void | Promise<void>;
   editingJob: PrintJob | null;
   onCancelEdit: () => void;
   onViewJobs: () => void;
 }
 
-export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, marketplaceFees, onSaveJob, onUpdateJob, editingJob, onCancelEdit, onViewJobs }: CostCalculatorProps) {
+// Phase 47.1 (D-04): the pre-save library prompt. `manualMaterials`/`manualPackaging` are the
+// already-normalized lists captured at click time, so the confirm step saves exactly what was shown.
+interface LibraryPromptState {
+  items: ManualLinePromptItem[];
+  manualMaterials: ManualCostLine[];
+  manualPackaging: ManualCostLine[];
+}
+
+export function CostCalculator({ materials, printers, printerInstances, electricity, laborHourlyRate, defaultProfitMargin, userCurrency, userProfile, fxTable, shippingConfig, marketplaceFees, onSaveJob, onUpdateJob, onAddAsset, editingJob, onCancelEdit, onViewJobs }: CostCalculatorProps) {
   // Get currency symbol for display - changes based on user's selected currency
   const currencySymbol = getCurrencySymbol(userCurrency);
   // Get distance unit based on region (mi for US, km for most others)
@@ -125,6 +145,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
   } = form;
 
   const toast = useToast();
+  // Phase 47.1 (D-04): non-null while the "Add to your asset library?" popup is open.
+  const [libraryPrompt, setLibraryPrompt] = useState<LibraryPromptState | null>(null);
   // Phase 45 D-03: calm value-moment Pro nudge, self-gated (cooldown + once
   // per session) — safe to call unconditionally on the NEW-job-save path.
   const showSupportNudge = useSupportNudge();
@@ -306,6 +328,60 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     const manualPackagingToSave = normalizeManualLinesOrToast(manualPackaging, 'packaging');
     if (!manualPackagingToSave) return;
 
+    // Phase 47.1 (D-04): ask about not-yet-asked one-off lines BEFORE anything is written.
+    // Cancel/Escape in the popup aborts the save; nothing has been persisted at this point.
+    const items = promptableLines({
+      manualMaterials: manualMaterialsToSave,
+      manualPackaging: manualPackagingToSave,
+      postProcessingLibrary: nonFilaments,
+      packagingLibrary: consumables,
+    });
+    if (items.length > 0) {
+      setLibraryPrompt({ items, manualMaterials: manualMaterialsToSave, manualPackaging: manualPackagingToSave });
+      return;
+    }
+    await persistJob(manualMaterialsToSave, manualPackagingToSave);
+  };
+
+  // Phase 47.1 (D-04): popup confirm. Accepted lines become library assets through the
+  // sync-stamped onAddAsset ONLY; the job keeps every line by value (D-03), so no
+  // MaterialUsage is created for the new asset (no double count, no phantom stock deduction).
+  const handleLibraryConfirm = async (choices: LibraryChoice[]) => {
+    const prompt = libraryPrompt;
+    if (!prompt) return;
+    try {
+      for (const choice of choices) {
+        if (!choice.add) continue;
+        const item = prompt.items.find(i => i.section === choice.section && i.line.id === choice.lineId);
+        if (!item) continue;
+        await onAddAsset(buildLibraryAsset(item.line, item.section, choice.category, userCurrency));
+      }
+    } catch {
+      // Nothing flagged: a retry re-asks, and the name-match skip drops assets already created.
+      toast.error('Could not add to your asset library, so the job was not saved. Please try again.');
+      setLibraryPrompt(null);
+      return;
+    }
+    const askedNames = (section: 'postProcessing' | 'packaging') =>
+      new Set(prompt.items.filter(i => i.section === section).map(i => normalizeLineName(i.line.name)));
+    const postProcessingNames = askedNames('postProcessing');
+    const packagingNames = askedNames('packaging');
+    // Flag the form too, so a failed job write followed by a retry does not re-prompt.
+    setManualMaterials(prev => markLinesPrompted(prev, postProcessingNames));
+    setManualPackaging(prev => markLinesPrompted(prev, packagingNames));
+    setLibraryPrompt(null);
+    await persistJob(
+      markLinesPrompted(prompt.manualMaterials, postProcessingNames),
+      markLinesPrompted(prompt.manualPackaging, packagingNames),
+    );
+  };
+
+  // Cancel / Escape / backdrop: back to editing, form untouched, nothing saved.
+  const handleLibraryCancel = () => setLibraryPrompt(null);
+
+  // Assembles and writes the job (create or update). Receives the already-normalized,
+  // already-prompted one-off lists so there is exactly ONE sharedFields literal.
+  const persistJob = async (manualMaterialsToSave: ManualCostLine[], manualPackagingToSave: ManualCostLine[]) => {
     const filaments: FilamentUsage[] = filamentRows
       .filter(r => r.filamentId && r.grams > 0)
       .map(r => ({
@@ -577,6 +653,15 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         marketplace={marketplace}
         etsyChecks={etsyChecks}
         onEtsyChecksChange={setEtsyChecks}
+      />
+
+      <SaveToLibraryModal
+        isOpen={libraryPrompt !== null}
+        items={libraryPrompt?.items ?? []}
+        currencySymbol={currencySymbol}
+        confirmLabel={editingJob ? 'Update job' : 'Save job'}
+        onConfirm={handleLibraryConfirm}
+        onCancel={handleLibraryCancel}
       />
 
       {/* Save Job Button */}

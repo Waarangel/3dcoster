@@ -1,4 +1,5 @@
 import type {
+  Asset,
   Material,
   PrinterConfig,
   PrinterInstance,
@@ -65,6 +66,7 @@ export interface CostCalculatorProps {
   marketplaceFees: MarketplaceFees;
   onSaveJob: (job: PrintJob, printHours: number) => void | Promise<void>;
   onUpdateJob: (job: PrintJob) => void | Promise<void>;
+  onAddAsset: (asset: Asset) => void | Promise<void>;
   editingJob: PrintJob | null;
   onCancelEdit: () => void;
   onViewJobs: () => void;
@@ -266,6 +268,7 @@ export function makeScenarioProps(overrides: Partial<CostCalculatorProps> = {}):
     marketplaceFees: makeMarketplaceFees(),
     onSaveJob: () => {},
     onUpdateJob: () => {},
+    onAddAsset: () => {},
     editingJob: null,
     onCancelEdit: () => {},
     onViewJobs: () => {},

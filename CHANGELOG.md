@@ -21,6 +21,10 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Added
+
+- **One-off costs.** Add a one-time cost (like a tool bought for a single job) directly to a job's Post-Processing Materials or Packaging Materials without creating a library item first. The full amount goes into the job's cost, and when you save you can choose to add any of them to your asset library for future jobs.
+
 ---
 
 ## [2.0.0] - 2026-07-20

@@ -492,6 +492,7 @@ function App() {
       >
         {activeTab === 'calculator' && (
           <CostCalculator
+            onAddAsset={addAsset}
             materials={materials}
             printers={printers}
             printerInstances={printerInstances}

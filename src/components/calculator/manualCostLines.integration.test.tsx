@@ -124,6 +124,15 @@ async function clickSave() {
   });
 }
 
+// Saves and, when the 47.1-04 "Add to your asset library?" popup opens, answers it with the
+// default "Keep as one-off" so earlier one-off tests keep exercising the saved payload.
+async function clickSaveKeepingOneOffs() {
+  await clickSave();
+  const confirm = Array.from(document.body.querySelectorAll('[role="dialog"] button'))
+    .find(b => ['Save job', 'Update job'].includes(b.textContent?.trim() ?? '')) as HTMLButtonElement | undefined;
+  if (confirm) await act(async () => { confirm.click(); });
+}
+
 async function addOneOff(name: string, cost: string) {
   await act(async () => { buttonByText('+ One-off cost').click(); });
   // The newest row is last; a blank name/cost is left untouched (typing '' is a no-op).
@@ -174,7 +183,7 @@ describe('manual one-off post-processing cost (47.1-01 tracer)', () => {
     seedDraft();
     const baselineSave = vi.fn();
     await mountCalculator(baselineSave);
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(baselineSave).toHaveBeenCalledTimes(1);
     const baselineCostPerUnit = (baselineSave.mock.calls[0][0] as PrintJob).costPerUnit;
     act(() => { root!.unmount(); });
@@ -203,10 +212,10 @@ describe('manual one-off post-processing cost (47.1-01 tracer)', () => {
     expect(breakdownValue('+ Failure Adjustment')).toBe(failureAdjBefore);
 
     // (c) save payload.
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     const saved = onSaveJob.mock.calls[0][0] as PrintJob;
-    expect(saved.manualMaterials).toEqual([{ id: expect.any(String), name: 'Auger', cost: 200 }]);
+    expect(saved.manualMaterials).toEqual([{ id: expect.any(String), name: 'Auger', cost: 200, libraryPrompted: true }]);
     expect(Math.abs(saved.costPerUnit - (baselineCostPerUnit + 200))).toBeLessThan(1e-9);
   });
 
@@ -214,7 +223,7 @@ describe('manual one-off post-processing cost (47.1-01 tracer)', () => {
     seedDraft();
     const onSaveJob = vi.fn();
     await mountCalculator(onSaveJob);
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     const saved = onSaveJob.mock.calls[0][0] as PrintJob;
     expect(saved.manualMaterials).toBeUndefined();
@@ -252,9 +261,9 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     expect(inputByLabel('One-off item name').value).toBe('Auger');
     expect(inputByLabel('One-off item cost').value).toBe('200');
 
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     const saved = onSaveJob.mock.calls[0][0] as PrintJob;
-    expect(saved.manualMaterials).toEqual([{ id: draftId, name: 'Auger', cost: 200 }]);
+    expect(saved.manualMaterials).toEqual([{ id: draftId, name: 'Auger', cost: 200, libraryPrompted: true }]);
   });
 
   it('loads a legacy draft (no manualMaterials key) with no one-off rows', async () => {
@@ -317,7 +326,7 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     const onSaveJob = vi.fn();
     await mountCalculator(onSaveJob);
     await addOneOff('Auger', '200');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     expect(oneOffRows()).toHaveLength(0);
   });
@@ -336,7 +345,7 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     const onSaveJob = vi.fn();
     await mountCalculator(onSaveJob);
     await addOneOff('', '50');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).not.toHaveBeenCalled();
     expect(toastText()).toContain('Give each one-off post-processing cost a name, or remove the empty row.');
   });
@@ -346,7 +355,7 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     const onSaveJob = vi.fn();
     await mountCalculator(onSaveJob);
     await addOneOff('Glue', '');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).not.toHaveBeenCalled();
     expect(toastText()).toContain('Enter a cost for "Glue", or remove it.');
   });
@@ -357,7 +366,7 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     await mountCalculator(onSaveJob);
     await addOneOff('', '');
     expect(oneOffRows()).toHaveLength(1);
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     expect((onSaveJob.mock.calls[0][0] as PrintJob).manualMaterials).toBeUndefined();
   });
@@ -367,10 +376,10 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     const onSaveJob = vi.fn();
     await mountCalculator(onSaveJob);
     await addOneOff('  Auger  ', '19.999');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     expect((onSaveJob.mock.calls[0][0] as PrintJob).manualMaterials).toEqual([
-      { id: expect.any(String), name: 'Auger', cost: 20 },
+      { id: expect.any(String), name: 'Auger', cost: 20, libraryPrompted: true },
     ]);
   });
 });
@@ -405,7 +414,7 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     seedDraft();
     const baselineSave = vi.fn();
     await mountCalculator(baselineSave);
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     const baselineCostPerUnit = (baselineSave.mock.calls[0][0] as PrintJob).costPerUnit;
     act(() => { root!.unmount(); });
     root = createRoot(container!);
@@ -428,10 +437,10 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     const netProfit = readout('Net Profit');
     expect(Math.abs(netProfit - (sellPrice - trueCost))).toBeLessThanOrEqual(0.02);
 
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     const saved = onSaveJob.mock.calls[0][0] as PrintJob;
-    expect(saved.manualPackaging).toEqual([{ id: expect.any(String), name: 'Gift wrap', cost: 3.5 }]);
+    expect(saved.manualPackaging).toEqual([{ id: expect.any(String), name: 'Gift wrap', cost: 3.5, libraryPrompted: true }]);
     expect(saved.manualMaterials).toBeUndefined();
     // Exactly +3.50 at a 5% failure rate: NOT divided by the failure multiplier.
     expect(Math.abs(saved.costPerUnit - (baselineCostPerUnit + 3.5))).toBeLessThan(1e-9);
@@ -457,8 +466,8 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     const onSaveJob = vi.fn();
     await remountCalculator(onSaveJob);
     expect(packagingRows()).toHaveLength(1);
-    await clickSave();
-    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualPackaging).toEqual([{ id: draftId, name: 'Gift wrap', cost: 3.5 }]);
+    await clickSaveKeepingOneOffs();
+    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualPackaging).toEqual([{ id: draftId, name: 'Gift wrap', cost: 3.5, libraryPrompted: true }]);
   });
 
   it('loads legacy and tampered drafts with no packaging one-off rows and no crash', async () => {
@@ -516,7 +525,7 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     const onSaveJob = vi.fn();
     await mountCalculator(onSaveJob);
     await addPackagingOneOff('Gift wrap', '3.5');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     expect(packagingRows()).toHaveLength(0);
 
@@ -532,7 +541,7 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     await mountCalculator(onSaveJob);
 
     await addPackagingOneOff('', '4');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).not.toHaveBeenCalled();
     expect(toastText()).toContain('Give each one-off packaging cost a name, or remove the empty row.');
 
@@ -542,7 +551,7 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     seedDraft();
     await mountCalculator(onSaveJob);
     await addPackagingOneOff('Box', '');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).not.toHaveBeenCalled();
     expect(toastText()).toContain('Enter a cost for "Box", or remove it.');
 
@@ -553,10 +562,10 @@ describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
     await mountCalculator(onSaveJob);
     await addPackagingOneOff('', '');
     await addPackagingOneOff('  Tape  ', '2.345');
-    await clickSave();
+    await clickSaveKeepingOneOffs();
     expect(onSaveJob).toHaveBeenCalledTimes(1);
     expect((onSaveJob.mock.calls[0][0] as PrintJob).manualPackaging).toEqual([
-      { id: expect.any(String), name: 'Tape', cost: 2.35 },
+      { id: expect.any(String), name: 'Tape', cost: 2.35, libraryPrompted: true },
     ]);
   });
 });
