@@ -11,6 +11,7 @@ import { act } from 'react';
 import { CostParametersSection } from './CostParametersSection';
 import type { CalculatorFieldIds } from './fieldIds';
 import type { ManualCostLine, Material } from '../../types';
+import { featureReleases } from '../../features';
 
 const ids: CalculatorFieldIds = {
   printName: 'printName',
@@ -244,5 +245,86 @@ describe('CostParametersSection — Phase 39 hint rows', () => {
       'utf-8'
     );
     expect(source).not.toMatch(/useLiveQuery|from '\.\.\/\.\.\/db\/database'|useFailureRate|useTouTariff|useMaintenanceAmortization/);
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// Phase 47.1 (47.1-02 Task 3, MC-07): one-off row a11y/behavior + NEW badge wiring.
+// NewBadge visibility is time-gated (14-day / 36-hour), so only its wiring is asserted.
+// ---------------------------------------------------------------------------
+
+function typeInto(el: HTMLInputElement, value: string) {
+  act(() => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    setter.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+const buttonNamed = (text: string) =>
+  Array.from(container!.querySelectorAll('button')).find(b => b.textContent?.trim() === text) as HTMLButtonElement;
+
+describe('CostParametersSection: one-off post-processing rows (47.1-02)', () => {
+  it('keeps "+ One-off cost" enabled with an empty library while "+ Add Material" is disabled, and clicking it adds a line', () => {
+    const props = baseProps();
+    mount(<CostParametersSection {...props} />);
+    expect(buttonNamed('+ Add Material').disabled).toBe(true);
+    expect(buttonNamed('+ One-off cost').disabled).toBe(false);
+    act(() => { buttonNamed('+ One-off cost').click(); });
+    expect(props.onAddManualMaterial).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('renders one labelled row per line and routes name/cost edits and removal by line id', () => {
+    const props = baseProps();
+    props.manualMaterials = [
+      { id: 'a', name: 'Auger', cost: 200 },
+      { id: 'b', name: '', cost: 0 },
+    ];
+    mount(<CostParametersSection {...props} />);
+    const names = container!.querySelectorAll<HTMLInputElement>('input[aria-label="One-off item name"]');
+    const costs = container!.querySelectorAll<HTMLInputElement>('input[aria-label="One-off item cost"]');
+    expect(names).toHaveLength(2);
+    expect(costs).toHaveLength(2);
+    expect(container!.querySelector('button[aria-label="Remove Auger"]')).not.toBeNull();
+    expect(container!.querySelector('button[aria-label="Remove one-off cost"]')).not.toBeNull();
+
+    typeInto(names[0], 'Auger XL');
+    expect(props.onUpdateManualMaterial).toHaveBeenLastCalledWith('a', { name: 'Auger XL' });
+    typeInto(costs[0], '12.5');
+    expect(props.onUpdateManualMaterial).toHaveBeenLastCalledWith('a', { cost: 12.5 });
+    typeInto(costs[0], '-3');
+    expect(props.onUpdateManualMaterial).toHaveBeenLastCalledWith('a', { cost: 0 });
+
+    act(() => { container!.querySelector<HTMLButtonElement>('button[aria-label="Remove one-off cost"]')!.click(); });
+    expect(props.onRemoveManualMaterial).toHaveBeenCalledWith('b');
+    unmount();
+  });
+
+  it('shows the empty-state text only when both the library list and the one-off list are empty', () => {
+    mount(<CostParametersSection {...baseProps()} />);
+    expect(container!.textContent).toContain('No post-processing materials added yet.');
+    unmount();
+    const props = baseProps();
+    props.manualMaterials = [{ id: 'a', name: 'Auger', cost: 200 }];
+    mount(<CostParametersSection {...props} />);
+    expect(container!.textContent).not.toContain('No post-processing materials added yet.');
+    unmount();
+  });
+
+  it('wraps "+ One-off cost" in a relative inline-flex span so the NEW badge overlays it (never inline in flex-1)', () => {
+    mount(<CostParametersSection {...baseProps()} />);
+    const wrapper = buttonNamed('+ One-off cost').parentElement!;
+    expect(wrapper.tagName).toBe('SPAN');
+    expect(wrapper.className).toContain('relative');
+    expect(wrapper.className).toContain('inline-flex');
+    unmount();
+  });
+
+  it('registers the manual-cost-lines NEW-badge release date', () => {
+    const date = featureReleases['manual-cost-lines'];
+    expect(date).toBeInstanceOf(Date);
+    expect(Number.isNaN(date.getTime())).toBe(false);
   });
 });
