@@ -10,7 +10,7 @@ import { resolveWeightedCostPerKwh } from '../../utils/touElectricity';
 import { useSupportNudge } from '../SupportNudge';
 import { Button, useToast } from '../ui';
 import { getCurrencySymbol, getDistanceUnit } from '../../utils/currency';
-import { newManualLine } from '../../utils/manualCostLines';
+import { newManualLine, normalizeManualLinesForSave } from '../../utils/manualCostLines';
 import type { FxRateTable } from '../../utils/fxConvert';
 import { CostFormSection } from './CostFormSection';
 import { CostParametersSection } from './CostParametersSection';
@@ -271,6 +271,20 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Normalizes one list of one-off lines at the save boundary (trim, round to cents,
+  // drop blank rows). Half-filled rows show a toast and return null so the caller aborts
+  // the save. `section` words the toast ("post-processing" / "packaging").
+  const normalizeManualLinesOrToast = (lines: ManualCostLine[], section: string): ManualCostLine[] | null => {
+    const result = normalizeManualLinesForSave(lines);
+    if (result.ok) return result.lines;
+    toast.error(
+      result.reason === 'missing-name'
+        ? `Give each one-off ${section} cost a name, or remove the empty row.`
+        : `Enter a cost for "${result.lineName}", or remove it.`
+    );
+    return null;
+  };
+
   // Save job handler (create new or update existing)
   const handleSaveJob = async () => {
     if (!printName.trim()) {
@@ -285,6 +299,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       toast.error('Please select a printer');
       return;
     }
+    const manualMaterialsToSave = normalizeManualLinesOrToast(manualMaterials, 'post-processing');
+    if (!manualMaterialsToSave) return;
 
     const filaments: FilamentUsage[] = filamentRows
       .filter(r => r.filamentId && r.grams > 0)
@@ -319,8 +335,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       // Phase 47.1 (MC-04): undefined (never []) when empty so jobs without one-off
       // costs stay byte-identical to existing records; on edit, the spread of
       // editingJob then sharedFields uses this explicit undefined to clear removed lines.
-      // Save-time trimming/rounding/validation is wired in 47.1-02.
-      manualMaterials: manualMaterials.length > 0 ? manualMaterials : undefined,
+      // Trimmed/rounded/validated by normalizeManualLinesOrToast above.
+      manualMaterials: manualMaterialsToSave.length > 0 ? manualMaterialsToSave : undefined,
       failureRate,
       costPerUnit: trueCost,
       sellingPrice,

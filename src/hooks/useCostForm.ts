@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Material, PrinterInstance, MaterialUsage, PrintJob, Currency, ShippingMethodType, MarketplaceType, ManualCostLine } from '../types';
+import { sanitizeManualLines } from '../utils/manualCostLines';
 
 // Session storage key for form persistence
 export const FORM_STORAGE_KEY = 'costCalculatorForm';
@@ -131,10 +132,11 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
   const [failureRate, setFailureRate] = useState(() => getStoredValue('failureRate', 5));
   const [materialsUsed, setMaterialsUsed] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('materialsUsed', []).map(toMaterialRow));
   // Phase 47.1 (MC-01): manual one-off post-processing cost lines. Drafts saved before
-  // this phase lack the key and load as []. Ids are persisted-unique (newManualLine),
-  // so unlike the row-keyed lists above there is no view-only key to strip on save.
+  // this phase lack the key and load as []; a tampered/non-array draft value also loads
+  // as [] (T-47.1-13: sessionStorage is not trusted). Ids are persisted-unique
+  // (newManualLine), so unlike the row-keyed lists above there is no view-only key to strip.
   const [manualMaterials, setManualMaterials] = useState<ManualCostLine[]>(
-    () => getStoredValue<ManualCostLine[]>('manualMaterials', [])
+    () => sanitizeManualLines(getStoredValue<unknown>('manualMaterials', []))
   );
 
   // Phase 39 TOU-02/WEAR-02: touStartTime ("HH:MM", undefined = flat rate) and
@@ -227,7 +229,8 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
       // Phase 47.1: UNCONDITIONAL restore (NOT the guarded `!== undefined` style used
       // for packagingMaterials below) — otherwise an unsaved draft's one-off lines
       // would leak into the job being edited and get saved onto it.
-      setManualMaterials(editingJob.manualMaterials ?? []);
+      // Sanitized because synced/restored job records are not trusted either (T-47.1-13).
+      setManualMaterials(sanitizeManualLines(editingJob.manualMaterials));
       setTaxRateOverride(editingJob.taxRate);
       setEtsyChecks(editingJob.etsyChecks ?? {});
       // Phase 39 TOU-02/WEAR-02: restore the snapshotted start time (undefined =
