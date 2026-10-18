@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { ToastProvider } from '../ui';
-import { makeScenarioProps } from './__fixtures__/goldenScenarios';
+import { makeScenarioProps, type CostCalculatorProps } from './__fixtures__/goldenScenarios';
 import type { PrintJob } from '../../types';
 
 vi.mock('../../hooks/useStockEvents', () => ({
@@ -73,8 +73,8 @@ function seedDraft() {
   }));
 }
 
-async function mountCalculator(onSaveJob: (job: PrintJob, hours: number) => void) {
-  const props = makeScenarioProps({ editingJob: null, onSaveJob });
+async function mountCalculator(onSaveJob: (job: PrintJob, hours: number) => void, overrides: Partial<CostCalculatorProps> = {}) {
+  const props = makeScenarioProps({ editingJob: null, onSaveJob, ...overrides });
   await act(async () => {
     root!.render(
       <ToastProvider>
@@ -126,8 +126,46 @@ async function clickSave() {
 
 async function addOneOff(name: string, cost: string) {
   await act(async () => { buttonByText('+ One-off cost').click(); });
-  await typeInto(inputByLabel('One-off item name'), name);
-  await typeInto(inputByLabel('One-off item cost'), cost);
+  // The newest row is last; a blank name/cost is left untouched (typing '' is a no-op).
+  const nameInputs = container!.querySelectorAll<HTMLInputElement>('input[aria-label="One-off item name"]');
+  const costInputs = container!.querySelectorAll<HTMLInputElement>('input[aria-label="One-off item cost"]');
+  if (name !== '') await typeInto(nameInputs[nameInputs.length - 1], name);
+  if (cost !== '') await typeInto(costInputs[costInputs.length - 1], cost);
+}
+
+const oneOffRows = () => container!.querySelectorAll('input[aria-label="One-off item name"]');
+const toastText = () => Array.from(container!.ownerDocument.querySelectorAll('[role="alert"]')).map(e => e.textContent ?? '').join('|');
+
+async function remountCalculator(onSaveJob: (job: PrintJob, hours: number) => void, overrides: Partial<CostCalculatorProps> = {}) {
+  act(() => { root!.unmount(); });
+  root = createRoot(container!);
+  await mountCalculator(onSaveJob, overrides);
+}
+
+// A saved job to edit (mirrors makeEditingJob in goldenScenarios, which is not exported).
+function makeEditJob(overrides: Partial<PrintJob> = {}): PrintJob {
+  const now = new Date('2026-06-15T00:00:00Z');
+  return {
+    id: 'job-edit-1',
+    name: 'Saved widget',
+    createdAt: now,
+    updatedAt: now,
+    filaments: [{ filamentId: 'mat-pla', grams: 100, pricePerGram: 0.02, currency: 'USD' }],
+    printTimeHours: 2,
+    printerInstanceId: 'instance-1',
+    modelCost: 0,
+    modelCostPerUnit: false,
+    prepTimeMinutes: 0,
+    postProcessingMinutes: 0,
+    materialsUsed: [],
+    failureRate: 5,
+    costPerUnit: 10,
+    sellingPrice: 50,
+    copiesSold: 0,
+    marketplace: 'none',
+    currency: 'USD',
+    ...overrides,
+  };
 }
 
 describe('manual one-off post-processing cost (47.1-01 tracer)', () => {
@@ -197,5 +235,142 @@ describe('manual one-off post-processing cost (47.1-01 tracer)', () => {
     });
     expect(buttonByText('+ Add Material').disabled).toBe(true);
     expect(buttonByText('+ One-off cost').disabled).toBe(false);
+  });
+});
+
+describe('post-processing one-off lines: save validation, restore, lifecycle (47.1-02 Task 1)', () => {
+  it('restores one-off lines (same id, name, cost) after a reload mid-draft', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn());
+    await addOneOff('Auger', '200');
+    const draft = JSON.parse(sessionStorage.getItem('costCalculatorForm')!);
+    const draftId = draft.manualMaterials[0].id as string;
+
+    const onSaveJob = vi.fn();
+    await remountCalculator(onSaveJob);
+    expect(oneOffRows()).toHaveLength(1);
+    expect(inputByLabel('One-off item name').value).toBe('Auger');
+    expect(inputByLabel('One-off item cost').value).toBe('200');
+
+    await clickSave();
+    const saved = onSaveJob.mock.calls[0][0] as PrintJob;
+    expect(saved.manualMaterials).toEqual([{ id: draftId, name: 'Auger', cost: 200 }]);
+  });
+
+  it('loads a legacy draft (no manualMaterials key) with no one-off rows', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn());
+    expect(oneOffRows()).toHaveLength(0);
+  });
+
+  it('loads a tampered draft (non-array manualMaterials) without throwing and with no one-off rows', async () => {
+    sessionStorage.setItem('costCalculatorForm', JSON.stringify({
+      printName: 'Auger widget',
+      printTimeHours: 2,
+      sellingPrice: 50,
+      lastEdited: 'price',
+      filamentRows: [{ uid: 'seed-row', filamentId: 'mat-pla', grams: 100, editedPrice: 0.02, editedCurrency: 'USD' }],
+      manualMaterials: 'garbage',
+    }));
+    await mountCalculator(vi.fn());
+    expect(oneOffRows()).toHaveLength(0);
+    expect(container!.textContent).toContain('Post-Processing Materials');
+  });
+
+  it('edit isolation: a draft with one-off lines never leaks into a legacy job being edited', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn());
+    await addOneOff('Auger', '200');
+
+    const onUpdateJob = vi.fn();
+    await remountCalculator(vi.fn(), { editingJob: makeEditJob(), onUpdateJob });
+    expect(oneOffRows()).toHaveLength(0);
+
+    await act(async () => { buttonByText('Update Job').click(); });
+    expect(onUpdateJob).toHaveBeenCalledTimes(1);
+    expect((onUpdateJob.mock.calls[0][0] as PrintJob).manualMaterials).toBeUndefined();
+  });
+
+  it('edit re-hydrate: restores a saved one-off line, and removing it then Update clears it explicitly', async () => {
+    const onUpdateJob = vi.fn();
+    const job = makeEditJob({ manualMaterials: [{ id: 'm1', name: 'Auger', cost: 200, libraryPrompted: true }] });
+    await mountCalculator(vi.fn(), { editingJob: job, onUpdateJob });
+    expect(oneOffRows()).toHaveLength(1);
+    expect(inputByLabel('One-off item name').value).toBe('Auger');
+    expect(inputByLabel('One-off item cost').value).toBe('200');
+
+    await act(async () => {
+      container!.querySelector<HTMLButtonElement>('button[aria-label="Remove Auger"]')!.click();
+    });
+    expect(oneOffRows()).toHaveLength(0);
+
+    await act(async () => { buttonByText('Update Job').click(); });
+    expect(onUpdateJob).toHaveBeenCalledTimes(1);
+    const updated = onUpdateJob.mock.calls[0][0] as PrintJob;
+    // The key is present and explicitly undefined so { ...editingJob, ...sharedFields } clears it.
+    expect('manualMaterials' in updated).toBe(true);
+    expect(updated.manualMaterials).toBeUndefined();
+  });
+
+  it('clears the one-off rows after a successful save', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+    await addOneOff('Auger', '200');
+    await clickSave();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+    expect(oneOffRows()).toHaveLength(0);
+  });
+
+  it('clears the one-off rows when Clear is clicked', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn());
+    await addOneOff('Auger', '200');
+    expect(oneOffRows()).toHaveLength(1);
+    await act(async () => { buttonByText('Clear').click(); });
+    expect(oneOffRows()).toHaveLength(0);
+  });
+
+  it('blocks save with an error toast when a one-off row has a cost but no name', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+    await addOneOff('', '50');
+    await clickSave();
+    expect(onSaveJob).not.toHaveBeenCalled();
+    expect(toastText()).toContain('Give each one-off post-processing cost a name, or remove the empty row.');
+  });
+
+  it('blocks save with an error toast naming a one-off row that has a name but no cost', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+    await addOneOff('Glue', '');
+    await clickSave();
+    expect(onSaveJob).not.toHaveBeenCalled();
+    expect(toastText()).toContain('Enter a cost for "Glue", or remove it.');
+  });
+
+  it('silently drops a fully empty one-off row and saves with manualMaterials undefined', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+    await addOneOff('', '');
+    expect(oneOffRows()).toHaveLength(1);
+    await clickSave();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualMaterials).toBeUndefined();
+  });
+
+  it('trims the name and rounds the cost to cents in the saved job', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+    await addOneOff('  Auger  ', '19.999');
+    await clickSave();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualMaterials).toEqual([
+      { id: expect.any(String), name: 'Auger', cost: 20 },
+    ]);
   });
 });
