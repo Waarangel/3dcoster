@@ -374,3 +374,189 @@ describe('post-processing one-off lines: save validation, restore, lifecycle (47
     ]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 47.1-02 Task 2: one-off packaging costs in Shipping -> Packaging Materials (D-01).
+// Both sections carry a "+ One-off cost" button; packaging is the LAST one in the DOM.
+// ---------------------------------------------------------------------------
+
+const PKG_NAME = 'One-off packaging name';
+const PKG_COST = 'One-off packaging cost';
+const packagingRows = () => container!.querySelectorAll(`input[aria-label="${PKG_NAME}"]`);
+
+async function addPackagingOneOff(name: string, cost: string) {
+  const buttons = Array.from(container!.querySelectorAll('button')).filter(b => b.textContent?.trim() === '+ One-off cost');
+  expect(buttons).toHaveLength(2);
+  await act(async () => { buttons[buttons.length - 1].click(); });
+  const nameInputs = container!.querySelectorAll<HTMLInputElement>(`input[aria-label="${PKG_NAME}"]`);
+  const costInputs = container!.querySelectorAll<HTMLInputElement>(`input[aria-label="${PKG_COST}"]`);
+  if (name !== '') await typeInto(nameInputs[nameInputs.length - 1], name);
+  if (cost !== '') await typeInto(costInputs[costInputs.length - 1], cost);
+}
+
+function carrierCostValue(): string {
+  const label = Array.from(container!.querySelectorAll('label')).find(l => l.textContent?.startsWith('Carrier Cost'));
+  expect(label, 'Carrier Cost label must exist').toBeDefined();
+  return (container!.ownerDocument.getElementById(label!.htmlFor) as HTMLInputElement).value;
+}
+
+describe('one-off packaging costs (47.1-02 Task 2, D-01)', () => {
+  it('shows in the Shipping summary, raises Total Shipping, and is saved flat (not failure-adjusted, D-07)', async () => {
+    seedDraft();
+    const baselineSave = vi.fn();
+    await mountCalculator(baselineSave);
+    await clickSave();
+    const baselineCostPerUnit = (baselineSave.mock.calls[0][0] as PrintJob).costPerUnit;
+    act(() => { root!.unmount(); });
+    root = createRoot(container!);
+
+    sessionStorage.clear();
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+    const carrierBefore = carrierCostValue();
+    await addPackagingOneOff('Gift wrap', '3.5');
+
+    expect(breakdownValue('Packaging:')).toBe('$3.50');
+    expect(breakdownValue('Total Shipping:')).toBe('$3.50');
+    // D-01: the Carrier Cost field is untouched by one-off packaging lines.
+    expect(carrierCostValue()).toBe(carrierBefore);
+
+    // Pitfall 1 (packaging path): the pricing reducer prices against the SAME trueCost the panel shows.
+    const trueCost = readout('True Cost');
+    const sellPrice = readout('Sell Price');
+    const netProfit = readout('Net Profit');
+    expect(Math.abs(netProfit - (sellPrice - trueCost))).toBeLessThanOrEqual(0.02);
+
+    await clickSave();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+    const saved = onSaveJob.mock.calls[0][0] as PrintJob;
+    expect(saved.manualPackaging).toEqual([{ id: expect.any(String), name: 'Gift wrap', cost: 3.5 }]);
+    expect(saved.manualMaterials).toBeUndefined();
+    // Exactly +3.50 at a 5% failure rate: NOT divided by the failure multiplier.
+    expect(Math.abs(saved.costPerUnit - (baselineCostPerUnit + 3.5))).toBeLessThan(1e-9);
+  });
+
+  it('enables the packaging "+ One-off cost" button even with an empty consumables library', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn(), {
+      materials: [{ id: 'mat-pla', name: 'PLA Spool', category: 'filament', filamentType: 'PLA', unit: 'g', costPerUnit: 0.02, currency: 'USD' }],
+    });
+    expect(buttonByText('+ Add Packaging').disabled).toBe(true);
+    const buttons = Array.from(container!.querySelectorAll('button')).filter(b => b.textContent?.trim() === '+ One-off cost');
+    expect(buttons).toHaveLength(2);
+    expect(buttons[buttons.length - 1].disabled).toBe(false);
+  });
+
+  it('restores packaging one-off lines (same id, name, cost) after a reload mid-draft', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn());
+    await addPackagingOneOff('Gift wrap', '3.5');
+    const draftId = JSON.parse(sessionStorage.getItem('costCalculatorForm')!).manualPackaging[0].id as string;
+
+    const onSaveJob = vi.fn();
+    await remountCalculator(onSaveJob);
+    expect(packagingRows()).toHaveLength(1);
+    await clickSave();
+    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualPackaging).toEqual([{ id: draftId, name: 'Gift wrap', cost: 3.5 }]);
+  });
+
+  it('loads legacy and tampered drafts with no packaging one-off rows and no crash', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn());
+    expect(packagingRows()).toHaveLength(0);
+    act(() => { root!.unmount(); });
+    root = createRoot(container!);
+
+    sessionStorage.setItem('costCalculatorForm', JSON.stringify({
+      printName: 'Auger widget',
+      printTimeHours: 2,
+      sellingPrice: 50,
+      lastEdited: 'price',
+      filamentRows: [{ uid: 'seed-row', filamentId: 'mat-pla', grams: 100, editedPrice: 0.02, editedCurrency: 'USD' }],
+      manualPackaging: { not: 'an array' },
+    }));
+    await mountCalculator(vi.fn());
+    expect(packagingRows()).toHaveLength(0);
+  });
+
+  it('edit isolation: a draft packaging line never leaks into a legacy job being edited', async () => {
+    seedDraft();
+    await mountCalculator(vi.fn());
+    await addPackagingOneOff('Gift wrap', '3.5');
+
+    const onUpdateJob = vi.fn();
+    await remountCalculator(vi.fn(), { editingJob: makeEditJob(), onUpdateJob });
+    expect(packagingRows()).toHaveLength(0);
+    await act(async () => { buttonByText('Update Job').click(); });
+    expect(onUpdateJob).toHaveBeenCalledTimes(1);
+    expect((onUpdateJob.mock.calls[0][0] as PrintJob).manualPackaging).toBeUndefined();
+  });
+
+  it('edit re-hydrate restores a saved packaging line; removing it then Update clears it explicitly', async () => {
+    const onUpdateJob = vi.fn();
+    const job = makeEditJob({ manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 3.5 }] });
+    await mountCalculator(vi.fn(), { editingJob: job, onUpdateJob });
+    expect(packagingRows()).toHaveLength(1);
+    expect(inputByLabel(PKG_NAME).value).toBe('Gift wrap');
+    expect(inputByLabel(PKG_COST).value).toBe('3.5');
+
+    await act(async () => {
+      container!.querySelector<HTMLButtonElement>('button[aria-label="Remove Gift wrap"]')!.click();
+    });
+    expect(packagingRows()).toHaveLength(0);
+    await act(async () => { buttonByText('Update Job').click(); });
+    const updated = onUpdateJob.mock.calls[0][0] as PrintJob;
+    expect('manualPackaging' in updated).toBe(true);
+    expect(updated.manualPackaging).toBeUndefined();
+  });
+
+  it('clears the packaging one-off rows after save and after Clear', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+    await addPackagingOneOff('Gift wrap', '3.5');
+    await clickSave();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+    expect(packagingRows()).toHaveLength(0);
+
+    await addPackagingOneOff('Ribbon', '1');
+    expect(packagingRows()).toHaveLength(1);
+    await act(async () => { buttonByText('Clear').click(); });
+    expect(packagingRows()).toHaveLength(0);
+  });
+
+  it('blocks save with packaging-worded toasts for a nameless or costless row, and trims/rounds on success', async () => {
+    seedDraft();
+    const onSaveJob = vi.fn();
+    await mountCalculator(onSaveJob);
+
+    await addPackagingOneOff('', '4');
+    await clickSave();
+    expect(onSaveJob).not.toHaveBeenCalled();
+    expect(toastText()).toContain('Give each one-off packaging cost a name, or remove the empty row.');
+
+    act(() => { root!.unmount(); });
+    root = createRoot(container!);
+    sessionStorage.clear();
+    seedDraft();
+    await mountCalculator(onSaveJob);
+    await addPackagingOneOff('Box', '');
+    await clickSave();
+    expect(onSaveJob).not.toHaveBeenCalled();
+    expect(toastText()).toContain('Enter a cost for "Box", or remove it.');
+
+    act(() => { root!.unmount(); });
+    root = createRoot(container!);
+    sessionStorage.clear();
+    seedDraft();
+    await mountCalculator(onSaveJob);
+    await addPackagingOneOff('', '');
+    await addPackagingOneOff('  Tape  ', '2.345');
+    await clickSave();
+    expect(onSaveJob).toHaveBeenCalledTimes(1);
+    expect((onSaveJob.mock.calls[0][0] as PrintJob).manualPackaging).toEqual([
+      { id: expect.any(String), name: 'Tape', cost: 2.35 },
+    ]);
+  });
+});
