@@ -439,6 +439,17 @@ describe('buildCalcInputFromJob', () => {
     const input = buildCalcInputFromJob(job, deps);
     expect(input.filamentRows[0].editedPrice).toBe(0.02);
   });
+
+  it('passes the job one-off materials through; packaging one-offs stay out of CalcInput (47.1 D-05/D-07)', () => {
+    const manualMaterials = [{ id: 'm', name: 'Auger', cost: 6 }];
+    const job = makeScenarioJob({
+      manualMaterials,
+      manualPackaging: [{ id: 'p', name: 'Gift wrap', cost: 3.5 }],
+    });
+    const input = buildCalcInputFromJob(job, makeScenarioDeps());
+    expect(input.manualMaterials).toEqual(manualMaterials);
+    expect(Object.keys(input)).not.toContain('manualPackaging');
+  });
 });
 
 describe('computeScenario', () => {
@@ -567,6 +578,27 @@ describe('computeScenario', () => {
     if (r.profit !== null) expect(Number.isFinite(r.profit)).toBe(true);
     if (r.breakEven !== null) expect(Number.isFinite(r.breakEven)).toBe(true);
     if (r.deltas.marginPts !== null) expect(Number.isFinite(r.deltas.marginPts)).toBe(true);
+  });
+
+  it('one-off materials: zero overrides report exactly zero deltas (47.1 MC-06)', () => {
+    // library cost 4 (filament 2 + labor 2) + one-off 6 = saved costPerUnit 10
+    const job = makeScenarioJob({
+      manualMaterials: [{ id: 'm', name: 'Auger', cost: 6 }],
+      costPerUnit: 10,
+    });
+    const r = computeScenario(job, {}, makeScenarioDeps());
+    expect(r.deltas.profit).toBe(0);
+    expect(r.deltas.marginPts).toBe(0);
+  });
+
+  it('one-off materials stay flat under a failure-rate override (D-07): only the library cost scales', () => {
+    const job = makeScenarioJob({
+      manualMaterials: [{ id: 'm', name: 'Auger', cost: 6 }],
+      costPerUnit: 10,
+    });
+    const r = computeScenario(job, { failureRate: 50 }, makeScenarioDeps());
+    // 10 - ((2 + 2) / (1 - 0.5) + 6) = -4. A failure-scaled one-off would give -10.
+    expect(r.profit).toBeCloseTo(-4, 9);
   });
 
   it('clamps an out-of-range failureRate override the same way calculateCost does internally', () => {

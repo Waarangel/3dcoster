@@ -120,6 +120,40 @@ describe('duplicateJob — by-value isolation (D-09)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Phase 47.1 MC-04 — one-off lines are CARRIED as independent per-row copies.
+// Optional fields bypass the compile-error safeguard, so this test is the guard.
+// ---------------------------------------------------------------------------
+
+describe('duplicateJob — one-off cost lines (47.1 MC-04)', () => {
+  it('carries manualMaterials and manualPackaging (incl. libraryPrompted) as independent copies', () => {
+    const source = makeMinimalJob({
+      manualMaterials: [{ id: 'm1', name: 'Auger', cost: 200, libraryPrompted: true }],
+      manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 3.5 }],
+    });
+    const dup = duplicateJob(source);
+
+    expect(dup.manualMaterials).toEqual(source.manualMaterials);
+    expect(dup.manualPackaging).toEqual(source.manualPackaging);
+    expect(dup.manualMaterials).not.toBe(source.manualMaterials);
+    expect(dup.manualPackaging).not.toBe(source.manualPackaging);
+    expect(dup.manualMaterials?.[0]).not.toBe(source.manualMaterials?.[0]);
+    expect(dup.manualPackaging?.[0]).not.toBe(source.manualPackaging?.[0]);
+
+    // Editing the copy's lines never changes the source job.
+    (dup.manualMaterials as NonNullable<typeof dup.manualMaterials>)[0].name = 'Edited';
+    (dup.manualPackaging as NonNullable<typeof dup.manualPackaging>)[0].cost = 99;
+    expect(source.manualMaterials?.[0].name).toBe('Auger');
+    expect(source.manualPackaging?.[0].cost).toBe(3.5);
+  });
+
+  it('leaves both fields undefined when the source has none', () => {
+    const dup = duplicateJob(makeMinimalJob({}));
+    expect(dup.manualMaterials).toBeUndefined();
+    expect(dup.manualPackaging).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-08 collision-helper coverage: no-collision, single collision, 99-cap.
 // ---------------------------------------------------------------------------
 

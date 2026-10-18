@@ -70,3 +70,12 @@ describe('computeJobShipping — dropoff fuel math', () => {
     expect(buggy / correct).toBeCloseTo(3.785411784, 1);
   });
 });
+
+describe('computeJobShipping — one-off packaging does not feed the shipping pre-fill (47.1 D-05)', () => {
+  it('returns the same cost with or without manualPackaging lines', () => {
+    const base = { shippingMethod: 'ups' as const, shippingDistanceKm: undefined, shippingOverrideCost: undefined };
+    const withManual = { ...base, manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 3.5 }] };
+    expect(computeJobShipping(withManual, baseConfig)).toBe(computeJobShipping(base, baseConfig));
+    expect(computeJobShipping(withManual, baseConfig)).toBe(baseConfig.upsBaseCost);
+  });
+});
