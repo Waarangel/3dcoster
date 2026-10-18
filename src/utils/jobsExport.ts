@@ -1,4 +1,4 @@
-import type { MaterialUsage, PrintJob, Sale } from '../types';
+import type { ManualCostLine, MaterialUsage, PrintJob, Sale } from '../types';
 import { sanitizeCsvCell } from './csvHelpers';
 
 // ============================================
@@ -10,6 +10,9 @@ import { sanitizeCsvCell } from './csvHelpers';
 // Sale.convertedFromQuoteId (internal back-reference, not user data).
 // fixedCostsAtSave / etsyChecks are internal computation artifacts and
 // also excluded.
+//
+// Phase 47.1: manual_materials / manual_packaging (one-off cost lines) are
+// APPENDED after `notes` so existing spreadsheet column positions never shift.
 
 export const JOBS_EXPORT_COLUMNS = [
   'id', 'name', 'created_at', 'updated_at', 'tags', 'filaments',
@@ -19,7 +22,7 @@ export const JOBS_EXPORT_COLUMNS = [
   'failure_rate', 'cost_per_unit', 'selling_price', 'tax_rate',
   'tax_amount', 'copies_sold', 'shipping_method', 'shipping_distance_km',
   'shipping_override_cost', 'packaging_materials', 'marketplace',
-  'currency', 'notes',
+  'currency', 'notes', 'manual_materials', 'manual_packaging',
 ] as const;
 
 export const SALES_EXPORT_COLUMNS = [
@@ -58,6 +61,15 @@ function flattenMaterials(materials: MaterialUsage[] | undefined, assetNamesById
   return materials
     .map(m => `${assetNamesById.get(m.materialId) ?? m.materialId}:${m.quantity}`)
     .join('|');
+}
+
+// One-off lines carry no asset id, so the typed name is written directly:
+// `name:cost` (cost at 2dp, the project's two-decimal display rule) joined by '|'.
+// Array.isArray guards records that arrive via sync or restore. A formula-like
+// name is neutralized by the sanitizeCsvCell pass at the unparse boundary.
+function flattenManualLines(lines: ManualCostLine[] | undefined): string {
+  if (!Array.isArray(lines) || lines.length === 0) return '';
+  return lines.map(l => `${l.name}:${Number(l.cost).toFixed(2)}`).join('|');
 }
 
 // ============================================
@@ -106,6 +118,8 @@ export async function generateJobsExportCsv(
       marketplace: toCell(job.marketplace),
       currency: toCell(job.currency),
       notes: toCell(job.notes),
+      manual_materials: flattenManualLines(job.manualMaterials),
+      manual_packaging: flattenManualLines(job.manualPackaging),
     };
     return row;
   });

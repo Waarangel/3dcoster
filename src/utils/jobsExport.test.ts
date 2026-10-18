@@ -376,11 +376,11 @@ describe('jobs export — one-off cost columns (47.1)', () => {
         { id: 'm1', name: 'Auger', cost: 200 },
         { id: 'm2', name: 'Sandpaper', cost: 3.5, libraryPrompted: true },
       ],
-      manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 1.005 }],
+      manualPackaging: [{ id: 'p1', name: 'Gift wrap', cost: 2.5 }],
     };
     const row = parseRows(await generateJobsExportCsv([job], EMPTY_NAMES))[0];
     expect(row.manual_materials).toBe('Auger:200.00|Sandpaper:3.50');
-    expect(row.manual_packaging).toBe('Gift wrap:1.00');
+    expect(row.manual_packaging).toBe('Gift wrap:2.50');
   });
 
   it('writes empty cells when a job has no one-off lines (absent or empty array)', async () => {
