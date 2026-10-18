@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
-current_phase: "47.1"
-current_phase_name: Manual one-off costs
-status: verifying
-stopped_at: Completed 47.1-05-PLAN.md (gate green; UAT pending)
-last_updated: "2026-10-18T18:21:33.576Z"
+current_phase: 48
+current_phase_name: Live Etsy order sync
+status: planning
+stopped_at: Phase 47.1 complete (UAT 4/4, verification passed 2026-10-18); Phase 42 stays PARTIAL by design (launch-day gate) - next is Phase 48
+last_updated: "2026-10-18T18:44:55.006Z"
 last_activity: 2026-10-18
-last_activity_desc: Phase 47.1 execution started
-state_head: 1b55057ac62843ea8269cd444b3d5b9e72004ba0
+last_activity_desc: Phase 47.1 complete (one-off costs; UAT 4/4, verification passed). Phase 42 left PARTIAL by design; next is Phase 48
+state_head: e6ff58aefb86034307b311e0f91b93329f07e602
 progress:
   total_phases: 15
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 79
   completed_plans: 79
-  percent: 67
+  percent: 73
 ---
 
 # Project State
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–51). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 47.1 — Manual one-off costs
+**Current focus:** Phase 48 — Live Etsy order sync (EXT dependency: Etsy app review)
 
 ## Current Position
 
-Phase: 47.1 (Manual one-off costs) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-10-18 — Phase 47.1 execution started
+Phase: 48 — Live Etsy order sync
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-18 — Phase 47.1 complete (one-off costs; UAT 4/4, verification passed). Phase 42 left PARTIAL by design; next is Phase 48
 
 ## v2.0 Phase Order Reference
 
@@ -299,7 +299,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-10-18T18:21:33.012Z
-Stopped at: Completed 47.1-05-PLAN.md (gate green; UAT pending)
+Stopped at: Phase 47.1 complete, ready to plan Phase 42
 Resume file: None
 
 ## Operator Next Steps
