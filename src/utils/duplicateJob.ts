@@ -22,7 +22,11 @@ import type { PrintJob } from '../types';
  *   materialsUsed (per-row copy), failureRate, costPerUnit, sellingPrice,
  *   notes, tags (per TAGS-F3 — always carries), etsyChecks (shallow object
  *   copy), shippingMethod, shippingDistanceKm, shippingOverrideCost,
- *   packagingMaterials (per-row copy), marketplace.
+ *   packagingMaterials (per-row copy), manualMaterials / manualPackaging
+ *   (Phase 47.1 one-off lines, per-row copies incl. libraryPrompted), marketplace.
+ *   NOTE: manualMaterials / manualPackaging are OPTIONAL fields, so they bypass
+ *   the compile-error safeguard above — forgetting them is silent; the
+ *   duplicateJob tests are the guard.
  *
  * RESET (new value or undefined):
  *   id            → crypto.randomUUID() (jsdom-safe fallback to `job-${Date.now()}-...`)
@@ -87,6 +91,8 @@ export function duplicateJob(source: PrintJob, nameOverride?: string): PrintJob 
     shippingDistanceKm: source.shippingDistanceKm,
     shippingOverrideCost: source.shippingOverrideCost,
     packagingMaterials: source.packagingMaterials?.map(m => ({ ...m })),  // shallow per-row copy
+    manualMaterials: source.manualMaterials?.map(m => ({ ...m })),  // 47.1 one-off lines — shallow per-row copy
+    manualPackaging: source.manualPackaging?.map(m => ({ ...m })),  // 47.1 one-off lines — shallow per-row copy
     marketplace: source.marketplace,
   };
 }

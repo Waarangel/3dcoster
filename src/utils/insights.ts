@@ -517,6 +517,11 @@ export function buildCalcInputFromJob(job: PrintJob, deps: ScenarioDeps): CalcIn
     electricity: deps.electricity,
     materials: deps.materials as Material[],
     materialsUsed: job.materialsUsed,
+    // 47.1: one-off lines keep the rebuilt breakdown (materials, subtotal) equal to what the
+    // calculator showed at save. calculateCost charges them flat (D-07), so the what-if failure
+    // slider leaves them unchanged. manualPackaging is deliberately NOT passed: packaging sits
+    // outside calculateCost and stays in the reconciliation residual, like library packaging.
+    manualMaterials: job.manualMaterials,
     prepTimeMinutes: job.prepTimeMinutes,
     postProcessingMinutes: job.postProcessingMinutes,
     laborHourlyRate: deps.laborHourlyRate,
