@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
-current_phase: 48
-current_phase_name: Live Etsy order sync
-status: planning
-stopped_at: Phase 47 closed (UAT 28/28, verification passed 2026-07-25)
-last_updated: "2026-10-18T16:58:25.120Z"
-last_activity: 2026-07-25
-last_activity_desc: Phase 47 complete, transitioned to Phase 48
-state_head: 9f11f75beb4dec8b12f126c51ab6e05b1d191f97
+current_phase: "47.1"
+current_phase_name: Manual one-off costs
+status: executing
+stopped_at: Completed 47.1-01-PLAN.md
+last_updated: "2026-10-18T18:02:48.226Z"
+last_activity: 2026-10-18
+last_activity_desc: Phase 47.1 execution started
+state_head: 2129d1cd4a406d26bf3f301b1013fadb91c0f11f
 progress:
   total_phases: 15
   completed_phases: 10
-  total_plans: 74
-  completed_plans: 74
+  total_plans: 79
+  completed_plans: 75
   percent: 67
 ---
 
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](ROADMAP.md) (Phases 38–51). Source of requirements: .planning/REQUIREMENTS.md (27 v1 requirements, 100% mapped).
 
 **Core value:** Accurate cost calculation for 3D prints so users can price jobs correctly, maintain profitability, and present professional quotes to their customers — from a free, local-first tool.
-**Current focus:** Phase 47 — cloud-sync
+**Current focus:** Phase 47.1 — Manual one-off costs
 
 ## Current Position
 
-Phase: 48 — Live Etsy order sync
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-25 — Phase 47 complete, transitioned to Phase 48
+Phase: 47.1 (Manual one-off costs) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-10-18 — Phase 47.1 execution started
 
 ## v2.0 Phase Order Reference
 
@@ -104,6 +104,7 @@ Last activity: 2026-07-25 — Phase 47 complete, transitioned to Phase 48
 | Phase 47 P04 | 12min | 2 tasks | 2 files |
 | Phase 47 P05 | 22min | 2 tasks | 4 files |
 | Phase 47 P06 | 12min | 2 tasks | 4 files |
+| Phase 47.1 P01 | 7 min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -265,6 +266,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: 47-05: cloud ciphertext base64<->bytes conversion implemented locally in useCloudSync.ts since sync_blobs.ciphertext is base64 TEXT (not bytea, which PostgREST hex-encodes and would break decrypt)
 - [Phase ?]: 47-05: uploadWithRetry's CAS-conflict callback re-merges best-effort and re-encrypts rather than re-running the confirm gate a second time — the outer bounded 3-attempt retry remains the guarantee against a silent lost write
 - [Phase ?]: [Phase 47]: 47-06: CloudSyncSetup owns its own ProPitchModal state + onOpenSignIn prop (mirrors BrandingSection/UserProfileModal D-13/D-14); wrong-passphrase/decrypt-failure messaging renders useCloudSync's existing cloud.error verbatim rather than re-deriving it; D-14 level-2 delete confirmation counts live hosted quotes via local Dexie .filter() (publishStatus is unindexed) instead of a network round trip
+- [Phase 47.1]: 47.1-01: one-off lines charged flat in calculateCost (scaledSubtotal * failureMultiplier + oneOffCost), per D-07; no separate addition in the hook, CostSummaryPanel untouched
+- [Phase 47.1]: 47.1-01: manualMaterials restored unconditionally on edit (?? []), not guarded like packagingMaterials, to avoid draft leakage into edited jobs
 
 ### Pending Todos
 
@@ -285,8 +288,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-07-24T03:18:03.694Z
-Stopped at: Completed 47-06-PLAN.md
+Last session: 2026-10-18T18:02:47.697Z
+Stopped at: Completed 47.1-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
