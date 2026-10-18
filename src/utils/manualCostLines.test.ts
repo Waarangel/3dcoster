@@ -3,6 +3,12 @@ import {
   newManualLine,
   sanitizeManualLines,
   normalizeManualLinesForSave,
+  normalizeLineName,
+  promptableLines,
+  buildLibraryAsset,
+  markLinesPrompted,
+  DEFAULT_POST_PROCESSING_ASSET_CATEGORY,
+  POST_PROCESSING_ASSET_CATEGORIES,
 } from './manualCostLines';
 import type { ManualCostLine } from '../types';
 
@@ -189,5 +195,135 @@ describe('normalizeManualLinesForSave (save boundary)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.lines[0]).not.toBe(input[0]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 47.1-04: Save Job library-prompt helpers (D-03 / D-04)
+// ---------------------------------------------------------------------------
+
+const mline = (over: Partial<ManualCostLine> = {}): ManualCostLine => ({ id: 'x', name: 'Auger', cost: 200, ...over });
+
+describe('normalizeLineName', () => {
+  it('trims and lowercases', () => {
+    expect(normalizeLineName('  Auger ')).toBe('auger');
+  });
+});
+
+describe('library prompt constants', () => {
+  it('defaults the post-processing category to tool and lists the three AssetLibrary categories', () => {
+    expect(DEFAULT_POST_PROCESSING_ASSET_CATEGORY).toBe('tool');
+    expect(POST_PROCESSING_ASSET_CATEGORIES.map(c => c.value)).toEqual(['tool', 'finishing', 'consumable']);
+    expect(POST_PROCESSING_ASSET_CATEGORIES.map(c => c.label)).toEqual(['Tools', 'Finishing', 'Consumables']);
+  });
+});
+
+describe('promptableLines', () => {
+  const none: readonly { name: string }[] = [];
+
+  it('skips lines already asked about (libraryPrompted)', () => {
+    const items = promptableLines({
+      manualMaterials: [mline({ id: 'a', libraryPrompted: true }), mline({ id: 'b', name: 'Clamp' })],
+      manualPackaging: [],
+      postProcessingLibrary: none,
+      packagingLibrary: none,
+    });
+    expect(items.map(i => i.line.id)).toEqual(['b']);
+  });
+
+  it('skips a post-processing line whose name matches the post-processing library case-insensitively', () => {
+    const items = promptableLines({
+      manualMaterials: [mline({ id: 'a', name: 'small box' })],
+      manualPackaging: [],
+      postProcessingLibrary: [{ name: 'Small Box' }],
+      packagingLibrary: none,
+    });
+    expect(items).toEqual([]);
+  });
+
+  it('skips a packaging line whose name matches the packaging library', () => {
+    const items = promptableLines({
+      manualMaterials: [],
+      manualPackaging: [mline({ id: 'p', name: ' GIFT wrap ' })],
+      postProcessingLibrary: none,
+      packagingLibrary: [{ name: 'Gift Wrap' }],
+    });
+    expect(items).toEqual([]);
+  });
+
+  it('does NOT skip a packaging line whose name only matches a post-processing-only asset', () => {
+    const items = promptableLines({
+      manualMaterials: [],
+      manualPackaging: [mline({ id: 'p', name: 'Auger' })],
+      postProcessingLibrary: [{ name: 'Auger' }],
+      packagingLibrary: none,
+    });
+    expect(items).toHaveLength(1);
+    expect(items[0].section).toBe('packaging');
+  });
+
+  it('skips lines with an empty normalized name', () => {
+    const items = promptableLines({
+      manualMaterials: [mline({ id: 'a', name: '   ' })],
+      manualPackaging: [],
+      postProcessingLibrary: none,
+      packagingLibrary: none,
+    });
+    expect(items).toEqual([]);
+  });
+
+  it('dedupes same-section same-name lines (first kept) but keeps cross-section duplicates, post-processing first', () => {
+    const items = promptableLines({
+      manualMaterials: [mline({ id: 'a', name: 'Auger' }), mline({ id: 'b', name: ' auger ' })],
+      manualPackaging: [mline({ id: 'p', name: 'Auger' })],
+      postProcessingLibrary: none,
+      packagingLibrary: none,
+    });
+    expect(items.map(i => [i.section, i.line.id])).toEqual([
+      ['postProcessing', 'a'],
+      ['packaging', 'p'],
+    ]);
+  });
+});
+
+describe('buildLibraryAsset', () => {
+  it('builds an each-unit asset at the typed cost', () => {
+    const asset = buildLibraryAsset(mline({ name: ' Auger ' }), 'postProcessing', 'tool', 'USD');
+    expect(asset).toMatchObject({
+      name: 'Auger',
+      category: 'tool',
+      unit: 'ea',
+      unitsPerPackage: 1,
+      packageCost: 200,
+      costPerUnit: 200,
+      currency: 'USD',
+    });
+    expect(asset.id.startsWith('material-')).toBe(true);
+    expect('lowStockThreshold' in asset).toBe(false);
+  });
+
+  it('forces the packaging category for the packaging section', () => {
+    const asset = buildLibraryAsset(mline({ name: 'Gift wrap', cost: 3 }), 'packaging', 'tool', 'EUR');
+    expect(asset.category).toBe('packaging');
+    expect(asset.currency).toBe('EUR');
+  });
+
+  it('yields unique ids for calls in the same millisecond', () => {
+    const ids = new Set(Array.from({ length: 30 }, () => buildLibraryAsset(mline(), 'postProcessing', 'tool', 'USD').id));
+    expect(ids.size).toBe(30);
+  });
+});
+
+describe('markLinesPrompted', () => {
+  it('flags every line with a matching normalized name, returns new objects, never mutates', () => {
+    const input = [mline({ id: 'a', name: 'Auger' }), mline({ id: 'b', name: ' auger ' }), mline({ id: 'c', name: 'Clamp' })];
+    const snapshot = JSON.parse(JSON.stringify(input));
+    const out = markLinesPrompted(input, new Set(['auger']));
+    expect(out[0].libraryPrompted).toBe(true);
+    expect(out[1].libraryPrompted).toBe(true);
+    expect(out[2]).toBe(input[2]);
+    expect('libraryPrompted' in out[2]).toBe(false);
+    expect(out[0]).not.toBe(input[0]);
+    expect(input).toEqual(snapshot);
   });
 });
