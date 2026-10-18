@@ -5,7 +5,7 @@ import type { FilamentRow } from './useCostForm';
 import { convert, type FxRateTable } from '../utils/fxConvert';
 import { computeMarketplaceFee } from '../utils/marketplaceFee';
 import { priceFromMargin, priceFromProfit, marginFromPrice, type FeeShape } from '../utils/pricingInterlink';
-import { calculateCost, calculateTax } from '../utils/costCalc';
+import { calculateCost, calculateTax, calculateManualLinesCost } from '../utils/costCalc';
 import { resolveTaxRate } from '../utils/taxResolution';
 
 // ---------------------------------------------------------------------------
@@ -198,6 +198,8 @@ export interface UseCostDerivedValuesProps {
   // Phase 47.1 (MC-01): manual one-off post-processing lines, an ordinary CalcInput
   // pass-through. Undefined = no lines (byte-identical to before this phase).
   manualMaterials?: ManualCostLine[];
+  /** Phase 47.1 (MC-02): one-off packaging lines, folded into packagingCost (flat, D-07). */
+  manualPackaging?: ManualCostLine[];
 }
 
 export function useCostDerivedValues({
@@ -230,6 +232,7 @@ export function useCostDerivedValues({
   touStartTime,
   maintenanceCostPerHour,
   manualMaterials,
+  manualPackaging,
 }: UseCostDerivedValuesProps) {
   // Convert a stored price from its native currency into the user's currency for
   // display and cost math. Falls back to the raw amount only when no rate table
@@ -300,14 +303,16 @@ export function useCostDerivedValues({
     }
   }, [shippingMethod, shippingDistanceKm, shippingOverrideCost, shippingConfig]);
 
-  // Calculate packaging materials cost
+  // Calculate packaging materials cost: library packaging + flat one-off lines
+  // (Phase 47.1 MC-02/D-07). One-off packaging is charged flat, NOT failure-adjusted,
+  // exactly like library packaging, because packagingCost feeds totalShippingCost.
   const packagingCost = useMemo(() => {
     return packagingMaterials.reduce((total, usage) => {
       const material = materialsInProfile.find(m => m.id === usage.materialId);
       if (!material) return total;
       return total + usage.quantity * (material.costPerUnit ?? 0);
-    }, 0);
-  }, [packagingMaterials, materialsInProfile]);
+    }, 0) + calculateManualLinesCost(manualPackaging);
+  }, [packagingMaterials, materialsInProfile, manualPackaging]);
 
   // Total shipping = carrier/delivery cost + packaging materials
   const totalShippingCost = shippingCost + packagingCost;

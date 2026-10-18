@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Material, MaterialUsage, ShippingConfig, ShippingMethodType, MarketplaceType, Currency } from '../../types';
+import type { ManualCostLine, Material, MaterialUsage, ShippingConfig, ShippingMethodType, MarketplaceType, Currency } from '../../types';
 import { Button, Input, RemoveButton, Select, InfoTooltip } from '../ui';
 import { kmToMiles, milesToKm, type DistanceUnit } from '../../utils/currency';
 import type { MaterialRow } from '../../hooks/useCostForm';
@@ -28,6 +28,12 @@ interface ShippingSectionProps {
   onAddPackagingMaterial: () => void;
   onUpdatePackagingMaterial: (index: number, field: keyof MaterialUsage, value: string | number) => void;
   onRemovePackagingMaterial: (index: number) => void;
+  // Phase 47.1 (MC-02, D-01): manual one-off packaging lines (name + cost, no library
+  // asset). Rows are keyed/edited by persisted line.id, never by array index.
+  manualPackaging: ManualCostLine[];
+  onAddManualPackaging: () => void;
+  onUpdateManualPackaging: (id: string, patch: Partial<Pick<ManualCostLine, 'name' | 'cost'>>) => void;
+  onRemoveManualPackaging: (id: string) => void;
   marketplace: MarketplaceType;
   onMarketplaceChange: (marketplace: MarketplaceType) => void;
   sellingPrice: number;
@@ -57,6 +63,10 @@ export function ShippingSection({
   onAddPackagingMaterial,
   onUpdatePackagingMaterial,
   onRemovePackagingMaterial,
+  manualPackaging,
+  onAddManualPackaging,
+  onUpdateManualPackaging,
+  onRemoveManualPackaging,
   marketplace,
   onMarketplaceChange,
   sellingPrice,
@@ -201,17 +211,24 @@ export function ShippingSection({
             </h3>
             <p className="text-xs text-slate-500">Boxes, bubble wrap, tape, etc.</p>
           </div>
-          <Button
-            btnSize="sm"
-            onClick={onAddPackagingMaterial}
-            disabled={consumables.length === 0}
-            className="text-xs"
-          >
-            + Add Packaging
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              btnSize="sm"
+              onClick={onAddPackagingMaterial}
+              disabled={consumables.length === 0}
+              className="text-xs"
+            >
+              + Add Packaging
+            </Button>
+            {/* Phase 47.1: never disabled, so it works with an empty library. */}
+            <Button variant="secondary" btnSize="sm" onClick={onAddManualPackaging} className="text-xs">
+              + One-off cost
+            </Button>
+            <InfoTooltip text="Add a one-time packaging cost that isn't in your asset library. The full amount is added to this job's shipping cost." />
+          </div>
         </div>
 
-        {packagingMaterials.length === 0 ? (
+        {packagingMaterials.length === 0 && manualPackaging.length === 0 ? (
           <p className="text-slate-500 text-xs">No packaging materials added.</p>
         ) : (
           <div className="space-y-2">
@@ -249,6 +266,39 @@ export function ShippingSection({
                 </div>
               );
             })}
+            {manualPackaging.map(line => (
+              <div key={line.id} className="flex items-center gap-3 bg-slate-700/50 p-2 rounded-lg">
+                <span className="text-xs text-slate-400 bg-slate-600/60 rounded px-2 py-0.5">One-off</span>
+                <Input
+                  type="text"
+                  inputSize="sm"
+                  aria-label="One-off packaging name"
+                  placeholder="Gift wrap"
+                  value={line.name}
+                  onChange={e => onUpdateManualPackaging(line.id, { name: e.target.value })}
+                  className="flex-1"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 text-xs">{currencySymbol}</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    inputSize="sm"
+                    compact
+                    aria-label="One-off packaging cost"
+                    placeholder="0.00"
+                    value={line.cost || ''}
+                    onChange={e => onUpdateManualPackaging(line.id, { cost: Math.max(parseFloat(e.target.value) || 0, 0) })}
+                    className="text-right"
+                  />
+                </div>
+                <RemoveButton
+                  label={line.name || 'one-off packaging cost'}
+                  onClick={() => onRemoveManualPackaging(line.id)}
+                />
+              </div>
+            ))}
           </div>
         )}
 

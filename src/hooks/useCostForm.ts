@@ -159,6 +159,11 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
   const [shippingDistanceKm, setShippingDistanceKm] = useState(() => getStoredValue('shippingDistanceKm', 0));
   const [shippingOverrideCost, setShippingOverrideCost] = useState<number | null>(() => getStoredValue('shippingOverrideCost', null));
   const [packagingMaterials, setPackagingMaterials] = useState<MaterialRow[]>(() => getStoredValue<MaterialUsage[]>('packagingMaterials', []).map(toMaterialRow));
+  // Phase 47.1 (MC-02, D-01): manual one-off packaging lines. Mirrors manualMaterials:
+  // sanitized draft restore (legacy/tampered drafts load as []).
+  const [manualPackaging, setManualPackaging] = useState<ManualCostLine[]>(
+    () => sanitizeManualLines(getStoredValue<unknown>('manualPackaging', []))
+  );
 
   // Marketplace
   const [marketplace, setMarketplace] = useState<MarketplaceType>(() => getStoredValue('marketplace', 'none'));
@@ -203,13 +208,14 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     touStartTime,
     maintenanceCostPerHour,
     manualMaterials,
+    manualPackaging,
   }), [
     printName, filamentRows, selectedInstanceId, printTimeHours, modelCost,
     modelCostPerUnit, authorMinPrice, modelUrl, prepTimeMinutes,
     postProcessingMinutes, failureRate, materialsUsed, taxRateOverride,
     shippingMethod, shippingDistanceKm, shippingOverrideCost,
     packagingMaterials, marketplace, etsyChecks, touStartTime, maintenanceCostPerHour,
-    manualMaterials,
+    manualMaterials, manualPackaging,
   ]);
 
   // Populate fields when editing an existing job
@@ -246,6 +252,9 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
       if (editingJob.shippingDistanceKm !== undefined) setShippingDistanceKm(editingJob.shippingDistanceKm);
       if (editingJob.shippingOverrideCost !== undefined) setShippingOverrideCost(editingJob.shippingOverrideCost);
       if (editingJob.packagingMaterials !== undefined) setPackagingMaterials(editingJob.packagingMaterials.map(toMaterialRow));
+      // Phase 47.1: UNCONDITIONAL sanitized restore for the packaging one-off lines too
+      // (no `!== undefined` guard, unlike packagingMaterials above) so a draft never leaks in.
+      setManualPackaging(sanitizeManualLines(editingJob.manualPackaging));
       if (editingJob.marketplace !== undefined) setMarketplace(editingJob.marketplace);
       // Pricing fields (sellingPrice, targetProfit, profitMarginPercent, lastEdited)
       // are now owned by the pricingReducer in useCostDerivedValues — seeded via
@@ -304,6 +313,7 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     setShippingDistanceKm(0);
     setShippingOverrideCost(null);
     setPackagingMaterials([]);
+    setManualPackaging([]);
     setMarketplace('none');
     setEtsyChecks({});
     setTouStartTime(undefined);
@@ -332,6 +342,7 @@ export function useCostForm({ editingJob, userCurrency, printerInstances, materi
     shippingDistanceKm, setShippingDistanceKm,
     shippingOverrideCost, setShippingOverrideCost,
     packagingMaterials, setPackagingMaterials,
+    manualPackaging, setManualPackaging,
     marketplace, setMarketplace,
     etsyChecks, setEtsyChecks,
     touStartTime, setTouStartTime,

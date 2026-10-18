@@ -113,6 +113,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     shippingDistanceKm, setShippingDistanceKm,
     shippingOverrideCost, setShippingOverrideCost,
     packagingMaterials, setPackagingMaterials,
+    manualPackaging, setManualPackaging,
     marketplace, setMarketplace,
     etsyChecks, setEtsyChecks,
     touStartTime, setTouStartTime,
@@ -210,6 +211,7 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     touStartTime,
     maintenanceCostPerHour,
     manualMaterials,
+    manualPackaging,
   });
   const { trueCost, fixedCosts, tax, pricing, dispatchPricing, costs } = derived;
   const { profitMarginPercent, targetProfit, sellingPrice, lastEdited } = pricing;
@@ -301,6 +303,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
     }
     const manualMaterialsToSave = normalizeManualLinesOrToast(manualMaterials, 'post-processing');
     if (!manualMaterialsToSave) return;
+    const manualPackagingToSave = normalizeManualLinesOrToast(manualPackaging, 'packaging');
+    if (!manualPackagingToSave) return;
 
     const filaments: FilamentUsage[] = filamentRows
       .filter(r => r.filamentId && r.grams > 0)
@@ -337,6 +341,8 @@ export function CostCalculator({ materials, printers, printerInstances, electric
       // editingJob then sharedFields uses this explicit undefined to clear removed lines.
       // Trimmed/rounded/validated by normalizeManualLinesOrToast above.
       manualMaterials: manualMaterialsToSave.length > 0 ? manualMaterialsToSave : undefined,
+      // Phase 47.1 (MC-02): same contract for the packaging one-off lines.
+      manualPackaging: manualPackagingToSave.length > 0 ? manualPackagingToSave : undefined,
       failureRate,
       costPerUnit: trueCost,
       sellingPrice,
@@ -421,6 +427,19 @@ export function CostCalculator({ materials, printers, printerInstances, electric
 
   const removeManualMaterial = (id: string) => {
     setManualMaterials(prev => prev.filter(line => line.id !== id));
+  };
+
+  // Phase 47.1 (MC-02, D-01): the same id-keyed callbacks for the packaging list.
+  const addManualPackaging = () => {
+    setManualPackaging(prev => [...prev, newManualLine()]);
+  };
+
+  const updateManualPackaging = (id: string, patch: Partial<Pick<ManualCostLine, 'name' | 'cost'>>) => {
+    setManualPackaging(prev => prev.map(line => (line.id === id ? { ...line, ...patch } : line)));
+  };
+
+  const removeManualPackaging = (id: string) => {
+    setManualPackaging(prev => prev.filter(line => line.id !== id));
   };
 
   return (
@@ -518,6 +537,10 @@ export function CostCalculator({ materials, printers, printerInstances, electric
         }}
         onUpdatePackagingMaterial={updatePackagingMaterial}
         onRemovePackagingMaterial={(index) => setPackagingMaterials(packagingMaterials.filter((_, i) => i !== index))}
+        manualPackaging={manualPackaging}
+        onAddManualPackaging={addManualPackaging}
+        onUpdateManualPackaging={updateManualPackaging}
+        onRemoveManualPackaging={removeManualPackaging}
         marketplace={marketplace}
         onMarketplaceChange={setMarketplace}
         sellingPrice={sellingPrice}
