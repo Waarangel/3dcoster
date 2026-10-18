@@ -289,6 +289,9 @@ describe('CostParametersSection: one-off post-processing rows (47.1-02)', () => 
     expect(costs).toHaveLength(2);
     expect(container!.querySelector('button[aria-label="Remove Auger"]')).not.toBeNull();
     expect(container!.querySelector('button[aria-label="Remove one-off cost"]')).not.toBeNull();
+    // Each row is a labelled group so screen-reader users can tell identical-labelled inputs apart.
+    const groups = [...container!.querySelectorAll('[role="group"]')].map(g => g.getAttribute('aria-label'));
+    expect(groups).toEqual(['One-off cost 1: Auger', 'One-off cost 2']);
 
     typeInto(names[0], 'Auger XL');
     expect(props.onUpdateManualMaterial).toHaveBeenLastCalledWith('a', { name: 'Auger XL' });

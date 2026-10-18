@@ -1,5 +1,6 @@
 import type { ManualCostLine, MaterialUsage, PrintJob, Sale } from '../types';
 import { sanitizeCsvCell } from './csvHelpers';
+import { sanitizeManualLines } from './manualCostLines';
 
 // ============================================
 // COLUMN CONTRACTS
@@ -65,11 +66,14 @@ function flattenMaterials(materials: MaterialUsage[] | undefined, assetNamesById
 
 // One-off lines carry no asset id, so the typed name is written directly:
 // `name:cost` (cost at 2dp, the project's two-decimal display rule) joined by '|'.
-// Array.isArray guards records that arrive via sync or restore. A formula-like
-// name is neutralized by the sanitizeCsvCell pass at the unparse boundary.
+// Records that arrive via sync or restore are untrusted, so they pass through
+// sanitizeManualLines first (malformed entries such as null are dropped instead
+// of throwing and aborting the whole export). A formula-like name is
+// neutralized by the sanitizeCsvCell pass at the unparse boundary.
 function flattenManualLines(lines: ManualCostLine[] | undefined): string {
-  if (!Array.isArray(lines) || lines.length === 0) return '';
-  return lines.map(l => `${l.name}:${Number(l.cost).toFixed(2)}`).join('|');
+  const safe = sanitizeManualLines(lines);
+  if (safe.length === 0) return '';
+  return safe.map(l => `${l.name}:${l.cost.toFixed(2)}`).join('|');
 }
 
 // ============================================

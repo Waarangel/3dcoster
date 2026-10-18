@@ -334,8 +334,13 @@ export function CostParametersSection({
                 </div>
               );
             })}
-            {manualMaterials.map(line => (
-              <div key={line.id} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
+            {manualMaterials.map((line, index) => (
+              <div
+                key={line.id}
+                role="group"
+                aria-label={`One-off cost ${index + 1}${line.name ? `: ${line.name}` : ''}`}
+                className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg"
+              >
                 <span className="text-xs text-slate-400 bg-slate-600/60 rounded px-2 py-0.5">One-off</span>
                 <Input
                   type="text"

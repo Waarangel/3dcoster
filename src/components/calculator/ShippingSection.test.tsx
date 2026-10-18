@@ -133,6 +133,9 @@ describe('ShippingSection: one-off packaging rows (47.1-02)', () => {
     expect(costs).toHaveLength(2);
     expect(container!.querySelector('button[aria-label="Remove Gift wrap"]')).not.toBeNull();
     expect(container!.querySelector('button[aria-label="Remove one-off packaging cost"]')).not.toBeNull();
+    // Each row is a labelled group so screen-reader users can tell identical-labelled inputs apart.
+    const groups = [...container!.querySelectorAll('[role="group"]')].map(g => g.getAttribute('aria-label'));
+    expect(groups).toEqual(['One-off packaging 1: Gift wrap', 'One-off packaging 2']);
 
     typeInto(names[0], 'Gift wrap XL');
     expect(props.onUpdateManualPackaging).toHaveBeenLastCalledWith('a', { name: 'Gift wrap XL' });

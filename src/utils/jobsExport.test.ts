@@ -410,4 +410,13 @@ describe('jobs export — one-off cost columns (47.1)', () => {
     const row = parseRows(await generateJobsExportCsv([job], EMPTY_NAMES))[0];
     expect(row.manual_materials).toBe('');
   });
+
+  it('drops malformed entries (e.g. null) from a synced array instead of aborting the export', async () => {
+    const job = {
+      ...BASE_JOB,
+      manualMaterials: [null, { id: 'm1', name: 'Auger', cost: 200 }, { name: 'no id', cost: 1 }],
+    } as unknown as PrintJob;
+    const row = parseRows(await generateJobsExportCsv([job], EMPTY_NAMES))[0];
+    expect(row.manual_materials).toBe('Auger:200.00');
+  });
 });
