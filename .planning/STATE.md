@@ -5,16 +5,16 @@ milestone_name: Cost-Truth & Insight (Phases 38–45) — IN PROGRESS
 current_phase: "47.1"
 current_phase_name: Manual one-off costs
 status: executing
-stopped_at: Completed 47.1-01-PLAN.md
-last_updated: "2026-10-18T18:02:48.226Z"
+stopped_at: Completed 47.1-02-PLAN.md
+last_updated: "2026-10-18T18:09:38.667Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 47.1 execution started
-state_head: 2129d1cd4a406d26bf3f301b1013fadb91c0f11f
+state_head: dd88d153a13c97b590ab37b287b84d526dbb6c25
 progress:
   total_phases: 15
   completed_phases: 10
   total_plans: 79
-  completed_plans: 75
+  completed_plans: 76
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-23). Milestone roadmap: [ROADMAP.md](
 ## Current Position
 
 Phase: 47.1 (Manual one-off costs) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 47.1 execution started
 
@@ -105,6 +105,7 @@ Last activity: 2026-10-18 — Phase 47.1 execution started
 | Phase 47 P05 | 22min | 2 tasks | 4 files |
 | Phase 47 P06 | 12min | 2 tasks | 4 files |
 | Phase 47.1 P01 | 7 min | 2 tasks | 11 files |
+| Phase 47.1 P02 | 9 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -268,6 +269,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [Phase 47]: 47-06: CloudSyncSetup owns its own ProPitchModal state + onOpenSignIn prop (mirrors BrandingSection/UserProfileModal D-13/D-14); wrong-passphrase/decrypt-failure messaging renders useCloudSync's existing cloud.error verbatim rather than re-deriving it; D-14 level-2 delete confirmation counts live hosted quotes via local Dexie .filter() (publishStatus is unindexed) instead of a network round trip
 - [Phase 47.1]: 47.1-01: one-off lines charged flat in calculateCost (scaledSubtotal * failureMultiplier + oneOffCost), per D-07; no separate addition in the hook, CostSummaryPanel untouched
 - [Phase 47.1]: 47.1-01: manualMaterials restored unconditionally on edit (?? []), not guarded like packagingMaterials, to avoid draft leakage into edited jobs
+- [Phase 47.1]: 47.1-02: save-time normalization via one local helper normalizeManualLinesOrToast(lines, section) reused for both lists; post-processing checked before packaging
+- [Phase 47.1]: 47.1-02: one-off packaging folded into packagingCost memo (flat, not failure-adjusted, D-07); Carrier Cost and totalShippingCost/trueCost paths untouched (D-01)
+- [Phase 47.1]: 47.1-02: manual-cost-lines NEW-badge date set to 2026-10-18; re-confirm against NEW_FEATURE_MAX_AGE_DAYS at the next release tag
 
 ### Pending Todos
 
@@ -288,8 +292,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-10-18T18:02:47.697Z
-Stopped at: Completed 47.1-01-PLAN.md
+Last session: 2026-10-18T18:09:38.130Z
+Stopped at: Completed 47.1-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
