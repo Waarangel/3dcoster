@@ -34,44 +34,31 @@ You need the two certificate secrets plus **one** complete notarization set. If 
 
 The commands below run as-is with the Run button; none of them need editing. They read and write files on your Desktop or in Downloads, so no secret is ever typed or pasted into a terminal.
 
-### 1. Create the certificate signing request (CSR)
+Done on 2026-10-22 with the commands below, so the founder never had to use Keychain Access. Keychain Access's Certificate Assistant failed with "The specified item could not be found in the keychain" while a key was selected. All files live in `~/Documents/3DCoster-signing` (chmod 700). Back that folder up to a password manager: it holds the private key, the `.p12` and its password.
 
-1. Open Keychain Access:
-   ```bash
-   open -a "Keychain Access"
-   ```
-2. In the menu bar, choose **Keychain Access › Certificate Assistant › Request a Certificate from a Certificate Authority**.
-3. **User Email Address:** your email. **Common Name:** `3DCoster Developer ID`. Leave **CA Email Address** empty.
-4. Select **Saved to disk**, click **Continue**, and save `CertificateSigningRequest.certSigningRequest` to the Desktop.
-
-### 2. Create the Developer ID Application certificate
-
-Only the Account Holder can do this.
-
-1. Go to <https://developer.apple.com/account/resources/certificates/list> (Certificates, Identifiers & Profiles › **Certificates**).
-2. Click the **+** button at the top left.
-3. Under **Software**, select **Developer ID**, then click **Continue**.
-4. Choose **Developer ID Application**. If you're offered a choice of intermediate certificate, pick the default **G2 Sub-CA**.
-5. Click **Choose File**, select the `.certSigningRequest` from your Desktop, click **Continue**, then click **Download**.
-6. Double-click the downloaded `.cer` in Downloads. It installs into the **login** keychain.
-
-### 3. Export the certificate as a `.p12`
-
-1. In Keychain Access, select the **login** keychain, then open the **My Certificates** tab.
-2. Find **Developer ID Application: <your organization> (<TEAM ID>)**. It should have a disclosure arrow with a private key under it; if there's no key, the certificate was created on another Mac.
-3. Right-click the certificate row and choose **Export "Developer ID Application: …"**.
-4. Name it `3dcoster-developer-id`, save it to the **Desktop**, and set **File Format** to **Personal Information Exchange (.p12)**. Click **Save**.
-5. Enter a strong password and verify it. This becomes `APPLE_CERTIFICATE_PASSWORD`, so keep it in your password manager. If macOS then asks for your login keychain password, enter it to allow the export.
-
-### 4. Upload the certificate secrets
-
-The certificate is uploaded directly from the file, without going through the clipboard:
+### 1. Create the private key and the certificate signing request (CSR)
 
 ```bash
-openssl base64 -A -in ~/Desktop/3dcoster-developer-id.p12 | gh secret set APPLE_CERTIFICATE -R Waarangel/3dcoster
+mkdir -p ~/Documents/3DCoster-signing && chmod 700 ~/Documents/3DCoster-signing && cd ~/Documents/3DCoster-signing && /usr/bin/openssl req -new -newkey rsa:2048 -nodes -keyout developer-id.key -out CertificateSigningRequest.certSigningRequest -subj "/CN=3DCoster Developer ID" && open ~/Documents/3DCoster-signing
 ```
 
-For `APPLE_CERTIFICATE_PASSWORD`, open <https://github.com/Waarangel/3dcoster/settings/secrets/actions>. Click **New repository secret**, set the name to `APPLE_CERTIFICATE_PASSWORD`, enter the `.p12` password as the secret, and click **Add secret**.
+### 2. Create the Developer ID Application certificate (Account Holder only)
+
+1. Go to <https://developer.apple.com/account/resources/certificates/list> and click the **+** next to **Certificates**.
+2. Under **Software**, select **Developer ID Application** and click **Continue**. Keep the default **G2 Sub-CA**.
+3. Click **Choose File**, select `~/Documents/3DCoster-signing/CertificateSigningRequest.certSigningRequest`, click **Continue**, then **Download**. This saves `~/Downloads/developerID_application.cer`. Don't double-click it.
+
+### 3. Build the `.p12` and upload `APPLE_CERTIFICATE` + `APPLE_CERTIFICATE_PASSWORD`
+
+Use `/usr/bin/openssl` (LibreSSL): its `.p12` encryption is the kind macOS `security import` accepts. Homebrew's OpenSSL 3 would need `-legacy`.
+
+```bash
+cd ~/Documents/3DCoster-signing && /usr/bin/openssl rand -base64 24 > p12-password.txt && /usr/bin/openssl x509 -inform DER -in ~/Downloads/developerID_application.cer -out developer-id.pem && /usr/bin/openssl pkcs12 -export -inkey developer-id.key -in developer-id.pem -name "Developer ID Application: How to Project Inc." -passout file:p12-password.txt -out 3dcoster-developer-id.p12 && /usr/bin/openssl base64 -A -in 3dcoster-developer-id.p12 | gh secret set APPLE_CERTIFICATE -R Waarangel/3dcoster && tr -d '\n' < p12-password.txt | gh secret set APPLE_CERTIFICATE_PASSWORD -R Waarangel/3dcoster && gh secret list -R Waarangel/3dcoster
+```
+
+### 4. (unused) Keychain Access route
+
+Instead of steps 1–3, you can create the CSR in Keychain Access (**Keychain Access › Certificate Assistant › Request a Certificate From a Certificate Authority**). Click an empty area first, so the menu item doesn't say *With "<key>"*. Then export the installed certificate from **My Certificates** as a `.p12`.
 
 ### 5a. Notarization credential: App Store Connect API key (preferred)
 
@@ -80,12 +67,15 @@ For `APPLE_CERTIFICATE_PASSWORD`, open <https://github.com/Waarangel/3dcoster/se
 3. Click **Team Keys**, then **Generate API Key** (or **+** if a key already exists).
 4. Name it `3DCoster notarization` and set **Access** to **Developer**. Click **Generate**.
 5. Click **Download** next to the new key. **The key can only be downloaded once.** It saves `AuthKey_<KEYID>.p8` to Downloads.
-6. Upload the key file (this assumes it's the only `AuthKey_*.p8` in Downloads):
+6. Upload the key and the Key ID (the Key ID is in the file name):
    ```bash
-   gh secret set APPLE_API_PRIVATE_KEY -R Waarangel/3dcoster < ~/Downloads/AuthKey_*.p8
+   mv ~/Downloads/AuthKey_<KEYID>.p8 ~/Documents/3DCoster-signing/ && gh secret set APPLE_API_PRIVATE_KEY -R Waarangel/3dcoster < ~/Documents/3DCoster-signing/AuthKey_<KEYID>.p8 && printf '<KEYID>' | gh secret set APPLE_API_KEY -R Waarangel/3dcoster
    ```
-7. On the same page, copy the **Issuer ID** (shown above the keys table) and the key's **Key ID** (shown in its row). Add them as repository secrets, the same way as the password: `APPLE_API_ISSUER` = Issuer ID, `APPLE_API_KEY` = Key ID.
-8. Move the `.p8` into your password manager or another safe place, then delete it from Downloads.
+7. Click **Copy** next to **Issuer ID**, then run this. It checks the clipboard holds a UUID before uploading:
+   ```bash
+   ISSUER="$(pbpaste | tr -d '[:space:]')"; if [[ "$ISSUER" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then printf '%s' "$ISSUER" | gh secret set APPLE_API_ISSUER -R Waarangel/3dcoster && gh secret list -R Waarangel/3dcoster; else echo "The clipboard doesn't contain an Issuer ID."; fi
+   ```
+8. Back up the `.p8` (in `~/Documents/3DCoster-signing`) to a password manager. Apple won't let you download it again.
 
 If notarization later fails with an HTTP 401/403 authorization error, the key's role is too narrow. Revoke the key and generate a new one with the **App Manager** role. A key's access can't be edited after it's created.
 
@@ -97,9 +87,9 @@ If notarization later fails with an HTTP 401/403 authorization error, the key's 
 
 Once the API key is in place it takes over automatically. You can then delete these three secrets.
 
-### 6. Clean up
+### 6. Back up
 
-Delete `~/Desktop/3dcoster-developer-id.p12` and the `.certSigningRequest` once both secrets are saved. The certificate and private key stay in your login keychain; back up the `.p12` in your password manager if you want a copy off this Mac.
+Save the contents of `~/Documents/3DCoster-signing` to a password manager. Keep the private key (`developer-id.key`), the `.p12`, `p12-password.txt` and the `.p8`. Without them, a lost Mac means making a new certificate and key.
 
 ## Proving it before a release
 
@@ -117,4 +107,10 @@ If a run shows the `UNSIGNED` or `signing failed` warning, the "signed and notar
 
 ## Renewal
 
-Developer ID Application certificates last 5 years. Before the certificate expires, repeat steps 1–4 and replace `APPLE_CERTIFICATE` and `APPLE_CERTIFICATE_PASSWORD`. Apps that were already notarized keep working after the certificate expires.
+The current certificate (**Developer ID Application: How to Project Inc. (XM85G2CQ29)**, G2) is valid until **2027-11-21**. Before then, repeat steps 1–3; that creates a new CSR, certificate and `.p12`, and replaces both certificate secrets. To check the date:
+
+```bash
+/usr/bin/openssl x509 -in ~/Documents/3DCoster-signing/developer-id.pem -noout -subject -enddate
+```
+
+Apps that were already notarized keep opening after the certificate expires. Only new builds need a valid certificate. The API key doesn't expire until it's revoked.
