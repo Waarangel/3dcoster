@@ -1,0 +1,105 @@
+name: macOS Signing Check
+
+# Proves the Apple signing + notarization secrets work BEFORE a real release:
+# builds the Apple Silicon .dmg with the same signing setup as release.yml,
+# checks it the way Gatekeeper does, and uploads it as an Actions artifact.
+# It never creates a GitHub release or tag, so no desktop user is nudged.
+#
+# Unlike release.yml this check FAILS when signing is not configured or does
+# not verify — proving signing is its only job.
+#
+# Triggers: automatically on push to the feature branch, or manually via the
+# Actions tab once this file is on the default branch (workflow_dispatch only
+# shows the "Run workflow" button for workflows present on the default branch).
+# Setup steps for the secrets: docs/MACOS-SIGNING.md.
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/macos-signing
+
+jobs:
+  sign-check-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Configure macOS signing
+        id: macsign
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash scripts/configure-macos-signing.sh
+
+      - name: Require signing to be configured
+        if: steps.macsign.outputs.enabled != 'true'
+        run: |
+          echo "::error::Signing is not configured — see the warning above and docs/MACOS-SIGNING.md."
+          exit 1
+
+      # No tagName/releaseName → tauri-action builds the bundles but does NOT
+      # publish a release.
+      - name: Build the signed app (no release)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_ENV_PLATFORM: darwin
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        with:
+          args: --target aarch64-apple-darwin --bundles app,dmg
+
+      # The same checks Gatekeeper runs on a downloaded app. spctl must report
+      # "source=Notarized Developer ID"; stapler confirms the ticket is attached
+      # so the first launch works offline.
+      - name: Verify signature, notarization and stapling
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE=src-tauri/target/aarch64-apple-darwin/release/bundle
+          APP="$BUNDLE/macos/3DCoster.app"
+          DMGS=("$BUNDLE"/dmg/*.dmg)
+          DMG="${DMGS[0]}"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dv --verbose=2 "$APP" 2>&1 | grep -E '^(Authority|TeamIdentifier|Runtime)'
+          xcrun stapler validate "$APP"
+          spctl --assess --type execute --verbose=4 "$APP" 2>&1 | tee spctl.txt
+          grep -q 'source=Notarized Developer ID' spctl.txt
+          codesign --verify --verbose=2 "$DMG"
+
+      - name: Upload signed .dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: 3dcoster-macos-signed-dmg
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 14

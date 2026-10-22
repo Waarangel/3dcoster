@@ -105,7 +105,7 @@ const faqs: FAQItem[] = [
   {
     category: 'technical',
     question: 'macOS says the app is "damaged" - what do I do?',
-    answer: 'This happens because the app isn\'t signed with an Apple Developer certificate. It\'s not actually damaged. To fix: Right-click (or Ctrl+click) the app, select "Open", then click "Open" in the dialog. You only need to do this once. Alternatively, run this in Terminal: xattr -cr /Applications/3DCoster.app',
+    answer: 'The current Mac app is signed with our Apple Developer ID and notarized by Apple, so it opens normally. Version 1.9 and earlier weren\'t signed, which is why macOS called them "damaged" (they aren\'t). The simplest fix is to download the latest version. To keep using an older version: right-click (or Ctrl+click) the app, select "Open", then click "Open" in the dialog. You only need to do this once. Alternatively, run this in Terminal: xattr -cr /Applications/3DCoster.app',
   },
   {
     category: 'technical',
@@ -120,7 +120,7 @@ const faqs: FAQItem[] = [
   {
     category: 'technical',
     question: 'Linux says the app isn\'t trusted or won\'t launch - what do I do?',
-    answer: 'Like the macOS build, the Linux binary is unsigned, so your system may not flag it as trusted automatically. For the AppImage, make sure the executable bit is set (see the AppImage question above). The .deb and .rpm packages declare their dependencies (including WebKitGTK 4.1) and will pull them in via your package manager; the AppImage bundles what it needs.',
+    answer: 'The Linux binary is unsigned, so your system may not flag it as trusted automatically. For the AppImage, make sure the executable bit is set (see the AppImage question above). The .deb and .rpm packages declare their dependencies (including WebKitGTK 4.1) and will pull them in via your package manager; the AppImage bundles what it needs.',
   },
 ];
 

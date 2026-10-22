@@ -21,6 +21,10 @@ Each item should be a short, user-facing sentence. The release workflow concaten
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Mac app now opens without the "damaged" warning.** The macOS downloads (Apple Silicon and Intel) are signed with our Apple Developer ID and notarized by Apple, so there is no more right-click → Open or Terminal workaround.
+
 ---
 
 ## [1.9.0] - 2026-07-03

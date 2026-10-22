@@ -212,9 +212,9 @@ export function DownloadPage() {
                 <p className="text-slate-500 text-xs text-center mt-2">
                   M1/M2/M3/M4 • Intel (pre-2020)
                 </p>
-                <p className="text-yellow-500/80 text-xs text-center mt-3">
-                  <strong>Note:</strong> If macOS shows a "damaged" warning, right-click the app and select "Open".{' '}
-                  <Link to="/faq" className="underline hover:text-yellow-400">Learn more</Link>
+                <p className="text-slate-500 text-xs text-center mt-3">
+                  Signed and notarized by Apple. Version 1.9 and earlier may show a "damaged" warning.{' '}
+                  <Link to="/faq" className="underline hover:text-slate-300">Learn more</Link>
                 </p>
               </div>
             </div>

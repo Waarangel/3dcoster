@@ -100,7 +100,32 @@ jobs:
         env:
           TAURI_ENV_PLATFORM: ${{ matrix.tauri_platform }}
 
+      # macOS rows only: sign with the Developer ID certificate and notarize +
+      # staple with Apple when the secrets are configured. Missing or partial
+      # secrets warn and fall back to an unsigned build (soft gate, like the
+      # CHANGELOG and Discord checks) — they never fail the release. The script
+      # exports only the variables that are set: an empty APPLE_* variable
+      # makes the Tauri bundler fail. Setup steps: docs/MACOS-SIGNING.md.
+      - name: Configure macOS signing
+        id: macsign
+        if: matrix.tauri_platform == 'darwin'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash scripts/configure-macos-signing.sh
+
       - name: Build the app
+        id: build
+        # Only a signed macOS build may fail softly; the unsigned retry below
+        # then ships this architecture. Every other row fails as before.
+        continue-on-error: ${{ steps.macsign.outputs.enabled == 'true' }}
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,6 +141,30 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+      # Signed build failed (notarization rejected, wrong password, expired
+      # certificate...). Retry with --no-sign so the release still ships this
+      # architecture, and say so loudly. If this also fails, the build itself
+      # is broken and the job fails as it always has.
+      - name: Warn that macOS signing failed
+        if: steps.build.outcome == 'failure'
+        run: echo "::warning title=macOS signing failed — shipping UNSIGNED::The signed ${{ matrix.args }} build failed; retrying without signing. Check the 'Build the app' log above and docs/MACOS-SIGNING.md."
+
+      - name: Build the app unsigned (signing failed)
+        if: steps.build.outcome == 'failure'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_ENV_PLATFORM: ${{ matrix.tauri_platform }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: '3DCoster ${{ github.ref_name }}'
+          releaseBody: ${{ env.RELEASE_BODY }}
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }} --no-sign
 
   # Posts the release notes to the community Discord after all platform
   # builds finish. This job lives HERE (not behind discord-notify.yml's

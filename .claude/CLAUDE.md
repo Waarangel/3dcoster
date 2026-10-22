@@ -191,16 +191,16 @@ No user-level tracking (no login). Aggregate metrics only.
 
 ---
 
-## macOS Gatekeeper Issue
+## macOS Signing & Notarization
 
-The app isn't code-signed (Apple Developer Program costs $99/year).
+Mac builds are signed with a Developer ID Application certificate and notarized + stapled
+in `release.yml` (Apple Developer Program, organization, enrolled 2026-10-22). Setup,
+secrets and renewal: `docs/MACOS-SIGNING.md`. Soft gate: missing/partial `APPLE_*` secrets
+or a failed signed build warn and ship unsigned — never block a release.
+`macos-sign-check.yml` proves signing without tagging.
 
-**User sees**: "3DCoster is damaged and can't be opened"
-
-**User fix**: Right-click app → Open → Click "Open" in dialog
-Or: `xattr -cr /Applications/3DCoster.app`
-
-**Documented in**: FAQ page + Download page warning
+Releases 1.9 and earlier are unsigned ("3DCoster is damaged"); the FAQ keeps the
+right-click → Open / `xattr -cr /Applications/3DCoster.app` workaround for them.
 
 ---
 
